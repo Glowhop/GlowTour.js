@@ -1,0 +1,6 @@
+interface:
+  display_name: "React Component Convention"
+  short_description: "Create React components with a strict folder convention"
+  default_prompt: "Use $react-component-convention to create or refactor a React component with our kebab-case folder structure and aggressive subcomponent extraction."
+policy:
+  allow_implicit_invocation: true

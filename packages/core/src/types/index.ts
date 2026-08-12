@@ -54,8 +54,8 @@ export interface StepBehavior {
   allowInteraction?: boolean;
   missingTargetStrategy?: "wait" | "skip" | "error";
   targetTimeout?: number;
-  autoNext?: boolean;
 }
+
 
 export type TryOrderOptions = "top" | "bottom" | "left" | "right";
 
@@ -71,10 +71,7 @@ export interface OverlayOptions {
 export interface PopoverOptions {
   placementTryOrder?: TryOrderOptions[];
   disableArrow?: boolean;
-  disableAnimation?: boolean;
   disableAutoFocus?: boolean;
-  disableAutoScroll?: boolean;
-  disableAutoPlacement?: boolean;
   hideProgressIndicator?: boolean;
   gap?: number;
   buttons?: {
@@ -99,7 +96,7 @@ export interface PopoverOptions {
   };
 }
 
-export interface StepPresentation<T> {
+export interface DynamicStepProps<T> {
   title: T;
   content: T;
   hideFooter?: boolean;
@@ -107,6 +104,8 @@ export interface StepPresentation<T> {
   hideBackButton?: boolean;
   disableNextButton?: boolean;
   hideNextButton?: boolean;
+  disableAutoScroll?: boolean;
+  disableAnimation?: boolean;
   /**
    * @default true
    */
@@ -139,7 +138,7 @@ export interface StartOptions {
   onFinish?: () => void;
 }
 
-export type StepPropsStore<T> = Observable<StepPresentation<T>>;
+export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
 export type StepActionResult = boolean | void;
 
 export type StepAction<T> = (
@@ -163,27 +162,28 @@ export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   ) => void | Promise<void>;
 }
 
-export interface StepDefinition<T> {
-  target: TargetResolver;
-  presentation: StepPresentation<T>;
-  overlay?: OverlayOptions;
-  popover?: PopoverOptions;
-  behavior?: StepBehavior;
-  actions?: StepActionInstruction<T>[];
-  eventHandlers?: EventHandler<T>[];
-  nextAction?: StepTransitionAction<T> | null;
-  backAction?: StepTransitionAction<T> | null;
-  cancelAction?: StepTransitionAction<T> | null;
-}
+// export interface StepDefinition<T> {
+//   target: TargetResolver;
+//   presentation: DynamicStepProps<T>;
+//   overlay?: OverlayOptions;
+//   popover?: PopoverOptions;
+//   behavior?: StepBehavior;
+//   actions?: StepActionInstruction<T>[];
+//   eventHandlers?: EventHandler<T>[];
+//   nextAction?: StepTransitionAction<T> | null;
+//   backAction?: StepTransitionAction<T> | null;
+//   cancelAction?: StepTransitionAction<T> | null;
+// }
 
 export interface WorkflowDefinition<T> {
   name: string;
   options: StartOptions;
-  steps: StepDefinition<T>[];
+  // steps: StepDefinition<T>[];
+  steps: WorkflowStep<T>[];
 }
 
 export interface WorkflowStepPublicProps<T> {
-  initialProps: Readonly<StepPresentation<T>>;
+  initialProps: Readonly<DynamicStepProps<T>>;
   currentProps: StepPropsStore<T>;
   target: HTMLElement | null;
 }
@@ -210,4 +210,15 @@ export interface WorkflowControls<T> {
   back: () => Promise<void>;
   cancel: () => Promise<void>;
   goTo: (index: number) => Promise<void>;
+}
+
+
+export interface StepConstructor<T>  {
+  target: TargetResolver;
+  overlay?: OverlayOptions;
+  popover?: PopoverOptions;
+  scroll?: ScrollOptions;
+  animation?: AnimationOptions;
+  behavior?: StepBehavior;
+  props?: DynamicStepProps<T>;
 }

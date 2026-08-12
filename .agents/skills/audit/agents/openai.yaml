@@ -1,0 +1,6 @@
+interface:
+  display_name: "Audit"
+  short_description: "Audit product UX, design, and accessibility from concrete evidence"
+  default_prompt: "Audit this flow or screen and report evidence-based UX, design, and accessibility findings."
+policy:
+  allow_implicit_invocation: true

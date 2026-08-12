@@ -1,0 +1,7 @@
+{
+	"name": "fullstack-perso",
+	"version": "0.1.2",
+	"managedPaths": [".codex", ".agents", "AGENTS.md", "DESIGN.md", "agent-version.json"],
+	"frontend": ["react", "heroui", "tailwindcss"],
+	"backend": ["drizzle", "postgresql", "orpc", "nextjs"]
+}

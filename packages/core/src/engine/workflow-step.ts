@@ -1,5 +1,5 @@
 import { Observable } from "@glowhop/observables";
-import type { StepDefinition, StepPresentation, WorkflowStepPublicProps } from "../types";
+import type { StepDefinition, DynamicStepProps, WorkflowStepPublicProps, StepConstructor } from "../types";
 import { resolveTargetElement } from "../utils/utils";
 
 export class WorkflowStep<T> {
@@ -13,7 +13,7 @@ export class WorkflowStep<T> {
   readonly props: Observable<StepDefinition<T>["presentation"]>;
   readonly initialProps: Readonly<StepDefinition<T>["presentation"]>;
 
-  constructor(readonly definition: StepDefinition<T>) {
+  constructor(readonly definition: StepConstructor<T>) {
     this.target = definition.target;
     this.targetEl = null;
     this.actions = definition.actions;
@@ -27,11 +27,11 @@ export class WorkflowStep<T> {
       data: definition.presentation.data ? { ...definition.presentation.data } : undefined,
     });
 
-    const initialState: StepPresentation<T> = {
+    const initialState: DynamicStepProps<T> = {
       ...this.initialProps,
       data: this.initialProps.data ? { ...this.initialProps.data } : undefined,
     };
-    this.props = new Observable<StepPresentation<T>>(initialState);
+    this.props = new Observable<DynamicStepProps<T>>(initialState);
   }
 
   reset() {

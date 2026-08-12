@@ -1,3 +1,4 @@
+import { WorkflowStep } from "../engine/workflow-step";
 import type {
   AnimationOptions,
   EventHandler,
@@ -9,21 +10,14 @@ import type {
   StepActionInstruction,
   StepBehavior,
   StepDefinition,
-  StepPresentation,
+  DynamicStepProps,
   StepTransitionAction,
   TargetResolver,
   WorkflowDefinition,
+  StepConstructor,
 } from "../types";
 
-//todo a cleaner
-export interface StepConstructor<T> extends StepPresentation<T> {
-  target: TargetResolver;
-  overlay?: OverlayOptions;
-  popover?: PopoverOptions;
-  scroll?: ScrollOptions;
-  animation?: AnimationOptions;
-  behavior?: StepBehavior;
-}
+
 
 function cloneStepDefinition<T>(step: StepDefinition<T>): StepDefinition<T> {
   return {
@@ -60,7 +54,7 @@ function cloneStartOptions(options: StartOptions): StartOptions {
 }
 
 export class Builder<T> {
-  private steps: StepDefinition<T>[] = [];
+  private steps: WorkflowStep<T>[] = [];
   private currentStep: StepBuilder<T> | null = null;
 
   constructor(
