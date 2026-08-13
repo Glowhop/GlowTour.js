@@ -1,6 +1,6 @@
+import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { describe, test } from "bun:test";
 
 const stylesheet = readFileSync(new URL("./default.css", import.meta.url), "utf8");
 const packageManifest = JSON.parse(
@@ -24,19 +24,19 @@ describe("default tour theme", () => {
     assert.match(stylesheet, /\[data-glow-tour-pointer-content\]/);
   });
 
-  test("rotates application-provided pointer content for every placement", () => {
-    const rotations = {
-      top: "180deg",
-      bottom: "0deg",
-      left: "90deg",
-      right: "-90deg",
+  test("transforms application-provided pointer content for every placement", () => {
+    const transforms = {
+      top: "rotate(180deg)",
+      bottom: "rotate(0deg)",
+      left: "scaleX(-1) rotate(-90deg)",
+      right: "rotate(-90deg)",
     } as const;
 
-    for (const [placement, rotation] of Object.entries(rotations)) {
+    for (const [placement, transform] of Object.entries(transforms)) {
       assert.match(
         stylesheet,
         new RegExp(
-          `data-glow-tour-placement=["']${placement}["'][\\s\\S]*?transform:\\s*rotate\\(${rotation}\\)`,
+          `data-glow-tour-placement=["']${placement}["'][\\s\\S]*?transform:\\s*${transform.replace(/[()]/g, "\\$&")}`,
         ),
       );
     }
