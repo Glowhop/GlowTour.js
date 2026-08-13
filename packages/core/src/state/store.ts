@@ -5,6 +5,7 @@ import PopoverElement from "../elements/popover";
 import type { WorkflowStep } from "../engine/workflow-step";
 import type {
   BaseOptions,
+  DynamicStepProps,
   EventHandler,
   GlowTourElementName,
   StepActionInstruction,
@@ -314,6 +315,15 @@ export class TourStore<T> {
     if (step.actions) {
       await this._runActions(step.actions);
     }
+  }
+
+  alterCurrentStep(callback: (props: DynamicStepProps<T>) => DynamicStepProps<T>){
+    const step = this._getCurrentWorkflowStep();
+    if (!step) {
+      console.warn("No current step found for altering props");
+      return;
+    }
+    step.props.set((p) =>callback(p));
   }
 
   destroy() {

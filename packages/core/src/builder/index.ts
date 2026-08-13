@@ -15,6 +15,10 @@ import {
   mergeStepBehavior,
 } from "../utils/options";
 
+export type EventName = keyof HTMLElementEventMap;
+
+type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
+
 function cloneStartOptions(options: StartOptions): StartOptions {
   return {
     ...options,
@@ -190,13 +194,49 @@ export class StepBuilder<T> {
     return this;
   }
 
-  onEvent(event: string, callback: EventHandler<T>["callback"]) {
-    this.workflowStep.addEventHandler({ event, callback });
-    return this;
+  onEvent<const TEventName extends EventName>(
+    event: TEventName,
+    callback: EventHandler<T, EventForName<TEventName>>["callback"],
+  ): this;
+  onEvent<const TEventNames extends readonly EventName[]>(
+    events: TEventNames,
+    callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
+  ): this;
+  onEvent(
+    eventOrEvents: EventName | readonly EventName[],
+    callback: EventHandler<T, never>["callback"],
+  ) {
+    return this.addEventHandlers(eventOrEvents, callback);
   }
 
-  on(event: string, callback: EventHandler<T>["callback"]) {
-    return this.onEvent(event, callback);
+  on<const TEventName extends EventName>(
+    event: TEventName,
+    callback: EventHandler<T, EventForName<TEventName>>["callback"],
+  ): this;
+  on<const TEventNames extends readonly EventName[]>(
+    events: TEventNames,
+    callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
+  ): this;
+  on(
+    eventOrEvents: EventName | readonly EventName[],
+    callback: EventHandler<T, never>["callback"],
+  ) {
+    return this.addEventHandlers(eventOrEvents, callback);
+  }
+
+  private addEventHandlers(
+    eventOrEvents: EventName | readonly EventName[],
+    callback: EventHandler<T, never>["callback"],
+  ) {
+    const events = typeof eventOrEvents === "string" ? [eventOrEvents] : eventOrEvents;
+
+    for (const event of events) {
+      this.workflowStep.addEventHandler({
+        event,
+        callback: callback as EventHandler<T>["callback"],
+      });
+    }
+    return this;
   }
 
   toStep() {

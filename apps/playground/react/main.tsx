@@ -48,6 +48,7 @@ const tour = glowTour
   .onEvent("click", (event) => {
     console.log("Click event on step 3", event);
     glowTour.state.next()
+    
   })
   .step({
     target: "#react-tour-id-2",
