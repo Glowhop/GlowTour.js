@@ -8,7 +8,7 @@ import type {
   WorkflowDefinition,
 } from "../types";
 import {
-  mergeIndicateurOptions,
+  mergeIndicatorOptions,
   mergeOverlayOptions,
   mergePopoverOptions,
   mergeScrollOptions,
@@ -20,7 +20,7 @@ function cloneStartOptions(options: StartOptions): StartOptions {
     ...options,
     overlay: mergeOverlayOptions(undefined, options.overlay),
     popover: mergePopoverOptions(undefined, options.popover),
-    indicator: mergeIndicateurOptions(undefined, options.indicator),
+    indicator: mergeIndicatorOptions(undefined, options.indicator),
     scroll: mergeScrollOptions(undefined, options.scroll),
     behavior: mergeStepBehavior(undefined, options.behavior),
   };
@@ -58,7 +58,7 @@ export class Builder<T> {
         },
         overlay: mergeOverlayOptions(this.options.overlay, options.overlay),
         popover: mergePopoverOptions(this.options.popover, options.popover),
-        indicator: mergeIndicateurOptions(this.options.indicator, options.indicator),
+        indicator: mergeIndicatorOptions(this.options.indicator, options.indicator),
         scroll: mergeScrollOptions(this.options.scroll, options.scroll),
         behavior: mergeStepBehavior(this.options.behavior, options.behavior),
       }),

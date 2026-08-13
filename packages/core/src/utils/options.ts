@@ -25,7 +25,7 @@ export function mergeOverlayOptions(
   };
 }
 
-export function mergeIndicateurOptions(
+export function mergeIndicatorOptions(
   defaults?: IndicatorOptions,
   overrides?: IndicatorOptions,
 ): IndicatorOptions | undefined {
@@ -36,8 +36,13 @@ export function mergeIndicateurOptions(
   return {
     ...mergeBaseOptions(defaults, overrides),
     disabled: overrides?.disabled ?? defaults?.disabled,
+    gap: normalizeGap(overrides?.gap ?? defaults?.gap),
     placementTryOrder: cloneArray(overrides?.placementTryOrder ?? defaults?.placementTryOrder),
   };
+}
+
+function normalizeGap(value?: number) {
+  return value === undefined ? undefined : Math.max(0, value);
 }
 
 export function mergePopoverOptions(

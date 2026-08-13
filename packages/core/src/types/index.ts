@@ -67,6 +67,7 @@ export interface BaseOptions {
 
 export interface IndicatorOptions extends BaseOptions {
   disabled?: boolean;
+  gap?: number;
   placementTryOrder?: TryOrderOptions[];
 }
 
