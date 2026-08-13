@@ -6,8 +6,8 @@ Last updated: 2026-08-13
 
 - Branch: `codex/audit-p0-release`
 - Parent branch: `main`
-- Last completed commit: `367d4ee` (`ci: add validation and npm release workflows`)
-- Current task: P0 release hardening: metadata, resumable publishing, ancestry protection, and consumer CSS bundling
+- Last completed commit: `837d366` (`fix(release): harden package publishing`)
+- Current task: P0 complete; release hardening findings resolved
 - Next action: final P0 review and creation of `codex/audit-p1-runtime` from P0.
 
 ## Completed
@@ -36,7 +36,7 @@ Last updated: 2026-08-13
 - The release workflow now fetches `origin/main` and requires `$GITHUB_SHA` to be an ancestor before any build or publish step.
 - Recorded the playground as a private validation-only app: it remains an independent CI build but is excluded from Changesets, the seven-package build/pack/release order, and tarball smoke inputs.
 - Prior functional/doc commits retained in this branch: `3deede7` (`build(packages): emit publishable distributions`), `90079b6` (`test(packages): execute tarball consumer smoke tests`), and `c8b2540` (`docs(audit): record completed package smoke tests`).
-- This journal update closes the P0 release-setup record without listing its own documentation commit as a completed implementation commit.
+- This journal records the functional release-hardening commit and does not list its own documentation commits as implementation commits.
 
 ## In progress
 
