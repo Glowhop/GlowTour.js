@@ -6,8 +6,8 @@ Last updated: 2026-08-13
 
 - Branch: `codex/audit-p0-release`
 - Parent branch: `main`
-- Last completed commit: `fb5f682` (force-ignore generated directories)
-- Current task: P0 packaging and release foundations complete
+- Last completed commit: `3deede7` (`build(packages): emit publishable distributions`)
+- Current task: strengthen P0 tarball execution smoke coverage
 - Next action: add Changesets and CI/release workflows.
 
 ## Completed
@@ -22,10 +22,11 @@ Last updated: 2026-08-13
 - Replaced package source exports with conditional built-artifact exports, retaining local TypeScript and Bun aliases for the workspace development/test flow.
 - Defined React 19-only, Vue, Solid, and Angular peer contracts; moved React types to dev-only; kept internal core dependencies in source as `workspace:*` and rewrote built manifests to `0.1.0`.
 - Added deterministic `build`, `pack`, and `test:tarballs` scripts. The smoke contract packs each `dist`, validates contents/manifests, installs all local tarballs with npm outside workspace resolution, and typechecks a seven-package consumer including Angular APF.
+- Strengthened the tarball smoke contract to execute Core, React, Vue, Solid, and Vanilla through Node package resolution; typecheck CSS imports with `noUncheckedSideEffectImports`; and compile a standalone Angular application against the Angular APF tarball with `ngc`.
 
 ## In progress
 
-- No active P0 implementation work.
+- Finalize the strengthened tarball smoke follow-up commit.
 
 ## Remaining
 
@@ -50,6 +51,7 @@ Last updated: 2026-08-13
 | `bun run pack` | Pass; packed 7 local tarballs from `dist` without publishing. |
 | `bun run test:tarballs` | Pass; npm-installed, typechecked external consumer for all 7 tarballs including Angular APF. |
 | `bun run --cwd apps/playground build` | Pass; Vite built all framework playground entries (Angular bundle warning only). |
+| `bun run test:tarballs` (follow-up) | Pass; executed five Node adapter entries, strict CSS side-effect resolution using TypeScript 5.7, and Angular standalone `ngc` compilation using Angular-compatible TypeScript 5.5. |
 
 ## Decisions and deviations
 
@@ -59,15 +61,16 @@ Last updated: 2026-08-13
 - Angular uses `ng-packagr` 18.2.1 and `@angular/compiler-cli` 18.2.13 with TypeScript 5.5.4, its compatible compiler range. The abstract reactive component is decorated as an Angular directive so partial compilation can emit APF safely.
 - Dist manifests are generated from source manifests, strip development-only fields, rewrite `workspace:*` to the actual shared version `0.1.0`, and expose only artifact-relative entries. Generated `dist` and `.artifacts` remain untracked and excluded from Biome.
 - The playground was moved to React 19 to match the React adapter peer contract. Vite warns that the Angular demonstration bundle is 1.38 MB minified; this is not changed in P0 because runtime/code-splitting work is outside the packaging scope.
+- Angular 18.2 requires TypeScript `<5.6`, while `noUncheckedSideEffectImports` begins in TypeScript 5.6. The generated consumer therefore installs a second, temporary TypeScript 5.7 compiler only for strict CSS resolution and keeps `ngc` on TypeScript 5.5.4.
 
 ## Main files changed
 
 - `package.json`, `bunfig.toml`, `tsconfig.json`, and `scripts/{build-packages,pack-packages,test-tarballs}.ts`
 - `packages/*/package.json`, declaration build configs, `packages/angular/ng-package.json`, and explicit public entrypoints.
-- `apps/playground/package.json`, `biome.json`, `.gitignore`, `bun.lock`, and source-manifest contract tests.
+- `apps/playground/package.json`, `biome.json`, `.gitignore`, `bun.lock`, source-manifest contract tests, and the Styles CSS declaration.
 
 ## Recovery instructions
 
 1. Open `.worktrees/audit-p0-release`.
 2. Confirm the current branch with `git status --short --branch`.
-3. Add Changesets and CI/release workflows after reviewing the generated distribution contracts.
+3. Add Changesets and CI/release workflows after the tarball execution-smoke follow-up commit.

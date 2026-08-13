@@ -9,6 +9,9 @@
     "*.css"
   ],
   "exports": {
-    "./default.css": "./dist/default.css"
+    "./default.css": {
+      "types": "./dist/default.css.d.ts",
+      "default": "./dist/default.css"
+    }
   }
 }

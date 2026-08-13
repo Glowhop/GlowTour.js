@@ -96,6 +96,7 @@ function buildStyles() {
   rmSync(distDirectory, { force: true, recursive: true });
   mkdirSync(distDirectory, { recursive: true });
   cpSync(join(directory, "default.css"), join(distDirectory, "default.css"));
+  cpSync(join(directory, "default.css.d.ts"), join(distDirectory, "default.css.d.ts"));
   buildManifest(directory);
 }
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -81,6 +81,7 @@ function writeConsumerFixture(directory: string) {
           "@angular/common": "18.2.13",
           "@angular/compiler": "18.2.13",
           "@angular/core": "18.2.13",
+          "@angular/platform-browser": "18.2.13",
           react: "19.1.1",
           "solid-js": "^1.9.14",
           vue: "3.5.22",
@@ -88,12 +89,30 @@ function writeConsumerFixture(directory: string) {
         devDependencies: {
           "@types/node": "22.18.6",
           "@types/react": "19.1.16",
+          "@angular/compiler-cli": "18.2.13",
           typescript: "5.5.4",
+          "typescript-side-effect-checks": "npm:typescript@5.7.3",
         },
       },
       null,
       2,
     )}\n`,
+  );
+  writeFileSync(
+    join(directory, "runtime-imports.mjs"),
+    `import assert from "node:assert/strict";
+import { create } from "@glowhop/core-tour";
+import { GlowTour as ReactGlowTour } from "@glowhop/react-tour";
+import { GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
+import { GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
+import { registerGlowTourElements } from "@glowhop/vanilla-tour";
+
+assert.equal(typeof create, "function");
+assert.equal(typeof ReactGlowTour.Root, "function");
+assert.equal(typeof VueGlowTourRoot, "object");
+assert.equal(typeof SolidGlowTour.Root, "function");
+assert.equal(typeof registerGlowTourElements, "function");
+`,
   );
   writeFileSync(
     join(directory, "consumer.ts"),
@@ -121,11 +140,52 @@ void registerGlowTourElements;
           module: "ESNext",
           moduleResolution: "Bundler",
           noEmit: true,
+          noUncheckedSideEffectImports: true,
           skipLibCheck: true,
           strict: true,
           target: "ES2022",
         },
         files: ["consumer.ts"],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  const angularDirectory = join(directory, "angular-app");
+  mkdirSync(angularDirectory);
+  writeFileSync(
+    join(angularDirectory, "main.ts"),
+    `import { Component } from "@angular/core";
+import { bootstrapApplication } from "@angular/platform-browser";
+import { GlowTourRoot } from "@glowhop/angular-tour";
+
+@Component({
+  imports: [GlowTourRoot],
+  selector: "tarball-angular-app",
+  standalone: true,
+  template: "<glow-tour-root />",
+})
+export class TarballAngularApp {}
+
+void bootstrapApplication(TarballAngularApp);
+`,
+  );
+  writeFileSync(
+    join(angularDirectory, "tsconfig.json"),
+    `${JSON.stringify(
+      {
+        compilerOptions: {
+          module: "ES2022",
+          moduleResolution: "Bundler",
+          noEmit: true,
+          skipLibCheck: true,
+          strict: true,
+          target: "ES2022",
+        },
+        angularCompilerOptions: {
+          strictTemplates: true,
+        },
+        files: ["main.ts"],
       },
       null,
       2,
@@ -143,7 +203,13 @@ const consumerDirectory = mkdtempSync(join(tmpdir(), "glow-tour-tarball-consumer
 try {
   writeConsumerFixture(consumerDirectory);
   run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--package-lock=false"], consumerDirectory);
-  run("npx", ["tsc", "--project", "tsconfig.json"], consumerDirectory);
+  run("node", ["runtime-imports.mjs"], consumerDirectory);
+  run(
+    "node",
+    ["node_modules/typescript-side-effect-checks/bin/tsc", "--project", "tsconfig.json"],
+    consumerDirectory,
+  );
+  run("npx", ["ngc", "--project", "angular-app/tsconfig.json"], consumerDirectory);
 } finally {
   rmSync(consumerDirectory, { force: true, recursive: true });
 }
