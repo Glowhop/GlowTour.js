@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 import {
   createTourStore,
@@ -39,5 +40,14 @@ describe("vue adapter contract", () => {
     assert.equal("previousLabel" in (GlowTourBackTrigger.props ?? {}), false);
     assert.equal("nextLabel" in (GlowTourNextTrigger.props ?? {}), true);
     assert.equal("finishLabel" in (GlowTourNextTrigger.props ?? {}), true);
+  });
+
+  test("owns the pointer content wrapper", () => {
+    const source = readFileSync(
+      new URL("./components/tour-components.ts", import.meta.url),
+      "utf8",
+    );
+
+    assert.match(source, /"data-glow-tour-pointer-content":\s*""/);
   });
 });

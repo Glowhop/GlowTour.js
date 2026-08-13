@@ -42,6 +42,10 @@ describe("angular adapter contract", () => {
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.popover, /role="dialog"/);
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /<svg/);
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.pointer, /aria-hidden="true"/);
+    assert.match(
+      GLOW_TOUR_COMPONENT_TEMPLATES.pointer,
+      /<div data-glow-tour-pointer-content><ng-content \/><\/div>/,
+    );
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger, /data-glow-tour-back-trigger/);
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger, /data-glow-tour-next-trigger/);
   });

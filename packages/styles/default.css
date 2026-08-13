@@ -1,1 +1,166 @@
-/* Workspace package restored so playground style imports resolve. */
+:root {
+  --glow-tour-color-accent: #4c35fd;
+  --glow-tour-color-accent-hover: #3e28e8;
+  --glow-tour-color-on-accent: #ffffff;
+  --glow-tour-color-surface: #fbfaff;
+  --glow-tour-color-surface-muted: #f1eff8;
+  --glow-tour-color-text: #272530;
+  --glow-tour-color-text-muted: #6f697d;
+  --glow-tour-color-border: #dedbe8;
+  --glow-tour-radius: 20px;
+  --glow-tour-shadow: 0 18px 50px rgb(45 38 78 / 18%);
+  --glow-tour-transition-duration: 180ms;
+  --glow-tour-transition-easing: ease-out;
+}
+
+[data-glow-tour-popover],
+[data-glow-tour-popover] *,
+[data-glow-tour-pointer],
+[data-glow-tour-pointer] * {
+  box-sizing: border-box;
+}
+
+[data-glow-tour-overlay] {
+  display: block;
+  overflow: visible;
+}
+
+[data-glow-tour-popover] {
+  background: var(--glow-tour-color-surface);
+  border: 1px solid var(--glow-tour-color-border);
+  border-radius: var(--glow-tour-radius);
+  box-shadow: var(--glow-tour-shadow);
+  color: var(--glow-tour-color-text);
+  display: grid;
+  font-family: inherit;
+  gap: 14px;
+  max-width: calc(100vw - 32px);
+  padding: 20px;
+  width: 352px;
+}
+
+[data-glow-tour-popover]:focus-visible {
+  outline: 3px solid var(--glow-tour-color-accent);
+  outline-offset: 3px;
+}
+
+[data-glow-tour-header] {
+  color: var(--glow-tour-color-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+[data-glow-tour-content] {
+  color: var(--glow-tour-color-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+[data-glow-tour-footer] {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+[data-glow-tour-back-trigger],
+[data-glow-tour-next-trigger] {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  transition:
+    background-color var(--glow-tour-transition-duration) var(--glow-tour-transition-easing),
+    border-color var(--glow-tour-transition-duration) var(--glow-tour-transition-easing),
+    box-shadow var(--glow-tour-transition-duration) var(--glow-tour-transition-easing),
+    color var(--glow-tour-transition-duration) var(--glow-tour-transition-easing),
+    transform var(--glow-tour-transition-duration) var(--glow-tour-transition-easing);
+}
+
+[data-glow-tour-back-trigger] {
+  background: var(--glow-tour-color-surface-muted);
+  border-color: var(--glow-tour-color-border);
+  color: var(--glow-tour-color-text);
+}
+
+[data-glow-tour-back-trigger]:hover:not(:disabled) {
+  background: var(--glow-tour-color-surface);
+  border-color: var(--glow-tour-color-accent);
+  color: var(--glow-tour-color-accent);
+}
+
+[data-glow-tour-next-trigger] {
+  background: var(--glow-tour-color-accent);
+  border-color: var(--glow-tour-color-accent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--glow-tour-color-accent) 24%, transparent);
+  color: var(--glow-tour-color-on-accent);
+}
+
+[data-glow-tour-next-trigger]:hover:not(:disabled) {
+  background: var(--glow-tour-color-accent-hover);
+  border-color: var(--glow-tour-color-accent-hover);
+  transform: translateY(-1px);
+}
+
+[data-glow-tour-back-trigger]:focus-visible,
+[data-glow-tour-next-trigger]:focus-visible {
+  outline: 3px solid var(--glow-tour-color-accent);
+  outline-offset: 2px;
+}
+
+[data-glow-tour-back-trigger]:disabled,
+[data-glow-tour-next-trigger]:disabled {
+  background: var(--glow-tour-color-surface-muted);
+  border-color: var(--glow-tour-color-border);
+  box-shadow: none;
+  color: var(--glow-tour-color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+}
+
+[data-glow-tour-pointer] {
+  filter: drop-shadow(0 6px 10px rgb(39 37 48 / 24%));
+  font-size: 2rem;
+  line-height: 1;
+}
+
+[data-glow-tour-pointer-content] {
+  display: block;
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform var(--glow-tour-transition-duration) var(--glow-tour-transition-easing);
+}
+
+[data-glow-tour-pointer][data-glow-tour-placement="top"] [data-glow-tour-pointer-content] {
+  transform: rotate(180deg);
+}
+
+[data-glow-tour-pointer][data-glow-tour-placement="bottom"] [data-glow-tour-pointer-content] {
+  transform: rotate(0deg);
+}
+
+[data-glow-tour-pointer][data-glow-tour-placement="left"] [data-glow-tour-pointer-content] {
+  transform: rotate(90deg);
+}
+
+[data-glow-tour-pointer][data-glow-tour-placement="right"] [data-glow-tour-pointer-content] {
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-glow-tour-back-trigger],
+  [data-glow-tour-next-trigger],
+  [data-glow-tour-pointer-content] {
+    transition-duration: 0.01ms;
+  }
+}
