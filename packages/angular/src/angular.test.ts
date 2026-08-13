@@ -1,6 +1,6 @@
 import "@angular/compiler";
-import assert from "node:assert/strict";
 import { describe, test } from "bun:test";
+import assert from "node:assert/strict";
 import {
   createTourStore,
   GLOW_TOUR_COMPONENT_TEMPLATES,

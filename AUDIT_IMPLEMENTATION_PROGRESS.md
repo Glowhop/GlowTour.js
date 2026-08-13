@@ -6,19 +6,20 @@ Last updated: 2026-08-13
 
 - Branch: `codex/audit-p0-release`
 - Parent branch: `main`
-- Last completed commit: none
-- Current task: restore the P0 verification baseline
-- Next action: correct the Biome scope and existing diagnostics, then rerun the baseline gates
+- Last completed commit: `a62ebd3` (prior commit)
+- Current task: prepare P0 packaging and release foundations
+- Next action: define package builds and publishable manifests, then validate tarballs.
 
 ## Completed
 
 - Created the isolated worktree at `.worktrees/audit-p0-release`.
 - Installed dependencies with the frozen lockfile using Bun 1.3.12.
 - Captured the initial verification baseline.
+- Restored the verification baseline with Bun 1.3.12, a product-only Biome scope, and mechanical formatting/import fixes.
 
 ## In progress
 
-- P0 repository verification and packaging foundations.
+- P0 packaging and release foundations.
 
 ## Remaining
 
@@ -32,22 +33,26 @@ Last updated: 2026-08-13
 | Command | Result |
 | --- | --- |
 | `bun install --frozen-lockfile` | Pass; 294 packages installed with Bun 1.3.12. |
-| `bun run check` | Fail; 16 existing Biome errors and one warning. |
-| `bun run typecheck` | Pass. |
-| `bun test` | Pass; 62 tests, 0 failures. |
+| `bun run check` | Pass; Biome checked 76 files with no fixes applied. |
+| `bun run typecheck` | Pass; TypeScript completed with no diagnostics. |
+| `bun test` | Pass; 62 tests, 0 failures across 13 files. |
 
 ## Decisions and deviations
 
 - The implementation runs in an ignored project-local worktree to keep `main` untouched.
-- The initial Biome failure is an expected P0 audit finding and will be corrected before packaging work.
+- Biome is intentionally scoped to `apps/**`, `packages/**`, and its product configuration files so worktrees, agent metadata, generated outputs, coverage, and managed audit metadata remain untouched.
+- The public `boolean | void` action-result type is intentionally retained with a targeted Biome suppression; replacing `void` would alter its public TypeScript contract.
 
 ## Main files changed
 
 - `AUDIT_IMPLEMENTATION_PROGRESS.md`
+- `package.json`
+- `biome.json`
+- 14 tracked product/test files with mechanical Biome formatting or import ordering updates.
 
 ## Recovery instructions
 
 1. Open `.worktrees/audit-p0-release`.
 2. Confirm the current branch with `git status --short --branch`.
-3. Continue by fixing the Biome scope and reported project diagnostics.
-4. Rerun `bun run check`, `bun run typecheck`, and `bun test`.
+3. Define package builds and publishable manifests.
+4. Validate package tarballs before adding release automation.

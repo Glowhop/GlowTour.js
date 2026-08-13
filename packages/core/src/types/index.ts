@@ -148,6 +148,7 @@ export interface StartOptions {
 }
 
 export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
+// biome-ignore lint/suspicious/noConfusingVoidType: `void` preserves the optional action result contract.
 export type StepActionResult = boolean | void;
 
 export type StepAction<T> = (

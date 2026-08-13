@@ -16,7 +16,7 @@ const tour = glowTour
     },
     indicator: {
       animated: false,
-    }
+    },
   })
   .step({
     target: "#react-tour-id-1",
@@ -47,8 +47,7 @@ const tour = glowTour
   })
   .onEvent("click", (event) => {
     console.log("Click event on step 3", event);
-    glowTour.state.next()
-    
+    glowTour.state.next();
   })
   .step({
     target: "#react-tour-id-2",
@@ -62,7 +61,7 @@ const tour = glowTour
     },
     indicator: {
       animated: true,
-    }
+    },
   })
   .finish();
 

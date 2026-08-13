@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
 import { describe, test } from "bun:test";
+import assert from "node:assert/strict";
 import { createTourStore, GlowTour, glowTour } from "./index";
 
 describe("react adapter contract", () => {

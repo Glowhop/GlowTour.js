@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
 import { describe, test } from "bun:test";
+import assert from "node:assert/strict";
 import { createWorkflow } from "./create-workflow";
 import { WorkflowStep } from "./workflow-step";
 
