@@ -9,14 +9,15 @@
     "ignoreUnknown": false,
     "includes": [
       "apps/**",
-      "!apps/**/dist",
-      "!apps/**/coverage",
       "packages/**",
-      "!packages/**/dist",
-      "!packages/**/coverage",
       "biome.json",
       "package.json",
-      "tsconfig.json"
+      "tsconfig.json",
+      "!!.worktrees",
+      "!!apps/**/dist",
+      "!!apps/**/coverage",
+      "!!packages/**/dist",
+      "!!packages/**/coverage"
     ]
   },
   "formatter": {
