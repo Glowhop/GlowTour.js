@@ -3,7 +3,7 @@ import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { isInViewport, roundByDPR, viewportDimensions } from "../utils/utils";
 import GlowTourElement from "./base";
 
-const DEFAULT_POINTER_GAP = 8;
+const DEFAULT_INDICATOR_GAP = 16;
 const POINTER_ANIMATION_DISTANCE = 8;
 const POINTER_ANIMATION_DURATION = 800;
 const DEFAULT_TRY_ORDER = [
@@ -121,11 +121,12 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     const pointerPosition = this.element.getBoundingClientRect();
     const excludedPlacement =
       this.popoverPlacement === "center" ? undefined : this.popoverPlacement;
-    const configuredOrder = step.indicateur?.placementTryOrder ?? [];
+    const configuredOrder = step.indicator?.placementTryOrder ?? [];
     const tryOrder = [...new Set([...configuredOrder, ...DEFAULT_TRY_ORDER])].filter(
       (placement): placement is TryOrderOptions => placement !== excludedPlacement,
     );
-    const candidates = this._getCandidates(targetPosition, pointerPosition);
+    const gap = Math.max(0, step.indicator?.gap ?? DEFAULT_INDICATOR_GAP);
+    const candidates = this._getCandidates(targetPosition, pointerPosition, gap);
 
     for (const placement of tryOrder) {
       const candidate = candidates[placement];
@@ -152,25 +153,25 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     };
   }
 
-  private _getCandidates(targetPosition: DOMRect, pointerPosition: DOMRect) {
+  private _getCandidates(targetPosition: DOMRect, pointerPosition: DOMRect, gap: number) {
     const centeredX = targetPosition.left + (targetPosition.width - pointerPosition.width) / 2;
     const centeredY = targetPosition.top + (targetPosition.height - pointerPosition.height) / 2;
 
     return {
       top: {
         x: centeredX,
-        y: targetPosition.top - pointerPosition.height - DEFAULT_POINTER_GAP,
+        y: targetPosition.top - pointerPosition.height - gap,
       },
       bottom: {
         x: centeredX,
-        y: targetPosition.bottom + DEFAULT_POINTER_GAP,
+        y: targetPosition.bottom + gap,
       },
       left: {
-        x: targetPosition.left - pointerPosition.width - DEFAULT_POINTER_GAP,
+        x: targetPosition.left - pointerPosition.width - gap,
         y: centeredY,
       },
       right: {
-        x: targetPosition.right + DEFAULT_POINTER_GAP,
+        x: targetPosition.right + gap,
         y: centeredY,
       },
     } satisfies Record<TryOrderOptions, { x: number; y: number }>;

@@ -328,7 +328,11 @@ export class TourStore<T> {
 
   private _setWorkflow(workflow: WorkflowDefinition<T>) {
     this.workflow = workflow;
-    this.steps.splice(0, this.steps.length, ...workflow.steps.map((step) => step.clone()));
+    this.steps.splice(
+      0,
+      this.steps.length,
+      ...workflow.steps.map((step) => step.clone(workflow.options)),
+    );
     this.currentStepIndex.set(-1);
     this._syncDerivedState();
   }
@@ -463,6 +467,7 @@ export class TourStore<T> {
 
     this.focusGuard.activate({
       popover,
+      direction: this.direction.get(),
       allowedTarget: target,
       allowTargetInteraction,
       autoFocus:
@@ -665,7 +670,7 @@ export class TourStore<T> {
 
     const step = this._getCurrentWorkflowStep();
     const animationOptions = this._getAnimationOptions(
-      step?.indicateur,
+      step?.indicator,
       this.workflow?.options.indicator,
     );
     this.pointer.setAnimationOptions(animationOptions);
@@ -681,7 +686,7 @@ export class TourStore<T> {
     const allowInteraction =
       step.behavior?.allowInteraction ?? this.workflow?.options.behavior?.allowInteraction ?? false;
     const disabled =
-      step.indicateur?.disabled ?? this.workflow?.options.indicator?.disabled ?? false;
+      step.indicator?.disabled ?? this.workflow?.options.indicator?.disabled ?? false;
 
     return allowInteraction && !disabled;
   }

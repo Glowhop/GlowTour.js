@@ -6,6 +6,7 @@ import type {
   OverlayOptions,
   PopoverOptions,
   ScrollOptions,
+  StartOptions,
   StepActionInstruction,
   StepBehavior,
   StepConstructor,
@@ -13,13 +14,20 @@ import type {
   TargetResolver,
   WorkflowStepPublicProps,
 } from "../types";
+import {
+  mergeIndicatorOptions,
+  mergeOverlayOptions,
+  mergePopoverOptions,
+  mergeScrollOptions,
+  mergeStepBehavior,
+} from "../utils/options";
 import { resolveTargetElement } from "../utils/utils";
 
 export class WorkflowStep<T> {
   readonly target: TargetResolver;
   readonly overlay?: OverlayOptions;
   readonly popover?: PopoverOptions;
-  readonly indicateur?: IndicatorOptions;
+  readonly indicator?: IndicatorOptions;
   readonly scroll?: ScrollOptions;
   readonly behavior?: StepBehavior;
   targetEl: HTMLElement | null;
@@ -35,7 +43,7 @@ export class WorkflowStep<T> {
     this.target = definition.target;
     this.overlay = definition.overlay;
     this.popover = definition.popover;
-    this.indicateur = definition.indicator;
+    this.indicator = definition.indicator;
     this.scroll = definition.scroll;
     this.behavior = definition.behavior;
     this.targetEl = null;
@@ -77,14 +85,14 @@ export class WorkflowStep<T> {
     this.cancelAction = action;
   }
 
-  clone() {
+  clone(defaults: StartOptions = {}) {
     const clone = new WorkflowStep<T>({
       target: this.target,
-      overlay: this.overlay,
-      popover: this.popover,
-      indicator: this.indicateur,
-      scroll: this.scroll,
-      behavior: this.behavior,
+      overlay: mergeOverlayOptions(defaults.overlay, this.overlay),
+      popover: mergePopoverOptions(defaults.popover, this.popover),
+      indicator: mergeIndicatorOptions(defaults.indicator, this.indicator),
+      scroll: mergeScrollOptions(defaults.scroll, this.scroll),
+      behavior: mergeStepBehavior(defaults.behavior, this.behavior),
       props: this.initialProps,
     });
 

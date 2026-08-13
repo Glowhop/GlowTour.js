@@ -1,3 +1,5 @@
+import type { WorkflowDirection } from "../types";
+
 const FOCUSABLE_SELECTOR = [
   "a[href]",
   "button:not([disabled])",
@@ -13,6 +15,7 @@ const FOCUSABLE_SELECTOR = [
 
 export interface FocusGuardScope {
   popover: HTMLElement;
+  direction: WorkflowDirection;
   allowedTarget?: HTMLElement | null;
   allowTargetInteraction?: boolean;
   autoFocus?: boolean;
@@ -23,6 +26,7 @@ export class FocusGuard {
   private popover: HTMLElement | null = null;
   private allowedTarget: HTMLElement | null = null;
   private allowTargetInteraction = false;
+  private direction: WorkflowDirection = "next";
   private active = false;
   private redirecting = false;
 
@@ -57,6 +61,7 @@ export class FocusGuard {
     this.popover = scope.popover;
     this.allowedTarget = scope.allowedTarget ?? null;
     this.allowTargetInteraction = scope.allowTargetInteraction ?? false;
+    this.direction = scope.direction;
   }
 
   deactivate() {
@@ -94,19 +99,25 @@ export class FocusGuard {
       return;
     }
 
-    const nextFocus = this.findFocusable(popover) ?? popover;
+    const nextFocus = this.findFocusable(popover, this.direction) ?? popover;
 
     this.redirecting = true;
     nextFocus.focus();
     this.redirecting = false;
   }
 
-  private findFocusable(root: HTMLElement) {
+  private findFocusable(root: HTMLElement, direction: WorkflowDirection) {
     const candidates = root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    const orderedSelectors =
+      direction === "next"
+        ? ["[data-glow-tour-next-trigger]", "[data-glow-tour-back-trigger]"]
+        : ["[data-glow-tour-back-trigger]", "[data-glow-tour-next-trigger]"];
 
-    for (const candidate of Array.from(candidates)) {
-      if (this.isFocusable(candidate)) {
-        return candidate;
+    for (const selector of orderedSelectors) {
+      for (const candidate of Array.from(candidates)) {
+        if (candidate.matches(selector) && this.isFocusable(candidate)) {
+          return candidate;
+        }
       }
     }
 
@@ -114,7 +125,13 @@ export class FocusGuard {
   }
 
   private isFocusable(element: HTMLElement) {
-    if (element.hasAttribute("disabled") || element.getAttribute("aria-hidden") === "true") {
+    if (
+      element.hasAttribute("disabled") ||
+      element.hasAttribute("hidden") ||
+      element.getAttribute("aria-disabled") === "true" ||
+      element.getAttribute("aria-hidden") === "true" ||
+      element.closest("[hidden], [inert], [aria-hidden='true']") !== null
+    ) {
       return false;
     }
 
