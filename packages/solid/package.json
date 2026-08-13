@@ -1,0 +1,12 @@
+{
+  "name": "@glowhop/solid-tour",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@glowhop/core-tour": "workspace:*",
+    "solid-js": "^1.9.14"
+  }
+}
