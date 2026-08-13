@@ -1,37 +1,104 @@
 import { Observable } from "@glowhop/observables";
-import type { StepDefinition, DynamicStepProps, WorkflowStepPublicProps, StepConstructor } from "../types";
+import type {
+  DynamicStepProps,
+  EventHandler,
+  IndicateurOptions,
+  OverlayOptions,
+  PopoverOptions,
+  ScrollOptions,
+  StepActionInstruction,
+  StepBehavior,
+  StepConstructor,
+  StepTransitionAction,
+  TargetResolver,
+  WorkflowStepPublicProps,
+} from "../types";
 import { resolveTargetElement } from "../utils/utils";
 
 export class WorkflowStep<T> {
-  readonly target: StepDefinition<T>["target"];
+  readonly target: TargetResolver;
+  readonly overlay?: OverlayOptions;
+  readonly popover?: PopoverOptions;
+  readonly indicateur?: IndicateurOptions;
+  readonly scroll?: ScrollOptions;
+  readonly behavior?: StepBehavior;
   targetEl: HTMLElement | null;
-  readonly actions: StepDefinition<T>["actions"];
-  readonly eventHandlers: StepDefinition<T>["eventHandlers"];
-  readonly nextAction: StepDefinition<T>["nextAction"];
-  readonly backAction: StepDefinition<T>["backAction"];
-  readonly cancelAction: StepDefinition<T>["cancelAction"];
-  readonly props: Observable<StepDefinition<T>["presentation"]>;
-  readonly initialProps: Readonly<StepDefinition<T>["presentation"]>;
+  readonly actions: StepActionInstruction<T>[];
+  readonly eventHandlers: EventHandler<T>[];
+  nextAction: StepTransitionAction<T> | null;
+  backAction: StepTransitionAction<T> | null;
+  cancelAction: StepTransitionAction<T> | null;
+  readonly props: Observable<DynamicStepProps<T>>;
+  readonly initialProps: Readonly<DynamicStepProps<T>>;
 
-  constructor(readonly definition: StepConstructor<T>) {
+  constructor(definition: StepConstructor<T>) {
     this.target = definition.target;
+    this.overlay = definition.overlay;
+    this.popover = definition.popover;
+    this.indicateur = definition.indicateur;
+    this.scroll = definition.scroll;
+    this.behavior = definition.behavior;
     this.targetEl = null;
-    this.actions = definition.actions;
-    this.eventHandlers = definition.eventHandlers;
-    this.nextAction = definition.nextAction;
-    this.backAction = definition.backAction;
-    this.cancelAction = definition.cancelAction;
+    this.actions = [];
+    this.eventHandlers = [];
+    this.nextAction = null;
+    this.backAction = null;
+    this.cancelAction = null;
 
     this.initialProps = Object.freeze({
-      ...definition.presentation,
-      data: definition.presentation.data ? { ...definition.presentation.data } : undefined,
+      ...definition.props,
+      data: definition.props.data,
     });
 
     const initialState: DynamicStepProps<T> = {
       ...this.initialProps,
-      data: this.initialProps.data ? { ...this.initialProps.data } : undefined,
+      data: this.initialProps.data ? structuredClone(this.initialProps.data) : undefined,
     };
     this.props = new Observable<DynamicStepProps<T>>(initialState);
+  }
+
+  addAction(action: StepActionInstruction<T>) {
+    this.actions.push(action);
+  }
+
+  addEventHandler(handler: EventHandler<T>) {
+    this.eventHandlers.push(handler);
+  }
+
+  setNextAction(action: StepTransitionAction<T> | null) {
+    this.nextAction = action;
+  }
+
+  setBackAction(action: StepTransitionAction<T> | null) {
+    this.backAction = action;
+  }
+
+  setCancelAction(action: StepTransitionAction<T> | null) {
+    this.cancelAction = action;
+  }
+
+  clone() {
+    const clone = new WorkflowStep<T>({
+      target: this.target,
+      overlay: this.overlay,
+      popover: this.popover,
+      indicateur: this.indicateur,
+      scroll: this.scroll,
+      behavior: this.behavior,
+      props: this.initialProps,
+    });
+
+    for (const action of this.actions) {
+      clone.addAction(action);
+    }
+    for (const eventHandler of this.eventHandlers) {
+      clone.addEventHandler(eventHandler);
+    }
+    clone.setNextAction(this.nextAction);
+    clone.setBackAction(this.backAction);
+    clone.setCancelAction(this.cancelAction);
+
+    return clone;
   }
 
   reset() {
@@ -46,11 +113,6 @@ export class WorkflowStep<T> {
   }
 
   getElement() {
-    if (!this.targetEl) {
-      throw new Error(
-        "Target element has not been resolved yet. use resolveTargetElement() before calling getElement().",
-      );
-    }
     return this.targetEl;
   }
 

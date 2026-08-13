@@ -126,6 +126,11 @@ button:disabled {
   outline-offset: 2px;
 }
 
+.tour-pointer {
+  font-size: 2rem;
+  line-height: 1;
+}
+
 .primary {
   background: #1f6f5b;
   border-color: #1f6f5b;

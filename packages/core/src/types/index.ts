@@ -1,5 +1,5 @@
 import type { Observable } from "@glowhop/observables";
-import { WorkflowStep } from "../engine/workflow-step";
+import type { WorkflowStep } from "../engine/workflow-step";
 
 export type PrimitiveValue = string | number | boolean | null;
 
@@ -27,6 +27,7 @@ export type GlowTourElementName =
   | "content"
   | "footer"
   | "popover"
+  | "pointer"
   | "back-trigger"
   | "next-trigger"
   | "overlay";
@@ -56,19 +57,27 @@ export interface StepBehavior {
   targetTimeout?: number;
 }
 
-
 export type TryOrderOptions = "top" | "bottom" | "left" | "right";
+export type ResolvedPlacement = TryOrderOptions | "center";
 
-export interface OverlayOptions {
+export interface BaseOptions {
+  animated?: boolean;
+  animation?: AnimationOptions;
+}
+
+export interface IndicateurOptions extends BaseOptions {
+  disabled?: boolean;
+  placementTryOrder?: TryOrderOptions[];
+}
+
+export interface OverlayOptions extends BaseOptions {
   color?: string;
   opacity?: number;
   padding?: number;
   radius?: number;
-  disableInteractionIndicator?: boolean;
-  interactionIndicatorPlacementTryOrder?: TryOrderOptions[];
 }
 
-export interface PopoverOptions {
+export interface PopoverOptions extends BaseOptions {
   placementTryOrder?: TryOrderOptions[];
   disableArrow?: boolean;
   disableAutoFocus?: boolean;
@@ -105,7 +114,6 @@ export interface DynamicStepProps<T> {
   disableNextButton?: boolean;
   hideNextButton?: boolean;
   disableAutoScroll?: boolean;
-  disableAnimation?: boolean;
   /**
    * @default true
    */
@@ -128,9 +136,9 @@ export interface StartOptions {
   cancellable?: boolean;
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
+  indicateur?: IndicateurOptions;
   scroll?: ScrollOptions;
   animated?: boolean;
-  animation?: AnimationOptions;
   behavior?: StepBehavior;
 
   onStart?: () => void;
@@ -162,23 +170,9 @@ export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   ) => void | Promise<void>;
 }
 
-// export interface StepDefinition<T> {
-//   target: TargetResolver;
-//   presentation: DynamicStepProps<T>;
-//   overlay?: OverlayOptions;
-//   popover?: PopoverOptions;
-//   behavior?: StepBehavior;
-//   actions?: StepActionInstruction<T>[];
-//   eventHandlers?: EventHandler<T>[];
-//   nextAction?: StepTransitionAction<T> | null;
-//   backAction?: StepTransitionAction<T> | null;
-//   cancelAction?: StepTransitionAction<T> | null;
-// }
-
 export interface WorkflowDefinition<T> {
   name: string;
   options: StartOptions;
-  // steps: StepDefinition<T>[];
   steps: WorkflowStep<T>[];
 }
 
@@ -212,13 +206,14 @@ export interface WorkflowControls<T> {
   goTo: (index: number) => Promise<void>;
 }
 
-
-export interface StepConstructor<T>  {
+export interface StepConstructor<T> {
   target: TargetResolver;
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
+  indicateur?: IndicateurOptions;
   scroll?: ScrollOptions;
-  animation?: AnimationOptions;
   behavior?: StepBehavior;
-  props?: DynamicStepProps<T>;
+  props: DynamicStepProps<T>;
 }
+
+export type StepParameters<T> = DynamicStepProps<T> & Omit<StepConstructor<T>, "props">;

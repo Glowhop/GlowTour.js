@@ -16,7 +16,7 @@ const tour = glowTour
   })
   .step({
     target: "#react-tour-id-1",
-    title: "React step",
+    title: <strong>React native node</strong>,
     content: "This step targets a real React-rendered element.",
   })
   .step({
@@ -32,7 +32,7 @@ const tour = glowTour
     title: "React step",
     content: "This step targets a real React-rendered element.",
     behavior: {
-      allowInteraction: false,
+      allowInteraction: true,
     },
   })
   .finish();
@@ -60,6 +60,7 @@ function ReactPlayground() {
 
         <GlowTour.Root>
           <GlowTour.Overlay />
+          <GlowTour.Pointer className="tour-pointer">☝️</GlowTour.Pointer>
           <GlowTour.Popover className="bg-amber-300 p-2 rounded">
             <GlowTour.Header className="text-2xl" />
             <GlowTour.Content className="my-2" />
