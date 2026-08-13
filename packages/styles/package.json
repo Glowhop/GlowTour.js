@@ -2,6 +2,12 @@
   "name": "@glowhop/styles-tour",
   "version": "0.1.0",
   "type": "module",
+  "files": [
+    "default.css"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     "./default.css": "./default.css"
   }

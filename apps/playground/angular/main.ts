@@ -45,7 +45,9 @@ import "../src/styles.css";
 
         <glow-tour-root>
           <glow-tour-overlay></glow-tour-overlay>
-          <glow-tour-pointer class="tour-pointer">☝️</glow-tour-pointer>
+          <glow-tour-pointer>
+            <span data-glow-tour-pointer-content>☝️</span>
+          </glow-tour-pointer>
           <glow-tour-popover>
             <glow-tour-header></glow-tour-header>
             <glow-tour-content></glow-tour-content>

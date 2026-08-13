@@ -62,7 +62,9 @@ createApp({
           ),
           h(GlowTourRoot, null, () => [
             h(GlowTourOverlay),
-            h(GlowTourPointer, { class: "tour-pointer" }, () => "☝️"),
+            h(GlowTourPointer, null, () =>
+              h("span", { "data-glow-tour-pointer-content": "" }, "☝️"),
+            ),
             h(GlowTourPopover, null, () => [
               h(GlowTourHeader),
               h(GlowTourContent),
