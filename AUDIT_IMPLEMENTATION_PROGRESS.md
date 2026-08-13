@@ -6,9 +6,9 @@ Last updated: 2026-08-13
 
 - Branch: `codex/audit-p0-release`
 - Parent branch: `main`
-- Last completed commit: `b9ad553` (`fix(release): fetch full history for ancestry checks`)
-- Current task: P0 complete; release hardening findings resolved
-- Next action: final P0 review and creation of `codex/audit-p1-runtime` from P0.
+- Last completed implementation commit: `b9ad553` (`fix(release): fetch full history for ancestry checks`)
+- Current task: P0 complete, globally reviewed, and fully reverified on final HEAD
+- Next action: create `codex/audit-p1-runtime` directly from this verified P0 branch.
 
 ## Completed
 
@@ -71,6 +71,15 @@ Last updated: 2026-08-13
 | `bun test scripts/{package-manifests,prepare-release,publish-release,release-contract}.test.ts` | Pass; 13 targeted tests cover dynamic internal-version rewrites, bumped-release validation, canonical metadata, ancestry gating, resilient publish skip/stop/order, and offline dry-run behavior. |
 | `bun run release:publish -- --dry-run` | Pass; printed the exact seven package@version order without a registry lookup or npm publish. |
 | `bun test scripts/release-ancestry.test.ts` | Pass; a local bare Git repository proves a historical `main` ancestor passes after fetch while a commit on an outside branch fails. |
+| Final `bun install --frozen-lockfile` | Pass; 365 installs checked with no changes. |
+| Final `bun run check` | Pass; Biome checked 83 files with no fixes. |
+| Final `bun run typecheck` | Pass; no TypeScript diagnostics. |
+| Final `bun test` | Pass; 77 tests, 0 failures across 18 files. |
+| Final `bun run build` | Pass; exactly 7 public package distributions built. |
+| Final `bun run pack` | Pass; exactly 7 public package tarballs created; playground excluded. |
+| Final `bun run test:tarballs` | Pass with npm registry access; all 7 tarballs installed and exercised externally. A prior sandboxed attempt failed only because npm registry DNS returned `ENOTFOUND`, which npm reported misleadingly as `react@undefined`; no manifest or peer conflict was present. |
+| Final `bun run --cwd apps/playground build` | Pass as a separate private-app gate; the pre-existing Angular chunk-size warning remains. |
+| Final release preparation and publish dry-run | Pass; exact seven-package order printed without publication. |
 
 ## Decisions and deviations
 
