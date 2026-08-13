@@ -16,13 +16,18 @@
     "typecheck": "bunx tsc -p tsconfig.json --noEmit",
     "playground": "bun run --cwd apps/playground dev",
     "pack": "bun scripts/pack-packages.ts",
-    "test:tarballs": "bun scripts/test-tarballs.ts"
+    "test:tarballs": "bun scripts/test-tarballs.ts",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release:prepare": "bun scripts/prepare-release.ts --dry-run"
   },
   "devDependencies": {
     "@angular/compiler-cli": "18.2.13",
     "@biomejs/biome": "^2.5.0",
+    "@changesets/cli": "3.0.0",
     "@types/bun": "^1.3.14",
     "ng-packagr": "18.2.1",
-    "typescript": "5.5.4"
+    "typescript": "5.5.4",
+    "yaml": "2.9.0"
   }
 }

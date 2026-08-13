@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "@glowhop/core-tour",
+      "@glowhop/styles-tour",
+      "@glowhop/react-tour",
+      "@glowhop/vue-tour",
+      "@glowhop/angular-tour",
+      "@glowhop/solid-tour",
+      "@glowhop/vanilla-tour"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": ["@glowhop/playground"],
+  "privatePackages": {
+    "version": false,
+    "tag": false
+  }
+}
