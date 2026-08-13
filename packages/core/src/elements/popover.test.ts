@@ -92,57 +92,97 @@ afterEach(() => {
 });
 
 describe("PopoverElement positioning", () => {
-  test("centers all placements on the target before viewport adjustment", () => {
-    const popover = new PopoverElement<string>(new MockElement(100, 60) as unknown as HTMLElement);
-    const target = rect(140, 90, 20, 20);
-    const expected = {
-      bottom: { arrowOffset: 50, x: 100, y: 124 },
-      left: { arrowOffset: 30, x: 26, y: 70 },
-      right: { arrowOffset: 30, x: 174, y: 70 },
-      top: { arrowOffset: 50, x: 100, y: 16 },
-    } as const;
+  const positionCases = [
+    {
+      expected: { arrowOffset: 50, placement: "bottom", x: 100, y: 114 },
+      name: "bottom without horizontal overflow",
+      target: rect(140, 80, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 16, placement: "bottom", x: 14, y: 114 },
+      name: "bottom with left overflow",
+      target: rect(20, 80, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 84, placement: "bottom", x: 186, y: 114 },
+      name: "bottom with right overflow",
+      target: rect(260, 80, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 50, placement: "top", x: 100, y: 26 },
+      name: "top without horizontal overflow",
+      target: rect(140, 100, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 16, placement: "top", x: 14, y: 26 },
+      name: "top with left overflow",
+      target: rect(20, 100, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 84, placement: "top", x: 186, y: 26 },
+      name: "top with right overflow",
+      target: rect(260, 100, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 30, placement: "right", x: 174, y: 60 },
+      name: "right without vertical overflow",
+      target: rect(140, 80, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 16, placement: "right", x: 174, y: 14 },
+      name: "right with top overflow",
+      target: rect(140, 20, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 44, placement: "right", x: 174, y: 126 },
+      name: "right with bottom overflow",
+      target: rect(140, 160, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 30, placement: "left", x: 26, y: 60 },
+      name: "left without vertical overflow",
+      target: rect(140, 80, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 16, placement: "left", x: 26, y: 14 },
+      name: "left with top overflow",
+      target: rect(140, 20, 20, 20),
+    },
+    {
+      expected: { arrowOffset: 44, placement: "left", x: 26, y: 126 },
+      name: "left with bottom overflow",
+      target: rect(140, 160, 20, 20),
+    },
+  ] as const;
 
-    for (const placement of ["top", "bottom", "left", "right"] as const) {
-      assert.deepEqual(popover.resolvePosition(target, createStep([placement])), {
-        ...expected[placement],
-        placement,
-      });
-    }
-  });
+  for (const scenario of positionCases) {
+    test(`positions ${scenario.name} and keeps the arrow anchored`, () => {
+      const popover = new PopoverElement<string>(
+        new MockElement(100, 60) as unknown as HTMLElement,
+      );
 
-  test("clamps top and bottom candidates against both horizontal viewport edges", () => {
-    const popover = new PopoverElement<string>(new MockElement(100, 60) as unknown as HTMLElement);
+      const position = popover.resolvePosition(
+        scenario.target,
+        createStep([scenario.expected.placement]),
+      );
 
-    assert.deepEqual(popover.resolvePosition(rect(20, 80, 20, 20), createStep(["bottom"])), {
-      arrowOffset: 16,
-      placement: "bottom",
-      x: 14,
-      y: 114,
+      assert.deepEqual(position, scenario.expected);
+      assert.ok(position.x >= 14);
+      assert.ok(position.y >= 14);
+      assert.ok(position.x + 100 <= 300 - 14);
+      assert.ok(position.y + 60 <= 200 - 14);
+
+      const targetAnchor =
+        position.placement === "top" || position.placement === "bottom"
+          ? scenario.target.left + scenario.target.width / 2
+          : scenario.target.top + scenario.target.height / 2;
+      const arrowAnchor =
+        position.placement === "top" || position.placement === "bottom"
+          ? position.x + (position.arrowOffset ?? 0)
+          : position.y + (position.arrowOffset ?? 0);
+      assert.equal(arrowAnchor, targetAnchor);
     });
-    assert.deepEqual(popover.resolvePosition(rect(260, 100, 20, 20), createStep(["top"])), {
-      arrowOffset: 84,
-      placement: "top",
-      x: 186,
-      y: 26,
-    });
-  });
-
-  test("clamps left and right candidates against both vertical viewport edges", () => {
-    const popover = new PopoverElement<string>(new MockElement(100, 60) as unknown as HTMLElement);
-
-    assert.deepEqual(popover.resolvePosition(rect(140, 20, 20, 20), createStep(["right"])), {
-      arrowOffset: 16,
-      placement: "right",
-      x: 174,
-      y: 14,
-    });
-    assert.deepEqual(popover.resolvePosition(rect(140, 160, 20, 20), createStep(["left"])), {
-      arrowOffset: 44,
-      placement: "left",
-      x: 26,
-      y: 126,
-    });
-  });
+  }
 
   test("rejects a candidate whose arrow would overlap a corner", () => {
     const popover = new PopoverElement<string>(new MockElement(100, 60) as unknown as HTMLElement);
