@@ -12,6 +12,7 @@ coverage/
 .vite-temp/
 .turbo/
 .cache/
+.worktrees/
 
 # Environment files
 .env
