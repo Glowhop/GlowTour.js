@@ -473,7 +473,6 @@ export class TourStore<T> {
 
   private _attachListeners(step: WorkflowStep<T>) {
     if (step.eventHandlers) {
-      //! update on resize, scroll, etc
       this.listenerCleanups = step.eventHandlers.map((handler) =>
         this._attachListener(step, handler),
       );
@@ -667,7 +666,7 @@ export class TourStore<T> {
     const step = this._getCurrentWorkflowStep();
     const animationOptions = this._getAnimationOptions(
       step?.indicateur,
-      this.workflow?.options.indicateur,
+      this.workflow?.options.indicator,
     );
     this.pointer.setAnimationOptions(animationOptions);
     this.pointer
@@ -682,7 +681,7 @@ export class TourStore<T> {
     const allowInteraction =
       step.behavior?.allowInteraction ?? this.workflow?.options.behavior?.allowInteraction ?? false;
     const disabled =
-      step.indicateur?.disabled ?? this.workflow?.options.indicateur?.disabled ?? false;
+      step.indicateur?.disabled ?? this.workflow?.options.indicator?.disabled ?? false;
 
     return allowInteraction && !disabled;
   }

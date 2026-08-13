@@ -2,7 +2,7 @@ import { Observable } from "@glowhop/observables";
 import type {
   DynamicStepProps,
   EventHandler,
-  IndicateurOptions,
+  IndicatorOptions,
   OverlayOptions,
   PopoverOptions,
   ScrollOptions,
@@ -19,7 +19,7 @@ export class WorkflowStep<T> {
   readonly target: TargetResolver;
   readonly overlay?: OverlayOptions;
   readonly popover?: PopoverOptions;
-  readonly indicateur?: IndicateurOptions;
+  readonly indicateur?: IndicatorOptions;
   readonly scroll?: ScrollOptions;
   readonly behavior?: StepBehavior;
   targetEl: HTMLElement | null;
@@ -35,7 +35,7 @@ export class WorkflowStep<T> {
     this.target = definition.target;
     this.overlay = definition.overlay;
     this.popover = definition.popover;
-    this.indicateur = definition.indicateur;
+    this.indicateur = definition.indicator;
     this.scroll = definition.scroll;
     this.behavior = definition.behavior;
     this.targetEl = null;
@@ -82,7 +82,7 @@ export class WorkflowStep<T> {
       target: this.target,
       overlay: this.overlay,
       popover: this.popover,
-      indicateur: this.indicateur,
+      indicator: this.indicateur,
       scroll: this.scroll,
       behavior: this.behavior,
       props: this.initialProps,

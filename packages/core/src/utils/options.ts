@@ -1,7 +1,7 @@
 import type {
   AnimationOptions,
   BaseOptions,
-  IndicateurOptions,
+  IndicatorOptions,
   OverlayOptions,
   PopoverOptions,
   ScrollOptions,
@@ -26,9 +26,9 @@ export function mergeOverlayOptions(
 }
 
 export function mergeIndicateurOptions(
-  defaults?: IndicateurOptions,
-  overrides?: IndicateurOptions,
-): IndicateurOptions | undefined {
+  defaults?: IndicatorOptions,
+  overrides?: IndicatorOptions,
+): IndicatorOptions | undefined {
   if (!defaults && !overrides) {
     return undefined;
   }

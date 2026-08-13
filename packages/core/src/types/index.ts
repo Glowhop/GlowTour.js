@@ -65,7 +65,7 @@ export interface BaseOptions {
   animation?: AnimationOptions;
 }
 
-export interface IndicateurOptions extends BaseOptions {
+export interface IndicatorOptions extends BaseOptions {
   disabled?: boolean;
   placementTryOrder?: TryOrderOptions[];
 }
@@ -136,7 +136,7 @@ export interface StartOptions {
   cancellable?: boolean;
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
-  indicateur?: IndicateurOptions;
+  indicator?: IndicatorOptions;
   scroll?: ScrollOptions;
   animated?: boolean;
   behavior?: StepBehavior;
@@ -210,7 +210,7 @@ export interface StepConstructor<T> {
   target: TargetResolver;
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
-  indicateur?: IndicateurOptions;
+  indicator?: IndicatorOptions;
   scroll?: ScrollOptions;
   behavior?: StepBehavior;
   props: DynamicStepProps<T>;

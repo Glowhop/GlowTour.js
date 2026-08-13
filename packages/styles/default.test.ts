@@ -42,6 +42,22 @@ describe("default tour theme", () => {
     }
   });
 
+  test("keeps the default theme minimal and motionless", () => {
+    assert.match(stylesheet, /--glow-tour-radius:\s*8px/);
+    assert.match(stylesheet, /--glow-tour-shadow:\s*0 4px 12px rgb\(0 0 0 \/ 8%\)/);
+    assert.doesNotMatch(stylesheet, /border-radius:\s*999px/);
+    assert.doesNotMatch(stylesheet, /color-mix\(/);
+    assert.doesNotMatch(stylesheet, /filter:\s*drop-shadow/);
+    assert.doesNotMatch(stylesheet, /transform:\s*translateY/);
+
+    const pointerContentRule = stylesheet.match(
+      /\[data-glow-tour-pointer-content\]\s*\{(?<declarations>[^}]*)\}/,
+    );
+
+    assert.ok(pointerContentRule?.groups?.declarations);
+    assert.doesNotMatch(pointerContentRule.groups.declarations, /transition/);
+  });
+
   test("covers keyboard focus, disabled controls and reduced motion", () => {
     assert.match(stylesheet, /:focus-visible/);
     assert.match(stylesheet, /:disabled|\[disabled\]/);
