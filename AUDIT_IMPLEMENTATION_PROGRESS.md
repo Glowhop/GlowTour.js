@@ -6,7 +6,7 @@ Last updated: 2026-08-13
 
 - Branch: `codex/audit-p0-release`
 - Parent branch: `main`
-- Last completed commit: `837d366` (`fix(release): harden package publishing`)
+- Last completed commit: `b9ad553` (`fix(release): fetch full history for ancestry checks`)
 - Current task: P0 complete; release hardening findings resolved
 - Next action: final P0 review and creation of `codex/audit-p1-runtime` from P0.
 
