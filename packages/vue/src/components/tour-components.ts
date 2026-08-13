@@ -155,7 +155,7 @@ export const GlowTourPointer = defineComponent({
           "data-glow-tour-pointer": "",
           ref: element,
         }),
-        slots.default?.(),
+        h("div", { "data-glow-tour-pointer-content": "" }, slots.default?.()),
       );
   },
 });

@@ -23,7 +23,8 @@ export const GLOW_TOUR_COMPONENT_TEMPLATES = {
   footer: "@if (!stepProps().hideFooter) { <footer data-glow-tour-footer><ng-content /></footer> }",
   popover:
     '<section #tourElement data-glow-tour-popover id="glow-tour-popover" tabindex="-1" role="dialog" aria-labelledby="glow-tour-title" aria-describedby="glow-tour-description"><ng-content /></section>',
-  pointer: '<div #tourElement data-glow-tour-pointer aria-hidden="true"><ng-content /></div>',
+  pointer:
+    '<div #tourElement data-glow-tour-pointer aria-hidden="true"><div data-glow-tour-pointer-content><ng-content /></div></div>',
   overlay:
     '<svg #tourElement data-glow-tour-overlay aria-hidden="true" role="presentation" focusable="false" viewBox="0 0 0 0"><path data-glow-tour-overlay-path fill-rule="evenodd" /><ng-content /></svg>',
   backTrigger:

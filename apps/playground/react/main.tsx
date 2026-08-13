@@ -61,9 +61,7 @@ function ReactPlayground() {
 
         <GlowTour.Root>
           <GlowTour.Overlay />
-          <GlowTour.Pointer>
-            <span data-glow-tour-pointer-content>☝️</span>
-          </GlowTour.Pointer>
+          <GlowTour.Pointer>☝️</GlowTour.Pointer>
           <GlowTour.Popover>
             <GlowTour.Header />
             <GlowTour.Content />

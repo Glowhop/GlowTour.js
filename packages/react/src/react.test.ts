@@ -33,8 +33,11 @@ describe("react adapter contract", () => {
     assert.equal(overlay.props.role, "presentation");
     assert.equal("data-glow-tour-overlay" in overlay.props, true);
 
-    const pointer = GlowTour.Pointer({});
+    const pointer = GlowTour.Pointer({ children: "☝️" });
     assert.equal(pointer.props["aria-hidden"], "true");
     assert.equal("data-glow-tour-pointer" in pointer.props, true);
+    assert.equal(pointer.props.children.type, "div");
+    assert.equal("data-glow-tour-pointer-content" in pointer.props.children.props, true);
+    assert.equal(pointer.props.children.props.children, "☝️");
   });
 });

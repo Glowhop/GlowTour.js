@@ -136,7 +136,7 @@ export function Pointer({ as: Component = "div", children, ...props }: PointerPr
         glowTour.state.registerElementPointer(element instanceof HTMLElement ? element : null);
       }}
     >
-      {children}
+      <div data-glow-tour-pointer-content>{children}</div>
     </Component>
   );
 }

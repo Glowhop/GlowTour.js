@@ -45,13 +45,13 @@ describe("multi-framework playground", () => {
     assert.equal(source.includes("previousLabel"), false);
   });
 
-  test("uses the default theme and orientable pointer content in every framework", () => {
+  test("uses the default theme without exposing the internal pointer wrapper", () => {
     for (const example of frameworkExamples) {
       const entry = readFileSync(example.entry, "utf8");
       const view = readFileSync(example.view, "utf8");
 
       assert.match(entry, /import "@glowhop\/styles-tour\/default\.css"/);
-      assert.match(view, /data-glow-tour-pointer-content/);
+      assert.doesNotMatch(view, /data-glow-tour-pointer-content/);
       assert.doesNotMatch(view, /class(?:Name)?=["'][^"']*\btour-pointer\b/);
     }
   });

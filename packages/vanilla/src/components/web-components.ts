@@ -161,6 +161,14 @@ export function registerGlowTourElements() {
     connectedCallback() {
       this.setAttribute("data-glow-tour-pointer", "");
       this.setAttribute("aria-hidden", "true");
+
+      if (!this.querySelector(":scope > [data-glow-tour-pointer-content]")) {
+        const content = document.createElement("div");
+        content.setAttribute("data-glow-tour-pointer-content", "");
+        content.append(...Array.from(this.childNodes));
+        this.replaceChildren(content);
+      }
+
       glowTour.state.registerElementPointer(this);
     }
 
