@@ -42,6 +42,11 @@ function stringArray(value: unknown): string[] {
   throw new Error("expected a string array");
 }
 
+function objectArray(value: unknown): Record<string, unknown>[] {
+  if (Array.isArray(value)) return value.map(record);
+  throw new Error("expected an object array");
+}
+
 function workflowUses(rawWorkflow: string): string[] {
   return [...rawWorkflow.matchAll(/^\s*uses:\s*([^\s#]+)/gm)].map((match) => match[1]);
 }
@@ -152,6 +157,9 @@ test("release workflow is GitHub-Release-only and delegates resumable publishing
   expect(stringArray(record(triggers.release).types)).toEqual(["published"]);
   expect(workflow.permissions).toEqual({ contents: "read", "id-token": "write" });
   expect(workflowUses(raw)).toEqual(actionPins.slice(0, 3));
+  const steps = objectArray(record(record(workflow.jobs).publish).steps);
+  const checkout = steps.find((step) => step.name === "Check out repository");
+  expect(record(checkout).with).toEqual({ "fetch-depth": 0, "persist-credentials": false });
   expect(raw).toContain("RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}");
   expect(raw).toContain('[[ "$RELEASE_PRERELEASE" != "false" ]]');
   expect(raw).toMatch(/\^v\(\[0-9\]\+\)\\\.\(\[0-9\]\+\)\\\.\(\[0-9\]\+\)\$/);
@@ -163,9 +171,8 @@ test("release workflow is GitHub-Release-only and delegates resumable publishing
 
   expect(raw).toContain("bun run release:publish");
   expect(raw).not.toMatch(/npm publish/);
-  expect(raw).toContain("git fetch origin main");
-  expect(raw).toContain('git merge-base --is-ancestor "$GITHUB_SHA" origin/main');
-  expect(raw.indexOf("git fetch origin main")).toBeLessThan(raw.indexOf("bun run release:publish"));
+  expect(raw).toContain('bun scripts/release-ancestry.ts "$GITHUB_SHA"');
+  expect(raw.indexOf("release-ancestry.ts")).toBeLessThan(raw.indexOf("bun run release:publish"));
   expect(raw).not.toContain("workflow_dispatch");
   expect(raw).not.toMatch(/^\s*push:/m);
   expect(raw).not.toMatch(/^\s*pull_request:/m);

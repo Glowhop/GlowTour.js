@@ -26,7 +26,7 @@ Each value was verified with `git ls-remote` directly against the official upstr
 
 - CI runs only for pull requests and pushes to `main`, with `contents: read` and cancellation of superseded ref runs.
 - Changesets runs only on pushes to `main`; it creates or updates a version PR, has no publish script, and needs only repository-content and PR write scopes.
-- Release runs only on a published GitHub Release. It fails prereleases explicitly, accepts only a `vX.Y.Z` tag, fetches `origin/main` and rejects a release SHA outside its ancestry, validates source and built manifests for all seven packages, and reruns the complete validation suite before npm is contacted.
+- Release runs only on a published GitHub Release. It checks out full Git history with `fetch-depth: 0` and `persist-credentials: false`, fails prereleases explicitly, accepts only a `vX.Y.Z` tag, then uses the testable ancestry helper to fetch `origin/main` and reject a release SHA outside its ancestry. It validates source and built manifests for all seven packages and reruns the complete validation suite before npm is contacted.
 - npm trusted publishing runs on Node 22.14.0 after installing npm 11.5.1, with only `contents: read` and `id-token: write`. There is no `NPM_TOKEN`, `NODE_AUTH_TOKEN`, `registry-url`, or configured secret.
 - Publish targets are verified `dist` directories, with public access, ordered Core, Styles, React, Vue, Angular, Solid, Vanilla. Before each publish, the script looks up the exact package/version: existing versions are skipped, E404 versions are published, and every other registry failure stops the job. A rerun therefore resumes safely after partial publication.
 - `bun run release:prepare` is strictly a local `--dry-run`; it validates the seven source/built manifests and prints the order without npm network operations. `bun run release:publish -- --dry-run` likewise prints its order without a registry lookup or publish.
@@ -46,6 +46,7 @@ Each value was verified with `git ls-remote` directly against the official upstr
 - `bun test scripts/release-contract.test.ts` — pass, 5 tests.
 - `bun run release:prepare` — pass, non-publishing dry-run.
 - `bun run release:publish -- --dry-run` — pass, no registry operation or publish.
+- `bun test scripts/release-ancestry.test.ts` — pass; local bare-repository integration proves a non-tip ancestor of `main` passes with full history and a commit outside `main` fails.
 
 ## Self-review and concerns
 
