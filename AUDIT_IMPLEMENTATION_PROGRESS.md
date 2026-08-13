@@ -6,7 +6,7 @@ Last updated: 2026-08-13
 
 - Branch: `codex/audit-p0-release`
 - Parent branch: `main`
-- Last completed commit: pending `ci: add validation and npm release workflows`
+- Last completed commit: `367d4ee` (`ci: add validation and npm release workflows`)
 - Current task: P0 complete; release workflow and validation gates added
 - Next action: final P0 review and creation of `codex/audit-p1-runtime` from P0.
 
@@ -30,6 +30,7 @@ Last updated: 2026-08-13
 - Added a local `release:prepare` dry-run that validates the same artifact manifest contract and prints the publish order without making a registry request.
 - Added YAML-parsing release contract tests for triggers, permissions, full-SHA action pins, token absence, Changesets configuration, validation gates, and publish ordering.
 - Prior functional/doc commits retained in this branch: `3deede7` (`build(packages): emit publishable distributions`), `90079b6` (`test(packages): execute tarball consumer smoke tests`), and `c8b2540` (`docs(audit): record completed package smoke tests`).
+- This journal update closes the P0 release-setup record without listing its own documentation commit as a completed implementation commit.
 
 ## In progress
 
