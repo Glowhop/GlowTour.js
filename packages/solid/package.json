@@ -6,7 +6,13 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@glowhop/core-tour": "workspace:*",
+    "@glowhop/core-tour": "workspace:*"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "happy-dom": "^18.0.1",
     "solid-js": "^1.9.14"
   }
 }

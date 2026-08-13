@@ -1,6 +1,9 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import { createComponent, mergeProps } from "solid-js";
+import { Dynamic, renderToString } from "solid-js/web";
+import { GlowTour } from "./index";
 
 const packageManifest = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -11,6 +14,7 @@ describe("solid adapter contract", () => {
     assert.equal(existsSync(new URL("../package.json", import.meta.url)), true);
     assert.equal(packageManifest.name, "@glowhop/solid-tour");
     assert.deepEqual(packageManifest.exports, { ".": "./src/index.ts" });
+    assert.deepEqual(packageManifest.peerDependencies, { "solid-js": "^1.9.14" });
   });
 
   test("exports the shared core API and the Solid tour singleton", async () => {
@@ -57,5 +61,55 @@ describe("solid adapter contract", () => {
     assert.match(source, /finishLabel/);
     assert.match(source, /glowTour\.state\.back\(\)/);
     assert.match(source, /glowTour\.state\.next\(\)/);
+  });
+
+  test("renders the accessible popover, overlay and pointer structure", () => {
+    const html = renderToString(() => [
+      GlowTour.Popover({ children: "Content" }),
+      GlowTour.Overlay({}),
+      GlowTour.Pointer({ children: "Pointer" }),
+    ]);
+
+    assert.match(html, /role="dialog"/);
+    assert.match(html, /aria-labelledby="glow-tour-title"/);
+    assert.match(html, /aria-describedby="glow-tour-description"/);
+    assert.match(html, /data-glow-tour-overlay=""/);
+    assert.match(html, /role="presentation"/);
+    assert.match(html, /data-glow-tour-pointer-content=""/);
+  });
+
+  test("keeps a generated accessible name when aria-label is empty", () => {
+    const html = renderToString(() => GlowTour.NextTrigger({ "aria-label": "" }));
+
+    assert.match(html, /aria-label="Finish tour"/);
+  });
+
+  test("customizes triggers through a callback without nested controls", () => {
+    const html = renderToString(() =>
+      GlowTour.NextTrigger({
+        children: (props) =>
+          createComponent(
+            Dynamic,
+            mergeProps(props, {
+              component: "button",
+              children: "Continue",
+            }),
+          ),
+      }),
+    );
+
+    assert.equal(html.match(/<button/g)?.length, 1);
+    assert.match(html, /aria-label="Finish tour"/);
+    assert.match(html, />Continue<\/button>/);
+  });
+
+  test("passes the SolidJS browser lifecycle contract", () => {
+    const repositoryRoot = new URL("../../../", import.meta.url).pathname;
+    const result = Bun.spawnSync(
+      ["bun", "--conditions=browser", "test", "./packages/solid/src/solid.browser.ts"],
+      { cwd: repositoryRoot },
+    );
+
+    assert.equal(result.exitCode, 0, result.stderr.toString() || result.stdout.toString());
   });
 });

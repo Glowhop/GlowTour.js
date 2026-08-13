@@ -29,7 +29,7 @@ type PointerProps = ParentProps<
   }
 >;
 type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
-  children?: JSX.Element | ((props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => JSX.Element);
+  children?: (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => JSX.Element;
 };
 type BackTriggerProps = ButtonProps & { backLabel?: string };
 type NextTriggerProps = ButtonProps & { finishLabel?: string; nextLabel?: string };
@@ -241,7 +241,7 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
         return local["aria-controls"] ?? POPOVER_ID;
       },
       get "aria-label"() {
-        return local["aria-label"] ?? label();
+        return local["aria-label"] || label();
       },
       "data-action": "back",
       "data-glow-tour-back-trigger": true,
@@ -262,13 +262,13 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
       return !snapshot().isFirstStep && !stepProps().hideBackButton;
     },
     get children() {
-      if (typeof local.children === "function") return local.children(buttonProps);
+      if (local.children) return local.children(buttonProps);
       return createComponent(
         Dynamic,
         mergeProps(buttonProps, {
           component: "button",
           get children() {
-            return local.children ?? label();
+            return label();
           },
         }),
       );
@@ -298,7 +298,7 @@ export function NextTrigger(props: NextTriggerProps): JSX.Element {
         return local["aria-controls"] ?? POPOVER_ID;
       },
       get "aria-label"() {
-        return local["aria-label"] ?? label();
+        return local["aria-label"] || label();
       },
       "data-action": "next",
       "data-glow-tour-next-trigger": true,
@@ -319,13 +319,13 @@ export function NextTrigger(props: NextTriggerProps): JSX.Element {
       return !stepProps().hideNextButton;
     },
     get children() {
-      if (typeof local.children === "function") return local.children(buttonProps);
+      if (local.children) return local.children(buttonProps);
       return createComponent(
         Dynamic,
         mergeProps(buttonProps, {
           component: "button",
           get children() {
-            return local.children ?? label();
+            return label();
           },
         }),
       );
