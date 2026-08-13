@@ -11,18 +11,23 @@
       <section class="app-panel shadow-sm ring-1 ring-black/5">
         <h1 class="text-3xl font-semibold tracking-tight">Vanilla app</h1>
         <button class="w-fit" type="button" data-start-tour>Start tour</button>
-        <span id="vanilla-tour-id" class="target-pill">AHHH</span>
+        <span id="vanilla-tour-id-1" class="target-pill">Step 1</span>
+        <span id="vanilla-tour-id-2" class="target-pill">Step 2</span>
+        <button id="vanilla-tour-id-3" class="target-button target-shrink" type="button">
+          Step 3
+        </button>
 
         <glow-tour-root>
           <glow-tour-overlay></glow-tour-overlay>
+          <glow-tour-pointer class="tour-pointer">☝️</glow-tour-pointer>
           <glow-tour-popover>
             <glow-tour-header></glow-tour-header>
             <glow-tour-content></glow-tour-content>
             <glow-tour-footer>
-              <glow-tour-previous-trigger previous-label="prev"></glow-tour-previous-trigger>
+              <glow-tour-back-trigger back-label="Previous step"></glow-tour-back-trigger>
               <glow-tour-next-trigger
-                finish-label="finish"
-                next-label="next"
+                finish-label="Finish tour"
+                next-label="Next step"
               ></glow-tour-next-trigger>
             </glow-tour-footer>
           </glow-tour-popover>

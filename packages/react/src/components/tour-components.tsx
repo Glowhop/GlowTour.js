@@ -1,19 +1,24 @@
-import * as React from "react";
-import { useValue } from "@glowhop/react-observables";
-import { Observable } from "@glowhop/observables";
-import { glowTour } from "..";
 import type { WorkflowStep } from "@glowhop/core-tour";
+import { Observable } from "@glowhop/observables";
+import { useValue } from "@glowhop/react-observables";
+import * as React from "react";
+import { glowTour } from "../glow-tour";
 
 type ElementProps = React.HTMLAttributes<HTMLElement> & {
   as?: React.ElementType;
 };
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children">;
 type OverlayProps = Omit<React.SVGAttributes<SVGSVGElement>, "ref">;
+type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden"> & {
+  as?: React.ElementType;
+};
 type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type" | "children"> & {
   children?:
     | React.ReactElement
     | ((props: React.ButtonHTMLAttributes<HTMLButtonElement>) => React.ReactElement);
 };
+type BackTriggerProps = ButtonProps & { backLabel?: string };
+type NextTriggerProps = ButtonProps & { finishLabel?: string; nextLabel?: string };
 
 const POPOVER_ID = "glow-tour-popover";
 const TITLE_ID = "glow-tour-title";
@@ -37,10 +42,10 @@ export function Popover({
       {...props}
       aria-describedby={ariaDescribedby}
       aria-labelledby={ariaLabelledby}
-      data-glow-tour-root
+      data-glow-tour-popover
       id={id}
       ref={(element: unknown) => {
-        if (element instanceof HTMLElement) glowTour.state.registerElementPopover(element);
+        glowTour.state.registerElementPopover(element instanceof HTMLElement ? element : null);
       }}
       tabIndex={-1}
       role={role}
@@ -121,12 +126,28 @@ export function Overlay({
   );
 }
 
+export function Pointer({ as: Component = "div", children, ...props }: PointerProps) {
+  return (
+    <Component
+      {...props}
+      aria-hidden="true"
+      data-glow-tour-pointer
+      ref={(element: unknown) => {
+        glowTour.state.registerElementPointer(element instanceof HTMLElement ? element : null);
+      }}
+    >
+      {children}
+    </Component>
+  );
+}
+
 export function BackTrigger({
   children,
+  backLabel,
   "aria-controls": ariaControls = POPOVER_ID,
   "aria-label": ariaLabel,
   ...props
-}: ButtonProps) {
+}: BackTriggerProps) {
   const isDisabled = useValue(glowTour.state.snapshot, (state) => {
     return state.canGoBack === false;
   });
@@ -145,9 +166,10 @@ export function BackTrigger({
     return state.hideBackButton;
   });
 
-  const label = useValue(glowTour.state.snapshot, (state) => {
+  const configuredLabel = useValue(glowTour.state.snapshot, (state) => {
     return state.startOptions.popover?.buttons?.backLabel ?? "Back step";
   });
+  const label = backLabel ?? configuredLabel;
 
   if (isHidden || isFirstStep) {
     return null;
@@ -182,10 +204,12 @@ export function BackTrigger({
 
 export function NextTrigger({
   children,
+  finishLabel,
+  nextLabel,
   "aria-controls": ariaControls = POPOVER_ID,
   "aria-label": ariaLabel,
   ...props
-}: ButtonProps) {
+}: NextTriggerProps) {
   const isDisabled = useValue(glowTour.state.snapshot, (state) => {
     return state.canGoNext === false;
   });
@@ -196,11 +220,15 @@ export function NextTrigger({
     return state.hideNextButton;
   });
 
+  const isStepDisabled = useValue(stepProps, (state) => {
+    return state.disableNextButton;
+  });
+
   const isLastStep = useValue(glowTour.state.snapshot, (state) => {
     return state.isLastStep;
   });
 
-  const { nextLabel, finishLabel } = useValue(glowTour.state.snapshot, (state) => {
+  const configuredLabels = useValue(glowTour.state.snapshot, (state) => {
     return {
       nextLabel: state.startOptions.popover?.buttons?.nextLabel ?? "Next step",
       finishLabel: state.startOptions.popover?.buttons?.finishLabel ?? "Finish tour",
@@ -211,17 +239,18 @@ export function NextTrigger({
     return null;
   }
 
-  const label = isLastStep ? finishLabel : nextLabel;
+  const label = isLastStep
+    ? (finishLabel ?? configuredLabels.finishLabel)
+    : (nextLabel ?? configuredLabels.nextLabel);
 
   const baseProps = {
     "aria-controls": ariaControls,
     "aria-label": ariaLabel || label,
-    disabled: isDisabled,
+    disabled: isDisabled || isStepDisabled,
     type: "button",
     "data-action": "next",
     "data-glow-tour-next-trigger": true,
     onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
-      console.log("NextTrigger clicked");
       event.preventDefault();
       glowTour.state.next();
     },
@@ -262,6 +291,7 @@ export const GlowTour = {
   Content,
   Footer,
   Overlay,
+  Pointer,
   BackTrigger,
   NextTrigger,
 };

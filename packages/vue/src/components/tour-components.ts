@@ -1,119 +1,188 @@
-import { defineComponent, h, onBeforeUnmount, onMounted, ref } from "vue";
-import { type GlowTourElementName, glowTour } from "../../../core/src";
-
-function namedComponentName(name: string) {
-  return `GlowTour${name}`;
-}
+import type { DynamicStepProps, WorkflowState } from "@glowhop/core-tour";
+import type { VNodeChild } from "vue";
+import {
+  defineComponent,
+  h,
+  mergeProps,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
+import { glowTour } from "../glow-tour";
 
 const POPOVER_ID = "glow-tour-popover";
 const TITLE_ID = "glow-tour-title";
 const DESCRIPTION_ID = "glow-tour-description";
 
-function useTourElement(name: GlowTourElementName) {
-  const element = ref<Element | null>(null);
+function componentName(name: string) {
+  return `GlowTour${name}`;
+}
 
-  onMounted(() => {
-    glowTour.state.registerElement(name, element.value);
+function useTourSnapshot() {
+  const snapshot = shallowRef<WorkflowState<VNodeChild>>(glowTour.state.get());
+  const unsubscribe = glowTour.state.subscribe((state) => {
+    snapshot.value = state;
   });
+  onBeforeUnmount(unsubscribe);
+  return snapshot;
+}
 
-  onBeforeUnmount(() => {
-    glowTour.state.registerElement(name, null);
-  });
+function useCurrentStepProps() {
+  const snapshot = useTourSnapshot();
+  const props = shallowRef<DynamicStepProps<VNodeChild>>({ content: null, title: null });
+  let unsubscribe: (() => void) | undefined;
 
-  return element;
+  watch(
+    () => snapshot.value.currentStep,
+    (step) => {
+      unsubscribe?.();
+      unsubscribe = undefined;
+      if (!step) {
+        props.value = { content: null, title: null };
+        return;
+      }
+      props.value = step.currentProps.get();
+      unsubscribe = step.currentProps.subscribe((value) => {
+        props.value = value;
+      });
+    },
+    { immediate: true },
+  );
+
+  onBeforeUnmount(() => unsubscribe?.());
+  return props;
 }
 
 export const GlowTourRoot = defineComponent({
-  name: namedComponentName("Root"),
-  setup(_props, { slots }) {
-    const element = useTourElement("root");
-    return () => h("section", { "data-glow-tour-root": "", ref: element }, slots.default?.());
+  name: componentName("Root"),
+  inheritAttrs: false,
+  setup(_props, { attrs, slots }) {
+    return () => h("section", mergeProps(attrs, { "data-glow-tour-root": "" }), slots.default?.());
   },
 });
 
 export const GlowTourHeader = defineComponent({
-  name: namedComponentName("Header"),
-  props: {
-    id: { default: TITLE_ID, type: String },
-  },
-  setup(props, { slots }) {
-    const element = useTourElement("header");
+  name: componentName("Header"),
+  inheritAttrs: false,
+  props: { id: { default: TITLE_ID, type: String } },
+  setup(props, { attrs }) {
+    const stepProps = useCurrentStepProps();
     return () =>
-      h("header", { "data-glow-tour-header": "", id: props.id, ref: element }, slots.default?.());
+      h("header", mergeProps(attrs, { "data-glow-tour-header": "", id: props.id }), [
+        stepProps.value.title,
+      ]);
   },
 });
 
 export const GlowTourContent = defineComponent({
-  name: namedComponentName("Content"),
+  name: componentName("Content"),
+  inheritAttrs: false,
   props: {
     ariaLive: { default: "polite", type: String },
     id: { default: DESCRIPTION_ID, type: String },
   },
-  setup(props, { slots }) {
-    const element = useTourElement("content");
+  setup(props, { attrs }) {
+    const stepProps = useCurrentStepProps();
     return () =>
       h(
         "div",
-        { "aria-live": props.ariaLive, "data-glow-tour-content": "", id: props.id, ref: element },
-        slots.default?.(),
+        mergeProps(attrs, {
+          "aria-live": props.ariaLive,
+          "data-glow-tour-content": "",
+          id: props.id,
+        }),
+        [stepProps.value.content],
       );
   },
 });
 
 export const GlowTourFooter = defineComponent({
-  name: namedComponentName("Footer"),
-  setup(_props, { slots }) {
-    const element = useTourElement("footer");
-    return () => h("footer", { "data-glow-tour-footer": "", ref: element }, slots.default?.());
+  name: componentName("Footer"),
+  inheritAttrs: false,
+  setup(_props, { attrs, slots }) {
+    const stepProps = useCurrentStepProps();
+    return () =>
+      stepProps.value.hideFooter
+        ? null
+        : h("footer", mergeProps(attrs, { "data-glow-tour-footer": "" }), slots.default?.());
   },
 });
 
 export const GlowTourPopover = defineComponent({
-  name: namedComponentName("Popover"),
+  name: componentName("Popover"),
+  inheritAttrs: false,
   props: {
     ariaDescribedby: { default: DESCRIPTION_ID, type: String },
     ariaLabelledby: { default: TITLE_ID, type: String },
     id: { default: POPOVER_ID, type: String },
     role: { default: "dialog", type: String },
   },
-  setup(props, { slots }) {
-    const element = useTourElement("popover");
+  setup(props, { attrs, slots }) {
+    const element = ref<HTMLElement | null>(null);
+    onMounted(() => glowTour.state.registerElementPopover(element.value));
+    onBeforeUnmount(() => glowTour.state.registerElementPopover(null));
     return () =>
       h(
         "section",
-        {
+        mergeProps(attrs, {
           "aria-describedby": props.ariaDescribedby,
           "aria-labelledby": props.ariaLabelledby,
           "data-glow-tour-popover": "",
           id: props.id,
           ref: element,
           role: props.role,
-        },
+          tabindex: -1,
+        }),
+        slots.default?.(),
+      );
+  },
+});
+
+export const GlowTourPointer = defineComponent({
+  name: componentName("Pointer"),
+  inheritAttrs: false,
+  setup(_props, { attrs, slots }) {
+    const element = ref<HTMLElement | null>(null);
+    onMounted(() => glowTour.state.registerElementPointer(element.value));
+    onBeforeUnmount(() => glowTour.state.registerElementPointer(null));
+    return () =>
+      h(
+        "div",
+        mergeProps(attrs, {
+          "aria-hidden": "true",
+          "data-glow-tour-pointer": "",
+          ref: element,
+        }),
         slots.default?.(),
       );
   },
 });
 
 export const GlowTourOverlay = defineComponent({
-  name: namedComponentName("Overlay"),
+  name: componentName("Overlay"),
+  inheritAttrs: false,
   props: {
     ariaHidden: { default: true, type: Boolean },
     focusable: { default: "false", type: String },
     viewBox: { default: "0 0 0 0", type: String },
   },
-  setup(props, { slots }) {
-    const element = useTourElement("overlay");
+  setup(props, { attrs, slots }) {
+    const element = ref<SVGSVGElement | null>(null);
+    onMounted(() => glowTour.state.registerElementOverlay(element.value));
+    onBeforeUnmount(() => glowTour.state.registerElementOverlay(null));
     return () =>
       h(
         "svg",
-        {
+        mergeProps(attrs, {
           "aria-hidden": props.ariaHidden,
           "data-glow-tour-overlay": "",
           focusable: props.focusable,
           ref: element,
           role: "presentation",
           viewBox: props.viewBox,
-        },
+        }),
         [
           h("path", { "data-glow-tour-overlay-path": "", "fill-rule": "evenodd" }),
           slots.default?.(),
@@ -123,69 +192,74 @@ export const GlowTourOverlay = defineComponent({
 });
 
 export const GlowTourBackTrigger = defineComponent({
-  name: namedComponentName("BackTrigger"),
+  name: componentName("BackTrigger"),
+  inheritAttrs: false,
   props: {
     ariaControls: { default: POPOVER_ID, type: String },
-    ariaKeyshortcuts: { default: "ArrowLeft", type: String },
-    ariaLabel: { default: "Back step", type: String },
-    backLabel: { default: "back", type: String },
+    ariaLabel: { type: String },
+    backLabel: { type: String },
   },
-  setup(props, { slots }) {
-    const element = useTourElement("back-trigger");
-    return () =>
-      h(
+  setup(props, { attrs, slots }) {
+    const snapshot = useTourSnapshot();
+    const stepProps = useCurrentStepProps();
+    return () => {
+      if (snapshot.value.isFirstStep || stepProps.value.hideBackButton) return null;
+      const label =
+        props.backLabel ?? snapshot.value.startOptions.popover?.buttons?.backLabel ?? "Back step";
+      return h(
         "button",
-        {
+        mergeProps(attrs, {
           "aria-controls": props.ariaControls,
-          "aria-keyshortcuts": props.ariaKeyshortcuts,
-          "aria-label": props.ariaLabel,
+          "aria-label": props.ariaLabel ?? label,
           "data-action": "back",
           "data-glow-tour-back-trigger": "",
-          ref: element,
+          disabled: !snapshot.value.canGoBack || stepProps.value.disableBackButton,
+          onClick: (event: MouseEvent) => {
+            event.preventDefault();
+            void glowTour.state.back();
+          },
           type: "button",
-        },
-        slots.default?.() ?? props.backLabel,
+        }),
+        slots.default?.() ?? label,
       );
+    };
   },
 });
 
 export const GlowTourNextTrigger = defineComponent({
-  name: namedComponentName("NextTrigger"),
+  name: componentName("NextTrigger"),
+  inheritAttrs: false,
   props: {
     ariaControls: { default: POPOVER_ID, type: String },
-    ariaKeyshortcuts: { default: "Enter ArrowRight", type: String },
-    ariaLabel: { default: "Next step", type: String },
-    finishLabel: { default: "finish", type: String },
-    nextLabel: { default: "next", type: String },
+    ariaLabel: { type: String },
+    finishLabel: { type: String },
+    nextLabel: { type: String },
   },
-  setup(props, { slots }) {
-    const element = useTourElement("next-trigger");
-    const isLastStep = ref(glowTour.state.get().isLastStep);
-    let unsubscribe: (() => void) | undefined;
-
-    onMounted(() => {
-      unsubscribe = glowTour.state.subscribe((state) => {
-        isLastStep.value = state.isLastStep;
-      });
-    });
-
-    onBeforeUnmount(() => {
-      unsubscribe?.();
-    });
-
-    return () =>
-      h(
+  setup(props, { attrs, slots }) {
+    const snapshot = useTourSnapshot();
+    const stepProps = useCurrentStepProps();
+    return () => {
+      if (stepProps.value.hideNextButton) return null;
+      const labels = snapshot.value.startOptions.popover?.buttons;
+      const label = snapshot.value.isLastStep
+        ? (props.finishLabel ?? labels?.finishLabel ?? "Finish tour")
+        : (props.nextLabel ?? labels?.nextLabel ?? "Next step");
+      return h(
         "button",
-        {
+        mergeProps(attrs, {
           "aria-controls": props.ariaControls,
-          "aria-keyshortcuts": props.ariaKeyshortcuts,
-          "aria-label": props.ariaLabel,
+          "aria-label": props.ariaLabel ?? label,
           "data-action": "next",
           "data-glow-tour-next-trigger": "",
-          ref: element,
+          disabled: !snapshot.value.canGoNext || stepProps.value.disableNextButton,
+          onClick: (event: MouseEvent) => {
+            event.preventDefault();
+            void glowTour.state.next();
+          },
           type: "button",
-        },
-        slots.default?.() ?? (isLastStep.value ? props.finishLabel : props.nextLabel),
+        }),
+        slots.default?.() ?? label,
       );
+    };
   },
 });

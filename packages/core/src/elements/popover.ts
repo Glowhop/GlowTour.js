@@ -1,4 +1,5 @@
-import type { StepDefinition } from "../types";
+import type { WorkflowStep } from "../engine/workflow-step";
+import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { isInViewport, roundByDPR, viewportDimensions } from "../utils/utils";
 import GlowTourElement from "./base";
 
@@ -6,21 +7,27 @@ const DEFAULT_POPOVER_GAP = 14;
 const DEFAULT_TRY_ORDER = ["bottom", "top", "right", "left"] as const;
 const REPLACEMENT_DIFF = 50; // pixels
 
-type PopoverPlacement = (typeof DEFAULT_TRY_ORDER)[number];
+export interface PopoverPosition {
+  placement: ResolvedPlacement;
+  x: number;
+  y: number;
+}
 
 export default class PopoverElement<T> extends GlowTourElement<T> {
-  protected _getNextStyles(position: DOMRect, step: StepDefinition<T>): Keyframe {
-    const nextPosition = this._getNextPosition(position, step);
+  protected _getNextStyles(position: DOMRect, step: WorkflowStep<T>): Keyframe {
+    const nextPosition = this.resolvePosition(position, step);
+    this.element.setAttribute("data-glow-tour-placement", nextPosition.placement);
 
     return {
       transform: `translate(${roundByDPR(nextPosition.x)}px, ${roundByDPR(nextPosition.y)}px)`,
     };
   }
 
-  protected _getNextPosition(targetPosition: DOMRect, step: StepDefinition<T>) {
+  resolvePosition(targetPosition: DOMRect, step: WorkflowStep<T>): PopoverPosition {
     const currentElement = this.getElement();
     if (!currentElement) {
       return {
+        placement: "center",
         x: 0,
         y: 0,
       };
@@ -30,7 +37,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
 
     const popoverPosition = currentElement.getBoundingClientRect();
 
-    const candidates: Record<PopoverPlacement, { x: number; y: number }> = {
+    const candidates: Record<TryOrderOptions, { x: number; y: number }> = {
       top: {
         x: targetPosition.left,
         y: targetPosition.top - popoverPosition.height - gap,
@@ -61,13 +68,14 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       });
 
       if (isVisible) {
-        return candidate;
+        return { ...candidate, placement };
       }
     }
 
     const viewport = viewportDimensions();
 
     return {
+      placement: "center",
       x: (viewport.width - popoverPosition.width) / 2,
       y: (viewport.height - popoverPosition.height) / 2,
     };
@@ -75,7 +83,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
 
   async moveToTarget(
     nextPosition: DOMRect,
-    step: StepDefinition<T>,
+    step: WorkflowStep<T>,
     appear: boolean,
     onChange?: () => void,
   ) {
@@ -96,18 +104,22 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     }
 
     el.style.setProperty("position", "fixed");
-    el.style.setProperty("z-index", "10000");
+    el.style.setProperty("z-index", "10001");
     el.style.setProperty("top", "0px");
     el.style.setProperty("left", "0px");
     el.style.setProperty("opacity", "0");
     el.style.setProperty("transform-origin", "center center");
+    if (!el.hasAttribute("tabindex")) {
+      el.setAttribute("tabindex", "-1");
+    }
     el.setAttribute("aria-hidden", "true");
     el.setAttribute("inert", "true");
     // el.style.setProperty("transform", "translate(0px, 0px)");
   }
 
-  updatePosition(nextPosition: DOMRect, step: StepDefinition<T>): void {
-    const nextCoordinates = this._getNextPosition(nextPosition, step);
+  updatePosition(nextPosition: DOMRect, step: WorkflowStep<T>): void {
+    const nextCoordinates = this.resolvePosition(nextPosition, step);
+    const currentPlacement = this.element.getAttribute("data-glow-tour-placement");
     const currentTransform = this.element.style.transform;
     const currentCoordinatesStr = currentTransform.match(/translate\(([^)]+)\)/)?.[1];
     const currentCoordinatesList = currentCoordinatesStr
@@ -117,12 +129,16 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     const diffX = Math.abs(nextCoordinates.x - currentCoordinates.x);
     const diffY = Math.abs(nextCoordinates.y - currentCoordinates.y);
 
-    if (diffX > REPLACEMENT_DIFF || diffY > REPLACEMENT_DIFF) {
+    if (
+      currentPlacement !== nextCoordinates.placement ||
+      diffX > REPLACEMENT_DIFF ||
+      diffY > REPLACEMENT_DIFF
+    ) {
       this.moveToTarget(nextPosition, step, false);
     }
   }
 
-  async _appear(position: DOMRect, step: StepDefinition<T>) {
+  async _appear(position: DOMRect, step: WorkflowStep<T>) {
     const defaultStyles = this._getNextStyles(position, step);
 
     for (const [key, value] of Object.entries(defaultStyles)) {

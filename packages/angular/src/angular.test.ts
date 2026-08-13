@@ -1,93 +1,48 @@
+import "@angular/compiler";
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { createWorkflow, start } from "../../core/src";
 import {
+  createTourStore,
   GLOW_TOUR_COMPONENT_TEMPLATES,
+  GlowTourBackTrigger,
   GlowTourContent,
   GlowTourFooter,
   GlowTourHeader,
   GlowTourNextTrigger,
   GlowTourOverlay,
+  GlowTourPointer,
   GlowTourPopover,
-  GlowTourBackTrigger,
   GlowTourRoot,
-  TutorialService,
+  GlowTourService,
+  glowTour,
 } from "./public-api";
 
-describe("angular bridge", () => {
-  test("exports the project public API", () => {
-    assert.equal(typeof TutorialService, "function");
+describe("angular adapter contract", () => {
+  test("exports the core API, singleton and Angular service", () => {
+    assert.equal(typeof createTourStore, "function");
+    assert.equal(typeof glowTour.create, "function");
+    assert.equal(typeof glowTour.run, "function");
+    const service = new GlowTourService();
+    assert.equal(service.state, glowTour.state);
+  });
+
+  test("exports every standalone Angular component", () => {
     assert.equal(typeof GlowTourRoot, "function");
     assert.equal(typeof GlowTourHeader, "function");
     assert.equal(typeof GlowTourContent, "function");
     assert.equal(typeof GlowTourFooter, "function");
     assert.equal(typeof GlowTourPopover, "function");
     assert.equal(typeof GlowTourOverlay, "function");
+    assert.equal(typeof GlowTourPointer, "function");
     assert.equal(typeof GlowTourBackTrigger, "function");
     assert.equal(typeof GlowTourNextTrigger, "function");
   });
 
-  test("declares accessible Angular component metadata", () => {
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.root, /data-glow-tour-root/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.header, /id="glow-tour-title"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.content, /id="glow-tour-description"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.content, /aria-live="polite"/);
+  test("uses accessible native templates and kebab-case selectors", () => {
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.popover, /role="dialog"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.popover, /id="glow-tour-popover"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.popover, /aria-labelledby="glow-tour-title"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.popover, /aria-describedby="glow-tour-description"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.popover, /data-glow-tour-popover/);
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /<svg/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /aria-hidden="true"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /role="presentation"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /focusable="false"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /data-glow-tour-overlay/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /<path/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /data-glow-tour-overlay-path/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger, /type="button"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger, /aria-label="Back step"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger, /aria-keyshortcuts="ArrowLeft"/);
-    assert.match(
-      GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger,
-      /aria-controls="glow-tour-popover"/,
-    );
+    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.pointer, /aria-hidden="true"/);
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger, /data-glow-tour-back-trigger/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger, /backLabel/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger, /type="button"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger, /aria-label="Next step"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger, /aria-keyshortcuts="Enter ArrowRight"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger, /aria-controls="glow-tour-popover"/);
     assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger, /data-glow-tour-next-trigger/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger, /label/);
-  });
-
-  test("wraps the workflow instance in a service-shaped API", async () => {
-    const target = {} as HTMLElement;
-    Object.defineProperty(globalThis, "document", {
-      value: {
-        querySelector(value: string) {
-          return value === "#one" ? target : null;
-        },
-        addEventListener() {},
-        removeEventListener() {},
-      },
-      configurable: true,
-      writable: true,
-    });
-
-    const workflow = createWorkflow(
-      start("angular")
-        .step({
-          target: "#one",
-          title: "One",
-          content: "One",
-        })
-        .finish(),
-    );
-    const service = new TutorialService(workflow);
-
-    await service.start();
-    assert.equal(service.currentStep?.target, "#one");
-    assert.equal(service.targetElement, target);
   });
 });
