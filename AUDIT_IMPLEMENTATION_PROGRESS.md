@@ -4,11 +4,11 @@ Last updated: 2026-08-13
 
 ## Current position
 
-- Branch: `codex/audit-p0-release`
-- Parent branch: `main`
-- Last completed implementation commit: `b9ad553` (`fix(release): fetch full history for ancestry checks`)
-- Current task: P0 complete, globally reviewed, and fully reverified on final HEAD
-- Next action: create `codex/audit-p1-runtime` directly from this verified P0 branch.
+- Branch: `codex/audit-p1-runtime`
+- Parent branch: `codex/audit-p0-release` at `577bd46`
+- Last completed commit: `577bd46` (`docs(audit): record final p0 verification`)
+- Current task: P1 runtime/controller architecture
+- Next action: replace mutable workflow definitions and `TourStore` with readonly definitions, `ActiveStep`, `TourController`, and transition coordination using TDD.
 
 ## Completed
 
@@ -41,7 +41,7 @@ Last updated: 2026-08-13
 
 ## In progress
 
-- No active P0 implementation work.
+- P1 runtime architecture, concurrency, cleanup, positioning, accessibility, and instance scoping.
 
 ## Remaining
 
@@ -107,6 +107,6 @@ Last updated: 2026-08-13
 
 ## Recovery instructions
 
-1. Open `.worktrees/audit-p0-release`.
+1. Open `.worktrees/audit-p0-release` (the worktree path is retained while the branch is now P1).
 2. Confirm the current branch with `git status --short --branch`.
-3. Perform final P0 review and create `codex/audit-p1-runtime` from the verified P0 branch.
+3. Continue the P1 core runtime task from the next action recorded above.
