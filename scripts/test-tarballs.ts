@@ -57,11 +57,20 @@ function assertPackedArtifact(packageName: PackageName) {
   assert.equal(manifest.name, packageName);
   assert.equal(manifest.type, "module");
   assert.deepEqual(manifest.files, ["**/*"]);
+  assert.deepEqual(manifest.repository, {
+    directory: `packages/${packageName.replace("@glowhop/", "").replace("-tour", "")}`,
+    type: "git",
+    url: "git+https://github.com/Glowhop/glow-tour.git",
+  });
   assert.match(JSON.stringify(manifest), /"exports"/);
   assert.doesNotMatch(JSON.stringify(manifest), /workspace:\*/);
   assert.doesNotMatch(JSON.stringify(manifest), /["']\.\/src\//);
   assert.doesNotMatch(contents, /package\/src\//);
   assert.doesNotMatch(contents, /(?<!\.d)\.ts$/m);
+  if (packageName === "@glowhop/styles-tour") {
+    assert.match(contents, /package\/default\.css$/m);
+    assert.match(contents, /package\/default\.css\.d\.ts$/m);
+  }
 }
 
 function writeConsumerFixture(directory: string) {
@@ -92,11 +101,29 @@ function writeConsumerFixture(directory: string) {
           "@angular/compiler-cli": "18.2.13",
           typescript: "5.5.4",
           "typescript-side-effect-checks": "npm:typescript@5.7.3",
+          vite: "6.4.3",
         },
       },
       null,
       2,
     )}\n`,
+  );
+  writeFileSync(
+    join(directory, "css-entry.ts"),
+    'import "@glowhop/styles-tour/default.css";\n',
+  );
+  writeFileSync(
+    join(directory, "vite.config.mts"),
+    `import { defineConfig } from "vite";
+
+export default defineConfig({
+  build: {
+    emptyOutDir: true,
+    lib: { entry: "./css-entry.ts", formats: ["es"] },
+    outDir: "css-dist",
+  },
+});
+`,
   );
   writeFileSync(
     join(directory, "runtime-imports.mjs"),
@@ -209,6 +236,11 @@ try {
     ["node_modules/typescript-side-effect-checks/bin/tsc", "--project", "tsconfig.json"],
     consumerDirectory,
   );
+  run("npx", ["vite", "build"], consumerDirectory);
+  const cssOutput = readdirSync(join(consumerDirectory, "css-dist"), { recursive: true }).find((fileName) =>
+    fileName.endsWith(".css"),
+  );
+  assert.ok(cssOutput, "Vite did not bundle the packaged stylesheet");
   run("npx", ["ngc", "--project", "angular-app/tsconfig.json"], consumerDirectory);
 } finally {
   rmSync(consumerDirectory, { force: true, recursive: true });

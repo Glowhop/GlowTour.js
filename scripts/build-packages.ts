@@ -1,5 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { buildPublishedManifest, type PackageManifest } from "./package-manifests";
 
 type PackageId = "core" | "react" | "vue" | "solid" | "vanilla";
 
@@ -36,37 +37,24 @@ function run(command: string, args: readonly string[]) {
   }
 }
 
-function buildManifest(packageDirectory: string) {
-  const source = JSON.parse(readFileSync(join(packageDirectory, "package.json"), "utf8")) as Record<
-    string,
-    unknown
-  >;
-  const manifest = {
-    ...source,
-    files: ["**/*"],
-    exports: preparePublishedValue(source.exports),
-    sideEffects: source.name === "@glowhop/styles-tour" ? ["*.css"] : source.name === "@glowhop/vanilla-tour",
-    types: preparePublishedValue(source.types),
-  };
+function readSourceManifest(packageDirectory: string): PackageManifest {
+  return JSON.parse(readFileSync(join(packageDirectory, "package.json"), "utf8")) as PackageManifest;
+}
 
-  delete manifest.devDependencies;
-  delete manifest.scripts;
-  const publishedManifest = preparePublishedValue(manifest);
+const workspaceVersions = Object.fromEntries(
+  ["core", "styles", "react", "vue", "angular", "solid", "vanilla"].map((packageId) => {
+    const source = readSourceManifest(join(packageRoot, packageId));
+    return [source.name, source.version];
+  }),
+);
+
+function buildManifest(packageDirectory: string) {
+  const source = readSourceManifest(packageDirectory);
+  const publishedManifest = buildPublishedManifest(source, workspaceVersions);
   writeFileSync(
     join(packageDirectory, "dist", "package.json"),
     `${JSON.stringify(publishedManifest, null, 2)}\n`,
   );
-}
-
-function preparePublishedValue(value: unknown): unknown {
-  if (typeof value === "string") return value.replace("./dist/", "./").replace("workspace:*", "0.1.0");
-  if (Array.isArray(value)) return value.map(preparePublishedValue);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, nestedValue]) => [key, preparePublishedValue(nestedValue)]),
-    );
-  }
-  return value;
 }
 
 async function buildPackage(build: PackageBuild) {

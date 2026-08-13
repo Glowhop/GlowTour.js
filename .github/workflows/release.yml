@@ -41,6 +41,10 @@ jobs:
             exit 1
           fi
           echo "RELEASE_VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
+      - name: Require the release commit on main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
       - name: Install npm with trusted publishing support
         run: |
           npm install --global npm@11.5.1
@@ -57,17 +61,5 @@ jobs:
           bun run test:tarballs
           bun run --cwd apps/playground build
           bun run release:prepare -- --expected-version "$RELEASE_VERSION"
-      - name: Publish core
-        run: npm publish ./packages/core/dist --access public
-      - name: Publish styles
-        run: npm publish ./packages/styles/dist --access public
-      - name: Publish React
-        run: npm publish ./packages/react/dist --access public
-      - name: Publish Vue
-        run: npm publish ./packages/vue/dist --access public
-      - name: Publish Angular
-        run: npm publish ./packages/angular/dist --access public
-      - name: Publish Solid
-        run: npm publish ./packages/solid/dist --access public
-      - name: Publish Vanilla
-        run: npm publish ./packages/vanilla/dist --access public
+      - name: Publish missing packages in order
+        run: bun run release:publish

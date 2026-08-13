@@ -19,7 +19,8 @@
     "test:tarballs": "bun scripts/test-tarballs.ts",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release:prepare": "bun scripts/prepare-release.ts --dry-run"
+    "release:prepare": "bun scripts/prepare-release.ts --dry-run",
+    "release:publish": "bun scripts/publish-release.ts"
   },
   "devDependencies": {
     "@angular/compiler-cli": "18.2.13",

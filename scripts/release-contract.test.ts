@@ -14,6 +14,7 @@ const packageNames = [
   "@glowhop/vanilla-tour",
 ] as const;
 const packageIds = ["core", "styles", "react", "vue", "angular", "solid", "vanilla"] as const;
+const repositoryUrl = "git+https://github.com/Glowhop/glow-tour.git";
 const actionPins = [
   "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", // v4.2.2
   "oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6", // v2.2.0
@@ -58,6 +59,35 @@ test("Changesets keeps every public package in one fixed release group", () => {
   expect(config.fixed).toEqual([packageNames]);
   expect(privatePackages).toEqual({ version: false, tag: false });
   expect(stringArray(config.ignore)).toContain("@glowhop/playground");
+});
+
+test("source manifests contain the repository metadata required for trusted publishing", () => {
+  for (const packageId of packageIds) {
+    const manifest = JSON.parse(read(`packages/${packageId}/package.json`)) as Record<string, unknown>;
+    expect(manifest.repository).toEqual({
+      directory: `packages/${packageId}`,
+      type: "git",
+      url: repositoryUrl,
+    });
+  }
+});
+
+test("the private playground stays outside all package build, pack, release, and tarball sets", () => {
+  const playground = JSON.parse(read("apps/playground/package.json")) as { private?: boolean };
+  const buildScript = read("scripts/build-packages.ts");
+  const packScript = read("scripts/pack-packages.ts");
+  const tarballScript = read("scripts/test-tarballs.ts");
+  const publishScript = read("scripts/publish-release.ts");
+
+  expect(playground.private).toBe(true);
+  expect(stringArray(record(JSON.parse(read(".changeset/config.json"))).ignore)).toContain(
+    "@glowhop/playground",
+  );
+  for (const script of [buildScript, packScript, tarballScript, publishScript]) {
+    expect(script).not.toContain("playground");
+  }
+  expect(packScript).toContain('const packageIds = ["core", "styles", "react", "vue", "angular", "solid", "vanilla"]');
+  expect(tarballScript).not.toContain("@glowhop/playground");
 });
 
 test("CI validates pull requests and main with pinned actions and minimal permissions", () => {
@@ -110,7 +140,7 @@ test("Changesets opens version pull requests from main without publishing", () =
   expect(raw).not.toMatch(/npm publish|publish-script/);
 });
 
-test("release workflow is GitHub-Release-only and publishes validated built packages in order", () => {
+test("release workflow is GitHub-Release-only and delegates resumable publishing", () => {
   const path = ".github/workflows/release.yml";
   if (!existsSync(join(root, path))) throw new Error(`${path} is missing`);
 
@@ -131,10 +161,11 @@ test("release workflow is GitHub-Release-only and publishes validated built pack
   expect(raw).toContain("npm install --global npm@11.5.1");
   expect(raw).not.toMatch(/NPM_TOKEN|NODE_AUTH_TOKEN|secrets\./);
 
-  const publishCommands = [
-    ...raw.matchAll(/^\s*run:\s+npm publish (\.\/packages\/(\w+)\/dist) --access public$/gm),
-  ];
-  expect(publishCommands.map((match) => match[2])).toEqual(packageIds);
+  expect(raw).toContain("bun run release:publish");
+  expect(raw).not.toMatch(/npm publish/);
+  expect(raw).toContain("git fetch origin main");
+  expect(raw).toContain('git merge-base --is-ancestor "$GITHUB_SHA" origin/main');
+  expect(raw.indexOf("git fetch origin main")).toBeLessThan(raw.indexOf("bun run release:publish"));
   expect(raw).not.toContain("workflow_dispatch");
   expect(raw).not.toMatch(/^\s*push:/m);
   expect(raw).not.toMatch(/^\s*pull_request:/m);
@@ -146,5 +177,6 @@ test("ordinary local scripts contain no npm publish and retain a non-publishing 
   expect(manifest.scripts.changeset).toBe("changeset");
   expect(manifest.scripts["version-packages"]).toBe("changeset version");
   expect(manifest.scripts["release:prepare"]).toBe("bun scripts/prepare-release.ts --dry-run");
+  expect(manifest.scripts["release:publish"]).toBe("bun scripts/publish-release.ts");
   expect(Object.values(manifest.scripts).join("\n")).not.toMatch(/npm publish/);
 });
