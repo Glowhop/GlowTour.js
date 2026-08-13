@@ -23,4 +23,39 @@ describe("solid adapter contract", () => {
     assert.equal(typeof glowTour.run, "function");
     assert.equal(typeof glowTour.state.get, "function");
   });
+
+  test("exports every public SolidJS component", async () => {
+    const componentsModule = new URL("./components/tour-components.ts", import.meta.url);
+    assert.equal(existsSync(componentsModule), true);
+
+    const { GlowTour } = await import("./index");
+    for (const component of [
+      GlowTour.Root,
+      GlowTour.Header,
+      GlowTour.Content,
+      GlowTour.Footer,
+      GlowTour.Popover,
+      GlowTour.Overlay,
+      GlowTour.Pointer,
+      GlowTour.BackTrigger,
+      GlowTour.NextTrigger,
+    ]) {
+      assert.equal(typeof component, "function");
+    }
+  });
+
+  test("preserves the accessible React adapter contract", () => {
+    const componentsModule = new URL("./components/tour-components.ts", import.meta.url);
+    assert.equal(existsSync(componentsModule), true);
+
+    const source = readFileSync(componentsModule, "utf8");
+    assert.match(source, /role:.*"dialog"/);
+    assert.match(source, /"aria-hidden":\s*"true"/);
+    assert.match(source, /role:\s*"presentation"/);
+    assert.match(source, /data-glow-tour-pointer-content/);
+    assert.match(source, /backLabel/);
+    assert.match(source, /finishLabel/);
+    assert.match(source, /glowTour\.state\.back\(\)/);
+    assert.match(source, /glowTour\.state\.next\(\)/);
+  });
 });
