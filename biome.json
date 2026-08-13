@@ -7,7 +7,17 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["apps/**", "packages/**", "biome.json", "package.json", "tsconfig.json"]
+    "includes": [
+      "apps/**",
+      "!apps/**/dist",
+      "!apps/**/coverage",
+      "packages/**",
+      "!packages/**/dist",
+      "!packages/**/coverage",
+      "biome.json",
+      "package.json",
+      "tsconfig.json"
+    ]
   },
   "formatter": {
     "enabled": true,
