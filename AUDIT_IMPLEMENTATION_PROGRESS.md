@@ -6,8 +6,8 @@ Last updated: 2026-08-13
 
 - Branch: `codex/audit-p0-release`
 - Parent branch: `main`
-- Last completed commit: `3deede7` (`build(packages): emit publishable distributions`)
-- Current task: strengthen P0 tarball execution smoke coverage
+- Last completed commit: `90079b6` (`test(packages): execute tarball consumer smoke tests`)
+- Current task: P0 packaging and tarball execution smoke complete
 - Next action: add Changesets and CI/release workflows.
 
 ## Completed
@@ -26,7 +26,7 @@ Last updated: 2026-08-13
 
 ## In progress
 
-- Finalize the strengthened tarball smoke follow-up commit.
+- No active P0 implementation work.
 
 ## Remaining
 
@@ -73,4 +73,4 @@ Last updated: 2026-08-13
 
 1. Open `.worktrees/audit-p0-release`.
 2. Confirm the current branch with `git status --short --branch`.
-3. Add Changesets and CI/release workflows after the tarball execution-smoke follow-up commit.
+3. Add Changesets and CI/release workflows.

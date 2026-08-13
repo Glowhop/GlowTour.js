@@ -50,5 +50,6 @@ Status: DONE
 - `git diff --check` is clean. Generated `dist`, `.artifacts`, and playground output remain untracked and are excluded from Biome.
 - No package was published.
 - Vite reports a non-blocking Angular playground bundle size warning (about 1.38 MB minified). Code splitting is deferred because it changes application delivery behavior beyond P0 packaging.
-- Previous packaging commit: `3deede7` (`build(packages): emit publishable distributions`).
-- Follow-up commit: `test(packages): execute tarball consumer smoke tests` (recorded after commit creation).
+- Functional packaging commit: `3deede7` (`build(packages): emit publishable distributions`).
+- Functional smoke-test commit: `90079b6` (`test(packages): execute tarball consumer smoke tests`), with all final follow-up verification results recorded above.
+- Current documentation commit records this completed state without self-referencing its own hash.
