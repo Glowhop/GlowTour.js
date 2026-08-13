@@ -2,11 +2,20 @@
   "name": "@glowhop/vue-tour",
   "version": "0.1.0",
   "type": "module",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "dependencies": {
-    "@glowhop/core-tour": "workspace:*",
-    "vue": "^3.5.13"
+    "@glowhop/core-tour": "workspace:*"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "vue": "^3.5.0"
   }
 }

@@ -13,7 +13,9 @@ describe("solid adapter contract", () => {
   test("declares the SolidJS workspace package", () => {
     assert.equal(existsSync(new URL("../package.json", import.meta.url)), true);
     assert.equal(packageManifest.name, "@glowhop/solid-tour");
-    assert.deepEqual(packageManifest.exports, { ".": "./src/index.ts" });
+    assert.deepEqual(packageManifest.exports, {
+      ".": { import: "./dist/index.js", types: "./dist/index.d.ts" },
+    });
     assert.deepEqual(packageManifest.peerDependencies, { "solid-js": "^1.9.14" });
   });
 

@@ -2,8 +2,12 @@
   "name": "@glowhop/core-tour",
   "version": "0.1.0",
   "type": "module",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "scripts": {
     "typecheck": "bunx tsc -p tsconfig.json --noEmit"

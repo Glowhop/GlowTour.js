@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "type": "module",
   "files": [
-    "default.css"
+    "dist/**/*"
   ],
   "sideEffects": [
     "*.css"
   ],
   "exports": {
-    "./default.css": "./default.css"
+    "./default.css": "./dist/default.css"
   }
 }

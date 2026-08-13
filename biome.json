@@ -16,6 +16,7 @@
       "!!.worktrees",
       "!!apps/**/dist",
       "!!apps/**/coverage",
+      "!!.artifacts",
       "!!packages/**/dist",
       "!!packages/**/coverage"
     ]
