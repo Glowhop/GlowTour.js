@@ -189,7 +189,7 @@
 }
 
 [data-glow-tour-pointer][data-glow-tour-placement="left"] [data-glow-tour-pointer-content] {
-  transform: rotate(90deg);
+  transform: scaleX(-1) rotate(-90deg);
 }
 
 [data-glow-tour-pointer][data-glow-tour-placement="right"] [data-glow-tour-pointer-content] {

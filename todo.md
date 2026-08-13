@@ -9,6 +9,8 @@ P0
 
 P1
 [] probleme de gestion du style par défaut
+[] surcharge onEvent pour pouvoir mettre un event ou plusieurs 
 
 P2
 [] mega cleaning du code
+

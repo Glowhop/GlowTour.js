@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { describe, test } from "node:test";
+import { describe, test } from "bun:test";
 
 const stylesheet = readFileSync(new URL("./default.css", import.meta.url), "utf8");
 const packageManifest = JSON.parse(

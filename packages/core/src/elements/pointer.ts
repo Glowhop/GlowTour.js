@@ -7,10 +7,10 @@ const DEFAULT_INDICATOR_GAP = 16;
 const POINTER_ANIMATION_DISTANCE = 8;
 const POINTER_ANIMATION_DURATION = 800;
 const DEFAULT_TRY_ORDER = [
+  "left",
+  "right",
   "top",
   "bottom",
-  "right",
-  "left",
 ] as const satisfies readonly TryOrderOptions[];
 
 interface PointerPosition {

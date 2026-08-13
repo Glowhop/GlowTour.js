@@ -14,6 +14,9 @@ const tour = glowTour
         backLabel: "Previous step",
       },
     },
+    indicator: {
+      animated: false,
+    }
   })
   .step({
     target: "#react-tour-id-1",
@@ -28,6 +31,12 @@ const tour = glowTour
       color: "red",
     },
   })
+  .onBack(() => {
+    console.log("Back button clicked");
+  })
+  .onNext(() => {
+    console.log("Next button clicked");
+  })
   .step({
     target: "#react-tour-id-3",
     title: "React step",
@@ -35,6 +44,24 @@ const tour = glowTour
     behavior: {
       allowInteraction: true,
     },
+  })
+  .onEvent("click", (event) => {
+    console.log("Click event on step 3", event);
+    glowTour.state.next()
+  })
+  .step({
+    target: "#react-tour-id-2",
+    title: "React step",
+    content: "This step targets a real React-rendered element.",
+    overlay: {
+      color: "",
+    },
+    behavior: {
+      allowInteraction: true,
+    },
+    indicator: {
+      animated: true,
+    }
   })
   .finish();
 

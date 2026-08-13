@@ -197,10 +197,6 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       return;
     }
 
-    this.element.style.setProperty(
-      "transform",
-      `translate(${roundByDPR(nextCoordinates.x)}px, ${roundByDPR(nextCoordinates.y)}px)`,
-    );
   }
 
   async _appear(position: DOMRect, step: WorkflowStep<T>) {

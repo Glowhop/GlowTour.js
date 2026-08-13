@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, test } from "node:test";
+import { afterEach, beforeEach, describe, test } from "bun:test";
 import { WorkflowStep } from "../engine/workflow-step";
 import PointerElement from "./pointer";
 
