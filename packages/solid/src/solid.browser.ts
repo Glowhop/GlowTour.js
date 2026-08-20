@@ -1,135 +1,69 @@
-import { describe, test } from "bun:test";
+import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
-import type { SolidTourContent } from "./glow-tour";
+
+let window: Window;
+
+beforeEach(() => {
+  window = new Window();
+  Object.assign(globalThis, {
+    document: window.document,
+    Event: window.Event,
+    HTMLElement: window.HTMLElement,
+    MouseEvent: window.MouseEvent,
+    Node: window.Node,
+    SVGSVGElement: window.SVGSVGElement,
+    window,
+  });
+});
+
+afterEach(() => {
+  window.close();
+});
 
 describe("solid adapter browser behavior", () => {
-  test("updates mounted controls and cleans up subscriptions and element refs", async () => {
-    const window = new Window();
-    Object.assign(globalThis, {
-      document: window.document,
-      Event: window.Event,
-      HTMLElement: window.HTMLElement,
-      MouseEvent: window.MouseEvent,
-      Node: window.Node,
-      SVGSVGElement: window.SVGSVGElement,
-      window,
-    });
-
-    const [{ render }, { GlowTour, WorkflowStep, glowTour }] = await Promise.all([
+  test("connects an injected instance and applies one coherent root ID family", async () => {
+    const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("solid-js"),
       import("solid-js/web"),
       import("./index"),
     ]);
     const container = document.createElement("div");
     document.body.append(container);
+    const tour = createGlowTour();
 
-    const step = new WorkflowStep<SolidTourContent>({
-      target: "#target",
-      props: { content: "Initial content", title: "Initial title" },
-    });
-    const originalSnapshot = glowTour.state.get();
-    const originalNext = glowTour.state.next;
-    const originalRegisterPopover = glowTour.state.registerElementPopover;
-    const originalStateSubscribe = glowTour.state.subscribe;
-    const originalStepSubscribe = step.props.subscribe;
-    let activeStateSubscriptions = 0;
-    let activeStepSubscriptions = 0;
-    let nextCalls = 0;
-    const registeredPopovers: Array<HTMLElement | null> = [];
+    const dispose = render(
+      () =>
+        createComponent(GlowTour.Root, {
+          tour,
+          get children() {
+            return [
+              createComponent(GlowTour.Popover, { children: "Popover" }),
+              createComponent(GlowTour.Header, {}),
+              createComponent(GlowTour.Content, {}),
+              createComponent(GlowTour.NextTrigger, {}),
+            ];
+          },
+        }),
+      container,
+    );
 
-    glowTour.state.next = async () => {
-      nextCalls += 1;
-    };
-    glowTour.state.registerElementPopover = (element) => {
-      registeredPopovers.push(element);
-    };
-    glowTour.state.subscribe = (listener) => {
-      activeStateSubscriptions += 1;
-      const unsubscribe = originalStateSubscribe.call(glowTour.state, listener);
-      return () => {
-        activeStateSubscriptions -= 1;
-        unsubscribe();
-      };
-    };
-    step.props.subscribe = (listener) => {
-      activeStepSubscriptions += 1;
-      const unsubscribe = originalStepSubscribe.call(step.props, listener);
-      return () => {
-        activeStepSubscriptions -= 1;
-        unsubscribe();
-      };
-    };
-    glowTour.state.snapshot.set({
-      ...originalSnapshot,
-      canGoNext: true,
-      currentStep: step.getPublicProps(),
-      currentStepIndex: 0,
-      isFirstStep: true,
-      isLastStep: false,
-      name: "solid-browser-test",
-      status: "idle",
-      totalSteps: 1,
-    });
+    await Promise.resolve();
+    const root = container.querySelector<HTMLElement>("[data-glow-tour-root]");
+    const popover = container.querySelector<HTMLElement>("[data-glow-tour-popover]");
+    const title = container.querySelector<HTMLElement>("[data-glow-tour-header]");
+    const description = container.querySelector<HTMLElement>("[data-glow-tour-content]");
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
 
-    try {
-      const dispose = render(
-        () => [
-          GlowTour.Popover({ children: "Popover" }),
-          GlowTour.Header({}),
-          GlowTour.Content({}),
-          GlowTour.Footer({ children: "Footer" }),
-          GlowTour.NextTrigger({}),
-        ],
-        container,
-      );
+    assert.equal(root?.id, "glow-tour-root");
+    assert.equal(popover?.id, "glow-tour-popover");
+    assert.equal(title?.id, "glow-tour-title");
+    assert.equal(description?.id, "glow-tour-description");
+    assert.equal(popover?.getAttribute("aria-labelledby"), title?.id);
+    assert.equal(popover?.getAttribute("aria-describedby"), description?.id);
+    assert.equal(next?.getAttribute("aria-controls"), popover?.id);
 
-      const mountedPopover = registeredPopovers.at(-1);
-      assert.ok(mountedPopover);
-      assert.equal(mountedPopover.tagName, "SECTION");
-      assert.equal(container.querySelector("header")?.textContent, "Initial title");
-      assert.equal(
-        container.querySelector("[data-glow-tour-content]")?.textContent,
-        "Initial content",
-      );
-      assert.equal(container.querySelector("footer")?.textContent, "Footer");
-
-      const nextButton = container.querySelector<HTMLButtonElement>(
-        "[data-glow-tour-next-trigger]",
-      );
-      assert.ok(nextButton);
-      nextButton.click();
-      assert.equal(nextCalls, 1);
-
-      step.props.set((props) => ({
-        ...props,
-        content: "Updated content",
-        disableNextButton: true,
-        hideFooter: true,
-        title: "Updated title",
-      }));
-      await Promise.resolve();
-
-      assert.equal(container.querySelector("header")?.textContent, "Updated title");
-      assert.equal(
-        container.querySelector("[data-glow-tour-content]")?.textContent,
-        "Updated content",
-      );
-      assert.equal(container.querySelector("footer"), null);
-      assert.equal(nextButton.disabled, true);
-      assert.ok(activeStateSubscriptions > 0);
-      assert.ok(activeStepSubscriptions > 0);
-
-      dispose();
-      assert.equal(registeredPopovers.at(-1), null);
-      assert.equal(activeStateSubscriptions, 0);
-      assert.equal(activeStepSubscriptions, 0);
-    } finally {
-      glowTour.state.snapshot.set(originalSnapshot);
-      glowTour.state.next = originalNext;
-      glowTour.state.registerElementPopover = originalRegisterPopover;
-      glowTour.state.subscribe = originalStateSubscribe;
-      step.props.subscribe = originalStepSubscribe;
-      window.close();
-    }
+    dispose();
+    assert.equal(root?.id, "");
   });
 });

@@ -1,14 +1,15 @@
-import { GlowTour, glowTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTour } from "@glowhop/react-tour";
 import "@glowhop/styles-tour/default.css";
 import { createRoot } from "react-dom/client";
 import "../src/styles.css";
 
-const tour = glowTour
+const tour = createGlowTour();
+
+const workflow = tour
   .create("react-playground", {
     overlay: { color: "#101820", opacity: 0.58, padding: 10, radius: 8 },
     popover: {
       buttons: {
-        cancelLabel: "Exit tour",
         finishLabel: "Finish tour",
         nextLabel: "Next step",
         backLabel: "Previous step",
@@ -47,7 +48,7 @@ const tour = glowTour
   })
   .onEvent("click", (event) => {
     console.log("Click event on step 3", event);
-    glowTour.state.next();
+    void tour.advance();
   })
   .step({
     target: "#react-tour-id-2",
@@ -73,7 +74,7 @@ function ReactPlayground() {
       </a>
       <section className="app-panel shadow-sm ring-1 ring-black/5">
         <h1 className="text-3xl font-semibold tracking-tight">React app</h1>
-        <button type="button" className="w-fit" onClick={() => glowTour.run(tour)}>
+        <button type="button" className="w-fit" onClick={() => void tour.run(workflow)}>
           Start tour
         </button>
         <span id="react-tour-id-1" className="target-pill">
@@ -86,7 +87,7 @@ function ReactPlayground() {
           Step 3
         </button>
 
-        <GlowTour.Root>
+        <GlowTour.Root tour={tour}>
           <GlowTour.Overlay />
           <GlowTour.Pointer>☝️</GlowTour.Pointer>
           <GlowTour.Popover>
@@ -95,6 +96,7 @@ function ReactPlayground() {
             <GlowTour.Footer>
               <GlowTour.BackTrigger />
               <GlowTour.NextTrigger />
+              <GlowTour.CancelTrigger />
             </GlowTour.Footer>
           </GlowTour.Popover>
         </GlowTour.Root>

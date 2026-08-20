@@ -1,11 +1,13 @@
 /** @jsxImportSource solid-js */
 
-import { GlowTour, glowTour } from "@glowhop/solid-tour";
+import { createGlowTour, GlowTour } from "@glowhop/solid-tour";
 import "@glowhop/styles-tour/default.css";
 import { render } from "solid-js/web";
 import "../src/styles.css";
 
-const tour = glowTour
+const tour = createGlowTour();
+
+const workflow = tour
   .create("solid-playground", {
     overlay: { color: "#101820", opacity: 0.58, padding: 10, radius: 8 },
   })
@@ -36,7 +38,7 @@ function SolidPlayground() {
       </a>
       <section class="app-panel shadow-sm ring-1 ring-black/5">
         <h1 class="text-3xl font-semibold tracking-tight">SolidJS app</h1>
-        <button class="w-fit" type="button" onClick={() => void glowTour.run(tour)}>
+        <button class="w-fit" type="button" onClick={() => void tour.run(workflow)}>
           Start tour
         </button>
         <span id="solid-tour-id-1" class="target-pill">
@@ -49,7 +51,7 @@ function SolidPlayground() {
           Step 3
         </button>
 
-        <GlowTour.Root>
+        <GlowTour.Root tour={tour}>
           <GlowTour.Overlay />
           <GlowTour.Pointer>☝️</GlowTour.Pointer>
           <GlowTour.Popover>
@@ -58,6 +60,7 @@ function SolidPlayground() {
             <GlowTour.Footer>
               <GlowTour.BackTrigger />
               <GlowTour.NextTrigger />
+              <GlowTour.CancelTrigger />
             </GlowTour.Footer>
           </GlowTour.Popover>
         </GlowTour.Root>

@@ -1,43 +1,53 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { createTourStore, GlowTour, glowTour } from "./index";
+import * as runtime from "./index";
 
 describe("react adapter contract", () => {
-  test("exports the shared core API and the React tour singleton", () => {
-    assert.equal(typeof createTourStore, "function");
-    assert.equal(typeof glowTour.create, "function");
-    assert.equal(typeof glowTour.run, "function");
-    assert.equal(typeof glowTour.state.get, "function");
+  test("exports an instance factory and component namespace without legacy runtime values", () => {
+    assert.equal(typeof runtime.createGlowTour, "function");
+    assert.equal(typeof runtime.GlowTour, "object");
+
+    for (const legacy of [
+      "Builder",
+      "create",
+      "createTourStore",
+      "TourStore",
+      "WorkflowInstance",
+      "WorkflowStep",
+      "glowTour",
+    ]) {
+      assert.equal(legacy in runtime, false, `${legacy} must not be public`);
+    }
   });
 
-  test("exports every public React component", () => {
-    assert.equal(typeof GlowTour.Root, "function");
-    assert.equal(typeof GlowTour.Header, "function");
-    assert.equal(typeof GlowTour.Content, "function");
-    assert.equal(typeof GlowTour.Footer, "function");
-    assert.equal(typeof GlowTour.Popover, "function");
-    assert.equal(typeof GlowTour.Overlay, "function");
-    assert.equal(typeof GlowTour.Pointer, "function");
-    assert.equal(typeof GlowTour.BackTrigger, "function");
-    assert.equal(typeof GlowTour.NextTrigger, "function");
+  test("imports without DOM globals for SSR", () => {
+    const result = Bun.spawnSync({
+      cmd: [
+        "bun",
+        "-e",
+        "delete globalThis.document; delete globalThis.window; delete globalThis.HTMLElement; await import('./packages/react/src/index.ts');",
+      ],
+      cwd: process.cwd(),
+      stderr: "pipe",
+    });
+
+    assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
   });
 
-  test("declares accessible overlay and pointer defaults", () => {
-    const popover = GlowTour.Popover({});
-    assert.equal("data-glow-tour-popover" in popover.props, true);
-    assert.equal("data-glow-tour-root" in popover.props, false);
-
-    const overlay = GlowTour.Overlay({});
-    assert.equal(overlay.props["aria-hidden"], true);
-    assert.equal(overlay.props.focusable, "false");
-    assert.equal(overlay.props.role, "presentation");
-    assert.equal("data-glow-tour-overlay" in overlay.props, true);
-
-    const pointer = GlowTour.Pointer({ children: "☝️" });
-    assert.equal(pointer.props["aria-hidden"], "true");
-    assert.equal("data-glow-tour-pointer" in pointer.props, true);
-    assert.equal(pointer.props.children.type, "div");
-    assert.equal("data-glow-tour-pointer-content" in pointer.props.children.props, true);
-    assert.equal(pointer.props.children.props.children, "☝️");
+  test("exposes every instance-scoped component including cancellation", () => {
+    for (const component of [
+      runtime.GlowTour.Root,
+      runtime.GlowTour.Header,
+      runtime.GlowTour.Content,
+      runtime.GlowTour.Footer,
+      runtime.GlowTour.Popover,
+      runtime.GlowTour.Overlay,
+      runtime.GlowTour.Pointer,
+      runtime.GlowTour.BackTrigger,
+      runtime.GlowTour.NextTrigger,
+      runtime.GlowTour.CancelTrigger,
+    ]) {
+      assert.equal(typeof component, "function");
+    }
   });
 });
