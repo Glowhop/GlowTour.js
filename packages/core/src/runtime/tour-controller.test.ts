@@ -887,6 +887,41 @@ describe("instance-first TourController", () => {
     nestedUnsubscribe();
   });
 
+  test("stops an old publication when an earlier listener starts a replacement workflow", async () => {
+    const tour = createGlowTour<string>();
+    const oldWorkflow = tour
+      .create("old-publication")
+      .step({ content: "old", target: targetResolver, title: "old" })
+      .finish();
+    const replacement = tour
+      .create("replacement-publication")
+      .step({ content: "new", target: targetResolver, title: "new" })
+      .finish();
+    let replacementRun: Promise<void> | null = null;
+    const firstUnsubscribe = tour.state.subscribe((state) => {
+      if (state.name === "old-publication" && state.status === "finished") {
+        replacementRun = tour.run(replacement);
+      }
+    });
+    const secondNotifications: string[] = [];
+    const secondUnsubscribe = tour.state.subscribe((state) => {
+      if (
+        (state.name === "replacement-publication" && state.status === "starting") ||
+        (state.name === "old-publication" && state.status === "finished")
+      ) {
+        secondNotifications.push(`${state.name}:${state.status}`);
+      }
+    });
+
+    await tour.run(oldWorkflow);
+    await tour.advance();
+    await replacementRun;
+
+    assert.deepEqual(secondNotifications, ["replacement-publication:starting"]);
+    firstUnsubscribe();
+    secondUnsubscribe();
+  });
+
   test("does not retain or notify a listener that disposes during its initial snapshot", async () => {
     const driver = new RecordingDriver();
     const tour = new TourController<string>(driver);

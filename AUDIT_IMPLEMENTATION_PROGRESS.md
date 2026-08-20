@@ -6,7 +6,7 @@ Last updated: 2026-08-20
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 correction: `fix(core): stabilize state subscription reentrancy` (current branch tip).
+- Last completed P1 correction: `fix(core): stop stale nested state publications` (current branch tip).
 - Current task: P1 controller review corrections completed.
 - Next action: concrete DOM view driver, cleanup, and positioning.
 
@@ -22,6 +22,7 @@ Last updated: 2026-08-20
 - Moved readonly definition types, step-prop cloning/freezing, and workflow-definition creation into focused `packages/core/src/definition/` modules shared by the builder and active runtime.
 - Preserved original action/hook/view rejections when an `error` subscriber synchronously replaces the workflow, while preventing the stale operation from clearing the replacement view.
 - Stabilized state subscriptions with an internal listener set and snapshot-copy publication so nested subscriptions receive the current snapshot exactly once and initial-callback disposal cannot retain listeners.
+- Stopped an outer state publication as soon as a synchronous listener starts a nested publication, preventing later listeners from observing stale state after newer state.
 
 - Created the isolated worktree at `.worktrees/audit-p0-release`.
 - Installed dependencies with the frozen lockfile using Bun 1.3.12.
@@ -64,6 +65,16 @@ Last updated: 2026-08-20
 
 | Command | Result |
 | --- | --- |
+| P1 nested publication review RED | Red; the second existing listener received `replacement:starting` followed by stale `old:finished`. |
+| P1 nested publication focused tests | Pass; 6 subscription/publication tests, 0 failures. |
+| P1 nested publication controller tests | Pass; 33 tests, 0 failures. |
+| P1 nested publication `bun run check` | Pass; Biome checked 91 files with no fixes. |
+| P1 nested publication `bun run typecheck` | Pass; no TypeScript diagnostics. |
+| P1 nested publication `bun test` | Pass; 111 tests, 0 failures across 19 files. |
+| P1 nested publication `bun run build` | Pass; 7 public distributions built. |
+| P1 nested publication `bun run pack` | Pass; 7 tarballs packed. |
+| P1 nested publication `bun run test:tarballs` | Pass with registry access; smoke contract passed for all 7 packages. |
+| P1 nested publication `bun run --cwd apps/playground build` | Pass; known Angular chunk-size warning only. |
 | P1 subscription review RED | Red; action, hook, and view errors stopped rejecting after an `error` subscriber ran a replacement workflow, and a nested subscriber received `starting` twice. |
 | P1 subscription review focused controller tests | Pass; 32 tests, 0 failures. |
 | P1 subscription review `bun run check` | Pass; Biome checked 91 files with no fixes. |

@@ -110,3 +110,29 @@ The focused RED run contained four failures: three missing original rejections a
 - `bun run --cwd apps/playground build`: pass with the existing Angular chunk-size warning.
 
 Follow-up commit subject: `fix(core): stabilize state subscription reentrancy`.
+
+## Nested publication review follow-up — 2026-08-20
+
+Reviewed commit: `31d4ce2`.
+
+### Finding reproduced in RED
+
+With two existing listeners, the first could synchronously start a replacement workflow from `old:finished`. The nested publication delivered `replacement:starting`, then the suspended outer loop resumed and delivered stale `old:finished` to the second listener.
+
+### Correction
+
+Each publication now captures a monotonic revision. The stable listener loop checks that revision before and after every callback, so a nested publication proceeds normally while invalidating the rest of its outer publication.
+
+### Verification
+
+- Subscription/publication tests: 6 passed, 0 failed.
+- Controller tests: 33 passed, 0 failed.
+- `bun run check`: pass, 91 files.
+- `bun run typecheck`: pass.
+- `bun test`: pass, 111 tests across 19 files.
+- `bun run build`: pass, 7 packages.
+- `bun run pack`: pass, 7 tarballs.
+- `bun run test:tarballs`: pass with registry access, 7 packages.
+- `bun run --cwd apps/playground build`: pass with the existing Angular chunk-size warning.
+
+Follow-up commit subject: `fix(core): stop stale nested state publications`.

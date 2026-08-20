@@ -52,6 +52,7 @@ export class TourController<T> {
   private status: TourStatus = "idle";
   private error: Error | null = null;
   private operationToken = 0;
+  private publicationRevision = 0;
   private operation: AbortController | null = null;
   private disposed = false;
   private readonly stateListeners = new Set<(state: TourState<T>) => void>();
@@ -364,11 +365,13 @@ export class TourController<T> {
   }
 
   private publish() {
+    const revision = ++this.publicationRevision;
     const state = this.createSnapshot();
     this.snapshot.set(state);
     for (const listener of Array.from(this.stateListeners)) {
-      if (this.disposed) break;
+      if (this.disposed || revision !== this.publicationRevision) break;
       listener(state);
+      if (this.disposed || revision !== this.publicationRevision) break;
     }
   }
 
