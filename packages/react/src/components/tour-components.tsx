@@ -184,21 +184,25 @@ export function Pointer({ as: Component = "div", children, ...props }: PointerPr
 function Trigger({
   children,
   command,
-  disabled,
+  capabilityDisabled,
   label,
   marker,
   onClick,
+  disabled: userDisabled,
   ...props
 }: ButtonProps & {
+  capabilityDisabled: boolean;
   command: () => Promise<void>;
-  disabled: boolean;
   label: string;
   marker: "back" | "cancel" | "next";
 }) {
   const { binding } = useTourContext();
+  const disabled = capabilityDisabled || userDisabled === true;
+
   const buttonProps: React.ButtonHTMLAttributes<HTMLButtonElement> & {
     "data-glow-tour-back-trigger": true | undefined;
     "data-glow-tour-cancel-trigger": true | undefined;
+    "data-glow-tour-consumer-disabled": "true" | undefined;
     "data-glow-tour-next-trigger": true | undefined;
   } = {
     ...props,
@@ -206,11 +210,12 @@ function Trigger({
     "aria-label": props["aria-label"] || label,
     "data-glow-tour-back-trigger": marker === "back" || undefined,
     "data-glow-tour-cancel-trigger": marker === "cancel" || undefined,
+    "data-glow-tour-consumer-disabled": userDisabled ? "true" : undefined,
     "data-glow-tour-next-trigger": marker === "next" || undefined,
     disabled,
     onClick: (event) => {
       onClick?.(event);
-      if (event.defaultPrevented) return;
+      if (capabilityDisabled || userDisabled === true || event.defaultPrevented) return;
       event.preventDefault();
       void command();
     },
@@ -232,7 +237,7 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
     <Trigger
       {...props}
       command={() => tour.previous()}
-      disabled={!snapshot.canPrevious || step?.disableBackButton === true}
+      capabilityDisabled={!snapshot.canPrevious || step?.disableBackButton === true}
       label={label}
       marker="back"
     />
@@ -249,7 +254,7 @@ export function NextTrigger({ finishLabel, nextLabel, ...props }: NextTriggerPro
     <Trigger
       {...props}
       command={() => tour.advance()}
-      disabled={!snapshot.canAdvance || step?.disableNextButton === true}
+      capabilityDisabled={!snapshot.canAdvance || step?.disableNextButton === true}
       label={label}
       marker="next"
     />
@@ -264,7 +269,7 @@ export function CancelTrigger({ cancelLabel = "Cancel tour", ...props }: CancelT
     <Trigger
       {...props}
       command={() => tour.cancel()}
-      disabled={!snapshot.canCancel}
+      capabilityDisabled={!snapshot.canCancel}
       label={cancelLabel}
       marker="cancel"
     />

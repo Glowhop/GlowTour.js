@@ -34,6 +34,7 @@ type PointerProps = ParentProps<
 >;
 type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
   children?: (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => JSX.Element;
+  disabled?: boolean;
 };
 type BackTriggerProps = ButtonProps & { backLabel?: string };
 type NextTriggerProps = ButtonProps & { finishLabel?: string; nextLabel?: string };
@@ -41,8 +42,8 @@ type CancelTriggerProps = ButtonProps & { cancelLabel?: string };
 type ButtonClickEvent = MouseEvent & { currentTarget: HTMLButtonElement; target: Element };
 
 interface TourContextValue {
-  readonly binding: RootBinding | null;
-  readonly tour: Tour;
+  readonly binding: () => RootBinding | null;
+  readonly tour: () => Tour;
 }
 
 const TourContext = createContext<TourContextValue>();
@@ -55,10 +56,12 @@ function useTourContext() {
   return context;
 }
 
-function useTourSnapshot(tour: Tour) {
-  const [snapshot, setSnapshot] = createSignal<TourState<SolidTourContent>>(tour.state.get());
+function useTourSnapshot(tour: () => Tour) {
+  const [snapshot, setSnapshot] = createSignal<TourState<SolidTourContent>>(tour().state.get());
   createEffect(() => {
-    const unsubscribe = tour.state.subscribe(setSnapshot);
+    const activeTour = tour();
+    setSnapshot(activeTour.state.get());
+    const unsubscribe = activeTour.state.subscribe(setSnapshot);
     onCleanup(unsubscribe);
   });
   return snapshot;
@@ -70,7 +73,7 @@ function useBoundElement<T extends Element>(
   const context = useTourContext();
   const [element, setElement] = createSignal<T | null>(null);
   createEffect(() => {
-    const activeBinding = context.binding;
+    const activeBinding = context.binding();
     const activeElement = element();
     if (!activeBinding || !activeElement) return;
     return bind(activeBinding, activeElement);
@@ -106,10 +109,8 @@ export function Root(props: RootProps): JSX.Element {
 
   return createComponent(TourContext.Provider, {
     value: {
-      get binding() {
-        return binding();
-      },
-      get tour() {
+      binding,
+      tour() {
         return local.tour;
       },
     },
@@ -138,17 +139,17 @@ export function Popover(props: ElementProps): JSX.Element {
     Dynamic,
     mergeProps(other, {
       get "aria-describedby"() {
-        return context.binding?.ids.description;
+        return context.binding()?.ids.description;
       },
       get "aria-labelledby"() {
-        return context.binding?.ids.title;
+        return context.binding()?.ids.title;
       },
       get component() {
         return local.as ?? "section";
       },
       "data-glow-tour-popover": "",
       get id() {
-        return context.binding?.ids.popover;
+        return context.binding()?.ids.popover;
       },
       ref,
       role: "dialog",
@@ -169,7 +170,7 @@ export function Header(props: ContentProps): JSX.Element {
       component: "header",
       "data-glow-tour-header": "",
       get id() {
-        return context.binding?.ids.title;
+        return context.binding()?.ids.title;
       },
       get children() {
         return currentStep(snapshot())?.title ?? null;
@@ -188,7 +189,7 @@ export function Content(props: ContentProps): JSX.Element {
       component: "div",
       "data-glow-tour-content": "",
       get id() {
-        return context.binding?.ids.description;
+        return context.binding()?.ids.description;
       },
       get children() {
         return currentStep(snapshot())?.content ?? null;
@@ -272,7 +273,7 @@ export function Pointer(props: PointerProps): JSX.Element {
 function Trigger(
   props: ButtonProps & {
     tourCommand: () => Promise<void>;
-    disabled: boolean;
+    capabilityDisabled: boolean;
     label: string;
     marker: "back" | "cancel" | "next";
   },
@@ -281,13 +282,13 @@ function Trigger(
   const [local, other] = splitProps(props, [
     "children",
     "tourCommand",
-    "disabled",
+    "capabilityDisabled",
     "label",
     "marker",
   ]);
   const buttonProps = mergeProps(other, {
     get "aria-controls"() {
-      return context.binding?.ids.popover;
+      return context.binding()?.ids.popover;
     },
     get "aria-label"() {
       return other["aria-label"] || local.label;
@@ -298,15 +299,18 @@ function Trigger(
     get "data-glow-tour-cancel-trigger"() {
       return local.marker === "cancel" ? true : undefined;
     },
+    get "data-glow-tour-consumer-disabled"() {
+      return other.disabled === true ? "true" : undefined;
+    },
     get "data-glow-tour-next-trigger"() {
       return local.marker === "next" ? true : undefined;
     },
     get disabled() {
-      return local.disabled;
+      return local.capabilityDisabled || other.disabled === true;
     },
     onClick(event: ButtonClickEvent) {
       if (typeof other.onClick === "function") other.onClick(event);
-      if (event.defaultPrevented) return;
+      if (local.capabilityDisabled || other.disabled === true || event.defaultPrevented) return;
       event.preventDefault();
       void local.tourCommand();
     },
@@ -334,14 +338,16 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
       return !snapshot().isFirstStep && !step?.hideBackButton;
     },
     get children() {
-      const step = currentStep(snapshot());
-      return Trigger({
-        ...props,
-        tourCommand: () => context.tour.previous(),
-        disabled: !snapshot().canPrevious || step?.disableBackButton === true,
-        label: props.backLabel ?? "Back step",
-        marker: "back",
-      });
+      return Trigger(
+        mergeProps(props, {
+          tourCommand: () => context.tour().previous(),
+          get capabilityDisabled() {
+            return !snapshot().canPrevious || currentStep(snapshot())?.disableBackButton === true;
+          },
+          label: props.backLabel ?? "Back step",
+          marker: "back" as const,
+        }),
+      );
     },
   });
 }
@@ -354,17 +360,20 @@ export function NextTrigger(props: NextTriggerProps): JSX.Element {
       return !currentStep(snapshot())?.hideNextButton;
     },
     get children() {
-      const step = currentStep(snapshot());
-      const label = snapshot().isLastStep
-        ? (props.finishLabel ?? "Finish tour")
-        : (props.nextLabel ?? "Next step");
-      return Trigger({
-        ...props,
-        tourCommand: () => context.tour.advance(),
-        disabled: !snapshot().canAdvance || step?.disableNextButton === true,
-        label,
-        marker: "next",
-      });
+      return Trigger(
+        mergeProps(props, {
+          tourCommand: () => context.tour().advance(),
+          get capabilityDisabled() {
+            return !snapshot().canAdvance || currentStep(snapshot())?.disableNextButton === true;
+          },
+          get label() {
+            return snapshot().isLastStep
+              ? (props.finishLabel ?? "Finish tour")
+              : (props.nextLabel ?? "Next step");
+          },
+          marker: "next" as const,
+        }),
+      );
     },
   });
 }
@@ -377,13 +386,16 @@ export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
       return snapshot().canCancel;
     },
     get children() {
-      return Trigger({
-        ...props,
-        tourCommand: () => context.tour.cancel(),
-        disabled: !snapshot().canCancel,
-        label: props.cancelLabel ?? "Cancel tour",
-        marker: "cancel",
-      });
+      return Trigger(
+        mergeProps(props, {
+          tourCommand: () => context.tour().cancel(),
+          get capabilityDisabled() {
+            return !snapshot().canCancel;
+          },
+          label: props.cancelLabel ?? "Cancel tour",
+          marker: "cancel" as const,
+        }),
+      );
     },
   });
 }

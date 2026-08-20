@@ -15,15 +15,16 @@
     }
   },
   "dependencies": {
-    "@glowhop/core-tour": "workspace:*",
-    "@glowhop/react-observables": "^1.1.1",
-    "@glowhop/observables": "^1.3.3"
+    "@glowhop/core-tour": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
   "devDependencies": {
+    "@types/react-dom": "^19.0.0",
     "@types/react": "^19.0.0",
-    "react": "^19.0.0"
+    "happy-dom": "^18.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

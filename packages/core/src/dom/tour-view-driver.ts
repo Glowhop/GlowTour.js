@@ -413,14 +413,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const back = this.findTrigger("back");
     if (next) {
       this.listen(next, "click", (event) => {
-        if (!this.canCommand("advance", step)) return;
+        if (event.defaultPrevented || !this.canCommand("advance", step)) return;
         event.preventDefault();
         void this.command("advance");
       });
     }
     if (back) {
       this.listen(back, "click", (event) => {
-        if (!this.canCommand("previous", step)) return;
+        if (event.defaultPrevented || !this.canCommand("previous", step)) return;
         event.preventDefault();
         void this.command("previous");
       });
@@ -428,7 +428,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const cancel = this.findTrigger("cancel");
     if (cancel) {
       this.listen(cancel, "click", (event) => {
-        if (!this.canCommand("cancel", step)) return;
+        if (event.defaultPrevented || !this.canCommand("cancel", step)) return;
         event.preventDefault();
         void this.command("cancel");
       });
@@ -459,6 +459,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private canCommand(command: "advance" | "previous" | "cancel", step: ActiveStep<T>) {
+    const trigger = command === "advance" ? "next" : command === "previous" ? "back" : "cancel";
+    if (this.isConsumerDisabled(this.findTrigger(trigger))) return false;
     if (command === "advance") {
       return (this.commands?.canAdvance?.() ?? true) && step.props.get().disableNextButton !== true;
     }
@@ -472,8 +474,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private syncControl(element: HTMLButtonElement | null, disabled: boolean) {
     if (!element) return;
-    element.disabled = disabled;
-    element.setAttribute("aria-disabled", String(disabled));
+    const isDisabled = disabled || this.isConsumerDisabled(element);
+    element.disabled = isDisabled;
+    element.setAttribute("aria-disabled", String(isDisabled));
+  }
+
+  private isConsumerDisabled(element: HTMLButtonElement | null) {
+    return element?.getAttribute("data-glow-tour-consumer-disabled") === "true";
   }
 
   private isPointerEnabled(step: ActiveStep<T>) {

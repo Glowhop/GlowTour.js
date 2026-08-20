@@ -595,6 +595,30 @@ describe("DomTourViewDriver", () => {
     await new Promise<void>((resolve) => setTimeout(resolve));
     assert.equal(tour.state.get().status, "cancelled");
   });
+  test("preserves an adapter's consumer-disabled trigger marker", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    elements.next.setAttribute("data-glow-tour-consumer-disabled", "true");
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(elements.next.disabled, true);
+    assert.equal(elements.next.getAttribute("aria-disabled"), "true");
+    elements.next.dispatchEvent(new MockEvent("click"));
+    assert.deepEqual(calls, []);
+  });
+  test("does not command a trigger click already prevented by the consumer", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    elements.next.addEventListener("click", (event) => event.preventDefault());
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    elements.next.dispatchEvent(new MockEvent("click"));
+    assert.deepEqual(calls, []);
+  });
   test("loops modal Tab focus, starts directionally, restores focus, and toggles aria-modal", async () => {
     const initial = document.createElement("button");
     document.body.append(initial);
