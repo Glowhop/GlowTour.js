@@ -2,7 +2,7 @@ import { Observable } from "@glowhop/observables";
 import OverlayElement from "../elements/overlay";
 import PointerElement from "../elements/pointer";
 import PopoverElement from "../elements/popover";
-import type { WorkflowStep } from "../engine/workflow-step";
+import { WorkflowStep } from "../engine/workflow-step";
 import type {
   BaseOptions,
   DynamicStepProps,
@@ -14,12 +14,40 @@ import type {
   WorkflowDirection,
   WorkflowState,
   WorkflowStatus,
+  WorkflowStepDefinition,
 } from "../types";
 import { isInViewport } from "../utils/utils";
 import { FocusGuard } from "./focus-guard";
 
 const DEFAULT_TARGET_TIMEOUT = 3000;
 const SCROLL_END_TIMEOUT = 1000;
+
+// Transitional P1 bridge: adapters still consume mutable WorkflowStep instances.
+// Delete this conversion with TourStore when adapters move to TourController.
+function createLegacyWorkflowStep<T>(
+  definition: WorkflowStepDefinition<T>,
+  defaults: WorkflowDefinition<T>["options"],
+) {
+  const step = new WorkflowStep<T>({
+    target: definition.target,
+    props: {
+      ...definition.props,
+      data:
+        definition.props.data === undefined ? undefined : structuredClone(definition.props.data),
+    },
+    overlay: definition.overlay,
+    popover: definition.popover,
+    indicator: definition.indicator,
+    scroll: definition.scroll,
+    behavior: definition.behavior,
+  }).clone(defaults);
+  for (const action of definition.actions) step.addAction(action);
+  for (const handler of definition.eventHandlers) step.addEventHandler(handler);
+  step.setNextAction(definition.nextAction);
+  step.setBackAction(definition.backAction);
+  step.setCancelAction(definition.cancelAction);
+  return step;
+}
 
 function wait(timeMs: number) {
   return new Promise<void>((resolve) => {
@@ -341,7 +369,7 @@ export class TourStore<T> {
     this.steps.splice(
       0,
       this.steps.length,
-      ...workflow.steps.map((step) => step.clone(workflow.options)),
+      ...workflow.steps.map((step) => createLegacyWorkflowStep(step, workflow.options)),
     );
     this.currentStepIndex.set(-1);
     this._syncDerivedState();

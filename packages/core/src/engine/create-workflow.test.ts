@@ -1,23 +1,18 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
+import { create } from "../builder";
 import { createWorkflow } from "./create-workflow";
-import { WorkflowStep } from "./workflow-step";
 
 describe("createWorkflow", () => {
   test("applies workflow presentation defaults to cloned steps", () => {
-    const workflow = createWorkflow({
-      name: "defaults",
-      options: {
+    const workflow = createWorkflow(
+      create<string>("defaults", {
         indicator: { gap: 22 },
         popover: { disableArrow: true, gap: 18 },
-      },
-      steps: [
-        new WorkflowStep({
-          props: { content: "content", title: "title" },
-          target: "#target",
-        }),
-      ],
-    });
+      })
+        .step({ content: "content", target: "#target", title: "title" })
+        .finish(),
+    );
 
     assert.equal(workflow.steps[0].indicator?.gap, 22);
     assert.equal(workflow.steps[0].popover?.gap, 18);
@@ -25,21 +20,20 @@ describe("createWorkflow", () => {
   });
 
   test("keeps step presentation overrides above workflow defaults", () => {
-    const workflow = createWorkflow({
-      name: "overrides",
-      options: {
+    const workflow = createWorkflow(
+      create<string>("overrides", {
         indicator: { gap: 22 },
         popover: { disableArrow: true, gap: 18 },
-      },
-      steps: [
-        new WorkflowStep({
+      })
+        .step({
+          content: "content",
           indicator: { gap: 8 },
           popover: { disableArrow: false, gap: 6 },
-          props: { content: "content", title: "title" },
           target: "#target",
-        }),
-      ],
-    });
+          title: "title",
+        })
+        .finish(),
+    );
 
     assert.equal(workflow.steps[0].indicator?.gap, 8);
     assert.equal(workflow.steps[0].popover?.gap, 6);

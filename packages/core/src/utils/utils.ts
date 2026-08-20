@@ -68,13 +68,16 @@ export function toggleElementAttribute(element: Element, name: string, enabled: 
   }
 }
 
-export async function resolveTargetElement(target: TargetResolver): Promise<HTMLElement | null> {
+export async function resolveTargetElement(
+  target: TargetResolver,
+  signal = new AbortController().signal,
+): Promise<HTMLElement | null> {
   if (typeof target === "string") {
-    return document.querySelector<HTMLElement>(target);
-  } else if (target instanceof HTMLElement) {
+    return typeof document === "undefined" ? null : document.querySelector<HTMLElement>(target);
+  } else if (typeof HTMLElement !== "undefined" && target instanceof HTMLElement) {
     return target;
   } else if (typeof target === "function") {
-    return await target();
+    return await target({ signal });
   }
   return null;
 }

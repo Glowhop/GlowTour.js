@@ -2,6 +2,7 @@ export type { EventName } from "./builder";
 export { Builder, create, StepBuilder } from "./builder";
 export { createWorkflow, WorkflowInstance } from "./engine/create-workflow";
 export { WorkflowStep } from "./engine/workflow-step";
+export { createGlowTour } from "./runtime/tour-controller";
 export { createTourStore, TourStore } from "./state/store";
 export type {
   AnimationOptions,
@@ -15,6 +16,8 @@ export type {
   OverlayOptions,
   PopoverOptions,
   PrimitiveValue,
+  ReadonlyStartOptions,
+  ReadonlyStepProps,
   ResolvedPlacement,
   ScrollOptions,
   StartOptions,
@@ -26,7 +29,12 @@ export type {
   StepParameters,
   StepPropsStore,
   StepTransitionAction,
+  TargetResolutionContext,
   TargetResolver,
+  TourCurrentStep,
+  TourDirection,
+  TourState,
+  TourStatus,
   TryOrderOptions,
   ViewportDimensions,
   WorkflowControls,
@@ -35,5 +43,6 @@ export type {
   WorkflowHighlightOptions,
   WorkflowState,
   WorkflowStatus,
+  WorkflowStepDefinition,
   WorkflowStepPublicProps,
 } from "./types";

@@ -5,8 +5,8 @@ import type {
   IndicatorOptions,
   OverlayOptions,
   PopoverOptions,
+  ReadonlyStartOptions,
   ScrollOptions,
-  StartOptions,
   StepActionInstruction,
   StepBehavior,
   StepConstructor,
@@ -85,7 +85,7 @@ export class WorkflowStep<T> {
     this.cancelAction = action;
   }
 
-  clone(defaults: StartOptions = {}) {
+  clone(defaults: ReadonlyStartOptions = {}) {
     const clone = new WorkflowStep<T>({
       target: this.target,
       overlay: mergeOverlayOptions(defaults.overlay, this.overlay),

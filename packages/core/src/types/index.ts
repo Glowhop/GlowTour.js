@@ -1,13 +1,15 @@
 import type { Observable } from "@glowhop/observables";
-import type { WorkflowStep } from "../engine/workflow-step";
 
 export type PrimitiveValue = string | number | boolean | null;
 
 export type TargetResolver =
   | string
   | HTMLElement
-  | (() => HTMLElement | null)
-  | (() => Promise<HTMLElement | null>);
+  | ((context: TargetResolutionContext) => HTMLElement | null | Promise<HTMLElement | null>);
+
+export interface TargetResolutionContext {
+  signal: AbortSignal;
+}
 
 export type WorkflowStatus =
   | "not-started"
@@ -68,7 +70,7 @@ export interface BaseOptions {
 export interface IndicatorOptions extends BaseOptions {
   disabled?: boolean;
   gap?: number;
-  placementTryOrder?: TryOrderOptions[];
+  placementTryOrder?: readonly TryOrderOptions[];
 }
 
 export interface OverlayOptions extends BaseOptions {
@@ -79,7 +81,7 @@ export interface OverlayOptions extends BaseOptions {
 }
 
 export interface PopoverOptions extends BaseOptions {
-  placementTryOrder?: TryOrderOptions[];
+  placementTryOrder?: readonly TryOrderOptions[];
   disableArrow?: boolean;
   disableAutoFocus?: boolean;
   hideProgressIndicator?: boolean;
@@ -94,15 +96,15 @@ export interface PopoverOptions extends BaseOptions {
     /**
      * @default ["ArrowLeft", "Backspace"]
      */
-    back?: string[];
+    back?: readonly string[];
     /**
      * @default ["Enter", "ArrowRight"]
      */
-    next?: string[];
+    next?: readonly string[];
     /**
      * @default ["Escape"]
      */
-    cancel?: string[];
+    cancel?: readonly string[];
   };
 }
 
@@ -121,6 +123,10 @@ export interface DynamicStepProps<T> {
   resetPropsOnEnter?: boolean;
   data?: Record<string, PrimitiveValue>;
 }
+
+export type ReadonlyStepProps<T> = Omit<Readonly<DynamicStepProps<T>>, "data"> & {
+  readonly data?: Readonly<Record<string, PrimitiveValue>>;
+};
 
 export interface ScrollOptions {
   behavior?: "auto" | "smooth";
@@ -142,10 +148,20 @@ export interface StartOptions {
   animated?: boolean;
   behavior?: StepBehavior;
 
-  onStart?: () => void;
-  onCancel?: () => void;
-  onFinish?: () => void;
+  onStart?: () => void | Promise<void>;
+  onCancel?: () => void | Promise<void>;
+  onFinish?: () => void | Promise<void>;
 }
+
+type DeepReadonly<T> = T extends (...arguments_: infer _Arguments) => infer _Return
+  ? T
+  : T extends readonly (infer TEntry)[]
+    ? readonly DeepReadonly<TEntry>[]
+    : T extends object
+      ? { readonly [TKey in keyof T]: DeepReadonly<T[TKey]> }
+      : T;
+
+export type ReadonlyStartOptions = DeepReadonly<StartOptions>;
 
 export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
 // biome-ignore lint/suspicious/noConfusingVoidType: `void` preserves the optional action result contract.
@@ -159,7 +175,7 @@ export type StepActionInstruction<T> = StepAction<T> | number | "back" | "next";
 export type StepTransitionAction<T> = (
   element: HTMLElement | null,
   stepProps: StepPropsStore<T>,
-) => void;
+) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   event: string;
@@ -172,10 +188,57 @@ export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   ) => void | Promise<void>;
 }
 
+export interface WorkflowStepDefinition<T> {
+  readonly target: TargetResolver;
+  readonly overlay?: DeepReadonly<OverlayOptions>;
+  readonly popover?: DeepReadonly<PopoverOptions>;
+  readonly indicator?: DeepReadonly<IndicatorOptions>;
+  readonly scroll?: DeepReadonly<ScrollOptions>;
+  readonly behavior?: DeepReadonly<StepBehavior>;
+  readonly props: ReadonlyStepProps<T>;
+  readonly actions: readonly StepActionInstruction<T>[];
+  readonly eventHandlers: readonly EventHandler<T>[];
+  readonly nextAction: StepTransitionAction<T> | null;
+  readonly backAction: StepTransitionAction<T> | null;
+  readonly cancelAction: StepTransitionAction<T> | null;
+}
+
 export interface WorkflowDefinition<T> {
-  name: string;
-  options: StartOptions;
-  steps: WorkflowStep<T>[];
+  readonly name: string;
+  readonly options: ReadonlyStartOptions;
+  readonly steps: readonly WorkflowStepDefinition<T>[];
+}
+
+export type TourStatus =
+  | "idle"
+  | "starting"
+  | "transitioning"
+  | "active"
+  | "finished"
+  | "cancelled"
+  | "error";
+
+export type TourDirection = "advance" | "previous";
+
+export interface TourCurrentStep<T> {
+  readonly initialProps: ReadonlyStepProps<T>;
+  readonly currentProps: ReadonlyStepProps<T>;
+  readonly target: HTMLElement | null;
+}
+
+export interface TourState<T> {
+  readonly name: string;
+  readonly totalSteps: number;
+  readonly currentStepIndex: number;
+  readonly currentStep: TourCurrentStep<T> | null;
+  readonly direction: TourDirection;
+  readonly canAdvance: boolean;
+  readonly canPrevious: boolean;
+  readonly canCancel: boolean;
+  readonly isFirstStep: boolean;
+  readonly isLastStep: boolean;
+  readonly status: TourStatus;
+  readonly error: Error | null;
 }
 
 export interface WorkflowStepPublicProps<T> {

@@ -45,3 +45,16 @@ describe("StepBuilder.onEvent", () => {
     assert.equal(workflow.steps[0].eventHandlers[1].callback, callback);
   });
 });
+
+describe("StepBuilder transitional aliases", () => {
+  test("keeps alter and waitForElement as readonly definition actions", () => {
+    const workflow = create<string>("aliases")
+      .step({ content: "Content", target: "#target", title: "Title" })
+      .alter(() => true)
+      .waitForElement("#ready")
+      .finish();
+
+    assert.equal(workflow.steps[0].actions.length, 2);
+    assert.equal(Object.isFrozen(workflow.steps[0].actions), true);
+  });
+});

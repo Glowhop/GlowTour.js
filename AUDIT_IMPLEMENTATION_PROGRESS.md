@@ -6,11 +6,16 @@ Last updated: 2026-08-13
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed commit: `577bd46` (`docs(audit): record final p0 verification`)
-- Current task: P1 runtime/controller architecture
-- Next action: replace mutable workflow definitions and `TourStore` with readonly definitions, `ActiveStep`, `TourController`, and transition coordination using TDD.
+- Last completed implementation before P1: `412441b` (P0 release hardening; later P0 documentation commits are retained).
+- Current task: P1 runtime/controller architecture completed.
+- Next action: concrete DOM view driver, cleanup, and positioning.
 
 ## Completed
+
+- Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
+- Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
+- Retained builder aliases and isolated the old mutable `TourStore` conversion in a clearly marked transitional bridge for the later adapter migration.
+- Added controller/definition tests covering readonly isolation, lifecycle/navigation, async errors, concurrency, stale resolution, target strategies, state updates, action execution, disabled navigation, directional skipping, view failures, disposal, and abort behavior.
 
 - Created the isolated worktree at `.worktrees/audit-p0-release`.
 - Installed dependencies with the frozen lockfile using Bun 1.3.12.
@@ -53,6 +58,17 @@ Last updated: 2026-08-13
 
 | Command | Result |
 | --- | --- |
+| Initial `bun test packages/core/src/runtime/tour-controller.test.ts` | Red; 2 passed, 8 failed because object casts were not real `HTMLElement` targets. Fixtures were corrected to controlled resolvers without weakening runtime validation. |
+| Initial `bun run typecheck` | Red; 5 readonly/legacy migration errors in builder definitions, old engine tests, and `TourStore`. |
+| Added requirement regressions | Red; actions, disabled navigation, go-to hooks, aliases, deep readonly data/options, reverse skip, and unexpected abort handling failed before implementation. |
+| Final `bun test packages/core/src/runtime/tour-controller.test.ts` | Pass; 20 passed, 0 failed. |
+| Final `bun run check` | Pass; Biome checked 87 files with no fixes. |
+| Final `bun run typecheck` | Pass; no TypeScript diagnostics. |
+| Final `bun test` | Pass; 98 tests, 0 failures across 19 files. |
+| Final `bun run build` | Pass; 7 public distributions built. |
+| Final `bun run pack` | Pass; 7 tarballs packed. |
+| Final `bun run test:tarballs` | Pass; external tarball consumer command exited successfully. |
+| Final `bun run --cwd apps/playground build` | Pass; known Angular chunk-size warning only. |
 | `bun install --frozen-lockfile` | Pass; 294 packages installed with Bun 1.3.12. |
 | `bun run check` | Pass after P0 re-review; Biome checked 76 files in 27ms with no fixes applied. |
 | `bun run typecheck` | Pass after P0 re-review; TypeScript completed with no diagnostics. |
@@ -82,6 +98,11 @@ Last updated: 2026-08-13
 | Final release preparation and publish dry-run | Pass; exact seven-package order printed without publication. |
 
 ## Decisions and deviations
+
+- `createGlowTour<T>()` is the only new public instance factory; `TourController` and `TourViewDriver` remain internal implementation types.
+- Async commands reject after disposal with `Tour controller is disposed`; `updateCurrentStep` and repeated `dispose` are no-ops.
+- Public definitions and state snapshots freeze nested mutable data/option arrays deeply enough for their supported value contracts; active observables remain internal.
+- A resolver-originated `AbortError` is terminal unless the controller token/signal was actually invalidated; only stale controller-owned aborts are ignored.
 
 - The implementation runs in an ignored project-local worktree to keep `main` untouched.
 - Biome is intentionally scoped to `apps/**`, `packages/**`, and its product configuration files. `!!.worktrees`, `!!apps/**/dist`, `!!apps/**/coverage`, `!!packages/**/dist`, and `!!packages/**/coverage` force-ignore worktrees and generated output recursively, preventing scanner indexing while retaining the product-only source scope.

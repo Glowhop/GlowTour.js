@@ -135,6 +135,6 @@ export function mergeStepBehavior(
   };
 }
 
-function cloneArray<T>(value?: T[]) {
+function cloneArray<T>(value?: readonly T[]) {
   return value ? [...value] : undefined;
 }
