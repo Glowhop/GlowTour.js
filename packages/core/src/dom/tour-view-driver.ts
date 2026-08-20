@@ -47,10 +47,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private readonly focusGuard = new FocusGuard();
   private readonly stepCleanups: Array<() => void> = [];
   private commands: TourViewCommands | null;
+  private direction: TourDirection = "advance";
   private currentStep: ActiveStep<T> | null = null;
   private disposed = false;
-  private lastPopoverRect: DOMRect | null = null;
-  private lastTargetRect: DOMRect | null = null;
+  private generation = 0;
+  private active = false;
+  private lastPopoverRect: RectSnapshot | null = null;
+  private lastTargetRect: RectSnapshot | null = null;
   private overlay: OverlayElement<T> | null = null;
   private pointer: PointerElement<T> | null = null;
   private popover: PopoverElement<T> | null = null;
@@ -67,101 +70,143 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   registerRoot(element: HTMLElement | null) {
-    if (!this.disposed) this.root = element;
+    if (this.disposed || this.root === element) return;
+    this.root = element;
+    this.refreshRegisteredElements();
   }
 
   registerOverlay(element: SVGSVGElement | null) {
     if (this.disposed) return;
+    if (this.overlay?.getElement() === element) return;
+    this.overlay?.release();
     this.overlay = element ? new OverlayElement<T>(element) : null;
-    if (this.currentStep && this.lastTargetRect) void this.activateRegisteredElements();
+    this.refreshRegisteredElements();
   }
 
   registerPopover(element: HTMLElement | null) {
     if (this.disposed) return;
+    if (this.popover?.getElement() === element) return;
+    this.popover?.release();
     this.popover = element ? new PopoverElement<T>(element) : null;
-    if (this.currentStep && this.lastTargetRect) void this.activateRegisteredElements();
+    this.refreshRegisteredElements();
   }
 
   registerPointer(element: HTMLElement | null) {
     if (this.disposed) return;
+    if (this.pointer?.getElement() === element) return;
+    this.pointer?.release();
     this.pointer = element ? new PointerElement<T>(element) : null;
-    if (this.currentStep && this.lastTargetRect) void this.activateRegisteredElements();
+    this.refreshRegisteredElements();
   }
 
   async show(step: ActiveStep<T>, direction: TourDirection, signal: AbortSignal): Promise<void> {
-    if (this.disposed) return;
-    this.cleanupStepResources();
-    this.currentStep = step;
-    this.lastTargetRect = null;
-    this.lastPopoverRect = null;
-    const target = step.target;
-    if (!target) return;
+    this.throwIfAborted(signal);
+    const generation = this.beginGeneration();
+    const removeAbort = this.cancelAnimationsOnAbort(signal);
+    try {
+      this.cleanupStepResources();
+      this.focusGuard.deactivate();
+      this.active = false;
+      this.currentStep = step;
+      this.direction = direction;
+      this.lastTargetRect = null;
+      this.lastPopoverRect = null;
+      const target = step.target;
+      if (!target) return;
 
-    await this.scrollTargetIntoView(step, target, signal);
-    this.throwIfAborted(signal);
-    this.initializeElements(step);
-    const targetRect = target.getBoundingClientRect();
-    await this.appear(targetRect, step);
-    this.throwIfAborted(signal);
-    this.lastTargetRect = copyRect(targetRect);
-    const popover = this.popover?.getElement();
-    this.lastPopoverRect = popover ? copyRect(popover.getBoundingClientRect()) : null;
-    this.activateFocus(step, target, direction);
-    this.attachStepResources(step, target);
+      await this.scrollTargetIntoView(step, target, signal);
+      this.throwIfStale(generation, signal);
+      this.initializeElements(step);
+      const targetRect = target.getBoundingClientRect();
+      await this.appear(targetRect, step);
+      this.throwIfStale(generation, signal);
+      this.lastTargetRect = snapshotRect(targetRect);
+      const popover = this.popover?.getElement();
+      this.lastPopoverRect = popover ? snapshotRect(popover.getBoundingClientRect()) : null;
+      this.active = true;
+      this.activateFocus(step, target, direction);
+      this.attachStepResources(step, target, generation);
+    } finally {
+      removeAbort();
+    }
   }
 
-  async clear(_signal: AbortSignal): Promise<void> {
-    this.cleanupStepResources();
-    this.focusGuard.deactivate();
-    this.currentStep = null;
-    this.lastTargetRect = null;
-    this.lastPopoverRect = null;
-    this.popover?.getElement()?.removeAttribute("aria-modal");
-    await Promise.allSettled([
-      this.overlay?.disappear() ?? Promise.resolve(),
-      this.popover?.disappear() ?? Promise.resolve(),
-      this.pointer?.disappear() ?? Promise.resolve(),
-    ]);
+  async clear(signal: AbortSignal): Promise<void> {
+    this.throwIfAborted(signal);
+    const generation = this.beginGeneration();
+    const removeAbort = this.cancelAnimationsOnAbort(signal);
+    try {
+      this.cleanupStepResources();
+      this.focusGuard.deactivate();
+      this.active = false;
+      this.currentStep = null;
+      this.lastTargetRect = null;
+      this.lastPopoverRect = null;
+      this.popover?.getElement()?.removeAttribute("aria-modal");
+      await Promise.allSettled([
+        this.overlay?.disappear() ?? Promise.resolve(),
+        this.popover?.disappear() ?? Promise.resolve(),
+        this.pointer?.disappear() ?? Promise.resolve(),
+      ]);
+      this.throwIfStale(generation, signal);
+    } finally {
+      removeAbort();
+    }
   }
 
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.beginGeneration();
     this.cleanupStepResources();
     this.focusGuard.deactivate();
+    this.active = false;
     this.currentStep = null;
     this.commands = null;
-    void this.overlay?.disappear();
-    void this.popover?.disappear();
-    void this.pointer?.disappear();
+    this.overlay?.release();
+    this.popover?.release();
+    this.pointer?.release();
     this.overlay = null;
     this.popover = null;
     this.pointer = null;
     this.root = null;
   }
 
-  private async activateRegisteredElements() {
+  private refreshRegisteredElements() {
+    if (!this.active || !this.currentStep || !this.lastTargetRect) return;
+    const generation = this.beginGeneration();
+    this.cleanupStepResources();
+    void this.activateRegisteredElements(generation).catch(() => {});
+  }
+
+  private async activateRegisteredElements(generation: number) {
     const step = this.currentStep;
     const targetRect = this.lastTargetRect;
-    if (this.disposed || !step || !targetRect) return;
+    const target = step?.target;
+    if (this.disposed || !step || !target || !targetRect) return;
     this.initializeElements(step);
-    await this.appear(targetRect, step);
+    await this.appear(targetRect as DOMRect, step);
+    this.throwIfStale(generation);
+    const popover = this.popover?.getElement();
+    this.lastPopoverRect = popover ? snapshotRect(popover.getBoundingClientRect()) : null;
+    this.activateFocus(step, target, this.direction);
+    this.attachStepResources(step, target, generation);
   }
 
   private initializeElements(step: ActiveStep<T>) {
     const interactionAllowed = step.behavior?.allowInteraction === true;
     this.overlay?.initializeProps();
-    this.overlay?.setAnimationOptions(animationOptions(step.overlay));
+    this.overlay?.setAnimationOptions(animationOptions(step, step.overlay));
     this.overlay?.setInteractionAllowed(interactionAllowed);
     this.popover?.initializeProps();
-    this.popover?.setAnimationOptions(animationOptions(step.popover));
+    this.popover?.setAnimationOptions(animationOptions(step, step.popover));
     const popover = this.popover?.getElement();
     if (popover instanceof HTMLElement) {
       if (interactionAllowed) popover.removeAttribute("aria-modal");
       else popover.setAttribute("aria-modal", "true");
     }
     this.pointer?.initializeProps();
-    this.pointer?.setAnimationOptions(animationOptions(step.indicator));
+    this.pointer?.setAnimationOptions(animationOptions(step, step.indicator));
   }
 
   private async appear(targetRect: DOMRect, step: ActiveStep<T>) {
@@ -177,8 +222,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     ]);
   }
 
-  private attachStepResources(step: ActiveStep<T>, target: HTMLElement) {
-    const invalidate = () => this.schedulePosition();
+  private attachStepResources(step: ActiveStep<T>, target: HTMLElement, generation: number) {
+    const invalidate = () => this.schedulePosition(generation);
     this.listen(window, "resize", invalidate, { passive: true });
     this.listen(window, "scroll", invalidate, { capture: true, passive: true });
     const observer = new ResizeObserver(invalidate);
@@ -188,6 +233,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.stepCleanups.push(() => observer.disconnect());
     this.stepCleanups.push(
       step.props.subscribe(() => {
+        if (!this.isCurrentGeneration(generation)) return;
         this.syncControlState(step);
         this.syncShortcutLabels(step);
         invalidate();
@@ -195,6 +241,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     );
     for (const handler of step.definition.eventHandlers) {
       const listener = (event: Event) => {
+        if (!this.isCurrentGeneration(generation)) return;
         void handler.callback(
           event,
           step.props,
@@ -205,11 +252,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       };
       this.listen(target, handler.event, listener);
     }
-    this.listen(window, "keydown", (event) => this.handleKeydown(event as KeyboardEvent));
+    this.listen(window, "keydown", (event) => {
+      if (this.isCurrentGeneration(generation)) this.handleKeydown(event as KeyboardEvent);
+    });
     this.attachButtonHandlers(step);
     this.syncControlState(step);
     this.syncShortcutLabels(step);
-    if (step.behavior?.targetTracking === "continuous") this.schedulePosition();
+    if (step.behavior?.targetTracking === "continuous") this.schedulePosition(generation);
   }
 
   private listen(
@@ -222,19 +271,21 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.stepCleanups.push(() => target.removeEventListener(type, listener, options));
   }
 
-  private schedulePosition() {
-    if (this.disposed || !this.currentStep || this.rafId !== null) return;
+  private schedulePosition(generation = this.generation) {
+    if (!this.isCurrentGeneration(generation) || !this.currentStep || this.rafId !== null) return;
     this.rafId = requestAnimationFrame(() => {
       this.rafId = null;
-      this.updatePosition();
-      if (this.currentStep?.behavior?.targetTracking === "continuous") this.schedulePosition();
+      if (!this.isCurrentGeneration(generation)) return;
+      this.updatePosition(generation);
+      if (this.currentStep?.behavior?.targetTracking === "continuous")
+        this.schedulePosition(generation);
     });
   }
 
-  private updatePosition() {
+  private updatePosition(generation: number) {
     const step = this.currentStep;
     const target = step?.target;
-    if (this.disposed || !step || !target) return;
+    if (!this.isCurrentGeneration(generation) || !step || !target) return;
     const targetRect = target.getBoundingClientRect();
     const popoverRect = this.popover?.getElement()?.getBoundingClientRect() ?? null;
     const targetChanged = !rectEqual(targetRect, this.lastTargetRect);
@@ -247,8 +298,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (this.isPointerEnabled(step))
         this.pointer?.updatePosition(targetRect, step, popoverPlacement);
     }
-    this.lastTargetRect = copyRect(targetRect);
-    this.lastPopoverRect = popoverRect ? copyRect(popoverRect) : null;
+    this.lastTargetRect = snapshotRect(targetRect);
+    this.lastPopoverRect = popoverRect ? snapshotRect(popoverRect) : null;
   }
 
   private handleKeydown(event: KeyboardEvent) {
@@ -266,8 +317,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.loopFocus(event);
       return;
     }
-    if (isEditable(event.target)) return;
     const shortcuts = step.popover?.keyboardShortcuts;
+    if ((shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key)) {
+      event.preventDefault();
+      void this.command("cancel");
+      return;
+    }
+    if (isEditable(event.target)) return;
     if (
       (shortcuts?.next ?? DEFAULT_SHORTCUTS.next).includes(event.key) &&
       step.props.get().disableNextButton !== true
@@ -280,9 +336,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     ) {
       event.preventDefault();
       void this.command("previous");
-    } else if ((shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key)) {
-      event.preventDefault();
-      void this.command("cancel");
     }
   }
 
@@ -344,6 +397,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         void this.command("previous");
       });
     }
+    const cancel = this.findTrigger("cancel");
+    if (cancel) {
+      this.listen(cancel, "click", (event) => {
+        event.preventDefault();
+        void this.command("cancel");
+      });
+    }
   }
 
   private syncControlState(step: ActiveStep<T>) {
@@ -353,7 +413,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (back) back.disabled = step.props.get().disableBackButton === true;
   }
 
-  private findTrigger(direction: "next" | "back") {
+  private findTrigger(direction: "next" | "back" | "cancel") {
     const scope = this.root ?? this.popover?.getElement();
     return scope?.querySelector<HTMLButtonElement>(`[data-glow-tour-${direction}-trigger]`) ?? null;
   }
@@ -375,11 +435,34 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     for (const cleanup of this.stepCleanups.splice(0)) cleanup();
   }
 
+  private beginGeneration() {
+    this.generation += 1;
+    this.cancelElementAnimations();
+    return this.generation;
+  }
+
+  private cancelAnimationsOnAbort(signal: AbortSignal) {
+    const onAbort = () => this.cancelElementAnimations();
+    signal.addEventListener("abort", onAbort, { once: true });
+    return () => signal.removeEventListener("abort", onAbort);
+  }
+
+  private cancelElementAnimations() {
+    this.overlay?.cancelAnimations();
+    this.popover?.cancelAnimations();
+    this.pointer?.cancelAnimations();
+  }
+
+  private isCurrentGeneration(generation: number) {
+    return !this.disposed && generation === this.generation;
+  }
+
   private async scrollTargetIntoView(
     step: ActiveStep<T>,
     target: HTMLElement,
     signal: AbortSignal,
   ) {
+    this.throwIfAborted(signal);
     if (step.props.get().disableAutoScroll || isInViewport(target.getBoundingClientRect())) return;
     const controller = new AbortController();
     this.scrollAbort = controller;
@@ -415,13 +498,18 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private throwIfAborted(signal: AbortSignal) {
     if (signal.aborted || this.disposed) throw abortError();
   }
+
+  private throwIfStale(generation: number, signal?: AbortSignal) {
+    if (!this.isCurrentGeneration(generation) || signal?.aborted) throw abortError();
+  }
 }
 
 function animationOptions(
+  step: { readonly animated: boolean | undefined },
   options: { animated?: boolean; animation?: { duration?: number; easing?: string } } | undefined,
 ) {
   return {
-    disabled: options?.animated === false,
+    disabled: step.animated === false || options?.animated === false || prefersReducedMotion(),
     duration: options?.animation?.duration,
     easing: options?.animation?.easing,
   };
@@ -431,11 +519,39 @@ function abortError() {
   return new DOMException("The operation was aborted", "AbortError");
 }
 
-function copyRect(rect: DOMRect): DOMRect {
-  return { ...rect } as DOMRect;
+interface RectSnapshot {
+  bottom: number;
+  height: number;
+  left: number;
+  right: number;
+  top: number;
+  width: number;
+  x: number;
+  y: number;
 }
 
-function rectEqual(left: DOMRect | null, right: DOMRect | null) {
+function snapshotRect(rect: DOMRect): RectSnapshot {
+  const left = finite(rect.left);
+  const top = finite(rect.top);
+  const width = finite(rect.width);
+  const height = finite(rect.height);
+  return {
+    bottom: finite(rect.bottom, top + height),
+    height,
+    left,
+    right: finite(rect.right, left + width),
+    top,
+    width,
+    x: finite(rect.x, left),
+    y: finite(rect.y, top),
+  };
+}
+
+function finite(value: number, fallback = 0) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function rectEqual(left: DOMRect | null, right: RectSnapshot | null) {
   return (
     !!left &&
     !!right &&
@@ -448,16 +564,33 @@ function rectEqual(left: DOMRect | null, right: DOMRect | null) {
 
 function isEditable(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
-  return target.matches(
-    "input, textarea, select, [contenteditable]:not([contenteditable='false'])",
-  );
+  if (target.matches("input, textarea, select")) return true;
+  let current: HTMLElement | null = target;
+  while (current) {
+    const contentEditable = current.getAttribute("contenteditable");
+    if (contentEditable !== null) return contentEditable.toLowerCase() !== "false";
+    current = current.parentElement;
+  }
+  return false;
 }
 
 function isFocusable(element: HTMLElement) {
+  if (
+    element.hasAttribute("disabled") ||
+    element.hasAttribute("hidden") ||
+    element.getAttribute("aria-disabled") === "true" ||
+    element.getAttribute("aria-hidden") === "true" ||
+    element.closest("[hidden], [inert], [aria-hidden='true']") !== null
+  )
+    return false;
+  const style = window.getComputedStyle(element);
+  return style.display !== "none" && style.visibility !== "hidden";
+}
+
+function prefersReducedMotion() {
   return (
-    !element.hasAttribute("disabled") &&
-    !element.hasAttribute("hidden") &&
-    element.getAttribute("aria-hidden") !== "true"
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 }
 

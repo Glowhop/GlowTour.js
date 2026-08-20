@@ -79,6 +79,11 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     }
   }
 
+  override cancelAnimations() {
+    super.cancelAnimations();
+    this._stopAnimation();
+  }
+
   private async _appear(position: DOMRect, step: TourElementStep) {
     const styles = this._getNextStyles(position, step);
     for (const [property, value] of Object.entries(styles)) {
@@ -92,7 +97,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
         fill: "none",
       },
     );
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "1");
     this.element.removeAttribute("aria-hidden");
@@ -109,7 +114,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
         fill: "none",
       },
     );
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "0");
     this.element.setAttribute("aria-hidden", "true");
@@ -196,6 +201,13 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     this.animation?.cancel();
     this.animation = null;
     this.element.style.removeProperty("transform");
+  }
+
+  protected _release() {
+    this._stopAnimation();
+    this.element.style.setProperty("opacity", "0");
+    this.element.setAttribute("aria-hidden", "true");
+    this.element.removeAttribute("data-glow-tour-placement");
   }
 
   private _getTargetTransform(placement: TryOrderOptions) {

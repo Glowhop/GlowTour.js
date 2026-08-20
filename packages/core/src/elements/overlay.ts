@@ -30,9 +30,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       fill: "none",
     });
 
-    await animation.finished;
-
-    animation.commitStyles();
+    if (await this._waitForAnimation(animation)) animation.commitStyles();
   }
 
   _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
@@ -90,6 +88,14 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     return this.element.querySelector("path");
   }
 
+  protected _release() {
+    const path = this._getPathElement();
+    path?.style.removeProperty("d");
+    path?.style.removeProperty("fill");
+    path?.style.setProperty("opacity", "0");
+    this.element.style.setProperty("pointer-events", "none");
+  }
+
   updatePosition(nextPosition: DOMRect, step: TourElementStep) {
     const { padding, radius } = step.overlay || {};
     const pathValue = roundedRectPath(nextPosition, viewportDimensions(), {
@@ -125,7 +131,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
 
     const animation = path.animate([keyframe], this._getAnimationOptions());
 
-    await animation.finished;
+    await this._waitForAnimation(animation);
   }
 
   async _disappear() {
@@ -142,7 +148,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       { ...this._getAnimationOptions(), fill: "none" },
     );
 
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     animation.commitStyles();
 

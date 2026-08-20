@@ -24,6 +24,7 @@ export class ActiveStep<T> {
   readonly indicator;
   readonly scroll;
   readonly behavior;
+  readonly animated: boolean | undefined;
   target: HTMLElement | null = null;
 
   constructor(
@@ -37,6 +38,7 @@ export class ActiveStep<T> {
     this.indicator = mergeIndicatorOptions(defaults.indicator, definition.indicator);
     this.scroll = mergeScrollOptions(defaults.scroll, definition.scroll);
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
+    this.animated = defaults.animated;
   }
 
   reset() {

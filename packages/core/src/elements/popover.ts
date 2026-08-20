@@ -195,6 +195,11 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       void this.moveToTarget(nextPosition, step, false);
       return;
     }
+
+    this.element.style.setProperty(
+      "transform",
+      `translate(${roundByDPR(nextCoordinates.x)}px, ${roundByDPR(nextCoordinates.y)}px)`,
+    );
   }
 
   async _appear(position: DOMRect, step: TourElementStep) {
@@ -212,7 +217,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       ],
       this._getAnimationOptions(),
     );
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "1");
     this.element.removeAttribute("aria-hidden");
@@ -227,7 +232,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       this._getAnimationOptions(),
     );
 
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     animation.commitStyles();
 
@@ -236,6 +241,13 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     this.element.setAttribute("inert", "true");
     this.element.style.removeProperty("transform");
     this.element.style.setProperty("opacity", "0");
+  }
+
+  protected _release() {
+    this.element.style.setProperty("opacity", "0");
+    this.element.setAttribute("aria-hidden", "true");
+    this.element.setAttribute("inert", "true");
+    this.element.style.removeProperty("transform");
   }
 }
 
