@@ -49,4 +49,13 @@ describe("angular adapter contract", () => {
 
     assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
   });
+
+  test("keeps cancellation labels generic and does not expose the legacy cancelLabel input", () => {
+    const definition = Reflect.get(runtime.GlowTourCancelTrigger, "ɵcmp");
+    assert.equal(typeof definition, "object");
+    assert.equal(Reflect.has(definition as object, "inputs"), true);
+    const inputs = Reflect.get(definition as object, "inputs");
+    assert.equal(typeof inputs, "object");
+    assert.equal(Reflect.has(inputs as object, "cancelLabel"), false);
+  });
 });

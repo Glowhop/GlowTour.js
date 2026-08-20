@@ -224,6 +224,20 @@ Last updated: 2026-08-20
 | Final `bun run --cwd apps/playground build` | Pass as a separate private-app gate; the pre-existing Angular chunk-size warning remains. |
 | Final release preparation and publish dry-run | Pass; exact seven-package order printed without publication. |
 
+## P1.3D Angular review follow-up (2026-08-20)
+
+- RED `bun --conditions=browser test ./packages/angular/src/angular.browser.ts --test-name-pattern 'reacts to dynamic'`: 0 pass, 1 fail; after the host changed `nextLabel`, the rendered label remained `Next one` instead of `Next two`.
+- GREEN `bun --conditions=browser test ./packages/angular/src/angular.browser.ts --test-name-pattern 'reacts to dynamic' && bunx tsc -p tsconfig.json --noEmit`: 1 pass, 0 fail and no TypeScript diagnostics after trigger setters synchronize backing Angular signals. `booleanAttribute` makes a bare `disabled` binding true; each trigger updates text, native disabled state, ARIA, and consumer-disabled marker together.
+- GREEN `bun --conditions=browser test ./packages/angular/src/angular.browser.ts --test-name-pattern 'cleans a removed|required tour'`: 2 pass, 0 fail. A real Angular bootstrap error handler receives the clear missing-root-tour failure, and detached/recreated elements release then rebind their scoped bridge binding.
+- Angular focused verification: `bun --conditions=browser test ./packages/angular/src/angular.browser.ts` passed 9/9; `bun test packages/angular/src/angular.test.ts` passed 3/3; `bunx tsc -p tsconfig.json --noEmit` passed; `bunx ng-packagr --project packages/angular/ng-package.json` passed with Ivy partial compilation.
+- Coverage now includes immediate descendant `ngOnInit` workflow start, atomic tour/idPrefix replacement log, nested/sibling scope isolation, late trigger shortcut registration, dynamic step title/content/footer/button visibility, Back/Next/Cancel with prevented delegated command, consumer disabled toggling, trigger ARIA/labels, cleanup/recreation, outside-root injection, and a missing required root input.
+- Final `bun install --frozen-lockfile`: pass; 367 installs checked with no changes.
+- Final `bun run check`: pass; Biome checked 101 files with no fixes. Final `bun run typecheck`: pass with no diagnostics. Final `bun test`: pass; 164 tests, 0 failures across 21 files.
+- Final `bun run test:browser`: pass; React 12/12, Solid 8/8, Vue 10/10, and Angular 9/9. Final `bun run build` and `bun run pack`: pass; exactly 7 public distributions and 7 tarballs.
+- Final `bun run test:tarballs`: pass with registry access; all 7 external consumers passed, including the Angular standalone `ngc` fixture that binds the required `[tour]` root input. Final Angular APF declaration scan: pass; no `GlowTourService`, `glowTour`, `createTourStore`, `TourStore`, or `WorkflowInstance` declaration appears in `packages/angular/dist`.
+- Final `bun run --cwd apps/playground build`, `bun run release:prepare`, and `bun run release:publish -- --dry-run`: pass. The existing 1.38 MB minified Angular playground chunk warning remains.
+- Next action: retain legacy Core export narrowing for a later cross-adapter migration after every public adapter has adopted the instance-scoped facade.
+
 ## Decisions and deviations
 
 - `createGlowTour<T>()` is the only new public instance factory; `TourController` and `TourViewDriver` remain internal implementation types.

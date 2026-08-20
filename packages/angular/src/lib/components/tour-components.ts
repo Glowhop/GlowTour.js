@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from "@angular/common";
 import {
+  booleanAttribute,
   Component,
   computed,
   DestroyRef,
@@ -90,6 +91,10 @@ export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
   }
 
   ngOnInit() {
+    if (!this.tour) {
+      throw new Error("GlowTourRoot requires a tour input.");
+    }
+
     this.initialized = true;
     this.reconcile();
   }
@@ -263,11 +268,20 @@ export class GlowTourOverlay extends GlowTourBoundElement<SVGSVGElement> impleme
 
 @Directive()
 abstract class GlowTourTrigger extends GlowTourReactiveComponent {
-  @Input() ariaLabel?: string;
-  @Input() disabled = false;
+  private readonly ariaLabelValue = signal<string | undefined>(undefined);
+  private readonly disabledValue = signal(false);
 
-  protected readonly consumerDisabled = computed(() => this.disabled === true);
+  protected readonly ariaLabelText = computed(() => this.ariaLabelValue());
+  protected readonly consumerDisabled = computed(() => this.disabledValue());
   protected readonly ariaControls = computed(() => this.scope.binding()?.ids.popover);
+
+  protected setAriaLabel(value: string | undefined) {
+    this.ariaLabelValue.set(value);
+  }
+
+  protected setDisabled(value: boolean) {
+    this.disabledValue.set(value);
+  }
 }
 
 @Component({
@@ -279,7 +293,7 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
         data-glow-tour-back-trigger
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabel ?? label()"
+        [attr.aria-label]="ariaLabelText() ?? label()"
         [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
         [disabled]="isDisabled()"
         type="button"
@@ -288,7 +302,17 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   `,
 })
 export class GlowTourBackTrigger extends GlowTourTrigger {
-  @Input() backLabel?: string;
+  private readonly backLabelValue = signal<string | undefined>(undefined);
+
+  @Input() set ariaLabel(value: string | undefined) {
+    this.setAriaLabel(value);
+  }
+  @Input() set backLabel(value: string | undefined) {
+    this.backLabelValue.set(value);
+  }
+  @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
+    this.setDisabled(value);
+  }
 
   readonly isDisabled = computed(
     () =>
@@ -296,7 +320,7 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
       !this.snapshot()?.canPrevious ||
       this.step()?.disableBackButton === true,
   );
-  readonly label = computed(() => this.backLabel ?? "Back step");
+  readonly label = computed(() => this.backLabelValue() ?? "Back step");
 }
 
 @Component({
@@ -308,7 +332,7 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
         data-glow-tour-next-trigger
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabel ?? label()"
+        [attr.aria-label]="ariaLabelText() ?? label()"
         [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
         [disabled]="isDisabled()"
         type="button"
@@ -317,8 +341,21 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
   `,
 })
 export class GlowTourNextTrigger extends GlowTourTrigger {
-  @Input() finishLabel?: string;
-  @Input() nextLabel?: string;
+  private readonly finishLabelValue = signal<string | undefined>(undefined);
+  private readonly nextLabelValue = signal<string | undefined>(undefined);
+
+  @Input() set ariaLabel(value: string | undefined) {
+    this.setAriaLabel(value);
+  }
+  @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
+    this.setDisabled(value);
+  }
+  @Input() set finishLabel(value: string | undefined) {
+    this.finishLabelValue.set(value);
+  }
+  @Input() set nextLabel(value: string | undefined) {
+    this.nextLabelValue.set(value);
+  }
 
   readonly isDisabled = computed(
     () =>
@@ -328,8 +365,8 @@ export class GlowTourNextTrigger extends GlowTourTrigger {
   );
   readonly label = computed(() => {
     return this.snapshot()?.isLastStep
-      ? (this.finishLabel ?? "Finish tour")
-      : (this.nextLabel ?? "Next step");
+      ? (this.finishLabelValue() ?? "Finish tour")
+      : (this.nextLabelValue() ?? "Next step");
   });
 }
 
@@ -342,7 +379,7 @@ export class GlowTourNextTrigger extends GlowTourTrigger {
         data-glow-tour-cancel-trigger
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabel ?? label()"
+        [attr.aria-label]="ariaLabelText() ?? label()"
         [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
         [disabled]="isDisabled()"
         type="button"
@@ -351,8 +388,13 @@ export class GlowTourNextTrigger extends GlowTourTrigger {
   `,
 })
 export class GlowTourCancelTrigger extends GlowTourTrigger {
-  @Input() cancelLabel?: string;
+  @Input() set ariaLabel(value: string | undefined) {
+    this.setAriaLabel(value);
+  }
+  @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
+    this.setDisabled(value);
+  }
 
   readonly isDisabled = computed(() => this.consumerDisabled() || !this.snapshot()?.canCancel);
-  readonly label = computed(() => this.cancelLabel ?? "Cancel tour");
+  readonly label = computed(() => "Cancel tour");
 }
