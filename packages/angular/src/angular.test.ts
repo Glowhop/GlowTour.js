@@ -1,52 +1,52 @@
 import "@angular/compiler";
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import {
-  createTourStore,
-  GLOW_TOUR_COMPONENT_TEMPLATES,
-  GlowTourBackTrigger,
-  GlowTourContent,
-  GlowTourFooter,
-  GlowTourHeader,
-  GlowTourNextTrigger,
-  GlowTourOverlay,
-  GlowTourPointer,
-  GlowTourPopover,
-  GlowTourRoot,
-  GlowTourService,
-  glowTour,
-} from "./public-api";
+import * as runtime from "./public-api";
 
 describe("angular adapter contract", () => {
-  test("exports the core API, singleton and Angular service", () => {
-    assert.equal(typeof createTourStore, "function");
-    assert.equal(typeof glowTour.create, "function");
-    assert.equal(typeof glowTour.run, "function");
-    const service = new GlowTourService();
-    assert.equal(service.state, glowTour.state);
+  test("exports an instance factory and standalone native components without legacy runtime values", () => {
+    assert.equal(typeof runtime.createGlowTour, "function");
+
+    for (const component of [
+      runtime.GlowTourRoot,
+      runtime.GlowTourHeader,
+      runtime.GlowTourContent,
+      runtime.GlowTourFooter,
+      runtime.GlowTourPopover,
+      runtime.GlowTourOverlay,
+      runtime.GlowTourPointer,
+      runtime.GlowTourBackTrigger,
+      runtime.GlowTourNextTrigger,
+      runtime.GlowTourCancelTrigger,
+    ]) {
+      assert.equal(typeof component, "function");
+    }
+
+    for (const legacy of [
+      "Builder",
+      "create",
+      "createTourStore",
+      "TourStore",
+      "WorkflowInstance",
+      "WorkflowStep",
+      "glowTour",
+      "GlowTourService",
+    ]) {
+      assert.equal(legacy in runtime, false, `${legacy} must not be public`);
+    }
   });
 
-  test("exports every standalone Angular component", () => {
-    assert.equal(typeof GlowTourRoot, "function");
-    assert.equal(typeof GlowTourHeader, "function");
-    assert.equal(typeof GlowTourContent, "function");
-    assert.equal(typeof GlowTourFooter, "function");
-    assert.equal(typeof GlowTourPopover, "function");
-    assert.equal(typeof GlowTourOverlay, "function");
-    assert.equal(typeof GlowTourPointer, "function");
-    assert.equal(typeof GlowTourBackTrigger, "function");
-    assert.equal(typeof GlowTourNextTrigger, "function");
-  });
+  test("imports without DOM globals for SSR", () => {
+    const result = Bun.spawnSync({
+      cmd: [
+        "bun",
+        "-e",
+        "delete globalThis.document; delete globalThis.window; delete globalThis.HTMLElement; await import('./packages/angular/node_modules/@angular/compiler/fesm2022/compiler.mjs'); await import('./packages/angular/src/public-api.ts');",
+      ],
+      cwd: process.cwd(),
+      stderr: "pipe",
+    });
 
-  test("uses accessible native templates and kebab-case selectors", () => {
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.popover, /role="dialog"/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.overlay, /<svg/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.pointer, /aria-hidden="true"/);
-    assert.match(
-      GLOW_TOUR_COMPONENT_TEMPLATES.pointer,
-      /<div data-glow-tour-pointer-content><ng-content \/><\/div>/,
-    );
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger, /data-glow-tour-back-trigger/);
-    assert.match(GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger, /data-glow-tour-next-trigger/);
+    assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
   });
 });

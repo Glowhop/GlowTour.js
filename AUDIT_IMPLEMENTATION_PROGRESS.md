@@ -258,6 +258,7 @@ Last updated: 2026-08-20
 - P1.2 DOM driver: `packages/core/src/dom/tour-view-driver.{ts,test.ts}`, element structural geometry contracts, runtime command binding, behavior option merging, and this audit journal.
 - P1.3A root bridge: `packages/core/src/runtime/root-bridge.{ts,test.ts}`, the `createGlowTour` facade/type contract, and DOM-driver mount release.
 - P1.3C Vue adapter: `packages/vue/src/{adapter-bridge,glow-tour,index,vue.browser,vue.test}.ts`, `packages/vue/src/components/tour-components.ts`, the Vue playground, browser runner/release contract, and Bun test dependencies.
+- P1.3D Angular adapter: `packages/angular/src/{adapter-bridge,angular.browser,angular.test,lib/glow-tour,lib/components/tour-components,public-api}.ts`, the Angular playground, browser/release/tarball contracts, and `.superpowers/sdd/p1-angular-report.md`.
 
 - `package.json`, `bunfig.toml`, `tsconfig.json`, and `scripts/{build-packages,pack-packages,test-tarballs}.ts`
 - `packages/*/package.json`, declaration build configs, `packages/angular/ng-package.json`, and explicit public entrypoints.

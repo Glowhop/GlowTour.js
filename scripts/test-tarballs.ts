@@ -184,15 +184,17 @@ void registerGlowTourElements;
     join(angularDirectory, "main.ts"),
     `import { Component } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
-import { GlowTourRoot } from "@glowhop/angular-tour";
+import { createGlowTour, GlowTourRoot } from "@glowhop/angular-tour";
 
 @Component({
   imports: [GlowTourRoot],
   selector: "tarball-angular-app",
   standalone: true,
-  template: "<glow-tour-root />",
+  template: '<glow-tour-root [tour]="tour" />',
 })
-export class TarballAngularApp {}
+export class TarballAngularApp {
+  readonly tour = createGlowTour();
+}
 
 void bootstrapApplication(TarballAngularApp);
 `,

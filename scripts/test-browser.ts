@@ -5,6 +5,7 @@ const browserSuites = [
   "./packages/react/src/react.browser.ts",
   "./packages/solid/src/solid.browser.ts",
   "./packages/vue/src/vue.browser.ts",
+  "./packages/angular/src/angular.browser.ts",
 ] as const;
 
 for (const suite of browserSuites) {

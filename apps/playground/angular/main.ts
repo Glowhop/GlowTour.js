@@ -3,6 +3,7 @@ import "zone.js";
 import { Component, type TemplateRef, ViewChild } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
 import {
+  createGlowTour,
   GlowTourBackTrigger,
   GlowTourContent,
   GlowTourFooter,
@@ -12,7 +13,6 @@ import {
   GlowTourPointer,
   GlowTourPopover,
   GlowTourRoot,
-  glowTour,
 } from "@glowhop/angular-tour";
 import "@glowhop/styles-tour/default.css";
 import "../src/styles.css";
@@ -43,7 +43,7 @@ import "../src/styles.css";
 
         <ng-template #nativeTitle><strong>Angular native TemplateRef</strong></ng-template>
 
-        <glow-tour-root>
+        <glow-tour-root [tour]="tour">
           <glow-tour-overlay></glow-tour-overlay>
           <glow-tour-pointer>☝️</glow-tour-pointer>
           <glow-tour-popover>
@@ -64,9 +64,10 @@ import "../src/styles.css";
 })
 class AngularPlayground {
   @ViewChild("nativeTitle", { static: true }) private readonly nativeTitle!: TemplateRef<unknown>;
+  readonly tour = createGlowTour();
 
   startTour() {
-    const tour = glowTour
+    const workflow = this.tour
       .create("angular-playground", {
         overlay: { color: "#101820", opacity: 0.58, padding: 10, radius: 8 },
       })
@@ -88,7 +89,7 @@ class AngularPlayground {
         behavior: { allowInteraction: true },
       })
       .finish();
-    void glowTour.run(tour);
+    void this.tour.run(workflow);
   }
 }
 

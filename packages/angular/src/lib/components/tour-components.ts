@@ -2,90 +2,158 @@ import { NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
+  DestroyRef,
   Directive,
-  type ElementRef,
+  ElementRef,
+  effect,
+  Injectable,
+  InjectionToken,
+  Injector,
   Input,
+  inject,
+  type OnChanges,
+  type OnDestroy,
+  type OnInit,
   signal,
   TemplateRef,
   ViewChild,
 } from "@angular/core";
-import type { DynamicStepProps, WorkflowState } from "@glowhop/core-tour";
+import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import { angularAdapter, getAdapterBridge, type RootBinding } from "../adapter-bridge";
 import type { AngularTourContent } from "../glow-tour";
-import { glowTour } from "../glow-tour";
 
-const POPOVER_ID = "glow-tour-popover";
+type Tour = CoreGlowTour<AngularTourContent>;
 
-export const GLOW_TOUR_COMPONENT_TEMPLATES = {
-  root: "<section data-glow-tour-root><ng-content /></section>",
-  header:
-    '<header data-glow-tour-header id="glow-tour-title">@if (titleTemplate()) { <ng-container [ngTemplateOutlet]="titleTemplate()" /> } @else { {{ titleText() }} }</header>',
-  content:
-    '<div data-glow-tour-content id="glow-tour-description" aria-live="polite">@if (contentTemplate()) { <ng-container [ngTemplateOutlet]="contentTemplate()" /> } @else { {{ contentText() }} }</div>',
-  footer: "@if (!stepProps().hideFooter) { <footer data-glow-tour-footer><ng-content /></footer> }",
-  popover:
-    '<section #tourElement data-glow-tour-popover id="glow-tour-popover" tabindex="-1" role="dialog" aria-labelledby="glow-tour-title" aria-describedby="glow-tour-description"><ng-content /></section>',
-  pointer:
-    '<div #tourElement data-glow-tour-pointer aria-hidden="true"><div data-glow-tour-pointer-content><ng-content /></div></div>',
-  overlay:
-    '<svg #tourElement data-glow-tour-overlay aria-hidden="true" role="presentation" focusable="false" viewBox="0 0 0 0"><path data-glow-tour-overlay-path fill-rule="evenodd" /><ng-content /></svg>',
-  backTrigger:
-    '@if (!isHidden()) { <button type="button" data-action="back" data-glow-tour-back-trigger [attr.aria-label]="ariaLabel || label()" [attr.aria-controls]="ariaControls" [disabled]="isDisabled()" (click)="back($event)"><ng-content>{{ label() }}</ng-content></button> }',
-  nextTrigger:
-    '@if (!isHidden()) { <button type="button" data-action="next" data-glow-tour-next-trigger [attr.aria-label]="ariaLabel || label()" [attr.aria-controls]="ariaControls" [disabled]="isDisabled()" (click)="next($event)"><ng-content>{{ label() }}</ng-content></button> }',
-} as const;
+interface ActiveRootBinding {
+  readonly binding: RootBinding;
+  readonly idPrefix: string | undefined;
+  readonly root: HTMLElement;
+  readonly tour: Tour;
+}
+
+@Injectable()
+class GlowTourScope {
+  readonly binding = signal<RootBinding | null>(null);
+  readonly tour = signal<Tour | null>(null);
+}
+
+const GLOW_TOUR_SCOPE = new InjectionToken<GlowTourScope>("GlowTourScope");
+
+function useTourScope() {
+  const scope = inject(GLOW_TOUR_SCOPE, { optional: true });
+  if (!scope) {
+    throw new Error('GlowTour components must be rendered inside <glow-tour-root [tour]="...">.');
+  }
+  return scope;
+}
 
 @Directive()
 abstract class GlowTourReactiveComponent {
-  readonly snapshot = signal<WorkflowState<AngularTourContent>>(glowTour.state.get());
-  readonly stepProps = signal<DynamicStepProps<AngularTourContent>>({ content: "", title: "" });
-  private stepCleanup?: () => void;
-  private readonly stateCleanup: () => void;
+  protected readonly scope = useTourScope();
+  protected readonly snapshot = signal<TourState<AngularTourContent> | null>(null);
+  protected readonly step = computed(() => this.snapshot()?.currentStep?.currentProps ?? null);
 
   constructor() {
-    this.syncState(glowTour.state.get());
-    this.stateCleanup = glowTour.state.subscribe((state) => this.syncState(state));
-  }
-
-  private syncState(state: WorkflowState<AngularTourContent>) {
-    this.snapshot.set(state);
-    this.stepCleanup?.();
-    this.stepCleanup = undefined;
-    const step = state.currentStep;
-    if (!step) {
-      this.stepProps.set({ content: "", title: "" });
-      return;
-    }
-    this.stepProps.set(step.currentProps.get());
-    this.stepCleanup = step.currentProps.subscribe((value) => this.stepProps.set(value));
-  }
-
-  ngOnDestroy() {
-    this.stepCleanup?.();
-    this.stateCleanup();
+    effect(
+      (onCleanup) => {
+        const tour = this.scope.tour();
+        if (!tour) {
+          this.snapshot.set(null);
+          return;
+        }
+        this.snapshot.set(tour.state.get());
+        onCleanup(tour.state.subscribe((state) => this.snapshot.set(state)));
+      },
+      { allowSignalWrites: true },
+    );
   }
 }
 
 @Component({
   selector: "glow-tour-root",
   standalone: true,
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.root,
+  host: { "data-glow-tour-root": "" },
+  providers: [GlowTourScope, { provide: GLOW_TOUR_SCOPE, useExisting: GlowTourScope }],
+  template: "<ng-content />",
 })
-export class GlowTourRoot {}
+export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
+  @Input({ required: true }) tour!: Tour;
+  @Input() idPrefix?: string;
+
+  private readonly element = inject(ElementRef<HTMLElement>);
+  private readonly scope = inject(GlowTourScope);
+  private active: ActiveRootBinding | null = null;
+  private initialized = false;
+
+  ngOnChanges() {
+    if (this.initialized) this.reconcile();
+  }
+
+  ngOnInit() {
+    this.initialized = true;
+    this.reconcile();
+  }
+
+  ngOnDestroy() {
+    this.release();
+  }
+
+  private reconcile() {
+    const root = this.element.nativeElement;
+    const tour = this.tour;
+    const idPrefix = this.idPrefix;
+    this.scope.tour.set(tour);
+    const current = this.active;
+    if (
+      current !== null &&
+      current.root === root &&
+      current.tour === tour &&
+      current.idPrefix === idPrefix
+    ) {
+      return;
+    }
+    this.release();
+    const binding = getAdapterBridge(tour).connectRoot({
+      adapter: angularAdapter,
+      idPrefix,
+      root,
+    });
+    const active = { binding, idPrefix, root, tour };
+    this.active = active;
+    this.scope.binding.set(binding);
+  }
+
+  private release() {
+    const active = this.active;
+    if (!active) return;
+    this.active = null;
+    active.binding.release();
+    if (this.scope.binding() === active.binding) this.scope.binding.set(null);
+  }
+}
 
 @Component({
   selector: "glow-tour-header",
   standalone: true,
   imports: [NgTemplateOutlet],
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.header,
+  template: `
+    <header data-glow-tour-header [id]="scope.binding()?.ids?.title">
+      @if (titleTemplate()) {
+        <ng-container [ngTemplateOutlet]="titleTemplate()" />
+      } @else {
+        {{ titleText() }}
+      }
+    </header>
+  `,
 })
 export class GlowTourHeader extends GlowTourReactiveComponent {
   readonly titleTemplate = computed(() => {
-    const value = this.stepProps().title;
-    return value instanceof TemplateRef ? value : null;
+    const title = this.step()?.title;
+    return title instanceof TemplateRef ? title : null;
   });
   readonly titleText = computed(() => {
-    const value = this.stepProps().title;
-    return typeof value === "string" ? value : "";
+    const title = this.step()?.title;
+    return typeof title === "string" ? title : "";
   });
 }
 
@@ -93,127 +161,198 @@ export class GlowTourHeader extends GlowTourReactiveComponent {
   selector: "glow-tour-content",
   standalone: true,
   imports: [NgTemplateOutlet],
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.content,
+  template: `
+    <div aria-live="polite" data-glow-tour-content [id]="scope.binding()?.ids?.description">
+      @if (contentTemplate()) {
+        <ng-container [ngTemplateOutlet]="contentTemplate()" />
+      } @else {
+        {{ contentText() }}
+      }
+    </div>
+  `,
 })
 export class GlowTourContent extends GlowTourReactiveComponent {
   readonly contentTemplate = computed(() => {
-    const value = this.stepProps().content;
-    return value instanceof TemplateRef ? value : null;
+    const content = this.step()?.content;
+    return content instanceof TemplateRef ? content : null;
   });
   readonly contentText = computed(() => {
-    const value = this.stepProps().content;
-    return typeof value === "string" ? value : "";
+    const content = this.step()?.content;
+    return typeof content === "string" ? content : "";
   });
 }
 
 @Component({
   selector: "glow-tour-footer",
   standalone: true,
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.footer,
+  template: `@if (!step()?.hideFooter) { <footer data-glow-tour-footer><ng-content /></footer> }`,
 })
 export class GlowTourFooter extends GlowTourReactiveComponent {}
+
+@Directive()
+abstract class GlowTourBoundElement<T extends Element> {
+  protected readonly scope = useTourScope();
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+
+  protected bind(element: T, bindElement: (binding: RootBinding, element: T) => () => void) {
+    const cleanup = effect(
+      (onCleanup) => {
+        const binding = this.scope.binding();
+        if (binding) onCleanup(bindElement(binding, element));
+      },
+      { injector: this.injector },
+    );
+    this.destroyRef.onDestroy(() => cleanup.destroy());
+  }
+}
 
 @Component({
   selector: "glow-tour-popover",
   standalone: true,
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.popover,
+  template: `
+    <section #tourElement
+      data-glow-tour-popover
+      [attr.aria-describedby]="scope.binding()?.ids?.description"
+      [attr.aria-labelledby]="scope.binding()?.ids?.title"
+      [id]="scope.binding()?.ids?.popover"
+      role="dialog"
+      tabindex="-1"
+    ><ng-content /></section>
+  `,
 })
-export class GlowTourPopover {
+export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<HTMLElement>;
 
-  ngAfterViewInit() {
-    glowTour.state.registerElementPopover(this.element.nativeElement);
-  }
-
-  ngOnDestroy() {
-    glowTour.state.registerElementPopover(null);
+  ngOnInit() {
+    this.bind(this.element.nativeElement, (binding, element) => binding.bindPopover(element));
   }
 }
 
 @Component({
   selector: "glow-tour-pointer",
   standalone: true,
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.pointer,
+  template: `
+    <div #tourElement data-glow-tour-pointer aria-hidden="true"><div data-glow-tour-pointer-content><ng-content /></div></div>
+  `,
 })
-export class GlowTourPointer {
+export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<HTMLElement>;
 
-  ngAfterViewInit() {
-    glowTour.state.registerElementPointer(this.element.nativeElement);
-  }
-
-  ngOnDestroy() {
-    glowTour.state.registerElementPointer(null);
+  ngOnInit() {
+    this.bind(this.element.nativeElement, (binding, element) => binding.bindPointer(element));
   }
 }
 
 @Component({
   selector: "glow-tour-overlay",
   standalone: true,
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.overlay,
+  template: `
+    <svg #tourElement data-glow-tour-overlay aria-hidden="true" focusable="false" role="presentation" viewBox="0 0 0 0">
+      <path data-glow-tour-overlay-path fill-rule="evenodd" /><ng-content />
+    </svg>
+  `,
 })
-export class GlowTourOverlay {
+export class GlowTourOverlay extends GlowTourBoundElement<SVGSVGElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<SVGSVGElement>;
 
-  ngAfterViewInit() {
-    glowTour.state.registerElementOverlay(this.element.nativeElement);
+  ngOnInit() {
+    this.bind(this.element.nativeElement, (binding, element) => binding.bindOverlay(element));
   }
+}
 
-  ngOnDestroy() {
-    glowTour.state.registerElementOverlay(null);
-  }
+@Directive()
+abstract class GlowTourTrigger extends GlowTourReactiveComponent {
+  @Input() ariaLabel?: string;
+  @Input() disabled = false;
+
+  protected readonly consumerDisabled = computed(() => this.disabled === true);
+  protected readonly ariaControls = computed(() => this.scope.binding()?.ids.popover);
 }
 
 @Component({
   selector: "glow-tour-back-trigger",
   standalone: true,
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.backTrigger,
+  template: `
+    @if (!snapshot()?.isFirstStep && !step()?.hideBackButton) {
+      <button
+        data-glow-tour-back-trigger
+        [attr.aria-controls]="ariaControls()"
+        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+        [attr.aria-label]="ariaLabel ?? label()"
+        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+        [disabled]="isDisabled()"
+        type="button"
+      ><ng-content>{{ label() }}</ng-content></button>
+    }
+  `,
 })
-export class GlowTourBackTrigger extends GlowTourReactiveComponent {
-  @Input() ariaControls = POPOVER_ID;
-  @Input() ariaLabel?: string;
+export class GlowTourBackTrigger extends GlowTourTrigger {
   @Input() backLabel?: string;
 
-  readonly isHidden = computed(
-    () => this.snapshot().isFirstStep || this.stepProps().hideBackButton === true,
-  );
   readonly isDisabled = computed(
-    () => !this.snapshot().canGoBack || this.stepProps().disableBackButton === true,
+    () =>
+      this.consumerDisabled() ||
+      !this.snapshot()?.canPrevious ||
+      this.step()?.disableBackButton === true,
   );
-  readonly label = computed(
-    () => this.backLabel ?? this.snapshot().startOptions.popover?.buttons?.backLabel ?? "Back step",
-  );
-
-  back(event: Event) {
-    event.preventDefault();
-    void glowTour.state.back();
-  }
+  readonly label = computed(() => this.backLabel ?? "Back step");
 }
 
 @Component({
   selector: "glow-tour-next-trigger",
   standalone: true,
-  template: GLOW_TOUR_COMPONENT_TEMPLATES.nextTrigger,
+  template: `
+    @if (!step()?.hideNextButton) {
+      <button
+        data-glow-tour-next-trigger
+        [attr.aria-controls]="ariaControls()"
+        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+        [attr.aria-label]="ariaLabel ?? label()"
+        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+        [disabled]="isDisabled()"
+        type="button"
+      ><ng-content>{{ label() }}</ng-content></button>
+    }
+  `,
 })
-export class GlowTourNextTrigger extends GlowTourReactiveComponent {
-  @Input() ariaControls = POPOVER_ID;
-  @Input() ariaLabel?: string;
+export class GlowTourNextTrigger extends GlowTourTrigger {
   @Input() finishLabel?: string;
   @Input() nextLabel?: string;
 
-  readonly isHidden = computed(() => this.stepProps().hideNextButton === true);
   readonly isDisabled = computed(
-    () => !this.snapshot().canGoNext || this.stepProps().disableNextButton === true,
+    () =>
+      this.consumerDisabled() ||
+      !this.snapshot()?.canAdvance ||
+      this.step()?.disableNextButton === true,
   );
   readonly label = computed(() => {
-    const labels = this.snapshot().startOptions.popover?.buttons;
-    return this.snapshot().isLastStep
-      ? (this.finishLabel ?? labels?.finishLabel ?? "Finish tour")
-      : (this.nextLabel ?? labels?.nextLabel ?? "Next step");
+    return this.snapshot()?.isLastStep
+      ? (this.finishLabel ?? "Finish tour")
+      : (this.nextLabel ?? "Next step");
   });
+}
 
-  next(event: Event) {
-    event.preventDefault();
-    void glowTour.state.next();
-  }
+@Component({
+  selector: "glow-tour-cancel-trigger",
+  standalone: true,
+  template: `
+    @if (snapshot()?.canCancel) {
+      <button
+        data-glow-tour-cancel-trigger
+        [attr.aria-controls]="ariaControls()"
+        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+        [attr.aria-label]="ariaLabel ?? label()"
+        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+        [disabled]="isDisabled()"
+        type="button"
+      ><ng-content>{{ label() }}</ng-content></button>
+    }
+  `,
+})
+export class GlowTourCancelTrigger extends GlowTourTrigger {
+  @Input() cancelLabel?: string;
+
+  readonly isDisabled = computed(() => this.consumerDisabled() || !this.snapshot()?.canCancel);
+  readonly label = computed(() => this.cancelLabel ?? "Cancel tour");
 }
