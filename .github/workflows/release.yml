@@ -55,6 +55,7 @@ jobs:
           bun run check
           bun run typecheck
           bun test
+          bun run test:browser
           bun run build
           bun run pack
           bun run test:tarballs

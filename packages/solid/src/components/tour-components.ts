@@ -272,26 +272,22 @@ export function Pointer(props: PointerProps): JSX.Element {
 
 function Trigger(
   props: ButtonProps & {
-    tourCommand: () => Promise<void>;
     capabilityDisabled: boolean;
     label: string;
     marker: "back" | "cancel" | "next";
   },
 ): JSX.Element {
   const context = useTourContext();
-  const [local, other] = splitProps(props, [
-    "children",
-    "tourCommand",
-    "capabilityDisabled",
-    "label",
-    "marker",
-  ]);
+  const [local, other] = splitProps(props, ["children", "capabilityDisabled", "label", "marker"]);
   const buttonProps = mergeProps(other, {
     get "aria-controls"() {
       return context.binding()?.ids.popover;
     },
     get "aria-label"() {
       return other["aria-label"] || local.label;
+    },
+    get "aria-disabled"() {
+      return local.capabilityDisabled || other.disabled === true;
     },
     get "data-glow-tour-back-trigger"() {
       return local.marker === "back" ? true : undefined;
@@ -310,9 +306,6 @@ function Trigger(
     },
     onClick(event: ButtonClickEvent) {
       if (typeof other.onClick === "function") other.onClick(event);
-      if (local.capabilityDisabled || other.disabled === true || event.defaultPrevented) return;
-      event.preventDefault();
-      void local.tourCommand();
     },
     type: "button" as const,
   });
@@ -340,7 +333,6 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
     get children() {
       return Trigger(
         mergeProps(props, {
-          tourCommand: () => context.tour().previous(),
           get capabilityDisabled() {
             return !snapshot().canPrevious || currentStep(snapshot())?.disableBackButton === true;
           },
@@ -362,7 +354,6 @@ export function NextTrigger(props: NextTriggerProps): JSX.Element {
     get children() {
       return Trigger(
         mergeProps(props, {
-          tourCommand: () => context.tour().advance(),
           get capabilityDisabled() {
             return !snapshot().canAdvance || currentStep(snapshot())?.disableNextButton === true;
           },
@@ -388,7 +379,6 @@ export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
     get children() {
       return Trigger(
         mergeProps(props, {
-          tourCommand: () => context.tour().cancel(),
           get capabilityDisabled() {
             return !snapshot().canCancel;
           },

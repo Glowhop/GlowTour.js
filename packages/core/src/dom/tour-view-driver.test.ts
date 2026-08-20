@@ -530,7 +530,8 @@ describe("DomTourViewDriver", () => {
     );
     elements.next.dispatchEvent(new MockEvent("click"));
     elements.back.dispatchEvent(new MockEvent("click"));
-    assert.deepEqual(calls, ["advance", "advance", "cancel"]);
+    await Promise.resolve();
+    assert.deepEqual(calls, ["advance", "cancel"]);
   });
   test("processes Escape from nested contenteditables but ignores navigation and modified keys", async () => {
     const { calls, driver, elements } = installDriver(),
@@ -617,6 +618,30 @@ describe("DomTourViewDriver", () => {
     await driver.show(step, "advance", new AbortController().signal);
 
     elements.next.dispatchEvent(new MockEvent("click"));
+    assert.deepEqual(calls, []);
+  });
+  test("defers trigger commands until a later consumer listener can prevent the native event", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    elements.next.addEventListener("click", (event) => event.preventDefault());
+    elements.next.dispatchEvent(new MockEvent("click"));
+    await Promise.resolve();
+
+    assert.deepEqual(calls, []);
+  });
+  test("abandons a deferred trigger command after clearing the active step", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    elements.next.dispatchEvent(new MockEvent("click"));
+    await driver.clear(new AbortController().signal);
+    await Promise.resolve();
+
     assert.deepEqual(calls, []);
   });
   test("loops modal Tab focus, starts directionally, restores focus, and toggles aria-modal", async () => {
@@ -764,6 +789,7 @@ describe("DomTourViewDriver", () => {
     await new Promise<void>((resolve) => setTimeout(resolve));
     elements.next.dispatchEvent(new MockEvent("click"));
     replacementNext.dispatchEvent(new MockEvent("click"));
+    await Promise.resolve();
     assert.deepEqual(calls, ["advance"]);
     assert.equal(oldObserver?.disconnected, true);
     assert.equal(
@@ -795,6 +821,7 @@ describe("DomTourViewDriver", () => {
 
     replacement.next.dispatchEvent(new MockEvent("click"));
     window.dispatchEvent(new MockKeyboardEvent("keydown", { key: "Enter" }));
+    await Promise.resolve();
     assert.deepEqual(calls, ["advance", "advance"]);
     assert.equal(elements.next.listeners.get("click")?.size ?? 0, 0);
   });

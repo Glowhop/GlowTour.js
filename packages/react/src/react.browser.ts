@@ -25,6 +25,227 @@ afterEach(() => {
 });
 
 describe("react adapter browser behavior", () => {
+  test("lets a consumer prevent a delegated next click without navigation", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("prevented")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    const root = createRoot(container);
+
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          GlowTour.Root,
+          { tour },
+          React.createElement(GlowTour.NextTrigger, { onClick: (event) => event.preventDefault() }),
+        ),
+      );
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    assert.equal(tour.state.get().currentStepIndex, 0);
+
+    await React.act(async () => root.unmount());
+  });
+
+  test("advances exactly once when a consumer does not prevent a delegated next click", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    let advances = 0;
+    const workflow = tour
+      .create("nonpreventing")
+      .step({ content: "First", target, title: "First" })
+      .onNext(() => {
+        advances += 1;
+      })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    const root = createRoot(container);
+
+    await React.act(async () => {
+      root.render(
+        React.createElement(GlowTour.Root, { tour }, React.createElement(GlowTour.NextTrigger)),
+      );
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    await React.act(async () => {
+      next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(advances, 1);
+
+    await React.act(async () => root.unmount());
+  });
+
+  test("defers a next click and abandons it after the consumer replaces the workflow", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const first = tour
+      .create("first")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    const replacement = tour
+      .create("replacement")
+      .step({ content: "Replacement", target, title: "Replacement" })
+      .step({ content: "Replacement next", target, title: "Replacement next" })
+      .finish();
+    const root = createRoot(container);
+
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          GlowTour.Root,
+          { tour },
+          React.createElement(GlowTour.NextTrigger, { onClick: () => tour.run(replacement) }),
+        ),
+      );
+    });
+    await React.act(async () => {
+      await tour.run(first);
+    });
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    await React.act(async () => {
+      next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    assert.equal(tour.state.get().currentStep?.currentProps.content, "Replacement");
+    assert.equal(tour.state.get().currentStepIndex, 0);
+
+    await React.act(async () => root.unmount());
+  });
+
+  test("keeps native disabled, consumer marker, and aria-disabled coherent when disabled toggles", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("toggle disabled")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    let setDisabled!: (disabled: boolean) => void;
+
+    function Harness() {
+      const [disabled, updateDisabled] = React.useState(true);
+      setDisabled = updateDisabled;
+      return React.createElement(
+        GlowTour.Root,
+        { tour },
+        React.createElement(GlowTour.NextTrigger, { disabled }),
+      );
+    }
+
+    const root = createRoot(container);
+    await React.act(async () => {
+      root.render(React.createElement(Harness));
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    assert.equal(next?.disabled, true);
+    assert.equal(next?.getAttribute("data-glow-tour-consumer-disabled"), "true");
+    assert.equal(next?.getAttribute("aria-disabled"), "true");
+
+    await React.act(async () => setDisabled(false));
+    assert.equal(next?.disabled, false);
+    assert.equal(next?.hasAttribute("data-glow-tour-consumer-disabled"), false);
+    assert.equal(next?.getAttribute("aria-disabled"), "false");
+    await React.act(async () => {
+      next?.click();
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    assert.equal(tour.state.get().currentStepIndex, 1);
+
+    await React.act(async () => root.unmount());
+  });
+
+  test("treats a custom child button's disabled prop as consumer disabled", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("child disabled")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    const root = createRoot(container);
+
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          GlowTour.Root,
+          { tour },
+          React.createElement(
+            GlowTour.NextTrigger,
+            null,
+            React.createElement("button", {
+              disabled: true,
+              onClick: (event) => event.preventDefault(),
+            }),
+          ),
+        ),
+      );
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    assert.equal(next?.disabled, true);
+    assert.equal(next?.getAttribute("data-glow-tour-consumer-disabled"), "true");
+    assert.equal(next?.getAttribute("aria-disabled"), "true");
+    next?.click();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    assert.equal(tour.state.get().currentStepIndex, 0);
+
+    await React.act(async () => root.unmount());
+  });
+
   test("keeps consumer-disabled next triggers disabled after the tour becomes active", async () => {
     const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
       import("react"),

@@ -119,6 +119,7 @@ test("CI validates pull requests and main with pinned actions and minimal permis
     "bun run check",
     "bun run typecheck",
     "bun test",
+    "bun run test:browser",
     "bun run build",
     "bun run pack",
     "bun run test:tarballs",
@@ -164,6 +165,9 @@ test("release workflow is GitHub-Release-only and delegates resumable publishing
   expect(raw).toContain('[[ "$RELEASE_PRERELEASE" != "false" ]]');
   expect(raw).toMatch(/\^v\(\[0-9\]\+\)\\\.\(\[0-9\]\+\)\\\.\(\[0-9\]\+\)\$/);
   expect(raw).toContain("bun run release:prepare -- --expected-version");
+  expect(raw).toContain("bun run test:browser");
+  expect(raw.indexOf("bun test")).toBeLessThan(raw.indexOf("bun run test:browser"));
+  expect(raw.indexOf("bun run test:browser")).toBeLessThan(raw.indexOf("bun run build"));
   expect(raw).toMatch(/node-version:\s*22\.14\.0/);
   expect(raw).toMatch(/npm --version/);
   expect(raw).toContain("npm install --global npm@11.5.1");
@@ -185,5 +189,8 @@ test("ordinary local scripts contain no npm publish and retain a non-publishing 
   expect(manifest.scripts["version-packages"]).toBe("changeset version");
   expect(manifest.scripts["release:prepare"]).toBe("bun scripts/prepare-release.ts --dry-run");
   expect(manifest.scripts["release:publish"]).toBe("bun scripts/publish-release.ts");
+  expect(manifest.scripts["test:browser"]).toBe(
+    "bun test --conditions=browser ./packages/react/src/react.browser.ts ./packages/solid/src/solid.browser.ts",
+  );
   expect(Object.values(manifest.scripts).join("\n")).not.toMatch(/npm publish/);
 });

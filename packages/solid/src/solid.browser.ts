@@ -57,6 +57,52 @@ afterEach(() => {
 });
 
 describe("solid adapter browser behavior", () => {
+  test("keeps native disabled, consumer marker, and aria-disabled coherent when disabled toggles", async () => {
+    const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
+      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("toggle disabled")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    let setDisabled!: (disabled: boolean) => void;
+    const dispose = render(() => {
+      const [disabled, updateDisabled] = createSignal(true);
+      setDisabled = updateDisabled;
+      return createComponent(GlowTour.Root, {
+        tour,
+        get children() {
+          return createComponent(GlowTour.NextTrigger, {
+            get disabled() {
+              return disabled();
+            },
+          });
+        },
+      });
+    }, container);
+
+    await tour.run(workflow);
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    assert.equal(next?.disabled, true);
+    assert.equal(next?.getAttribute("data-glow-tour-consumer-disabled"), "true");
+    assert.equal(next?.getAttribute("aria-disabled"), "true");
+
+    setDisabled(false);
+    await Promise.resolve();
+    assert.equal(next?.disabled, false);
+    assert.equal(next?.hasAttribute("data-glow-tour-consumer-disabled"), false);
+    assert.equal(next?.getAttribute("aria-disabled"), "false");
+    next?.click();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    assert.equal(tour.state.get().currentStepIndex, 1);
+
+    dispose();
+  });
+
   test("connects an injected instance and applies one coherent root ID family", async () => {
     const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
       import("solid-js"),

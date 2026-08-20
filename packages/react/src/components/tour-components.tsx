@@ -19,7 +19,7 @@ type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "ref
 };
 type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
   children?:
-    | React.ReactElement
+    | React.ReactElement<React.ButtonHTMLAttributes<HTMLButtonElement>>
     | ((props: React.ButtonHTMLAttributes<HTMLButtonElement>) => React.ReactElement);
 };
 type BackTriggerProps = ButtonProps & { backLabel?: string };
@@ -183,7 +183,6 @@ export function Pointer({ as: Component = "div", children, ...props }: PointerPr
 
 function Trigger({
   children,
-  command,
   capabilityDisabled,
   label,
   marker,
@@ -192,12 +191,14 @@ function Trigger({
   ...props
 }: ButtonProps & {
   capabilityDisabled: boolean;
-  command: () => Promise<void>;
   label: string;
   marker: "back" | "cancel" | "next";
 }) {
   const { binding } = useTourContext();
-  const disabled = capabilityDisabled || userDisabled === true;
+  const child = typeof children === "function" ? null : children;
+  const childProps: React.ButtonHTMLAttributes<HTMLButtonElement> = child?.props ?? {};
+  const consumerDisabled = userDisabled === true || childProps.disabled === true;
+  const disabled = capabilityDisabled || consumerDisabled;
 
   const buttonProps: React.ButtonHTMLAttributes<HTMLButtonElement> & {
     "data-glow-tour-back-trigger": true | undefined;
@@ -208,22 +209,21 @@ function Trigger({
     ...props,
     "aria-controls": binding?.ids.popover,
     "aria-label": props["aria-label"] || label,
+    "aria-disabled": disabled ? "true" : "false",
     "data-glow-tour-back-trigger": marker === "back" || undefined,
     "data-glow-tour-cancel-trigger": marker === "cancel" || undefined,
-    "data-glow-tour-consumer-disabled": userDisabled ? "true" : undefined,
+    "data-glow-tour-consumer-disabled": consumerDisabled ? "true" : undefined,
     "data-glow-tour-next-trigger": marker === "next" || undefined,
     disabled,
     onClick: (event) => {
+      childProps.onClick?.(event);
       onClick?.(event);
-      if (capabilityDisabled || userDisabled === true || event.defaultPrevented) return;
-      event.preventDefault();
-      void command();
     },
     type: "button",
   };
 
   if (typeof children === "function") return children(buttonProps);
-  if (children) return React.cloneElement(children, buttonProps);
+  if (child) return React.cloneElement(child, buttonProps);
   return <button {...buttonProps}>{label}</button>;
 }
 
@@ -236,7 +236,6 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   return (
     <Trigger
       {...props}
-      command={() => tour.previous()}
       capabilityDisabled={!snapshot.canPrevious || step?.disableBackButton === true}
       label={label}
       marker="back"
@@ -253,7 +252,6 @@ export function NextTrigger({ finishLabel, nextLabel, ...props }: NextTriggerPro
   return (
     <Trigger
       {...props}
-      command={() => tour.advance()}
       capabilityDisabled={!snapshot.canAdvance || step?.disableNextButton === true}
       label={label}
       marker="next"
@@ -268,7 +266,6 @@ export function CancelTrigger({ cancelLabel = "Cancel tour", ...props }: CancelT
   return (
     <Trigger
       {...props}
-      command={() => tour.cancel()}
       capabilityDisabled={!snapshot.canCancel}
       label={cancelLabel}
       marker="cancel"

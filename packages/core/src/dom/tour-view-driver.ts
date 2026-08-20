@@ -409,30 +409,44 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private attachButtonHandlers(step: ActiveStep<T>) {
+    const generation = this.generation;
     const next = this.findTrigger("next");
     const back = this.findTrigger("back");
     if (next) {
       this.listen(next, "click", (event) => {
-        if (event.defaultPrevented || !this.canCommand("advance", step)) return;
-        event.preventDefault();
-        void this.command("advance");
+        this.deferTriggerCommand("advance", event, step, generation);
       });
     }
     if (back) {
       this.listen(back, "click", (event) => {
-        if (event.defaultPrevented || !this.canCommand("previous", step)) return;
-        event.preventDefault();
-        void this.command("previous");
+        this.deferTriggerCommand("previous", event, step, generation);
       });
     }
     const cancel = this.findTrigger("cancel");
     if (cancel) {
       this.listen(cancel, "click", (event) => {
-        if (event.defaultPrevented || !this.canCommand("cancel", step)) return;
-        event.preventDefault();
-        void this.command("cancel");
+        this.deferTriggerCommand("cancel", event, step, generation);
       });
     }
+  }
+
+  private deferTriggerCommand(
+    command: "advance" | "previous" | "cancel",
+    event: Event,
+    step: ActiveStep<T>,
+    generation: number,
+  ) {
+    if (event.defaultPrevented || !this.canCommand(command, step)) return;
+    queueMicrotask(() => {
+      if (
+        event.defaultPrevented ||
+        !this.isCurrentGeneration(generation) ||
+        this.currentStep !== step ||
+        !this.canCommand(command, step)
+      )
+        return;
+      void this.commandForGeneration(command, generation);
+    });
   }
 
   private syncControlState(step: ActiveStep<T>) {

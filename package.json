@@ -13,6 +13,7 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "test": "bun test",
+    "test:browser": "bun test --conditions=browser ./packages/react/src/react.browser.ts ./packages/solid/src/solid.browser.ts",
     "typecheck": "bunx tsc -p tsconfig.json --noEmit",
     "playground": "bun run --cwd apps/playground dev",
     "pack": "bun scripts/pack-packages.ts",
