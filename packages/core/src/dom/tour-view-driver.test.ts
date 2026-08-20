@@ -751,6 +751,29 @@ describe("DomTourViewDriver", () => {
     assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
     assert.equal(document.activeElement, replacementNext);
   });
+  test("retains injected commands across a nonterminal mount release", async () => {
+    const { calls, driver, elements } = installDriver(),
+      firstTarget = createTarget(),
+      firstStep = createStep();
+    firstStep.target = firstTarget as unknown as HTMLElement;
+    await driver.show(firstStep, "advance", new AbortController().signal);
+    driver.releaseMount();
+
+    const replacement = createElements(),
+      replacementTarget = createTarget(),
+      replacementStep = createStep();
+    replacementStep.target = replacementTarget as unknown as HTMLElement;
+    driver.registerRoot(replacement.root as unknown as HTMLElement);
+    driver.registerPopover(replacement.popover as unknown as HTMLElement);
+    driver.registerOverlay(replacement.overlay as unknown as SVGSVGElement);
+    driver.registerPointer(replacement.pointer as unknown as HTMLElement);
+    await driver.show(replacementStep, "advance", new AbortController().signal);
+
+    replacement.next.dispatchEvent(new MockEvent("click"));
+    window.dispatchEvent(new MockKeyboardEvent("keydown", { key: "Enter" }));
+    assert.deepEqual(calls, ["advance", "advance"]);
+    assert.equal(elements.next.listeners.get("click")?.size ?? 0, 0);
+  });
   test("deactivates focus guarding when an active popover detaches and reactivates it on replacement", async () => {
     const initial = document.createElement("button"),
       outside = document.createElement("button"),

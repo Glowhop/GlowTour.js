@@ -24,6 +24,10 @@ interface RootBinding {
   release(): void;
 }
 
+interface RootLease {
+  release(): void;
+}
+
 interface AttributeClaim {
   readonly name: string;
   readonly previous: string | null;
@@ -42,6 +46,8 @@ class TourRootBinding<T> implements RootBinding {
     readonly ids: RootIds,
     private readonly reservation: object,
     private readonly attributes: readonly AttributeClaim[],
+    private readonly onMountReleaseStart: () => void,
+    private readonly onMountReleaseComplete: () => void,
     private readonly onRelease: (binding: TourRootBinding<T>) => void,
   ) {}
 
@@ -84,16 +90,28 @@ class TourRootBinding<T> implements RootBinding {
     this.overlay = null;
     this.pointer = null;
     this.popover = null;
-    this.driver.releaseMount();
-    releaseAttributes(this.root, this.attributes);
-    releaseRootOwner(this.root, this.reservation);
-    releasePrefix(this.root.ownerDocument, this.ids, this.reservation);
-    this.onRelease(this);
+    try {
+      runCleanup([
+        this.onMountReleaseStart,
+        () => this.driver.releaseMount(),
+        () => releaseAttributes(this.root, this.attributes),
+        () => releaseRootOwner(this.root, this.reservation),
+        () =>
+          releasePrefix(
+            this.root.ownerDocument,
+            this.ids.root.slice(0, -"-root".length),
+            this.reservation,
+          ),
+      ]);
+    } finally {
+      this.onRelease(this);
+      this.onMountReleaseComplete();
+    }
   }
 
   private assertLiveElement(element: Element) {
     if (this.released) throw new Error("Glow tour root binding has been released");
-    if (!this.root.contains(element)) {
+    if (element === this.root || !this.root.contains(element)) {
       throw new Error("Glow tour elements must be descendants of the claimed root");
     }
   }
@@ -103,8 +121,10 @@ export function attachRootBridge<T>(
   tour: object,
   driver: DomTourViewDriver<T>,
   isDisposed: () => boolean,
+  onMountReleaseStart: () => void,
+  onMountReleaseComplete: () => void,
 ) {
-  let binding: TourRootBinding<T> | null = null;
+  let binding: RootLease | null = null;
   const bridge = Object.freeze({
     version: BRIDGE_VERSION,
     connectRoot(options: { adapter: unknown; idPrefix?: string; root: HTMLElement }): RootBinding {
@@ -116,20 +136,93 @@ export function attachRootBridge<T>(
       if (Reflect.has(root, ROOT_OWNER_SYMBOL)) {
         throw new Error("Glow tour root is already owned by another tour");
       }
-      const prefix = reservePrefix(root.ownerDocument, options.idPrefix);
       const reservation = {};
-      claimRootOwner(root, reservation);
-      reservePrefixOwnership(root.ownerDocument, prefix, reservation);
-      const ids = idsFor(prefix);
-      const attributes = claimAttributes(root, [
-        ["id", ids.root],
-        ["data-glow-tour-id-prefix", prefix],
-      ]);
-      driver.registerRoot(root);
-      binding = new TourRootBinding(driver, root, ids, reservation, attributes, (released) => {
-        if (binding === released) binding = null;
-      });
-      return binding;
+      const attributes: AttributeClaim[] = [];
+      let prefix: string | null = null;
+      let ids: RootIds | null = null;
+      let ownsPrefix = false;
+      let ownsRoot = false;
+      let registeredRoot = false;
+      let releasing = false;
+
+      const rollback = () => {
+        runCleanup([
+          () => {
+            if (!registeredRoot) return;
+            registeredRoot = false;
+            driver.releaseMount();
+          },
+          () => releaseAttributes(root, attributes),
+          () => {
+            if (!ownsRoot) return;
+            ownsRoot = false;
+            releaseRootOwner(root, reservation);
+          },
+          () => {
+            if (!ownsPrefix || !prefix) return;
+            ownsPrefix = false;
+            releasePrefix(root.ownerDocument, prefix, reservation);
+          },
+        ]);
+      };
+      const pending: RootLease = {
+        release: () => {
+          if (binding !== pending || releasing) return;
+          releasing = true;
+          try {
+            runCleanup([onMountReleaseStart, rollback]);
+          } finally {
+            if (binding === pending) binding = null;
+            onMountReleaseComplete();
+          }
+        },
+      };
+
+      // The pending lease is visible to reentrant DOM callbacks before this attempt mutates the root.
+      binding = pending;
+      try {
+        prefix = reservePrefix(root.ownerDocument, options.idPrefix);
+        claimRootOwner(root, reservation);
+        ownsRoot = true;
+        reservePrefixOwnership(root.ownerDocument, prefix, reservation);
+        ownsPrefix = true;
+        ids = idsFor(prefix);
+        claimAttributes(
+          root,
+          [
+            ["id", ids.root],
+            ["data-glow-tour-id-prefix", prefix],
+          ],
+          attributes,
+        );
+        registeredRoot = true;
+        driver.registerRoot(root);
+        if (isDisposed()) throw new Error("Cannot connect a root to a disposed glow tour");
+        if (binding !== pending)
+          throw new Error("Glow tour root lease was released while connecting");
+        const live = new TourRootBinding(
+          driver,
+          root,
+          ids,
+          reservation,
+          attributes,
+          onMountReleaseStart,
+          onMountReleaseComplete,
+          (released) => {
+            if (binding === released) binding = null;
+          },
+        );
+        binding = live;
+        return live;
+      } catch (error) {
+        try {
+          if (binding === pending) pending.release();
+          else rollback();
+        } catch {
+          // The connection error is the useful public failure; cleanup has already attempted every owned claim.
+        }
+        throw error;
+      }
     },
   });
   Object.defineProperty(tour, ADAPTER_BRIDGE_SYMBOL, {
@@ -151,20 +244,39 @@ export function attachRootBridge<T>(
 function claimAttributes(
   root: HTMLElement,
   entries: readonly (readonly [name: string, value: string])[],
+  attributes: AttributeClaim[],
 ) {
-  return entries.map(([name, value]) => {
+  for (const [name, value] of entries) {
     const claim = { name, previous: root.getAttribute(name), value };
+    attributes.push(claim);
     root.setAttribute(name, value);
-    return claim;
-  });
+  }
 }
 
 function releaseAttributes(root: HTMLElement, attributes: readonly AttributeClaim[]) {
-  for (const attribute of attributes) {
-    if (root.getAttribute(attribute.name) !== attribute.value) continue;
-    if (attribute.previous === null) root.removeAttribute(attribute.name);
-    else root.setAttribute(attribute.name, attribute.previous);
+  runCleanup(
+    attributes.map((attribute) => () => {
+      if (root.getAttribute(attribute.name) !== attribute.value) return;
+      if (attribute.previous === null) root.removeAttribute(attribute.name);
+      else root.setAttribute(attribute.name, attribute.previous);
+    }),
+  );
+}
+
+function runCleanup(cleanups: readonly (() => void)[]) {
+  let failed = false;
+  let failure: unknown;
+  for (const cleanup of cleanups) {
+    try {
+      cleanup();
+    } catch (error) {
+      if (!failed) {
+        failed = true;
+        failure = error;
+      }
+    }
   }
+  if (failed) throw failure;
 }
 
 function claimRootOwner(root: HTMLElement, reservation: object) {
@@ -214,8 +326,7 @@ function reservePrefixOwnership(document: Document, prefix: string, reservation:
   prefixReservations(document).set(prefix, reservation);
 }
 
-function releasePrefix(document: Document, ids: RootIds, reservation: object) {
-  const prefix = ids.root.slice(0, -"-root".length);
+function releasePrefix(document: Document, prefix: string, reservation: object) {
   const reservations = prefixReservations(document);
   if (reservations.get(prefix) === reservation) reservations.delete(prefix);
 }

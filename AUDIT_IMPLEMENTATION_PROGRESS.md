@@ -61,6 +61,7 @@ Last updated: 2026-08-20
 - P1.2 DOM driver focus-order correction: the controller’s `transitioning` capability publication disabled inherited controls before `FocusGuard` selected the incoming step’s directional trigger, so forward/backward navigation could focus the popover fallback. The driver now defers controller-bound autofocus until its active capability notification, without enabling commands during the transition.
 - P1.2 DOM driver focus-restoration reentrancy: restoring focus during `show()` or `clear()` can synchronously start a newer show. Both operations now verify their generation/signal immediately after `FocusGuard.deactivate()` and before mutating active state, current step/direction, or starting disappearance.
 - P1.3A root bridge RED: the new focused bridge suite initially failed 9/9 because the factory returned a no-op-driver controller, had no private bridge, and accepted runs without a root. The public-facade enumerable-key regression then failed as expected while private controller fields were still visible.
+- P1.3A review follow-up: RED regressions reproduced a reentrant second `connectRoot()` before its first attribute write, leaked root/prefix claims after a second-attribute failure, an active/rootless controller after release, command loss after remount, root-as-child acceptance, and a mutable `tour.state` facade. GREEN introduces a pending lease before DOM-visible claims, identity-owned best-effort rollback, controller token invalidation before DOM/focus cleanup, and an `idle` publication only after the old lease is detached.
 
 ## Remaining
 
@@ -80,6 +81,13 @@ Last updated: 2026-08-20
 | P1.3A build and pack | Pass; `bun run build` emitted exactly 7 publishable distributions and `bun run pack` created exactly 7 tarballs with no playground artifact. |
 | P1.3A tarball smoke | Pass; approved external-consumer `bun run test:tarballs` smoke contract passed for all 7 packages. |
 | P1.3A playground build | Pass; `bun run --cwd apps/playground build`; the existing Angular chunk-size warning remains (1.38 MB minified). |
+| P1.3A review follow-up RED `bun test packages/core/src/runtime/root-bridge.test.ts packages/core/src/runtime/tour-controller.test.ts` | Red; 7 regressions failed as expected: reentrant lease admission, partial attribute rollback, disposal during claim, root-as-descendant acceptance, active state after release/onStart release, and mutable state facade. |
+| P1.3A review follow-up focused GREEN | Pass; 77 tests across root bridge, controller, and DOM driver. Covers transactional/reentrant claims, second-attribute/dispose rollback, resolver/hook release invalidation, idle-listener remount, repeated release, state facade freeze, and remounted click/keyboard commands. |
+| P1.3A review follow-up static checks | Pass; `bun run typecheck` and `bun run check` (95 files, no diagnostics). |
+| P1.3A review follow-up full test | Pass; `bun test` with 158 tests, 0 failures across 21 files. |
+| P1.3A review follow-up build and pack | Pass; `bun run build` and `bun run pack` emitted exactly 7 publishable distributions and 7 tarballs; playground excluded. |
+| P1.3A review follow-up tarball smoke | Pass; approved-registry `bun scripts/test-tarballs.ts` exercised the external consumer contract for all 7 tarballs. |
+| P1.3A review follow-up playground build | Pass; `bun run --cwd apps/playground build`; existing Angular chunk-size warning remains (1.38 MB minified). |
 | P1.2 DOM driver restoration RED | Red; a focus-restoration handler synchronously started B, leaving stale show state as A and stale clear state as null, so B could not receive keyboard navigation. |
 | P1.2 DOM driver restoration focused GREEN | Pass; 65 tests, 0 failures across DOM driver, FocusGuard, and controller. |
 | P1.2 DOM driver restoration static checks | Pass; `bun run check` (93 files) and `bun run typecheck` (no diagnostics). |
@@ -191,6 +199,7 @@ Last updated: 2026-08-20
 - `createGlowTour<T>()` is the only new public instance factory; `TourController` and `TourViewDriver` remain internal implementation types.
 - The private adapter bridge is intentionally neither a root export nor a package subpath. Adapters must repeat the stable symbol string and make their own `unknown` structural/version guard. Narrowing the existing legacy Core runtime exports is explicitly deferred until all adapters migrate; this task only asserts that no new runtime root export was added.
 - A root lease is the sole owner of DOM mount registration. It may be released and reconnected; only `dispose()` is terminal. The root marker and document prefix reservation both use global symbols so duplicate Core modules cannot claim the same root or IDs.
+- Nonterminal root release is a hook-free cancellation boundary: it aborts the current controller operation, clears workflow state to `idle`, releases the old DOM lease, then publishes `idle`. It never calls public cancel hooks; a later connected mount can run a new workflow.
 - Async commands reject after disposal with `Tour controller is disposed`; `updateCurrentStep` and repeated `dispose` are no-ops.
 - Public definitions and state snapshots freeze nested mutable data/option arrays deeply enough for their supported value contracts; active observables remain internal.
 - A resolver-originated `AbortError` is terminal unless the controller token/signal was actually invalidated; only stale controller-owned aborts are ignored.

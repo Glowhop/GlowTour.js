@@ -164,7 +164,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.focusGuard.deactivate();
     this.active = false;
     this.currentStep = null;
-    this.commands = null;
     this.overlay?.release();
     this.popover?.release();
     this.pointer?.release();

@@ -68,7 +68,7 @@ export class TourController<T> {
   private disposed = false;
   private readonly stateListeners = new Set<(state: TourState<T>) => void>();
 
-  readonly state = {
+  readonly state = Object.freeze({
     get: () => this.snapshot.get(),
     subscribe: (listener: (state: TourState<T>) => void) => {
       if (this.disposed) return () => {};
@@ -79,7 +79,7 @@ export class TourController<T> {
         this.stateListeners.delete(listener);
       };
     },
-  };
+  });
 
   constructor(
     private readonly driver: TourViewDriver<T> = new NoopTourViewDriver<T>(),
@@ -201,6 +201,23 @@ export class TourController<T> {
 
   isDisposed() {
     return this.disposed;
+  }
+
+  /** @internal Called by the private root bridge before it releases DOM resources. */
+  beginMountRelease() {
+    if (this.disposed) return;
+    this.invalidateOperation();
+    this.workflow = null;
+    this.steps = [];
+    this.index = -1;
+    this.direction = "advance";
+    this.error = null;
+    this.status = "idle";
+  }
+
+  /** @internal Called after the private root bridge has finished releasing its lease. */
+  completeMountRelease() {
+    if (!this.disposed) this.publish();
   }
 
   private async enter(index: number, direction: TourDirection, operation: number): Promise<void> {
@@ -445,6 +462,12 @@ export function createGlowTour<T>(): GlowTour<T> {
     state: controller.state,
     updateCurrentStep: (update) => controller.updateCurrentStep(update),
   };
-  bridge = attachRootBridge(tour, driver, () => controller.isDisposed());
+  bridge = attachRootBridge(
+    tour,
+    driver,
+    () => controller.isDisposed(),
+    () => controller.beginMountRelease(),
+    () => controller.completeMountRelease(),
+  );
   return Object.freeze(tour);
 }

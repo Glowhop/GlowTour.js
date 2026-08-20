@@ -114,6 +114,37 @@ describe("instance-first TourController", () => {
     assert.deepEqual(tour.state.get().currentStep?.currentProps.data, { count: 1 });
   });
 
+  test("freezes the state facade without changing subscription behavior", async () => {
+    const tour = createGlowTour<string>();
+    let notifications = 0;
+    const originalGet = tour.state.get;
+    const originalSubscribe = tour.state.subscribe;
+
+    assert.equal(Object.isFrozen(tour.state), true);
+    assert.equal(
+      Reflect.set(tour.state, "get", () => null),
+      false,
+    );
+    assert.equal(
+      Reflect.set(tour.state, "subscribe", () => () => {}),
+      false,
+    );
+    const unsubscribe = tour.state.subscribe(() => {
+      notifications += 1;
+    });
+    await tour.run(
+      tour
+        .create("frozen-facade")
+        .step({ content: "one", target: targetResolver, title: "one" })
+        .finish(),
+    );
+
+    assert.equal(tour.state.get, originalGet);
+    assert.equal(tour.state.subscribe, originalSubscribe);
+    assert.equal(notifications, 4);
+    unsubscribe();
+  });
+
   test("runs, advances, and finishes with coherent state", async () => {
     const tour = createGlowTour<string>();
     const snapshots: string[] = [];
