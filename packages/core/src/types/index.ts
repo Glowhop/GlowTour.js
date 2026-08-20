@@ -1,4 +1,5 @@
 import type { Observable } from "@glowhop/observables";
+import type { Builder } from "../builder";
 import type { ReadonlyStepProps, WorkflowDefinition } from "../definition";
 
 export type {
@@ -213,6 +214,21 @@ export interface TourState<T> {
   readonly isLastStep: boolean;
   readonly status: TourStatus;
   readonly error: Error | null;
+}
+
+export interface GlowTour<T> {
+  create(name: string, options?: StartOptions): Builder<T>;
+  run(workflow: WorkflowDefinition<T>): Promise<void>;
+  advance(): Promise<void>;
+  previous(): Promise<void>;
+  goToStep(index: number): Promise<void>;
+  cancel(): Promise<void>;
+  updateCurrentStep(update: (props: ReadonlyStepProps<T>) => DynamicStepProps<T>): void;
+  dispose(): void;
+  readonly state: {
+    get(): TourState<T>;
+    subscribe(listener: (state: TourState<T>) => void): () => void;
+  };
 }
 
 export interface WorkflowStepPublicProps<T> {

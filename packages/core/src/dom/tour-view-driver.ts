@@ -27,6 +27,7 @@ export interface TourViewDriver<T> {
   show(step: ActiveStep<T>, direction: TourDirection, signal: AbortSignal): Promise<void> | void;
   clear(signal: AbortSignal): Promise<void> | void;
   dispose(): void;
+  releaseMount?(): void;
   setCommands?(commands: TourViewCommands): void;
 }
 
@@ -36,6 +37,8 @@ export class NoopTourViewDriver<T> implements TourViewDriver<T> {
   clear(_signal: AbortSignal): void {}
 
   dispose(): void {}
+
+  releaseMount(): void {}
 }
 
 export class DomTourViewDriver<T> implements TourViewDriver<T> {
@@ -154,9 +157,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
-  dispose(): void {
+  releaseMount(): void {
     if (this.disposed) return;
-    this.disposed = true;
     this.beginGeneration();
     this.cleanupStepResources();
     this.focusGuard.deactivate();
@@ -170,6 +172,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.popover = null;
     this.pointer = null;
     this.root = null;
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.releaseMount();
+    this.disposed = true;
+    this.commands = null;
   }
 
   private refreshRegisteredElements() {

@@ -7,8 +7,8 @@ Last updated: 2026-08-20
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
 - Last completed P1 correction: DOM driver focus-restoration reentrancy.
-- Current task: P1.2 DOM driver lifecycle restoration follow-up, release-gate verified.
-- Next action: continue the remaining P1 runtime audit.
+- Current task: P1.3A private core root binding bridge.
+- Next action: migrate framework adapters onto the private bridge before narrowing legacy root runtime exports.
 
 ## Completed
 
@@ -17,6 +17,8 @@ Last updated: 2026-08-20
 - Retained builder aliases and isolated the old mutable `TourStore` conversion in a clearly marked transitional bridge for the later adapter migration.
 - Added controller/definition tests covering readonly isolation, lifecycle/navigation, async errors, concurrency, stale resolution, target strategies, state updates, action execution, disabled navigation, directional skipping, view failures, disposal, and abort behavior.
 - Corrected synchronous subscriber reentrancy so a notification-triggered run, cancel, or dispose invalidates the old operation before any later hook, callback, or mutation.
+- Added a driver-backed `createGlowTour<T>()` facade with no controller or driver fields exposed to consumers. Its only internal integration point is a non-enumerable, versioned `Symbol.for("@glowhop/core-tour/adapter-bridge/v1")` bridge.
+- Added exclusive root leases across duplicate Core copies, root-scoped collision-free IDs, descendant-only element binding, idempotent identity-safe cleanup tokens, release/remount lifecycle handling, and disposal-triggered root release. Root release cancels DOM driver resources without disposing the controller.
 - Aligned `canPrevious` with `previous()` on the first step: it is available only when back navigation is enabled and cancellation is allowed.
 - Unified abortable timers and removed their abort listeners on normal resolution and abort rejection.
 - Moved readonly definition types, step-prop cloning/freezing, and workflow-definition creation into focused `packages/core/src/definition/` modules shared by the builder and active runtime.
@@ -58,6 +60,7 @@ Last updated: 2026-08-20
 - P1.2 DOM driver second review: focused RED regressions confirmed that focus activation could attach stale resources after synchronously replacing a tour; async target-event callbacks could command a replacement step; detached popovers retained the focus guard; denied commands still consumed shortcuts and did not disable scoped controls; and modal focus did not consistently cover native candidates or CSS-hidden ancestors. The GREEN implementation rechecks the driver generation after focus activation, binds event callbacks to that generation, deactivates/rebinds the focus guard on popover registration changes, injects readonly controller capability queries with capability-change observation, and shares focusability semantics between modal Tab looping and `FocusGuard`.
 - P1.2 DOM driver focus-order correction: the controller’s `transitioning` capability publication disabled inherited controls before `FocusGuard` selected the incoming step’s directional trigger, so forward/backward navigation could focus the popover fallback. The driver now defers controller-bound autofocus until its active capability notification, without enabling commands during the transition.
 - P1.2 DOM driver focus-restoration reentrancy: restoring focus during `show()` or `clear()` can synchronously start a newer show. Both operations now verify their generation/signal immediately after `FocusGuard.deactivate()` and before mutating active state, current step/direction, or starting disappearance.
+- P1.3A root bridge RED: the new focused bridge suite initially failed 9/9 because the factory returned a no-op-driver controller, had no private bridge, and accepted runs without a root. The public-facade enumerable-key regression then failed as expected while private controller fields were still visible.
 
 ## Remaining
 
@@ -69,6 +72,14 @@ Last updated: 2026-08-20
 
 | Command | Result |
 | --- | --- |
+| P1.3A root bridge RED `bun test packages/core/src/runtime/root-bridge.test.ts` | Red; 0 pass, 9 expected failures for the absent bridge and missing connected-root precondition. |
+| P1.3A facade-contract RED `bun test packages/core/src/runtime/root-bridge.test.ts --test-name-pattern 'keeps the bridge'` | Red; the returned controller exposed internal driver/state fields rather than the public facade contract. |
+| P1.3A focused GREEN | Pass; 69 tests across root bridge, controller, and DOM driver, including Node import safety and active mount-release cleanup. |
+| P1.3A static checks | Pass; `bun run typecheck` and `bun run check` (95 files, no diagnostics). |
+| P1.3A full test | Pass; `bun test` with 150 tests, 0 failures across 21 files. |
+| P1.3A build and pack | Pass; `bun run build` emitted exactly 7 publishable distributions and `bun run pack` created exactly 7 tarballs with no playground artifact. |
+| P1.3A tarball smoke | Pass; approved external-consumer `bun run test:tarballs` smoke contract passed for all 7 packages. |
+| P1.3A playground build | Pass; `bun run --cwd apps/playground build`; the existing Angular chunk-size warning remains (1.38 MB minified). |
 | P1.2 DOM driver restoration RED | Red; a focus-restoration handler synchronously started B, leaving stale show state as A and stale clear state as null, so B could not receive keyboard navigation. |
 | P1.2 DOM driver restoration focused GREEN | Pass; 65 tests, 0 failures across DOM driver, FocusGuard, and controller. |
 | P1.2 DOM driver restoration static checks | Pass; `bun run check` (93 files) and `bun run typecheck` (no diagnostics). |
@@ -178,6 +189,8 @@ Last updated: 2026-08-20
 ## Decisions and deviations
 
 - `createGlowTour<T>()` is the only new public instance factory; `TourController` and `TourViewDriver` remain internal implementation types.
+- The private adapter bridge is intentionally neither a root export nor a package subpath. Adapters must repeat the stable symbol string and make their own `unknown` structural/version guard. Narrowing the existing legacy Core runtime exports is explicitly deferred until all adapters migrate; this task only asserts that no new runtime root export was added.
+- A root lease is the sole owner of DOM mount registration. It may be released and reconnected; only `dispose()` is terminal. The root marker and document prefix reservation both use global symbols so duplicate Core modules cannot claim the same root or IDs.
 - Async commands reject after disposal with `Tour controller is disposed`; `updateCurrentStep` and repeated `dispose` are no-ops.
 - Public definitions and state snapshots freeze nested mutable data/option arrays deeply enough for their supported value contracts; active observables remain internal.
 - A resolver-originated `AbortError` is terminal unless the controller token/signal was actually invalidated; only stale controller-owned aborts are ignored.
@@ -204,6 +217,7 @@ Last updated: 2026-08-20
 
 - P1 controller follow-up: `packages/core/src/definition/`, `packages/core/src/builder/index.ts`, `packages/core/src/runtime/{active-step,tour-controller}.ts`, and controller regression tests.
 - P1.2 DOM driver: `packages/core/src/dom/tour-view-driver.{ts,test.ts}`, element structural geometry contracts, runtime command binding, behavior option merging, and this audit journal.
+- P1.3A root bridge: `packages/core/src/runtime/root-bridge.{ts,test.ts}`, the `createGlowTour` facade/type contract, and DOM-driver mount release.
 
 - `package.json`, `bunfig.toml`, `tsconfig.json`, and `scripts/{build-packages,pack-packages,test-tarballs}.ts`
 - `packages/*/package.json`, declaration build configs, `packages/angular/ng-package.json`, and explicit public entrypoints.

@@ -1,7 +1,6 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import type { TourViewDriver } from "../dom/tour-view-driver";
-import { createGlowTour } from "../index";
 import type { ActiveStep } from "./active-step";
 import { TourController } from "./tour-controller";
 
@@ -53,6 +52,10 @@ function trackAbortListeners(
 
 const target = {} as HTMLElement;
 const targetResolver = () => target;
+
+function createGlowTour<T>() {
+  return new TourController<T>();
+}
 
 class RecordingDriver implements TourViewDriver<string> {
   clearCalls = 0;

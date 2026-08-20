@@ -15,6 +15,7 @@ export type {
   BaseOptions,
   DynamicStepProps,
   EventHandler,
+  GlowTour,
   GlowTourElementName,
   HighlightOptions,
   HighlightStepOverrides,

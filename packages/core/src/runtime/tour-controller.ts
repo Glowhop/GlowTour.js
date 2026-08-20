@@ -6,15 +6,21 @@ import {
   type ReadonlyStepProps,
   type WorkflowDefinition,
 } from "../definition";
-import { NoopTourViewDriver, type TourViewDriver } from "../dom/tour-view-driver";
+import {
+  DomTourViewDriver,
+  NoopTourViewDriver,
+  type TourViewDriver,
+} from "../dom/tour-view-driver";
 import type {
   DynamicStepProps,
+  GlowTour,
   StartOptions,
   TourDirection,
   TourState,
   TourStatus,
 } from "../types";
 import { ActiveStep } from "./active-step";
+import { attachRootBridge } from "./root-bridge";
 
 const DEFAULT_TARGET_TIMEOUT = 3000;
 const DISPOSED_ERROR_MESSAGE = "Tour controller is disposed";
@@ -41,6 +47,11 @@ function waitForTimer(delay: number, signal: AbortSignal) {
     }, delay);
     signal.addEventListener("abort", onAbort, { once: true });
   });
+}
+
+interface TourControllerOptions {
+  assertCanRun?: () => void;
+  onDispose?: () => void;
 }
 
 export class TourController<T> {
@@ -70,7 +81,10 @@ export class TourController<T> {
     },
   };
 
-  constructor(private readonly driver: TourViewDriver<T> = new NoopTourViewDriver<T>()) {
+  constructor(
+    private readonly driver: TourViewDriver<T> = new NoopTourViewDriver<T>(),
+    private readonly options: TourControllerOptions = {},
+  ) {
     this.snapshot = new Observable<TourState<T>>(this.createSnapshot());
     this.driver.setCommands?.({
       advance: () => this.advance(),
@@ -90,6 +104,7 @@ export class TourController<T> {
 
   async run(workflow: WorkflowDefinition<T>) {
     this.assertNotDisposed();
+    this.options.assertCanRun?.();
     const operation = this.beginOperation();
     this.workflow = workflow;
     this.steps = workflow.steps.map((step) => new ActiveStep(step, workflow.options));
@@ -180,7 +195,12 @@ export class TourController<T> {
     this.workflow = null;
     this.index = -1;
     this.stateListeners.clear();
+    this.options.onDispose?.();
     this.driver.dispose();
+  }
+
+  isDisposed() {
+    return this.disposed;
   }
 
   private async enter(index: number, direction: TourDirection, operation: number): Promise<void> {
@@ -407,6 +427,24 @@ export class TourController<T> {
   }
 }
 
-export function createGlowTour<T>() {
-  return new TourController<T>();
+export function createGlowTour<T>(): GlowTour<T> {
+  const driver = new DomTourViewDriver<T>();
+  let bridge!: ReturnType<typeof attachRootBridge<T>>;
+  const controller = new TourController<T>(driver, {
+    assertCanRun: () => bridge.assertConnected(),
+    onDispose: () => bridge.release(),
+  });
+  const tour: GlowTour<T> = {
+    advance: () => controller.advance(),
+    cancel: () => controller.cancel(),
+    create: (name, options) => controller.create(name, options),
+    dispose: () => controller.dispose(),
+    goToStep: (index) => controller.goToStep(index),
+    previous: () => controller.previous(),
+    run: (workflow) => controller.run(workflow),
+    state: controller.state,
+    updateCurrentStep: (update) => controller.updateCurrentStep(update),
+  };
+  bridge = attachRootBridge(tour, driver, () => controller.isDisposed());
+  return Object.freeze(tour);
 }
