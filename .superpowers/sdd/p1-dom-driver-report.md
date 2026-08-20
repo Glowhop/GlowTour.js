@@ -1,6 +1,6 @@
 # P1 DOM driver report
 
-Status: focus-order follow-up is GREEN and release-gate verified.
+Status: focus-restoration reentrancy follow-up is GREEN and release-gate verified.
 
 ## RED evidence
 
@@ -9,6 +9,7 @@ Status: focus-order follow-up is GREEN and release-gate verified.
 - Review follow-up RED: `bun test packages/core/src/dom/tour-view-driver.test.ts` reproduced five failures: 10px same-placement popover motion did not write geometry; nested contenteditable triggered navigation; pre-aborted show invoked scroll; stale show/clear continuations completed after a newer generation; and dispose left pending animations uncancelled.
 - Second-review RED: the focused DOM/controller suite reproduced five failures: focus activation attached stale resources after a synchronous replacement; an async event callback navigated the replacement generation; `registerPopover(null)` retained focus trapping; denied Escape/ArrowLeft were consumed and cancel/back controls were not disabled; and Tab candidates accepted a CSS-hidden descendant instead of wrapping between native controls. A dedicated FocusGuard regression also failed to select native fallback candidates.
 - Focus-order RED: a real `TourController` plus `DomTourViewDriver` two-step transition focused the popover fallback after advancing because the transition capability publication disabled the inherited next/back controls before `FocusGuard` chose its directional trigger.
+- Focus-restoration RED: a controllable original focus element synchronously started B when `FocusGuard.deactivate()` restored it. Stale `show(A)` overwrote B’s current step, and stale `clear()` set it null/started disappearance, leaving B unable to receive keyboard navigation.
 
 ## Implementation
 
@@ -31,6 +32,7 @@ Status: focus-order follow-up is GREEN and release-gate verified.
 - The controller provides readonly `canAdvance`, `canPrevious`, and `canCancel` callbacks plus internal capability-change observation. Scoped next/back/cancel controls synchronize native `disabled` and `aria-disabled`; denied shortcuts remain unconsumed.
 - `focusable.ts` is shared by modal Tab looping and `FocusGuard`, includes `summary`, `audio[controls]`, and `video[controls]`, and rejects hidden, inert, ARIA-hidden, and CSS-hidden ancestors.
 - Controller-bound autofocus is deferred only until the active capability notification. That restores forward → next and backward → back focus ordering while controls and commands remain denied during transition; direct-driver autofocus and `disableAutoFocus` retain their existing behavior.
+- `show()` and `clear()` now call `throwIfStale(generation, signal)` immediately after each restoring `FocusGuard.deactivate()`. A synchronous replacement therefore owns all subsequent state, resources, and DOM, while the stale operation rejects with `AbortError` and does not begin stale disappearance.
 
 ## Focused coverage
 
@@ -50,6 +52,12 @@ Status: focus-order follow-up is GREEN and release-gate verified.
 
 - Second-review focused DOM, FocusGuard, and controller suite: 62 passed, 0 failed.
 - Focus-order focused DOM, FocusGuard, and controller suite: 63 passed, 0 failed.
+- Focus-restoration focused DOM, FocusGuard, and controller suite: 65 passed, 0 failed.
+- Focus-restoration `bun run check`: pass (93 files); `bun run typecheck`: pass with no diagnostics.
+- Focus-restoration `bun test`: pass, 139 tests / 0 failures across 20 files.
+- Focus-restoration build and pack: pass; exactly 7 distributions and 7 tarballs, no playground artifact.
+- Focus-restoration tarball consumer smoke: pass for all 7 packages with approved registry access.
+- Focus-restoration playground build: pass; existing Angular 1.38 MB minified chunk warning remains.
 - Focus-order `bun run check` and `bun run typecheck`: pass (93 files; no diagnostics).
 - Focus-order `bun test`: pass, 137 tests / 0 failures across 20 files.
 - Focus-order build and pack: pass; exactly 7 distributions and 7 tarballs, no playground artifact.

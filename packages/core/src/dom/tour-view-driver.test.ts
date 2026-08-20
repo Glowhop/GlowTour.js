@@ -812,6 +812,92 @@ describe("DomTourViewDriver", () => {
       1,
     );
   });
+  test("abandons a show when focus restoration starts a replacement", async () => {
+    const initial = document.createElement("button"),
+      { calls, driver, elements } = installDriver(),
+      oldTarget = createTarget(),
+      targetA = createTarget(),
+      targetB = createTarget(),
+      oldStep = createStep(),
+      workflowA = create<string>("restored-show")
+        .step({ content: "a", disableNextButton: true, target: "#a", title: "a" })
+        .finish(),
+      definitionA = workflowA.steps[0],
+      stepB = createStep();
+    if (!definitionA) throw new Error("Expected a step definition");
+    const stepA = new ActiveStep(definitionA, workflowA.options);
+    document.body.append(initial);
+    initial.focus();
+    oldStep.target = oldTarget as unknown as HTMLElement;
+    stepA.target = targetA as unknown as HTMLElement;
+    stepB.target = targetB as unknown as HTMLElement;
+    await driver.show(oldStep, "advance", new AbortController().signal);
+
+    let replacement: Promise<void> | undefined;
+    const startReplacement = (event: MockEvent) => {
+      if (event.target === initial && !replacement) {
+        replacement = driver.show(stepB, "advance", new AbortController().signal);
+      }
+    };
+    document.addEventListener("focusin", startReplacement);
+    try {
+      await assert.rejects(() => driver.show(stepA, "advance", new AbortController().signal), {
+        name: "AbortError",
+      });
+      await replacement;
+    } finally {
+      document.removeEventListener("focusin", startReplacement);
+    }
+
+    window.dispatchEvent(
+      new MockKeyboardEvent("keydown", { key: "Enter", target: elements.popover }),
+    );
+    assert.deepEqual(calls, ["advance"]);
+    assert.equal(targetA.listeners.get("click")?.size ?? 0, 0);
+    assert.equal(
+      TestResizeObserver.instances.filter((observer) => !observer.disconnected).length,
+      1,
+    );
+  });
+  test("abandons a clear when focus restoration starts a replacement", async () => {
+    const initial = document.createElement("button"),
+      { calls, driver, elements } = installDriver(),
+      oldTarget = createTarget(),
+      targetB = createTarget(),
+      oldStep = createStep(),
+      stepB = createStep();
+    document.body.append(initial);
+    initial.focus();
+    oldStep.target = oldTarget as unknown as HTMLElement;
+    stepB.target = targetB as unknown as HTMLElement;
+    await driver.show(oldStep, "advance", new AbortController().signal);
+
+    let replacement: Promise<void> | undefined;
+    const startReplacement = (event: MockEvent) => {
+      if (event.target === initial && !replacement) {
+        replacement = driver.show(stepB, "advance", new AbortController().signal);
+      }
+    };
+    document.addEventListener("focusin", startReplacement);
+    try {
+      await assert.rejects(() => driver.clear(new AbortController().signal), {
+        name: "AbortError",
+      });
+      await replacement;
+    } finally {
+      document.removeEventListener("focusin", startReplacement);
+    }
+
+    window.dispatchEvent(
+      new MockKeyboardEvent("keydown", { key: "Enter", target: elements.popover }),
+    );
+    assert.deepEqual(calls, ["advance"]);
+    assert.equal(elements.popover.getAttribute("aria-hidden"), null);
+    assert.equal(
+      TestResizeObserver.instances.filter((observer) => !observer.disconnected).length,
+      1,
+    );
+  });
   test("binds async event commands to the active step generation", async () => {
     let release: (() => void) | undefined;
     const handlerGate = new Promise<void>((resolve) => {

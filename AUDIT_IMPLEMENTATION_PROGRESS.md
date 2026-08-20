@@ -6,9 +6,9 @@ Last updated: 2026-08-20
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 correction: DOM driver active-capability autofocus ordering.
-- Current task: P1.2 DOM driver focus-order follow-up verified through release gates.
-- Next action: hand off the review disposition, then continue the remaining P1 runtime audit.
+- Last completed P1 correction: DOM driver focus-restoration reentrancy.
+- Current task: P1.2 DOM driver lifecycle restoration follow-up, release-gate verified.
+- Next action: continue the remaining P1 runtime audit.
 
 ## Completed
 
@@ -57,6 +57,7 @@ Last updated: 2026-08-20
 - P1.2 DOM driver review follow-up: focused RED regressions confirmed the review findings: same-placement 10px popover moves were suppressed; nested contenteditable targets triggered navigation; pre-aborted show scrolled; stale show/clear continuations could reactivate or mutate a newer step; and dispose did not cancel pending animations. The GREEN implementation adds operation generations, abort-bound animation cancellation, explicit DOMRect snapshots, active wrapper release/rebinding, semantic modal candidates, controller-authorized cancellation, and workflow/reduced-motion animation policy.
 - P1.2 DOM driver second review: focused RED regressions confirmed that focus activation could attach stale resources after synchronously replacing a tour; async target-event callbacks could command a replacement step; detached popovers retained the focus guard; denied commands still consumed shortcuts and did not disable scoped controls; and modal focus did not consistently cover native candidates or CSS-hidden ancestors. The GREEN implementation rechecks the driver generation after focus activation, binds event callbacks to that generation, deactivates/rebinds the focus guard on popover registration changes, injects readonly controller capability queries with capability-change observation, and shares focusability semantics between modal Tab looping and `FocusGuard`.
 - P1.2 DOM driver focus-order correction: the controller’s `transitioning` capability publication disabled inherited controls before `FocusGuard` selected the incoming step’s directional trigger, so forward/backward navigation could focus the popover fallback. The driver now defers controller-bound autofocus until its active capability notification, without enabling commands during the transition.
+- P1.2 DOM driver focus-restoration reentrancy: restoring focus during `show()` or `clear()` can synchronously start a newer show. Both operations now verify their generation/signal immediately after `FocusGuard.deactivate()` and before mutating active state, current step/direction, or starting disappearance.
 
 ## Remaining
 
@@ -68,6 +69,13 @@ Last updated: 2026-08-20
 
 | Command | Result |
 | --- | --- |
+| P1.2 DOM driver restoration RED | Red; a focus-restoration handler synchronously started B, leaving stale show state as A and stale clear state as null, so B could not receive keyboard navigation. |
+| P1.2 DOM driver restoration focused GREEN | Pass; 65 tests, 0 failures across DOM driver, FocusGuard, and controller. |
+| P1.2 DOM driver restoration static checks | Pass; `bun run check` (93 files) and `bun run typecheck` (no diagnostics). |
+| P1.2 DOM driver restoration `bun test` | Pass; 139 tests, 0 failures across 20 files. |
+| P1.2 DOM driver restoration `bun run build` / `bun run pack` | Pass; exactly 7 publishable distributions and 7 tarballs, with no playground artifact. |
+| P1.2 DOM driver restoration `bun run test:tarballs` | Pass with approved registry access; external consumer smoke contract passed for all 7 packages. |
+| P1.2 DOM driver restoration playground build | Pass; existing Angular 1.38 MB minified-chunk warning remains. |
 | P1.2 DOM driver focus-order RED | Red; a real controller/DOM-driver two-step integration focused the popover rather than next after forward navigation because transition-disabled controls were evaluated by `FocusGuard`. |
 | P1.2 DOM driver focus-order focused GREEN | Pass; 63 tests, 0 failures across DOM driver, FocusGuard, and controller. |
 | P1.2 DOM driver focus-order static checks | Pass; `bun run check` (93 files) and `bun run typecheck` (no diagnostics). |

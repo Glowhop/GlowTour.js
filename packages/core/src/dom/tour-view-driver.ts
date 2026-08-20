@@ -103,6 +103,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     try {
       this.cleanupStepResources();
       this.focusGuard.deactivate();
+      this.throwIfStale(generation, signal);
       this.active = false;
       this.currentStep = step;
       this.direction = direction;
@@ -136,6 +137,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     try {
       this.cleanupStepResources();
       this.focusGuard.deactivate();
+      this.throwIfStale(generation, signal);
       this.active = false;
       this.currentStep = null;
       this.lastTargetRect = null;
