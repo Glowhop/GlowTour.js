@@ -6,6 +6,7 @@ import {
   type InjectionKey,
   inject,
   mergeProps,
+  onBeforeUnmount,
   type PropType,
   provide,
   type Ref,
@@ -83,35 +84,53 @@ export const GlowTourRoot = defineComponent({
     tour: { required: true, type: Object as PropType<Tour> },
   },
   setup(props, { attrs, slots }) {
-    const element = shallowRef<HTMLElement | null>(null);
     const binding = shallowRef<RootBinding | null>(null);
     const tour = shallowRef(props.tour);
     provide(TOUR_CONTEXT, { binding, tour });
 
-    watch(
-      [() => props.tour, () => props.idPrefix, element],
-      ([activeTour, idPrefix, root], _previous, onCleanup) => {
-        tour.value = activeTour;
-        binding.value = null;
-        if (!root) return;
-        const lease = getAdapterBridge(activeTour).connectRoot({
-          adapter: vueAdapter,
-          idPrefix,
-          root,
-        });
-        binding.value = lease;
-        onCleanup(() => {
-          lease.release();
-          if (binding.value === lease) binding.value = null;
-        });
-      },
-      { flush: "post", immediate: true },
-    );
+    let element: HTMLElement | null = null;
+    let active:
+      | { binding: RootBinding; idPrefix: string | undefined; root: HTMLElement; tour: Tour }
+      | undefined;
+
+    const release = () => {
+      const current = active;
+      if (!current) return;
+      active = undefined;
+      current.binding.release();
+      if (binding.value === current.binding) binding.value = null;
+    };
+
+    const connect = () => {
+      const activeTour = props.tour;
+      const idPrefix = props.idPrefix;
+      tour.value = activeTour;
+      if (active?.root === element && active.tour === activeTour && active.idPrefix === idPrefix) {
+        return;
+      }
+      release();
+      if (!element) return;
+      const nextBinding = getAdapterBridge(activeTour).connectRoot({
+        adapter: vueAdapter,
+        idPrefix,
+        root: element,
+      });
+      active = { binding: nextBinding, idPrefix, root: element, tour: activeTour };
+      binding.value = nextBinding;
+    };
+
+    const setRoot = (root: unknown) => {
+      element = root instanceof HTMLElement ? root : null;
+      connect();
+    };
+
+    watch([() => props.tour, () => props.idPrefix], connect, { flush: "sync" });
+    onBeforeUnmount(release);
 
     return () =>
       h(
         "section",
-        mergeProps(attrs, { "data-glow-tour-root": "", ref: element }),
+        mergeProps(attrs, { "data-glow-tour-root": "", ref: setRoot }),
         slots.default?.(),
       );
   },

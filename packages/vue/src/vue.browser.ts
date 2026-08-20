@@ -29,6 +29,46 @@ afterEach(() => {
 });
 
 describe("vue adapter browser behavior", () => {
+  test("connects before an immediate run after synchronous mount", async () => {
+    const [{ createApp, h }, runtime] = await Promise.all([import("vue"), import("./index")]);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const tour = runtime.createGlowTour();
+    const app = createApp({ render: () => h(runtime.GlowTourRoot, { tour }) });
+
+    app.mount(container);
+    await assert.doesNotReject(() => tour.run(tour.create("immediate mount").finish()));
+    app.unmount();
+  });
+
+  test("connects before a descendant mounted hook runs a tour", async () => {
+    const [{ createApp, defineComponent, h, onMounted }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const tour = runtime.createGlowTour();
+    let mountedRun: Promise<void> | undefined;
+    const Runner = defineComponent({
+      setup() {
+        onMounted(() => {
+          mountedRun = tour.run(tour.create("descendant mount").finish());
+        });
+        return () => h("div");
+      },
+    });
+    const app = createApp({
+      render: () => h(runtime.GlowTourRoot, { tour }, () => h(Runner)),
+    });
+
+    app.mount(container);
+    const run = mountedRun;
+    assert.ok(run);
+    await assert.doesNotReject(run);
+    app.unmount();
+  });
+
   test("mounts scoped components with coherent client IDs", async () => {
     const [{ createApp, h, nextTick }, runtime] = await Promise.all([
       import("vue"),
