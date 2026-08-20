@@ -7,8 +7,8 @@ Last updated: 2026-08-20
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
 - Last completed P1 correction: DOM driver review hardening, including full package, tarball, and playground verification.
-- Current task: P1.2 DOM driver review follow-up finalization.
-- Next action: commit `fix(core): harden DOM driver lifecycle` and hand off the review disposition.
+- Current task: P1.2 DOM driver review follow-up completed in `e0251ce`.
+- Next action: hand off the review disposition; continue the remaining P1 runtime audit.
 
 ## Completed
 
