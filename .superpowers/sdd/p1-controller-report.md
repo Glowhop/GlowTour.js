@@ -79,3 +79,34 @@ The focused RED run contained seven failures: duplicate new-workflow finish, thr
 - `bun run --cwd apps/playground build`: pass with the existing Angular chunk-size warning.
 
 Follow-up commit subject: `fix(core): guard reentrant tour transitions`.
+
+## Subscription review follow-up — 2026-08-20
+
+Reviewed commit: `3cc27f4`.
+
+### Findings reproduced in RED
+
+- `handleFailure` returned without rejecting when an `error` subscriber synchronously called `run(B)`, so action, hook, and view failures all lost their original `Error("boom")` rejection.
+- Direct `Observable.subscribe` delivery used a live `Set`; a subscriber added during `starting` publication received that same snapshot once from its initial callback and once again from the ongoing publication.
+- Subscription registration happened after the initial callback without checking whether that callback disposed the controller, allowing a disposed listener to remain retained internally.
+
+The focused RED run contained four failures: three missing original rejections and one duplicate nested notification. The initial-dispose behavioral guard was already green and protected the replacement implementation.
+
+### Corrections
+
+- `handleFailure` always throws the normalized original non-stale error. If publishing `error` invalidates the operation, it skips driver cleanup and throws immediately, leaving the replacement workflow untouched.
+- Controller state listeners now live in an internal `Set`; publication iterates `Array.from(listeners)` while the observable remains storage-only.
+- `subscribe` delivers the initial snapshot before registration, rechecks disposal, and registers only a still-live listener. `dispose` clears the listener set, and publication stops immediately when disposal occurs.
+
+### Verification
+
+- Controller tests: 32 passed, 0 failed.
+- `bun run check`: pass, 91 files.
+- `bun run typecheck`: pass.
+- `bun test`: pass, 110 tests across 19 files.
+- `bun run build`: pass, 7 packages.
+- `bun run pack`: pass, 7 tarballs.
+- `bun run test:tarballs`: pass with registry access, 7 packages. The sandboxed attempt stalled on registry access.
+- `bun run --cwd apps/playground build`: pass with the existing Angular chunk-size warning.
+
+Follow-up commit subject: `fix(core): stabilize state subscription reentrancy`.

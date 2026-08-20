@@ -6,7 +6,7 @@ Last updated: 2026-08-20
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 implementation: `f6764e9` (`refactor(core): add instance-first tour controller`).
+- Last completed P1 correction: `fix(core): stabilize state subscription reentrancy` (current branch tip).
 - Current task: P1 controller review corrections completed.
 - Next action: concrete DOM view driver, cleanup, and positioning.
 
@@ -20,6 +20,8 @@ Last updated: 2026-08-20
 - Aligned `canPrevious` with `previous()` on the first step: it is available only when back navigation is enabled and cancellation is allowed.
 - Unified abortable timers and removed their abort listeners on normal resolution and abort rejection.
 - Moved readonly definition types, step-prop cloning/freezing, and workflow-definition creation into focused `packages/core/src/definition/` modules shared by the builder and active runtime.
+- Preserved original action/hook/view rejections when an `error` subscriber synchronously replaces the workflow, while preventing the stale operation from clearing the replacement view.
+- Stabilized state subscriptions with an internal listener set and snapshot-copy publication so nested subscriptions receive the current snapshot exactly once and initial-callback disposal cannot retain listeners.
 
 - Created the isolated worktree at `.worktrees/audit-p0-release`.
 - Installed dependencies with the frozen lockfile using Bun 1.3.12.
@@ -62,6 +64,15 @@ Last updated: 2026-08-20
 
 | Command | Result |
 | --- | --- |
+| P1 subscription review RED | Red; action, hook, and view errors stopped rejecting after an `error` subscriber ran a replacement workflow, and a nested subscriber received `starting` twice. |
+| P1 subscription review focused controller tests | Pass; 32 tests, 0 failures. |
+| P1 subscription review `bun run check` | Pass; Biome checked 91 files with no fixes. |
+| P1 subscription review `bun run typecheck` | Pass; no TypeScript diagnostics. |
+| P1 subscription review `bun test` | Pass; 110 tests, 0 failures across 19 files. |
+| P1 subscription review `bun run build` | Pass; 7 public distributions built. |
+| P1 subscription review `bun run pack` | Pass; 7 tarballs packed. |
+| P1 subscription review `bun run test:tarballs` | Pass with registry access; smoke contract passed for all 7 packages. The sandboxed run stalled while accessing the registry. |
+| P1 subscription review `bun run --cwd apps/playground build` | Pass; known Angular chunk-size warning only. |
 | P1 review RED `bun test packages/core/src/runtime/tour-controller.test.ts --test-name-pattern 'reentrant\|exposes previous\|removes the'` | Red; 7 failures reproduced stale hooks/callbacks, mismatched first-step permission, and two leaked timer listeners. |
 | P1 review focused controller tests | Pass; 27 tests, 0 failures, including synchronous run/cancel/dispose reentrancy and timer cleanup on resolve/abort. |
 | P1 review `bun run check` | Pass; Biome checked 91 files with no fixes. |

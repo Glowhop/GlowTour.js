@@ -813,4 +813,99 @@ describe("instance-first TourController", () => {
     assert.equal(listenerCounts.added, 1);
     assert.equal(listenerCounts.removed, 1);
   });
+
+  for (const failureSource of ["action", "hook", "view"] as const) {
+    test(`rejects the original ${failureSource} error when an error subscriber runs a replacement`, async () => {
+      const boom = new Error("boom");
+      const driver = new RecordingDriver();
+      const tour = new TourController<string>(driver);
+      const step = tour
+        .create(`failing-${failureSource}`)
+        .step({ content: "old", target: targetResolver, title: "old" });
+      const failingWorkflow =
+        failureSource === "action"
+          ? step
+              .action(() => {
+                throw boom;
+              })
+              .finish()
+          : failureSource === "hook"
+            ? step
+                .onNext(() => {
+                  throw boom;
+                })
+                .finish()
+            : step.finish();
+      const replacement = tour
+        .create(`replacement-${failureSource}`)
+        .step({ content: "new", target: targetResolver, title: "new" })
+        .finish();
+      if (failureSource === "view") driver.showError = boom;
+      let replacementRun: Promise<void> | null = null;
+      tour.state.subscribe((state) => {
+        if (state.name === `failing-${failureSource}` && state.status === "error") {
+          driver.showError = null;
+          replacementRun = tour.run(replacement);
+        }
+      });
+
+      if (failureSource === "hook") await tour.run(failingWorkflow);
+      const failingCommand = failureSource === "hook" ? tour.advance() : tour.run(failingWorkflow);
+
+      await assert.rejects(failingCommand, (error) => error === boom);
+      await replacementRun;
+
+      assert.equal(driver.clearCalls, 0);
+      assert.equal(tour.state.get().name, `replacement-${failureSource}`);
+      assert.equal(tour.state.get().status, "active");
+      assert.equal(tour.state.get().error, null);
+    });
+  }
+
+  test("notifies a nested subscription once with the current published snapshot", async () => {
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("nested-subscribe")
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .finish();
+    let nestedStartingNotifications = 0;
+    let nestedSubscribed = false;
+    let nestedUnsubscribe = () => {};
+    const outerUnsubscribe = tour.state.subscribe((state) => {
+      if (state.status === "starting" && !nestedSubscribed) {
+        nestedSubscribed = true;
+        nestedUnsubscribe = tour.state.subscribe((nestedState) => {
+          if (nestedState.status === "starting") nestedStartingNotifications += 1;
+        });
+      }
+    });
+
+    await tour.run(workflow);
+
+    assert.equal(nestedStartingNotifications, 1);
+    outerUnsubscribe();
+    nestedUnsubscribe();
+  });
+
+  test("does not retain or notify a listener that disposes during its initial snapshot", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    let notifications = 0;
+    const unsubscribe = tour.state.subscribe(() => {
+      notifications += 1;
+      tour.dispose();
+    });
+
+    tour.updateCurrentStep((props) => ({ ...props, title: "ignored" }));
+    tour.dispose();
+    let disposedSubscriptionCalls = 0;
+    tour.state.subscribe(() => {
+      disposedSubscriptionCalls += 1;
+    });
+    unsubscribe();
+
+    assert.equal(notifications, 1);
+    assert.equal(disposedSubscriptionCalls, 0);
+    assert.equal(driver.disposeCalls, 1);
+  });
 });

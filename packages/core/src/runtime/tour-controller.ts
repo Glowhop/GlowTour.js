@@ -54,20 +54,18 @@ export class TourController<T> {
   private operationToken = 0;
   private operation: AbortController | null = null;
   private disposed = false;
-  private readonly stateUnsubscribers = new Set<() => void>();
+  private readonly stateListeners = new Set<(state: TourState<T>) => void>();
 
   readonly state = {
     get: () => this.snapshot.get(),
     subscribe: (listener: (state: TourState<T>) => void) => {
       if (this.disposed) return () => {};
       listener(this.snapshot.get());
-      const unsubscribe = this.snapshot.subscribe(listener);
-      const cleanup = () => {
-        unsubscribe();
-        this.stateUnsubscribers.delete(cleanup);
+      if (this.disposed) return () => {};
+      this.stateListeners.add(listener);
+      return () => {
+        this.stateListeners.delete(listener);
       };
-      this.stateUnsubscribers.add(cleanup);
-      return cleanup;
     },
   };
 
@@ -170,8 +168,7 @@ export class TourController<T> {
     this.steps = [];
     this.workflow = null;
     this.index = -1;
-    for (const unsubscribe of this.stateUnsubscribers) unsubscribe();
-    this.stateUnsubscribers.clear();
+    this.stateListeners.clear();
     this.driver.dispose();
   }
 
@@ -297,7 +294,7 @@ export class TourController<T> {
     const error = normalizedError(reason);
     this.error = error;
     this.setStatus("error");
-    if (!this.isCurrent(operation)) return;
+    if (!this.isCurrent(operation)) throw error;
     try {
       await this.driver.clear(this.signalFor(operation));
     } catch {
@@ -367,7 +364,12 @@ export class TourController<T> {
   }
 
   private publish() {
-    this.snapshot.set(this.createSnapshot());
+    const state = this.createSnapshot();
+    this.snapshot.set(state);
+    for (const listener of Array.from(this.stateListeners)) {
+      if (this.disposed) break;
+      listener(state);
+    }
   }
 
   private createSnapshot(): TourState<T> {
