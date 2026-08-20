@@ -186,6 +186,7 @@ function Trigger({
   capabilityDisabled,
   label,
   marker,
+  shortcutKeys,
   onClick,
   disabled: userDisabled,
   ...props
@@ -193,6 +194,7 @@ function Trigger({
   capabilityDisabled: boolean;
   label: string;
   marker: "back" | "cancel" | "next";
+  shortcutKeys?: readonly string[];
 }) {
   const { binding } = useTourContext();
   const child = typeof children === "function" ? null : children;
@@ -210,6 +212,7 @@ function Trigger({
     "aria-controls": binding?.ids.popover,
     "aria-label": props["aria-label"] || label,
     "aria-disabled": disabled ? "true" : "false",
+    "aria-keyshortcuts": props["aria-keyshortcuts"] ?? shortcutKeys?.join(" "),
     "data-glow-tour-back-trigger": marker === "back" || undefined,
     "data-glow-tour-cancel-trigger": marker === "cancel" || undefined,
     "data-glow-tour-consumer-disabled": consumerDisabled ? "true" : undefined,
@@ -239,6 +242,7 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
       capabilityDisabled={!snapshot.canPrevious || step?.disableBackButton === true}
       label={label}
       marker="back"
+      shortcutKeys={["ArrowLeft", "Backspace"]}
     />
   );
 }
@@ -255,6 +259,7 @@ export function NextTrigger({ finishLabel, nextLabel, ...props }: NextTriggerPro
       capabilityDisabled={!snapshot.canAdvance || step?.disableNextButton === true}
       label={label}
       marker="next"
+      shortcutKeys={["Enter", "ArrowRight"]}
     />
   );
 }

@@ -43,6 +43,7 @@ beforeEach(() => {
   Object.assign(globalThis, {
     document: window.document,
     Event: window.Event,
+    Element: window.Element,
     HTMLElement: window.HTMLElement,
     MouseEvent: window.MouseEvent,
     Node: window.Node,
@@ -57,6 +58,62 @@ afterEach(() => {
 });
 
 describe("solid adapter browser behavior", () => {
+  test("delegates commands to controls that appear while a tour is active", async () => {
+    const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
+      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("dynamic controls")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    let setShowNext!: (show: boolean) => void;
+    const dispose = render(() => {
+      const [showNext, updateShowNext] = createSignal(false);
+      setShowNext = updateShowNext;
+      return createComponent(GlowTour.Root, {
+        tour,
+        get children() {
+          return [
+            createComponent(GlowTour.CancelTrigger, {}),
+            createComponent(GlowTour.BackTrigger, {}),
+            showNext() ? createComponent(GlowTour.NextTrigger, {}) : null,
+          ];
+        },
+      });
+    }, container);
+
+    await tour.run(workflow);
+    const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
+    assert.equal(cancel?.disabled, false);
+    cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+    assert.equal(tour.state.get().status, "cancelled");
+
+    await tour.run(workflow);
+    await tour.advance();
+    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(back?.disabled, false);
+    assert.equal(back?.getAttribute("aria-keyshortcuts"), "ArrowLeft Backspace");
+    back?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+    assert.equal(tour.state.get().currentStepIndex, 0);
+
+    setShowNext(true);
+    await Promise.resolve();
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    assert.equal(next?.disabled, false);
+    assert.equal(next?.getAttribute("aria-keyshortcuts"), "Enter ArrowRight");
+    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+    assert.equal(tour.state.get().currentStepIndex, 1);
+
+    dispose();
+  });
+
   test("keeps native disabled, consumer marker, and aria-disabled coherent when disabled toggles", async () => {
     const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
       await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);

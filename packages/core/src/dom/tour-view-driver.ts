@@ -402,32 +402,38 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private syncShortcutLabels(step: ActiveStep<T>) {
-    const next = this.findTrigger("next");
-    const back = this.findTrigger("back");
-    syncKeyShortcuts(next, step.popover?.keyboardShortcuts?.next ?? DEFAULT_SHORTCUTS.next);
-    syncKeyShortcuts(back, step.popover?.keyboardShortcuts?.back ?? DEFAULT_SHORTCUTS.back);
+    for (const next of this.findTriggers("next")) {
+      syncKeyShortcuts(next, step.popover?.keyboardShortcuts?.next ?? DEFAULT_SHORTCUTS.next);
+    }
+    for (const back of this.findTriggers("back")) {
+      syncKeyShortcuts(back, step.popover?.keyboardShortcuts?.back ?? DEFAULT_SHORTCUTS.back);
+    }
   }
 
   private attachButtonHandlers(step: ActiveStep<T>) {
     const generation = this.generation;
-    const next = this.findTrigger("next");
-    const back = this.findTrigger("back");
-    if (next) {
-      this.listen(next, "click", (event) => {
-        this.deferTriggerCommand("advance", event, step, generation);
-      });
+    const scope = this.root ?? this.popover?.getElement();
+    if (!(scope instanceof HTMLElement) || typeof scope.addEventListener !== "function") return;
+    this.listen(scope, "click", (event) => {
+      if (!(event.target instanceof Element)) return;
+      const match = this.findClickedTrigger(event.target, scope);
+      if (!match) return;
+      this.deferTriggerCommand(match.command, event, step, generation, match.trigger);
+    });
+  }
+
+  private findClickedTrigger(target: Element, scope: HTMLElement) {
+    for (const [command, direction] of [
+      ["advance", "next"],
+      ["previous", "back"],
+      ["cancel", "cancel"],
+    ] as const) {
+      const trigger = target.closest<HTMLElement>(`[data-glow-tour-${direction}-trigger]`);
+      if (trigger && scope.contains(trigger)) {
+        return { command, trigger: trigger as HTMLButtonElement };
+      }
     }
-    if (back) {
-      this.listen(back, "click", (event) => {
-        this.deferTriggerCommand("previous", event, step, generation);
-      });
-    }
-    const cancel = this.findTrigger("cancel");
-    if (cancel) {
-      this.listen(cancel, "click", (event) => {
-        this.deferTriggerCommand("cancel", event, step, generation);
-      });
-    }
+    return null;
   }
 
   private deferTriggerCommand(
@@ -435,14 +441,15 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     event: Event,
     step: ActiveStep<T>,
     generation: number,
+    trigger: HTMLButtonElement,
   ) {
-    if (event.defaultPrevented || !this.canCommand(command, step)) return;
+    if (event.defaultPrevented || !this.canCommand(command, step, trigger)) return;
     queueMicrotask(() => {
       if (
         event.defaultPrevented ||
         !this.isCurrentGeneration(generation) ||
         this.currentStep !== step ||
-        !this.canCommand(command, step)
+        !this.canCommand(command, step, trigger)
       )
         return;
       void this.commandForGeneration(command, generation);
@@ -450,17 +457,27 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private syncControlState(step: ActiveStep<T>) {
-    const next = this.findTrigger("next");
-    const back = this.findTrigger("back");
-    const cancel = this.findTrigger("cancel");
-    this.syncControl(next, !this.canCommand("advance", step));
-    this.syncControl(back, !this.canCommand("previous", step));
-    this.syncControl(cancel, !this.canCommand("cancel", step));
+    for (const next of this.findTriggers("next")) {
+      this.syncControl(next, !this.canCommand("advance", step, next));
+    }
+    for (const back of this.findTriggers("back")) {
+      this.syncControl(back, !this.canCommand("previous", step, back));
+    }
+    for (const cancel of this.findTriggers("cancel")) {
+      this.syncControl(cancel, !this.canCommand("cancel", step, cancel));
+    }
   }
 
   private findTrigger(direction: "next" | "back" | "cancel") {
+    return this.findTriggers(direction)[0] ?? null;
+  }
+
+  private findTriggers(direction: "next" | "back" | "cancel") {
     const scope = this.root ?? this.popover?.getElement();
-    return scope?.querySelector<HTMLButtonElement>(`[data-glow-tour-${direction}-trigger]`) ?? null;
+    if (!scope || typeof scope.querySelectorAll !== "function") return [];
+    return Array.from(
+      scope.querySelectorAll<HTMLButtonElement>(`[data-glow-tour-${direction}-trigger]`),
+    );
   }
 
   private async command(command: "advance" | "previous" | "cancel") {
@@ -472,9 +489,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     return this.isCurrentGeneration(generation) ? this.command(command) : Promise.resolve();
   }
 
-  private canCommand(command: "advance" | "previous" | "cancel", step: ActiveStep<T>) {
-    const trigger = command === "advance" ? "next" : command === "previous" ? "back" : "cancel";
-    if (this.isConsumerDisabled(this.findTrigger(trigger))) return false;
+  private canCommand(
+    command: "advance" | "previous" | "cancel",
+    step: ActiveStep<T>,
+    trigger = this.findTrigger(
+      command === "advance" ? "next" : command === "previous" ? "back" : "cancel",
+    ),
+  ) {
+    if (this.isConsumerDisabled(trigger)) return false;
     if (command === "advance") {
       return (this.commands?.canAdvance?.() ?? true) && step.props.get().disableNextButton !== true;
     }

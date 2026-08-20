@@ -127,6 +127,8 @@ test("CI validates pull requests and main with pinned actions and minimal permis
   ]) {
     expect(raw).toContain(command);
   }
+  expect(raw.indexOf("bun test")).toBeLessThan(raw.indexOf("bun run test:browser"));
+  expect(raw.indexOf("bun run test:browser")).toBeLessThan(raw.indexOf("bun run build"));
 });
 
 test("Changesets opens version pull requests from main without publishing", () => {

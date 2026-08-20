@@ -8,6 +8,7 @@ beforeEach(() => {
   window = new Window();
   Object.assign(globalThis, {
     Event: window.Event,
+    Element: window.Element,
     HTMLElement: window.HTMLElement,
     MouseEvent: window.MouseEvent,
     MutationObserver: window.MutationObserver,
@@ -25,6 +26,123 @@ afterEach(() => {
 });
 
 describe("react adapter browser behavior", () => {
+  test("delegates commands to controls that appear while a tour is active", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("dynamic controls")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    let setShowNext!: (show: boolean) => void;
+
+    function Harness() {
+      const [showNext, updateShowNext] = React.useState(false);
+      setShowNext = updateShowNext;
+      return React.createElement(
+        GlowTour.Root,
+        { tour },
+        React.createElement(GlowTour.CancelTrigger),
+        React.createElement(GlowTour.BackTrigger),
+        showNext ? React.createElement(GlowTour.NextTrigger) : null,
+      );
+    }
+
+    const root = createRoot(container);
+    await React.act(async () => {
+      root.render(React.createElement(Harness));
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
+    assert.equal(cancel?.disabled, false);
+    await React.act(async () => {
+      cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+    assert.equal(tour.state.get().status, "cancelled");
+
+    await React.act(async () => {
+      await tour.run(workflow);
+      await tour.advance();
+    });
+    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(back?.disabled, false);
+    assert.equal(back?.getAttribute("aria-keyshortcuts"), "ArrowLeft Backspace");
+    await React.act(async () => {
+      back?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+    assert.equal(tour.state.get().currentStepIndex, 0);
+
+    await React.act(async () => setShowNext(true));
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    assert.equal(next?.disabled, false);
+    assert.equal(next?.getAttribute("aria-keyshortcuts"), "Enter ArrowRight");
+    await React.act(async () => {
+      next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+    assert.equal(tour.state.get().currentStepIndex, 1);
+
+    await React.act(async () => root.unmount());
+  });
+
+  test("composes custom child and wrapper click handlers before navigation", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("composed handlers")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    let childClicks = 0;
+    let wrapperClicks = 0;
+    const root = createRoot(container);
+
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          GlowTour.Root,
+          { tour },
+          React.createElement(
+            GlowTour.NextTrigger,
+            { onClick: () => (wrapperClicks += 1) },
+            React.createElement("button", { onClick: () => (childClicks += 1) }),
+          ),
+        ),
+      );
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    await React.act(async () => {
+      next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+    assert.equal(childClicks, 1);
+    assert.equal(wrapperClicks, 1);
+    assert.equal(tour.state.get().currentStepIndex, 1);
+
+    await React.act(async () => root.unmount());
+  });
+
   test("lets a consumer prevent a delegated next click without navigation", async () => {
     const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
       import("react"),

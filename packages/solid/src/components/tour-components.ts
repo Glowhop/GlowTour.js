@@ -275,10 +275,17 @@ function Trigger(
     capabilityDisabled: boolean;
     label: string;
     marker: "back" | "cancel" | "next";
+    shortcutKeys?: readonly string[];
   },
 ): JSX.Element {
   const context = useTourContext();
-  const [local, other] = splitProps(props, ["children", "capabilityDisabled", "label", "marker"]);
+  const [local, other] = splitProps(props, [
+    "children",
+    "capabilityDisabled",
+    "label",
+    "marker",
+    "shortcutKeys",
+  ]);
   const buttonProps = mergeProps(other, {
     get "aria-controls"() {
       return context.binding()?.ids.popover;
@@ -288,6 +295,9 @@ function Trigger(
     },
     get "aria-disabled"() {
       return local.capabilityDisabled || other.disabled === true;
+    },
+    get "aria-keyshortcuts"() {
+      return other["aria-keyshortcuts"] ?? local.shortcutKeys?.join(" ");
     },
     get "data-glow-tour-back-trigger"() {
       return local.marker === "back" ? true : undefined;
@@ -338,6 +348,7 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
           },
           label: props.backLabel ?? "Back step",
           marker: "back" as const,
+          shortcutKeys: ["ArrowLeft", "Backspace"],
         }),
       );
     },
@@ -363,6 +374,7 @@ export function NextTrigger(props: NextTriggerProps): JSX.Element {
               : (props.nextLabel ?? "Next step");
           },
           marker: "next" as const,
+          shortcutKeys: ["Enter", "ArrowRight"],
         }),
       );
     },

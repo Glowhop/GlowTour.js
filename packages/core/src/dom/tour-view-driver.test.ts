@@ -53,6 +53,7 @@ class MockEventTarget {
   dispatchEvent(event: MockEvent) {
     event.target ??= this instanceof MockNode ? this : null;
     for (const listener of this.listeners.get(event.type) ?? []) listener(event);
+    if (this instanceof MockNode && this.parent) this.parent.dispatchEvent(event);
     return !event.defaultPrevented;
   }
 }
@@ -100,6 +101,10 @@ class MockElement extends MockNode {
     return node === this || this.children.some((child) => child.contains(node));
   }
   closest(selector: string): MockElement | null {
+    const trigger = ["next", "back", "cancel"].find((direction) =>
+      selector.includes(`data-glow-tour-${direction}-trigger`),
+    );
+    if (trigger && this.hasAttribute(`data-glow-tour-${trigger}-trigger`)) return this;
     const match =
       (selector.includes("[hidden]") && this.hasAttribute("hidden")) ||
       (selector.includes("[inert]") && this.hasAttribute("inert")) ||
@@ -639,6 +644,35 @@ describe("DomTourViewDriver", () => {
 
     await driver.show(step, "advance", new AbortController().signal);
     elements.next.dispatchEvent(new MockEvent("click"));
+    await driver.clear(new AbortController().signal);
+    await Promise.resolve();
+
+    assert.deepEqual(calls, []);
+  });
+  test("delegates clicks from a trigger inserted after the active step is shown", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    const next = document.createElement("button");
+    next.setAttribute("data-glow-tour-next-trigger", "");
+
+    await driver.show(step, "advance", new AbortController().signal);
+    elements.popover.append(next);
+    elements.root.dispatchEvent(new MockEvent("click", { target: next }));
+    await Promise.resolve();
+
+    assert.deepEqual(calls, ["advance"]);
+  });
+  test("abandons a delegated dynamic trigger command after the driver generation changes", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    const next = document.createElement("button");
+    next.setAttribute("data-glow-tour-next-trigger", "");
+
+    await driver.show(step, "advance", new AbortController().signal);
+    elements.popover.append(next);
+    elements.root.dispatchEvent(new MockEvent("click", { target: next }));
     await driver.clear(new AbortController().signal);
     await Promise.resolve();
 
