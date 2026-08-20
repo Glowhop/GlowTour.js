@@ -130,6 +130,7 @@ export function mergeStepBehavior(
   }
   return {
     allowInteraction: overrides?.allowInteraction ?? defaults?.allowInteraction,
+    targetTracking: overrides?.targetTracking ?? defaults?.targetTracking,
     missingTargetStrategy: overrides?.missingTargetStrategy ?? defaults?.missingTargetStrategy,
     targetTimeout: overrides?.targetTimeout ?? defaults?.targetTimeout,
   };

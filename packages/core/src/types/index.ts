@@ -63,6 +63,7 @@ export interface WorkflowHighlightOptions extends Partial<HighlightOptions> {
 
 export interface StepBehavior {
   allowInteraction?: boolean;
+  targetTracking?: "events" | "continuous";
   missingTargetStrategy?: "wait" | "skip" | "error";
   targetTimeout?: number;
 }

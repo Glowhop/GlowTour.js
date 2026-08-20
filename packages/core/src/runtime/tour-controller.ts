@@ -72,6 +72,11 @@ export class TourController<T> {
 
   constructor(private readonly driver: TourViewDriver<T> = new NoopTourViewDriver<T>()) {
     this.snapshot = new Observable<TourState<T>>(this.createSnapshot());
+    this.driver.setCommands?.({
+      advance: () => this.advance(),
+      cancel: () => this.cancel(),
+      previous: () => this.previous(),
+    });
   }
 
   create(name: string, options: StartOptions = {}) {

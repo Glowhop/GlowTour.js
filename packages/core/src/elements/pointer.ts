@@ -1,7 +1,6 @@
-import type { WorkflowStep } from "../engine/workflow-step";
 import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { isInViewport, roundByDPR, viewportDimensions } from "../utils/utils";
-import GlowTourElement from "./base";
+import GlowTourElement, { type TourElementStep } from "./base";
 
 const DEFAULT_INDICATOR_GAP = 16;
 const POINTER_ANIMATION_DISTANCE = 8;
@@ -34,7 +33,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     this.element.setAttribute("aria-hidden", "true");
   }
 
-  protected _getNextStyles(position: DOMRect, step: WorkflowStep<T>): Keyframe {
+  protected _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
     const nextPosition = this._resolvePosition(position, step);
     this.element.setAttribute("data-glow-tour-placement", nextPosition.placement);
 
@@ -46,7 +45,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
 
   async moveToTarget(
     nextPosition: DOMRect,
-    step: WorkflowStep<T>,
+    step: TourElementStep,
     appear: boolean,
     popoverPlacement?: ResolvedPlacement,
   ) {
@@ -59,7 +58,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
 
   updatePosition(
     nextPosition: DOMRect,
-    step: WorkflowStep<T>,
+    step: TourElementStep,
     popoverPlacement?: ResolvedPlacement,
   ) {
     this.popoverPlacement = popoverPlacement;
@@ -80,7 +79,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     }
   }
 
-  private async _appear(position: DOMRect, step: WorkflowStep<T>) {
+  private async _appear(position: DOMRect, step: TourElementStep) {
     const styles = this._getNextStyles(position, step);
     for (const [property, value] of Object.entries(styles)) {
       if (value != null) this.element.style.setProperty(property, String(value));
@@ -117,7 +116,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     this.element.removeAttribute("data-glow-tour-placement");
   }
 
-  private _resolvePosition(targetPosition: DOMRect, step: WorkflowStep<T>): PointerPosition {
+  private _resolvePosition(targetPosition: DOMRect, step: TourElementStep): PointerPosition {
     const pointerPosition = this.element.getBoundingClientRect();
     const excludedPlacement =
       this.popoverPlacement === "center" ? undefined : this.popoverPlacement;

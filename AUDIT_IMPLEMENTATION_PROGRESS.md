@@ -54,6 +54,9 @@ Last updated: 2026-08-20
 ## In progress
 
 - P1 runtime architecture, concurrency, cleanup, positioning, accessibility, and instance scoping.
+- P1.2 DOM driver RED checkpoint: `bun test packages/core/src/dom/tour-view-driver.test.ts` fails because the required `DomTourViewDriver` export does not yet exist. The first attempt used `happy-dom`, but Core does not resolve the adapter-only dependency; the focused test now uses a local DOM fixture rather than broadening package dependencies.
+- P1.2 DOM driver GREEN checkpoint: focused DOM driver coverage is green (8 tests) and focused DOM plus controller coverage is green (41 tests). The implementation adds event-driven tracking, terminal cleanup, scoped keyboard/focus behavior, and an internal command binding from `TourController`.
+- P1.2 DOM driver release gates re-run after direct button permission wiring; ready to commit as `refactor(core): add event-driven DOM view driver`.
 
 ## Remaining
 
@@ -65,6 +68,15 @@ Last updated: 2026-08-20
 
 | Command | Result |
 | --- | --- |
+| P1.2 DOM driver RED `bun test packages/core/src/dom/tour-view-driver.test.ts` | Red; the new focused suite could not import `DomTourViewDriver` because it did not yet exist. An earlier fixture attempt failed only due to Core not resolving adapter-only `happy-dom`, so the test uses a local DOM fixture and no dependency change. |
+| P1.2 focused DOM/controller `bun test packages/core/src/dom/tour-view-driver.test.ts packages/core/src/runtime/tour-controller.test.ts` | Pass; 41 tests, 0 failures. |
+| P1.2 `bun run check` | Pass; Biome checked 92 files with no fixes. |
+| P1.2 `bun run typecheck` | Pass; no TypeScript diagnostics. |
+| P1.2 `bun test` | Pass; 119 tests, 0 failures across 20 files. |
+| P1.2 `bun run build` | Pass; exactly 7 public distributions built. |
+| P1.2 `bun run pack` | Pass; exactly 7 local library tarballs packed; playground absent. |
+| P1.2 `bun run test:tarballs` | Pass with approved registry access; the sandboxed attempt produced no completion output within 30 seconds, then the external consumer smoke contract passed for all 7 packages. |
+| P1.2 `bun run --cwd apps/playground build` | Pass; private playground gate only. Existing Angular chunk-size warning remains (1.38 MB minified). |
 | P1 nested publication review RED | Red; the second existing listener received `replacement:starting` followed by stale `old:finished`. |
 | P1 nested publication focused tests | Pass; 6 subscription/publication tests, 0 failures. |
 | P1 nested publication controller tests | Pass; 33 tests, 0 failures. |
@@ -138,6 +150,9 @@ Last updated: 2026-08-20
 - Async commands reject after disposal with `Tour controller is disposed`; `updateCurrentStep` and repeated `dispose` are no-ops.
 - Public definitions and state snapshots freeze nested mutable data/option arrays deeply enough for their supported value contracts; active observables remain internal.
 - A resolver-originated `AbortError` is terminal unless the controller token/signal was actually invalidated; only stale controller-owned aborts are ignored.
+- The DOM driver consumes the already-resolved `ActiveStep.target`; it never reruns an async resolver while tracking. `events` is the default tracking mode and `continuous` is opt-in.
+- The internal command interface is injected by `TourController` through optional `setCommands`; scoped next/back button clicks and keyboard actions share the dynamic step-permission checks without reading or mutating controller internals directly.
+- Core test coverage uses a local DOM fixture rather than adding a dependency already owned only by the Solid adapter. The fixture restores global descriptors, so it remains isolated after adapter browser tests.
 
 - The implementation runs in an ignored project-local worktree to keep `main` untouched.
 - Biome is intentionally scoped to `apps/**`, `packages/**`, and its product configuration files. `!!.worktrees`, `!!apps/**/dist`, `!!apps/**/coverage`, `!!packages/**/dist`, and `!!packages/**/coverage` force-ignore worktrees and generated output recursively, preventing scanner indexing while retaining the product-only source scope.
@@ -157,6 +172,7 @@ Last updated: 2026-08-20
 ## Main files changed
 
 - P1 controller follow-up: `packages/core/src/definition/`, `packages/core/src/builder/index.ts`, `packages/core/src/runtime/{active-step,tour-controller}.ts`, and controller regression tests.
+- P1.2 DOM driver: `packages/core/src/dom/tour-view-driver.{ts,test.ts}`, element structural geometry contracts, runtime command binding, behavior option merging, and this audit journal.
 
 - `package.json`, `bunfig.toml`, `tsconfig.json`, and `scripts/{build-packages,pack-packages,test-tarballs}.ts`
 - `packages/*/package.json`, declaration build configs, `packages/angular/ng-package.json`, and explicit public entrypoints.

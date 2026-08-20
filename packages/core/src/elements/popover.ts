@@ -1,7 +1,6 @@
-import type { WorkflowStep } from "../engine/workflow-step";
 import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { roundByDPR, toggleElementAttribute, viewportDimensions } from "../utils/utils";
-import GlowTourElement from "./base";
+import GlowTourElement, { type TourElementStep } from "./base";
 
 const DEFAULT_POPOVER_GAP = 14;
 const ARROW_EDGE_INSET = 16;
@@ -16,7 +15,7 @@ export interface PopoverPosition {
 }
 
 export default class PopoverElement<T> extends GlowTourElement<T> {
-  protected _getNextStyles(position: DOMRect, step: WorkflowStep<T>): Keyframe {
+  protected _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
     const nextPosition = this.resolvePosition(position, step);
     this._applyPositionState(nextPosition);
 
@@ -25,7 +24,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     };
   }
 
-  resolvePosition(targetPosition: DOMRect, step: WorkflowStep<T>): PopoverPosition {
+  resolvePosition(targetPosition: DOMRect, step: TourElementStep): PopoverPosition {
     const currentElement = this.getElement();
     if (!currentElement) {
       return {
@@ -141,7 +140,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
 
   async moveToTarget(
     nextPosition: DOMRect,
-    step: WorkflowStep<T>,
+    step: TourElementStep,
     appear: boolean,
     onChange?: () => void,
   ) {
@@ -175,7 +174,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     // el.style.setProperty("transform", "translate(0px, 0px)");
   }
 
-  updatePosition(nextPosition: DOMRect, step: WorkflowStep<T>): void {
+  updatePosition(nextPosition: DOMRect, step: TourElementStep): void {
     const nextCoordinates = this.resolvePosition(nextPosition, step);
     const currentPlacement = this.element.getAttribute("data-glow-tour-placement");
     const currentTransform = this.element.style.transform;
@@ -198,7 +197,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     }
   }
 
-  async _appear(position: DOMRect, step: WorkflowStep<T>) {
+  async _appear(position: DOMRect, step: TourElementStep) {
     const defaultStyles = this._getNextStyles(position, step);
 
     for (const [key, value] of Object.entries(defaultStyles)) {
