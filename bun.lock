@@ -114,6 +114,9 @@
       "dependencies": {
         "@glowhop/core-tour": "workspace:*",
       },
+      "devDependencies": {
+        "happy-dom": "^18.0.1",
+      },
     },
     "packages/vue": {
       "name": "@glowhop/vue-tour",

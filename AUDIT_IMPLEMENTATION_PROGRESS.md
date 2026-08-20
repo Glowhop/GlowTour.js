@@ -241,6 +241,16 @@ Last updated: 2026-08-20
 - Quality final gates: `bun --conditions=browser test ./packages/angular/src/angular.browser.ts` passed 10/10; `bun install --frozen-lockfile`, `bun run check`, and `bun run typecheck` passed; `bun test` passed 164/164 across 21 files; `bun run test:browser` passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10; `bun run build`, `bun run pack`, and registry-backed `bun run test:tarballs` passed for 7 packages; playground build and both release dry-runs passed. The existing Angular playground chunk-size warning remains.
 - Next action: retain legacy Core export narrowing for a later cross-adapter migration after every public adapter has adopted the instance-scoped facade.
 
+## P1.3E Vanilla root property injection (2026-08-20)
+
+- RED `bun test packages/vanilla/src/vanilla.test.ts`: 0 pass, 2 fail; the legacy singleton-only package exposed no `createGlowTour()` factory. RED `bun test --conditions=browser ./packages/vanilla/src/vanilla.browser.ts`: unresolved `happy-dom` dependency before it was declared for the real Vanilla DOM suite.
+- The Vanilla public surface now exports only `createGlowTour`, intentional custom-element metadata/types, and the `VanillaGlowTour` content type. Auto-registration is retained as the existing convention, guarded so Node/SSR imports evaluate without `HTMLElement`, `customElements`, or `document` and duplicate names are never redefined.
+- `<glow-tour-root>.tour` is the sole instance injection point. A root connects the adapter-local private bridge only while connected with a non-null tour; active `(tour, idPrefix)` replacement is microtask-batched, and null/disconnect releases its exact lease. Generated child IDs and ARIA links are cleared before same-prefix reuse; nested roots are excluded.
+- Descendant custom elements resolve the closest root and subscribe only to that tour's readonly state. Popover, overlay, pointer, header, content, footer, Back, Next, and Cancel rebind on root changes; Core controls retain delegated marker handling, consumer disabled/ARIA state, default prevention, and dynamic shortcut labels.
+- GREEN focused checks: Vanilla contract 2/2 and happy-dom browser suite 6/6. Coverage includes setter before/after connect, null/remount, batched replacement, sibling/nested identity isolation, unique root-local IDs/ARIA, dynamic content and element rebinding, Cancel/Back/late Next, consumer disabled toggling, prevented click, custom shortcut, and duplicate live-instance rejection.
+- Final `bun install --frozen-lockfile`, `bun run check`, and `bun run typecheck`: pass; 367 installs checked, Biome checked 103 files, and TypeScript emitted no diagnostics. Final `bun test`: pass; 163 tests across 21 files. Final `bun run test:browser`: pass; React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, Vanilla 6/6.
+- Final `bun run build`, `bun run pack`, and registry-backed `bun run test:tarballs`: pass for seven public packages. The Vanilla tarball consumer imports `createGlowTour`; playground and both release dry-runs pass. The existing 1.38 MB minified Angular playground warning remains.
+
 ## Decisions and deviations
 
 - `createGlowTour<T>()` is the only new public instance factory; `TourController` and `TourViewDriver` remain internal implementation types.

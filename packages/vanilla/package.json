@@ -16,5 +16,8 @@
   },
   "dependencies": {
     "@glowhop/core-tour": "workspace:*"
+  },
+  "devDependencies": {
+    "happy-dom": "^18.0.1"
   }
 }

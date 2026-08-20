@@ -132,13 +132,13 @@ import { create } from "@glowhop/core-tour";
 import { GlowTour as ReactGlowTour } from "@glowhop/react-tour";
 import { GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
 import { GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
-import { registerGlowTourElements } from "@glowhop/vanilla-tour";
+import { createGlowTour } from "@glowhop/vanilla-tour";
 
 assert.equal(typeof create, "function");
 assert.equal(typeof ReactGlowTour.Root, "function");
 assert.equal(typeof VueGlowTourRoot, "object");
 assert.equal(typeof SolidGlowTour.Root, "function");
-assert.equal(typeof registerGlowTourElements, "function");
+assert.equal(typeof createGlowTour, "function");
 `,
   );
   writeFileSync(
@@ -149,14 +149,14 @@ import { GlowTour as ReactGlowTour } from "@glowhop/react-tour";
 import { GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
 import { GlowTourRoot as AngularGlowTourRoot } from "@glowhop/angular-tour";
 import { GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
-import { registerGlowTourElements } from "@glowhop/vanilla-tour";
+import { createGlowTour } from "@glowhop/vanilla-tour";
 
 void create("tarball-consumer");
 void ReactGlowTour;
 void VueGlowTourRoot;
 void AngularGlowTourRoot;
 void SolidGlowTour;
-void registerGlowTourElements;
+void createGlowTour;
 `,
   );
   writeFileSync(

@@ -197,6 +197,7 @@ test("ordinary local scripts contain no npm publish and retain a non-publishing 
   expect(browserRunner).toContain('"./packages/solid/src/solid.browser.ts"');
   expect(browserRunner).toContain('"./packages/vue/src/vue.browser.ts"');
   expect(browserRunner).toContain('"./packages/angular/src/angular.browser.ts"');
+  expect(browserRunner).toContain('"./packages/vanilla/src/vanilla.browser.ts"');
   expect(browserRunner.indexOf("react.browser.ts")).toBeLessThan(
     browserRunner.indexOf("solid.browser.ts"),
   );
@@ -205,6 +206,9 @@ test("ordinary local scripts contain no npm publish and retain a non-publishing 
   );
   expect(browserRunner.indexOf("vue.browser.ts")).toBeLessThan(
     browserRunner.indexOf("angular.browser.ts"),
+  );
+  expect(browserRunner.indexOf("angular.browser.ts")).toBeLessThan(
+    browserRunner.indexOf("vanilla.browser.ts"),
   );
   expect(browserRunner).toContain("Bun.spawnSync");
   expect(browserRunner).toContain("process.exitCode = result.exitCode");

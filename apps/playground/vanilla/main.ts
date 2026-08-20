@@ -1,11 +1,12 @@
 import "@glowhop/styles-tour/default.css";
-import { glowTour } from "@glowhop/vanilla-tour";
+import { createGlowTour, type GlowTourRootElement } from "@glowhop/vanilla-tour";
 import "../src/styles.css";
 
 const nativeTitle = document.createElement("strong");
 nativeTitle.textContent = "Vanilla native Node";
 
-const tour = glowTour
+const tour = createGlowTour();
+const workflow = tour
   .create("vanilla-playground", {
     overlay: { color: "#101820", opacity: 0.58, padding: 10, radius: 8 },
   })
@@ -29,5 +30,8 @@ const tour = glowTour
   .finish();
 
 document.querySelector("[data-start-tour]")?.addEventListener("click", () => {
-  void glowTour.run(tour);
+  void tour.run(workflow);
 });
+
+const tourRoot = document.querySelector<GlowTourRootElement>("glow-tour-root");
+if (tourRoot) tourRoot.tour = tour;
