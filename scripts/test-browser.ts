@@ -4,6 +4,7 @@ const root = resolve(import.meta.dir, "..");
 const browserSuites = [
   "./packages/react/src/react.browser.ts",
   "./packages/solid/src/solid.browser.ts",
+  "./packages/vue/src/vue.browser.ts",
 ] as const;
 
 for (const suite of browserSuites) {

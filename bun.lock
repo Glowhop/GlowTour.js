@@ -119,6 +119,8 @@
         "@glowhop/core-tour": "workspace:*",
       },
       "devDependencies": {
+        "@vue/server-renderer": "^3.5.0",
+        "happy-dom": "^18.0.1",
         "vue": "^3.5.0",
       },
       "peerDependencies": {

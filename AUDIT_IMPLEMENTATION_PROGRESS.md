@@ -6,9 +6,9 @@ Last updated: 2026-08-20
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 correction: DOM driver focus-restoration reentrancy.
-- Current task: P1.3A private core root binding bridge.
-- Next action: migrate framework adapters onto the private bridge before narrowing legacy root runtime exports.
+- Last completed P1 correction: Vue scoped tour instance injection.
+- Current task: P1 adapter migration follow-up.
+- Next action: complete the remaining adapter migrations and then narrow legacy Core runtime exports.
 
 ## Completed
 
@@ -25,6 +25,9 @@ Last updated: 2026-08-20
 - Preserved original action/hook/view rejections when an `error` subscriber synchronously replaces the workflow, while preventing the stale operation from clearing the replacement view.
 - Stabilized state subscriptions with an internal listener set and snapshot-copy publication so nested subscriptions receive the current snapshot exactly once and initial-callback disposal cannot retain listeners.
 - Stopped an outer state publication as soon as a synchronous listener starts a nested publication, preventing later listeners from observing stale state after newer state.
+- Migrated Vue to a specialized `createGlowTour()` factory and named native components only, removing its singleton/store runtime and legacy Core runtime reexports.
+- Added a Vue-local private-symbol bridge guard, required `GlowTourRoot` instance injection, reactive `provide`/`inject` nearest-root context, and identity-safe root/element lease cleanup.
+- Added Vue happy-DOM coverage for remount/replacement, sibling and nested isolation, IDs/ARIA, dynamic state/visibility, delegated dynamic controls, consumer prevention/disablement, shortcuts, and outside-root errors; SSR coverage proves IDs/ARIA are omitted before client connection.
 
 - Created the isolated worktree at `.worktrees/audit-p0-release`.
 - Installed dependencies with the frozen lockfile using Bun 1.3.12.
@@ -66,6 +69,7 @@ Last updated: 2026-08-20
 - P1 adapter interaction follow-up: trigger commands now defer past event propagation and revalidate the native event, active driver generation/current step, command capability, consumer-disabled marker, and disposal state before navigating. This lets React's delegated consumer handlers veto a target-native driver listener and prevents stale commands after a clear or workflow replacement. React and Solid render their marker, native `disabled`, and `aria-disabled` from one coherent capability/consumer-disabled value; React custom child buttons contribute their own disabled state and retain their click handler. The root `test:browser` gate runs the React and Solid happy-DOM suites with Bun's browser export condition and is required after unit tests in CI and stable release validation.
 - P1 dynamic adapter triggers: the initial deferred driver listener was still attached only to controls present during `show()`, making Cancel/Back/conditionally mounted Next controls inert after adapters stopped issuing direct commands. The driver now attaches one delegated root-or-popover click listener per active step, finds the nearest recognized trigger only within its claimed scope, and revalidates the captured generation, step, current native event, capability, and consumer marker in its microtask. It synchronizes every current trigger, while React/Solid emit default shortcut metadata so newly mounted Back/Next controls are immediately accessible.
 - P1 nested and late trigger correction: delegated root ownership now filters controls by their nearest tour-root boundary, so an outer driver neither commands nor synchronizes an inner tour. Keyboard commands use controller/step capability only, leaving consumer-disabled markers as individual button-click permissions rather than DOM-order-dependent global permission. A step-scoped, cleanup-bound mutation observer synchronizes late owned controls with the active custom/default shortcut metadata and ignores stale generations and nested roots.
+- P1.3C Vue adapter RED/GREEN: the Vue package initially lacked `createGlowTour()` and cancellation exports, so the scoped public contract failed. GREEN replaces the singleton with injected instance context, private bridge leases, native named controls, SSR-safe omitted IDs/ARIA, and a Vue happy-DOM browser suite. The private playground now creates and passes one instance.
 
 ## Remaining
 
@@ -77,6 +81,9 @@ Last updated: 2026-08-20
 
 | Command | Result |
 | --- | --- |
+| P1.3C Vue RED `bun test packages/vue/src/vue.test.ts` | Red as expected: `createGlowTour` and `GlowTourCancelTrigger` were missing from the legacy singleton API. |
+| P1.3C Vue GREEN | Pass: Vue contract 4/4 and Vue happy-DOM browser suite 7/7, covering root lease lifecycle, instance replacement, root isolation, dynamic controls/content, consumer prevention/disablement, shortcuts, IDs/ARIA, SSR omission, and outside-root errors. |
+| P1.3C final gates | Pass: `bun install --frozen-lockfile`, `bun run check`, `bun run typecheck`, `bun test` (164 pass), `bun run test:browser` (React 12, Solid 8, Vue 7), `bun run build`/`bun run pack` (7 each), approved `bun run test:tarballs` (7), playground build, and release prepare/publish dry-runs. |
 | P1 adapter interaction RED | Red as expected: release contracts found the missing browser gate; React's real delegated event advanced despite `preventDefault()`; React/Solid `aria-disabled` remained stale after consumer-disabled toggled; React custom child `disabled` did not disable the trigger; core late-consumer and clear-before-microtask click regressions both commanded synchronously. |
 | P1 adapter interaction GREEN | Pass: focused core driver, React browser, Solid browser, and release-contract suites. Covers prevented/nonprevented delegated React clicks, replacement staleness, native/marker/ARIA toggle coherence, custom child disabling, and CI/release browser gating. |
 | P1 dynamic adapter triggers RED/GREEN | Red: dynamically mounted React and Solid Cancel controls stayed active after clicks, and a late-inserted core Next control was never commanded. Green: delegated core dynamic/stale tests plus React/Solid browser coverage confirm active Cancel, step-two Back, hide→show Next, native disabled/ARIA, and shortcut metadata. |
@@ -242,6 +249,7 @@ Last updated: 2026-08-20
 - P1 controller follow-up: `packages/core/src/definition/`, `packages/core/src/builder/index.ts`, `packages/core/src/runtime/{active-step,tour-controller}.ts`, and controller regression tests.
 - P1.2 DOM driver: `packages/core/src/dom/tour-view-driver.{ts,test.ts}`, element structural geometry contracts, runtime command binding, behavior option merging, and this audit journal.
 - P1.3A root bridge: `packages/core/src/runtime/root-bridge.{ts,test.ts}`, the `createGlowTour` facade/type contract, and DOM-driver mount release.
+- P1.3C Vue adapter: `packages/vue/src/{adapter-bridge,glow-tour,index,vue.browser,vue.test}.ts`, `packages/vue/src/components/tour-components.ts`, the Vue playground, browser runner/release contract, and Bun test dependencies.
 
 - `package.json`, `bunfig.toml`, `tsconfig.json`, and `scripts/{build-packages,pack-packages,test-tarballs}.ts`
 - `packages/*/package.json`, declaration build configs, `packages/angular/ng-package.json`, and explicit public entrypoints.

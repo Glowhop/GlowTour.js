@@ -1,53 +1,77 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import {
-  createTourStore,
-  GlowTourBackTrigger,
-  GlowTourContent,
-  GlowTourFooter,
-  GlowTourHeader,
-  GlowTourNextTrigger,
-  GlowTourOverlay,
-  GlowTourPointer,
-  GlowTourPopover,
-  GlowTourRoot,
-  glowTour,
-} from "./index";
+import { renderToString } from "@vue/server-renderer";
+import { createSSRApp, h } from "vue";
+import * as runtime from "./index";
 
 describe("vue adapter contract", () => {
-  test("exports the shared core API and an isolated Vue singleton", () => {
-    assert.equal(typeof createTourStore, "function");
-    assert.equal(typeof glowTour.create, "function");
-    assert.equal(typeof glowTour.run, "function");
-    assert.equal(typeof glowTour.state.get, "function");
+  test("exports an instance factory and named native components without legacy runtime values", () => {
+    assert.equal(typeof runtime.createGlowTour, "function");
+
+    for (const component of [
+      runtime.GlowTourRoot,
+      runtime.GlowTourHeader,
+      runtime.GlowTourContent,
+      runtime.GlowTourFooter,
+      runtime.GlowTourPopover,
+      runtime.GlowTourOverlay,
+      runtime.GlowTourPointer,
+      runtime.GlowTourBackTrigger,
+      runtime.GlowTourNextTrigger,
+      runtime.GlowTourCancelTrigger,
+    ]) {
+      assert.equal(typeof component, "object");
+    }
+
+    for (const legacy of [
+      "Builder",
+      "create",
+      "createTourStore",
+      "TourStore",
+      "WorkflowInstance",
+      "WorkflowStep",
+      "glowTour",
+    ]) {
+      assert.equal(legacy in runtime, false, `${legacy} must not be public`);
+    }
   });
 
-  test("exports every named Vue component", () => {
-    assert.equal(GlowTourRoot.name, "GlowTourRoot");
-    assert.equal(GlowTourHeader.name, "GlowTourHeader");
-    assert.equal(GlowTourContent.name, "GlowTourContent");
-    assert.equal(GlowTourFooter.name, "GlowTourFooter");
-    assert.equal(GlowTourPopover.name, "GlowTourPopover");
-    assert.equal(GlowTourOverlay.name, "GlowTourOverlay");
-    assert.equal(GlowTourPointer.name, "GlowTourPointer");
-    assert.equal(GlowTourBackTrigger.name, "GlowTourBackTrigger");
-    assert.equal(GlowTourNextTrigger.name, "GlowTourNextTrigger");
+  test("imports without DOM globals for SSR", () => {
+    const result = Bun.spawnSync({
+      cmd: [
+        "bun",
+        "-e",
+        "delete globalThis.document; delete globalThis.window; delete globalThis.HTMLElement; await import('./packages/vue/src/index.ts');",
+      ],
+      cwd: process.cwd(),
+      stderr: "pipe",
+    });
+
+    assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
+  });
+
+  test("renders a root boundary without client-generated IDs during SSR", async () => {
+    const tour = runtime.createGlowTour();
+    const html = await renderToString(
+      createSSRApp({
+        render: () =>
+          h(runtime.GlowTourRoot, { tour }, () =>
+            h(runtime.GlowTourPopover, null, () => "Content"),
+          ),
+      }),
+    );
+
+    assert.match(html, /data-glow-tour-root/);
+    assert.doesNotMatch(html, /id="glow-tour/);
+    assert.doesNotMatch(html, /aria-labelledby/);
+    assert.doesNotMatch(html, /aria-describedby/);
   });
 
   test("exposes label overrides without legacy previous props", () => {
-    assert.equal("backLabel" in (GlowTourBackTrigger.props ?? {}), true);
-    assert.equal("previousLabel" in (GlowTourBackTrigger.props ?? {}), false);
-    assert.equal("nextLabel" in (GlowTourNextTrigger.props ?? {}), true);
-    assert.equal("finishLabel" in (GlowTourNextTrigger.props ?? {}), true);
-  });
-
-  test("owns the pointer content wrapper", () => {
-    const source = readFileSync(
-      new URL("./components/tour-components.ts", import.meta.url),
-      "utf8",
-    );
-
-    assert.match(source, /"data-glow-tour-pointer-content":\s*""/);
+    assert.equal("backLabel" in (runtime.GlowTourBackTrigger.props ?? {}), true);
+    assert.equal("previousLabel" in (runtime.GlowTourBackTrigger.props ?? {}), false);
+    assert.equal("nextLabel" in (runtime.GlowTourNextTrigger.props ?? {}), true);
+    assert.equal("finishLabel" in (runtime.GlowTourNextTrigger.props ?? {}), true);
+    assert.equal("cancelLabel" in (runtime.GlowTourCancelTrigger.props ?? {}), true);
   });
 });

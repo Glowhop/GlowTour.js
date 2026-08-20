@@ -1,4 +1,5 @@
 import {
+  createGlowTour,
   GlowTourBackTrigger,
   GlowTourContent,
   GlowTourFooter,
@@ -8,13 +9,14 @@ import {
   GlowTourPointer,
   GlowTourPopover,
   GlowTourRoot,
-  glowTour,
 } from "@glowhop/vue-tour";
 import "@glowhop/styles-tour/default.css";
 import { createApp, h } from "vue";
 import "../src/styles.css";
 
-const tour = glowTour
+const tour = createGlowTour();
+
+const tourDefinition = tour
   .create("vue-playground", {
     overlay: { color: "#101820", opacity: 0.58, padding: 10, radius: 8 },
   })
@@ -40,7 +42,7 @@ const tour = glowTour
 createApp({
   setup() {
     const startTour = () => {
-      void glowTour.run(tour);
+      void tour.run(tourDefinition);
     };
 
     return () =>
@@ -60,7 +62,7 @@ createApp({
             { id: "vue-tour-id-3", class: "target-button target-shrink", type: "button" },
             "Step 3",
           ),
-          h(GlowTourRoot, null, () => [
+          h(GlowTourRoot, { tour }, () => [
             h(GlowTourOverlay),
             h(GlowTourPointer, null, () => "☝️"),
             h(GlowTourPopover, null, () => [
