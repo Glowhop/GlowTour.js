@@ -1,11 +1,11 @@
 import { Observable } from "@glowhop/observables";
+import type { ReadonlyStartOptions } from "../definition";
 import type {
   DynamicStepProps,
   EventHandler,
   IndicatorOptions,
   OverlayOptions,
   PopoverOptions,
-  ReadonlyStartOptions,
   ScrollOptions,
   StepActionInstruction,
   StepBehavior,

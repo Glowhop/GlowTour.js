@@ -1,126 +1,24 @@
+import {
+  cloneStepProps,
+  cloneWorkflowStepDraft,
+  createWorkflowDefinition,
+  type WorkflowDefinition,
+  type WorkflowStepDraft,
+} from "../definition";
 import type {
-  AnimationOptions,
-  DynamicStepProps,
   EventHandler,
-  PrimitiveValue,
-  ReadonlyStartOptions,
   StartOptions,
   StepAction,
-  StepActionInstruction,
   StepParameters,
   StepTransitionAction,
-  WorkflowDefinition,
-  WorkflowStepDefinition,
 } from "../types";
 
 export type EventName = keyof HTMLElementEventMap;
 
 type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
 
-type StepDraft<T> = {
-  target: StepParameters<T>["target"];
-  props: DynamicStepProps<T>;
-  overlay?: StepParameters<T>["overlay"];
-  popover?: StepParameters<T>["popover"];
-  indicator?: StepParameters<T>["indicator"];
-  scroll?: StepParameters<T>["scroll"];
-  behavior?: StepParameters<T>["behavior"];
-  actions: StepActionInstruction<T>[];
-  eventHandlers: EventHandler<T>[];
-  nextAction: StepTransitionAction<T> | null;
-  backAction: StepTransitionAction<T> | null;
-  cancelAction: StepTransitionAction<T> | null;
-};
-
-function cloneData<T>(data: DynamicStepProps<T>["data"]) {
-  return data === undefined ? undefined : structuredClone(data);
-}
-
-function freezeRecord<T extends object>(value: T): Readonly<T> {
-  return Object.freeze(value);
-}
-
-function freezeData(data: Record<string, PrimitiveValue> | undefined) {
-  return data === undefined ? undefined : freezeRecord(structuredClone(data));
-}
-
-function freezeAnimation(options: AnimationOptions | undefined) {
-  return options && freezeRecord({ ...options });
-}
-
-function freezeOverlay(options: StepParameters<unknown>["overlay"]) {
-  return (
-    options &&
-    freezeRecord({
-      ...options,
-      animation: freezeAnimation(options.animation),
-    })
-  );
-}
-
-function freezePopover(options: StepParameters<unknown>["popover"]) {
-  return (
-    options &&
-    freezeRecord({
-      ...options,
-      animation: freezeAnimation(options.animation),
-      buttons: options.buttons && freezeRecord({ ...options.buttons }),
-      keyboardShortcuts:
-        options.keyboardShortcuts &&
-        freezeRecord({
-          back: options.keyboardShortcuts.back && freezeRecord([...options.keyboardShortcuts.back]),
-          next: options.keyboardShortcuts.next && freezeRecord([...options.keyboardShortcuts.next]),
-          cancel:
-            options.keyboardShortcuts.cancel && freezeRecord([...options.keyboardShortcuts.cancel]),
-        }),
-      placementTryOrder: options.placementTryOrder && freezeRecord([...options.placementTryOrder]),
-    })
-  );
-}
-
-function freezeIndicator(options: StepParameters<unknown>["indicator"]) {
-  return (
-    options &&
-    freezeRecord({
-      ...options,
-      animation: freezeAnimation(options.animation),
-      placementTryOrder: options.placementTryOrder && freezeRecord([...options.placementTryOrder]),
-    })
-  );
-}
-
-function freezeStep<T>(draft: StepDraft<T>): WorkflowStepDefinition<T> {
-  const props = freezeRecord({ ...draft.props, data: freezeData(draft.props.data) });
-  const step = {
-    target: draft.target,
-    props,
-    overlay: freezeOverlay(draft.overlay),
-    popover: freezePopover(draft.popover),
-    indicator: freezeIndicator(draft.indicator),
-    scroll: draft.scroll && freezeRecord({ ...draft.scroll }),
-    behavior: draft.behavior && freezeRecord({ ...draft.behavior }),
-    actions: freezeRecord([...draft.actions]),
-    eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
-    nextAction: draft.nextAction,
-    backAction: draft.backAction,
-    cancelAction: draft.cancelAction,
-  } satisfies WorkflowStepDefinition<T>;
-  return freezeRecord(step);
-}
-
-function freezeOptions(options: StartOptions): ReadonlyStartOptions {
-  return freezeRecord({
-    ...options,
-    overlay: freezeOverlay(options.overlay),
-    popover: freezePopover(options.popover),
-    indicator: freezeIndicator(options.indicator),
-    scroll: options.scroll && freezeRecord({ ...options.scroll }),
-    behavior: options.behavior && freezeRecord({ ...options.behavior }),
-  });
-}
-
 export class Builder<T> {
-  private readonly steps: StepDraft<T>[] = [];
+  private readonly steps: WorkflowStepDraft<T>[] = [];
   private currentStep: StepBuilder<T> | null = null;
 
   constructor(
@@ -144,7 +42,7 @@ export class Builder<T> {
         hideNextButton: options.hideNextButton,
         disableAutoScroll: options.disableAutoScroll,
         resetPropsOnEnter: options.resetPropsOnEnter,
-        data: cloneData(options.data),
+        data: cloneStepProps(options).data,
       },
       overlay: options.overlay,
       popover: options.popover,
@@ -162,12 +60,7 @@ export class Builder<T> {
 
   concat(builder: StepBuilder<T>) {
     const definition = builder.builder.finish();
-    const drafts = definition.steps.map((step) => ({
-      ...step,
-      props: { ...step.props, data: cloneData(step.props.data) },
-      actions: [...step.actions],
-      eventHandlers: [...step.eventHandlers],
-    }));
+    const drafts = definition.steps.map(cloneWorkflowStepDraft);
     const lastStep = drafts.at(-1);
     if (!lastStep) {
       throw new Error("Cannot concat a builder without steps");
@@ -182,18 +75,14 @@ export class Builder<T> {
 
   finish(): WorkflowDefinition<T> {
     const drafts = this.currentStep ? [...this.steps, this.currentStep.toDraft()] : this.steps;
-    return freezeRecord({
-      name: this.name,
-      options: freezeOptions(this.options),
-      steps: freezeRecord(drafts.map(freezeStep)),
-    });
+    return createWorkflowDefinition(this.name, this.options, drafts);
   }
 }
 
 export class StepBuilder<T> {
   constructor(
     public readonly builder: Builder<T>,
-    private readonly draft: StepDraft<T>,
+    private readonly draft: WorkflowStepDraft<T>,
   ) {}
 
   step(options: StepParameters<T>) {
@@ -313,13 +202,8 @@ export class StepBuilder<T> {
     return this.addEventHandlers(eventOrEvents, callback);
   }
 
-  toDraft(): StepDraft<T> {
-    return {
-      ...this.draft,
-      props: { ...this.draft.props, data: cloneData(this.draft.props.data) },
-      actions: [...this.draft.actions],
-      eventHandlers: [...this.draft.eventHandlers],
-    };
+  toDraft(): WorkflowStepDraft<T> {
+    return cloneWorkflowStepDraft(this.draft);
   }
 
   private addEventHandlers(

@@ -1,4 +1,12 @@
 import type { Observable } from "@glowhop/observables";
+import type { ReadonlyStepProps, WorkflowDefinition } from "../definition";
+
+export type {
+  ReadonlyStartOptions,
+  ReadonlyStepProps,
+  WorkflowDefinition,
+  WorkflowStepDefinition,
+} from "../definition";
 
 export type PrimitiveValue = string | number | boolean | null;
 
@@ -124,10 +132,6 @@ export interface DynamicStepProps<T> {
   data?: Record<string, PrimitiveValue>;
 }
 
-export type ReadonlyStepProps<T> = Omit<Readonly<DynamicStepProps<T>>, "data"> & {
-  readonly data?: Readonly<Record<string, PrimitiveValue>>;
-};
-
 export interface ScrollOptions {
   behavior?: "auto" | "smooth";
   block?: "start" | "center" | "end" | "nearest";
@@ -153,16 +157,6 @@ export interface StartOptions {
   onFinish?: () => void | Promise<void>;
 }
 
-type DeepReadonly<T> = T extends (...arguments_: infer _Arguments) => infer _Return
-  ? T
-  : T extends readonly (infer TEntry)[]
-    ? readonly DeepReadonly<TEntry>[]
-    : T extends object
-      ? { readonly [TKey in keyof T]: DeepReadonly<T[TKey]> }
-      : T;
-
-export type ReadonlyStartOptions = DeepReadonly<StartOptions>;
-
 export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
 // biome-ignore lint/suspicious/noConfusingVoidType: `void` preserves the optional action result contract.
 export type StepActionResult = boolean | void;
@@ -186,27 +180,6 @@ export interface EventHandler<TStepProps, TEvent extends Event = Event> {
     back: () => Promise<void>,
     cancel: () => Promise<void>,
   ) => void | Promise<void>;
-}
-
-export interface WorkflowStepDefinition<T> {
-  readonly target: TargetResolver;
-  readonly overlay?: DeepReadonly<OverlayOptions>;
-  readonly popover?: DeepReadonly<PopoverOptions>;
-  readonly indicator?: DeepReadonly<IndicatorOptions>;
-  readonly scroll?: DeepReadonly<ScrollOptions>;
-  readonly behavior?: DeepReadonly<StepBehavior>;
-  readonly props: ReadonlyStepProps<T>;
-  readonly actions: readonly StepActionInstruction<T>[];
-  readonly eventHandlers: readonly EventHandler<T>[];
-  readonly nextAction: StepTransitionAction<T> | null;
-  readonly backAction: StepTransitionAction<T> | null;
-  readonly cancelAction: StepTransitionAction<T> | null;
-}
-
-export interface WorkflowDefinition<T> {
-  readonly name: string;
-  readonly options: ReadonlyStartOptions;
-  readonly steps: readonly WorkflowStepDefinition<T>[];
 }
 
 export type TourStatus =

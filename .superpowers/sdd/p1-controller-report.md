@@ -1,6 +1,6 @@
 # P1 controller report
 
-Status: ready to commit
+Status: base implementation committed as `f6764e9`; review corrections completed.
 
 ## Evidence
 
@@ -45,4 +45,37 @@ Status: ready to commit
 - The no-op driver intentionally means event attachment and concrete DOM cleanup are not implemented in this task.
 - Angular playground output retains its known large-chunk warning.
 
-Commit: populated after commit as `refactor(core): add instance-first tour controller`.
+Commit: `f6764e9` (`refactor(core): add instance-first tour controller`).
+
+## Review follow-up — 2026-08-20
+
+Reviewed commit: `f6764e9`.
+
+### Findings reproduced in RED
+
+- Synchronous state subscribers could call `run`, `cancel`, or `dispose` during `finished`/`transitioning`, but the invalidated operation still invoked a callback or transition hook afterward.
+- First-step `canPrevious` was always false although `previous()` cancels a cancellable workflow.
+- Retry and action-delay timers retained their abort listener after normal resolution.
+- Definition types and freezing lived in the builder while `ActiveStep` duplicated step-prop cloning/freezing.
+
+The focused RED run contained seven failures: duplicate new-workflow finish, three stale-hook calls, first-step permission mismatch, and two missing timer-listener removals.
+
+### Corrections
+
+- Added operation checks immediately after status publications before any following callback, hook, action, target lookup, or mutation.
+- Made both state and command navigation use the same first-step previous/cancel rule.
+- Replaced duplicate timer helpers with one abortable timer that removes its listener on resolve and abort rejection.
+- Added `packages/core/src/definition/` as the single owner of readonly definition types, step-prop clone/freeze helpers, drafts, and the definition factory. Builder and active runtime now consume those modules.
+
+### Verification
+
+- Focused controller: 27 passed, 0 failed.
+- `bun run check`: pass, 91 files.
+- `bun run typecheck`: pass.
+- `bun test`: pass, 105 tests across 19 files.
+- `bun run build`: pass, 7 packages.
+- `bun run pack`: pass, 7 tarballs.
+- `bun run test:tarballs`: pass with registry access. The sandboxed attempt first hit the known false `react@undefined` registry-resolution failure.
+- `bun run --cwd apps/playground build`: pass with the existing Angular chunk-size warning.
+
+Follow-up commit subject: `fix(core): guard reentrant tour transitions`.

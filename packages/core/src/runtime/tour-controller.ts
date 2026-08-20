@@ -1,14 +1,18 @@
 import { Observable } from "@glowhop/observables";
 import { Builder } from "../builder";
+import {
+  cloneStepProps,
+  freezeStepProps,
+  type ReadonlyStepProps,
+  type WorkflowDefinition,
+} from "../definition";
 import { NoopTourViewDriver, type TourViewDriver } from "../dom/tour-view-driver";
 import type {
   DynamicStepProps,
-  ReadonlyStepProps,
   StartOptions,
   TourDirection,
   TourState,
   TourStatus,
-  WorkflowDefinition,
 } from "../types";
 import { ActiveStep } from "./active-step";
 
@@ -23,31 +27,19 @@ function normalizedError(error: unknown) {
   return error instanceof Error ? error : new Error(String(error));
 }
 
-function waitForRetry(signal: AbortSignal) {
+function waitForTimer(delay: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(resolve, 16);
-    signal.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(timeout);
-        reject(abortError());
-      },
-      { once: true },
-    );
-  });
-}
-
-function waitForDelay(delay: number, signal: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(resolve, delay);
-    signal.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(timeout);
-        reject(abortError());
-      },
-      { once: true },
-    );
+    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      clearTimeout(timeout);
+      cleanup();
+      reject(abortError());
+    };
+    const timeout = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, delay);
+    signal.addEventListener("abort", onAbort, { once: true });
   });
 }
 
@@ -94,9 +86,10 @@ export class TourController<T> {
     this.steps = workflow.steps.map((step) => new ActiveStep(step, workflow.options));
     this.index = -1;
     this.error = null;
-    this.setStatus("starting");
 
     try {
+      this.setStatus("starting");
+      this.assertCurrent(operation);
       await workflow.options.onStart?.();
       this.assertCurrent(operation);
       if (this.steps.length === 0) {
@@ -164,16 +157,8 @@ export class TourController<T> {
     const step = this.currentStep();
     if (!step) return;
     step.props.set((props) => {
-      const next = update(
-        Object.freeze({
-          ...props,
-          data: props.data === undefined ? undefined : Object.freeze(structuredClone(props.data)),
-        }),
-      );
-      return {
-        ...next,
-        data: next.data === undefined ? undefined : structuredClone(next.data),
-      };
+      const next = update(freezeStepProps(props));
+      return cloneStepProps(next);
     });
     this.publish();
   }
@@ -193,6 +178,7 @@ export class TourController<T> {
   private async enter(index: number, direction: TourDirection, operation: number): Promise<void> {
     this.direction = direction;
     this.setStatus("transitioning");
+    this.assertCurrent(operation);
     const step = this.steps[index];
     if (!step) throw new Error(`Step index ${index} is out of bounds`);
     if (step.initialProps.resetPropsOnEnter !== false) step.reset();
@@ -212,6 +198,7 @@ export class TourController<T> {
     this.assertCurrent(operation);
     this.index = index;
     this.setStatus("active");
+    this.assertCurrent(operation);
     await this.runActions(operation);
   }
 
@@ -219,6 +206,7 @@ export class TourController<T> {
     const step = this.currentStep();
     if (!step) return;
     this.setStatus("transitioning");
+    this.assertCurrent(operation);
     const hook = direction === "advance" ? step.definition.nextAction : step.definition.backAction;
     await hook?.(step.target, step.props);
     this.assertCurrent(operation);
@@ -247,7 +235,7 @@ export class TourController<T> {
     for (const action of step.definition.actions) {
       this.assertCurrent(operation);
       if (typeof action === "number") {
-        await waitForDelay(action, this.signalFor(operation));
+        await waitForTimer(action, this.signalFor(operation));
         this.assertCurrent(operation);
         continue;
       }
@@ -278,7 +266,7 @@ export class TourController<T> {
       if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
         throw new Error(`Missing target: ${String(step.definition.target)}`);
       }
-      await waitForRetry(signal);
+      await waitForTimer(16, signal);
       this.assertCurrent(operation);
     }
   }
@@ -287,6 +275,7 @@ export class TourController<T> {
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
     this.setStatus("finished");
+    this.assertCurrent(operation);
     await this.workflow?.options.onFinish?.();
     this.assertCurrent(operation);
   }
@@ -298,6 +287,7 @@ export class TourController<T> {
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
     this.setStatus("cancelled");
+    this.assertCurrent(operation);
     await this.workflow?.options.onCancel?.();
     this.assertCurrent(operation);
   }
@@ -307,6 +297,7 @@ export class TourController<T> {
     const error = normalizedError(reason);
     this.error = error;
     this.setStatus("error");
+    if (!this.isCurrent(operation)) return;
     try {
       await this.driver.clear(this.signalFor(operation));
     } catch {
@@ -357,9 +348,8 @@ export class TourController<T> {
   private canNavigate(direction: TourDirection) {
     if (this.status !== "active") return false;
     const props = this.currentStep()?.props.get();
-    return direction === "advance"
-      ? props?.disableNextButton !== true
-      : props?.disableBackButton !== true;
+    if (direction === "advance") return props?.disableNextButton !== true;
+    return props?.disableBackButton !== true && (this.index > 0 || this.canCancel());
   }
 
   private canCancel() {
@@ -392,7 +382,7 @@ export class TourController<T> {
       currentStep: currentStep?.snapshot() ?? null,
       direction: this.direction,
       canAdvance: isActive && currentStep?.props.get().disableNextButton !== true,
-      canPrevious: isActive && !isFirstStep && currentStep?.props.get().disableBackButton !== true,
+      canPrevious: this.canNavigate("previous"),
       canCancel: isActive && this.canCancel(),
       isFirstStep,
       isLastStep,

@@ -1,13 +1,13 @@
 # Audit implementation progress
 
-Last updated: 2026-08-13
+Last updated: 2026-08-20
 
 ## Current position
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed implementation before P1: `412441b` (P0 release hardening; later P0 documentation commits are retained).
-- Current task: P1 runtime/controller architecture completed.
+- Last completed P1 implementation: `f6764e9` (`refactor(core): add instance-first tour controller`).
+- Current task: P1 controller review corrections completed.
 - Next action: concrete DOM view driver, cleanup, and positioning.
 
 ## Completed
@@ -16,6 +16,10 @@ Last updated: 2026-08-13
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
 - Retained builder aliases and isolated the old mutable `TourStore` conversion in a clearly marked transitional bridge for the later adapter migration.
 - Added controller/definition tests covering readonly isolation, lifecycle/navigation, async errors, concurrency, stale resolution, target strategies, state updates, action execution, disabled navigation, directional skipping, view failures, disposal, and abort behavior.
+- Corrected synchronous subscriber reentrancy so a notification-triggered run, cancel, or dispose invalidates the old operation before any later hook, callback, or mutation.
+- Aligned `canPrevious` with `previous()` on the first step: it is available only when back navigation is enabled and cancellation is allowed.
+- Unified abortable timers and removed their abort listeners on normal resolution and abort rejection.
+- Moved readonly definition types, step-prop cloning/freezing, and workflow-definition creation into focused `packages/core/src/definition/` modules shared by the builder and active runtime.
 
 - Created the isolated worktree at `.worktrees/audit-p0-release`.
 - Installed dependencies with the frozen lockfile using Bun 1.3.12.
@@ -58,6 +62,15 @@ Last updated: 2026-08-13
 
 | Command | Result |
 | --- | --- |
+| P1 review RED `bun test packages/core/src/runtime/tour-controller.test.ts --test-name-pattern 'reentrant\|exposes previous\|removes the'` | Red; 7 failures reproduced stale hooks/callbacks, mismatched first-step permission, and two leaked timer listeners. |
+| P1 review focused controller tests | Pass; 27 tests, 0 failures, including synchronous run/cancel/dispose reentrancy and timer cleanup on resolve/abort. |
+| P1 review `bun run check` | Pass; Biome checked 91 files with no fixes. |
+| P1 review `bun run typecheck` | Pass; no TypeScript diagnostics. |
+| P1 review `bun test` | Pass; 105 tests, 0 failures across 19 files. |
+| P1 review `bun run build` | Pass; 7 public distributions built. |
+| P1 review `bun run pack` | Pass; 7 tarballs packed. |
+| P1 review `bun run test:tarballs` | Pass with registry access; the sandboxed attempt first reproduced the known misleading `react@undefined` registry-resolution failure. |
+| P1 review `bun run --cwd apps/playground build` | Pass; known Angular chunk-size warning only. |
 | Initial `bun test packages/core/src/runtime/tour-controller.test.ts` | Red; 2 passed, 8 failed because object casts were not real `HTMLElement` targets. Fixtures were corrected to controlled resolvers without weakening runtime validation. |
 | Initial `bun run typecheck` | Red; 5 readonly/legacy migration errors in builder definitions, old engine tests, and `TourStore`. |
 | Added requirement regressions | Red; actions, disabled navigation, go-to hooks, aliases, deep readonly data/options, reverse skip, and unexpected abort handling failed before implementation. |
@@ -120,6 +133,8 @@ Last updated: 2026-08-13
 - Full checkout history is required for the release ancestry guard. `fetch-depth: 0` provides it without persisting GitHub credentials after checkout; the helper still fetches the current `origin/main` ref immediately before the decision.
 
 ## Main files changed
+
+- P1 controller follow-up: `packages/core/src/definition/`, `packages/core/src/builder/index.ts`, `packages/core/src/runtime/{active-step,tour-controller}.ts`, and controller regression tests.
 
 - `package.json`, `bunfig.toml`, `tsconfig.json`, and `scripts/{build-packages,pack-packages,test-tarballs}.ts`
 - `packages/*/package.json`, declaration build configs, `packages/angular/ng-package.json`, and explicit public entrypoints.

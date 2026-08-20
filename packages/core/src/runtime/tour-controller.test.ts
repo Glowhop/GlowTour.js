@@ -15,6 +15,42 @@ function deferred<T>() {
   return { promise, reject, resolve };
 }
 
+function trackAbortListeners(
+  signal: AbortSignal,
+  counts: { added: number; removed: number },
+  onAdded?: () => void,
+) {
+  const add = signal.addEventListener.bind(signal) as (
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions,
+  ) => void;
+  const remove = signal.removeEventListener.bind(signal) as (
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions,
+  ) => void;
+  signal.addEventListener = ((
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions,
+  ) => {
+    if (type === "abort") {
+      counts.added += 1;
+      onAdded?.();
+    }
+    add(type, listener, options);
+  }) as AbortSignal["addEventListener"];
+  signal.removeEventListener = ((
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions,
+  ) => {
+    if (type === "abort") counts.removed += 1;
+    remove(type, listener, options);
+  }) as AbortSignal["removeEventListener"];
+}
+
 const target = {} as HTMLElement;
 const targetResolver = () => target;
 
@@ -258,15 +294,20 @@ describe("instance-first TourController", () => {
 
   test("aborts a pending wait-strategy retry without polling again", async () => {
     const firstAttempt = deferred<void>();
+    const timerListenerAdded = deferred<void>();
     let attempts = 0;
+    const listenerCounts = { added: 0, removed: 0 };
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("abort-wait", { cancellable: true })
       .step({
         behavior: { missingTargetStrategy: "wait", targetTimeout: 60_000 },
         content: "one",
-        target: () => {
+        target: ({ signal }) => {
           attempts += 1;
+          if (attempts === 1) {
+            trackAbortListeners(signal, listenerCounts, timerListenerAdded.resolve);
+          }
           firstAttempt.resolve();
           return null;
         },
@@ -276,10 +317,13 @@ describe("instance-first TourController", () => {
 
     const run = tour.run(workflow);
     await firstAttempt.promise;
+    await timerListenerAdded.promise;
     await tour.cancel();
     await run;
 
     assert.equal(attempts, 1);
+    assert.equal(listenerCounts.added, 1);
+    assert.equal(listenerCounts.removed, 1);
     assert.equal(tour.state.get().status, "cancelled");
   });
 
@@ -598,5 +642,175 @@ describe("instance-first TourController", () => {
 
     assert.equal(tour.state.get().status, "cancelled");
     assert.equal(tour.state.get().currentStepIndex, 0);
+  });
+
+  test("does not finish a new workflow from a reentrant finished notification", async () => {
+    let newWorkflowFinishes = 0;
+    const tour = createGlowTour<string>();
+    const oldWorkflow = tour.create("old-empty").finish();
+    const newWorkflow = tour
+      .create("new-empty", {
+        onFinish: () => {
+          newWorkflowFinishes += 1;
+        },
+      })
+      .finish();
+    let newRun: Promise<void> | null = null;
+    tour.state.subscribe((state) => {
+      if (state.name === "old-empty" && state.status === "finished") {
+        newRun = tour.run(newWorkflow);
+      }
+    });
+
+    await tour.run(oldWorkflow);
+    await newRun;
+
+    assert.equal(newWorkflowFinishes, 1);
+    assert.equal(tour.state.get().name, "new-empty");
+    assert.equal(tour.state.get().status, "finished");
+  });
+
+  test("does not run an old hook after reentrant dispose from transitioning", async () => {
+    let oldHookCalls = 0;
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("dispose-reentrant")
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .onNext(() => {
+        oldHookCalls += 1;
+      })
+      .finish();
+    await tour.run(workflow);
+    tour.state.subscribe((state) => {
+      if (state.status === "transitioning") tour.dispose();
+    });
+
+    await tour.advance();
+
+    assert.equal(oldHookCalls, 0);
+    assert.equal(driver.disposeCalls, 1);
+  });
+
+  test("does not run an old hook after reentrant run from transitioning", async () => {
+    let oldHookCalls = 0;
+    const tour = createGlowTour<string>();
+    const oldWorkflow = tour
+      .create("old")
+      .step({ content: "old", target: targetResolver, title: "old" })
+      .onNext(() => {
+        oldHookCalls += 1;
+      })
+      .finish();
+    const newWorkflow = tour
+      .create("new")
+      .step({ content: "new", target: targetResolver, title: "new" })
+      .finish();
+    await tour.run(oldWorkflow);
+    let newRun: Promise<void> | null = null;
+    tour.state.subscribe((state) => {
+      if (state.name === "old" && state.status === "transitioning") {
+        newRun = tour.run(newWorkflow);
+      }
+    });
+
+    await tour.advance();
+    await newRun;
+
+    assert.equal(oldHookCalls, 0);
+    assert.equal(tour.state.get().name, "new");
+    assert.equal(tour.state.get().status, "active");
+  });
+
+  test("does not run an old hook after reentrant cancel from transitioning", async () => {
+    let oldHookCalls = 0;
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("cancel-reentrant", { cancellable: true })
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .onNext(() => {
+        oldHookCalls += 1;
+      })
+      .finish();
+    await tour.run(workflow);
+    let cancellation: Promise<void> | null = null;
+    tour.state.subscribe((state) => {
+      if (state.status === "transitioning") cancellation = tour.cancel();
+    });
+
+    await tour.advance();
+    await cancellation;
+
+    assert.equal(oldHookCalls, 0);
+    assert.equal(tour.state.get().status, "cancelled");
+  });
+
+  test("exposes previous on the first step only when it can cancel", async () => {
+    const cancellableTour = createGlowTour<string>();
+    const cancellable = cancellableTour
+      .create("cancellable", { cancellable: true })
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .finish();
+    await cancellableTour.run(cancellable);
+    assert.equal(cancellableTour.state.get().canPrevious, true);
+    cancellableTour.updateCurrentStep((props) => ({ ...props, disableBackButton: true }));
+    assert.equal(cancellableTour.state.get().canPrevious, false);
+
+    const fixedTour = createGlowTour<string>();
+    const fixed = fixedTour
+      .create("fixed", { cancellable: false })
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .finish();
+    await fixedTour.run(fixed);
+    assert.equal(fixedTour.state.get().canPrevious, false);
+  });
+
+  test("removes the retry timer abort listener after resolving", async () => {
+    let attempts = 0;
+    const listenerCounts = { added: 0, removed: 0 };
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("retry-listener")
+      .step({
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+        content: "one",
+        target: ({ signal }) => {
+          attempts += 1;
+          if (attempts === 1) {
+            trackAbortListeners(signal, listenerCounts);
+            return null;
+          }
+          return target;
+        },
+        title: "one",
+      })
+      .finish();
+
+    await tour.run(workflow);
+
+    assert.equal(listenerCounts.added, 1);
+    assert.equal(listenerCounts.removed, 1);
+  });
+
+  test("removes the action delay abort listener after resolving", async () => {
+    const listenerCounts = { added: 0, removed: 0 };
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("delay-listener")
+      .step({
+        content: "one",
+        target: ({ signal }) => {
+          trackAbortListeners(signal, listenerCounts);
+          return target;
+        },
+        title: "one",
+      })
+      .wait(0)
+      .finish();
+
+    await tour.run(workflow);
+
+    assert.equal(listenerCounts.added, 1);
+    assert.equal(listenerCounts.removed, 1);
   });
 });
