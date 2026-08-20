@@ -320,6 +320,49 @@ describe("private root bridge", () => {
     );
   });
 
+  test("does not treat a pending claim as a connected root when an attribute callback runs a tour", async () => {
+    const tour = createGlowTour<string>();
+    const mount = root() as unknown as MockElement;
+    const definition = tour.create("pending-run").finish();
+    let pendingRun: Promise<void> | null = null;
+    mount.onSetAttribute = (name) => {
+      if (name === "id") pendingRun = tour.run(definition);
+      if (name === "data-glow-tour-id-prefix") throw new Error("claim failed after pending run");
+    };
+
+    assert.throws(
+      () => rootBridge(tour).connectRoot({ adapter: {}, root: mount as unknown as HTMLElement }),
+      /claim failed after pending run/,
+    );
+    await assert.rejects(pendingRun ?? Promise.resolve(), /connected root/i);
+    assert.equal(tour.state.get().status, "idle");
+  });
+
+  test("does not publish idle or allow a listener remount while a pending claim rolls back", () => {
+    const tour = createGlowTour<string>();
+    const mount = root() as unknown as MockElement;
+    let allowRemount = false;
+    let remounts = 0;
+    const unsubscribe = tour.state.subscribe((state) => {
+      if (!allowRemount || state.status !== "idle") return;
+      remounts += 1;
+      rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+    });
+    mount.onSetAttribute = (name) => {
+      if (name === "id") allowRemount = true;
+      if (name === "data-glow-tour-id-prefix") throw new Error("claim failed before commit");
+    };
+
+    assert.throws(
+      () => rootBridge(tour).connectRoot({ adapter: {}, root: mount as unknown as HTMLElement }),
+      /claim failed before commit/,
+    );
+
+    assert.equal(remounts, 0);
+    rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+    unsubscribe();
+  });
+
   test("rolls back a claim when disposal occurs during an attribute callback", () => {
     const tour = createGlowTour<string>();
     const mount = root() as unknown as MockElement;

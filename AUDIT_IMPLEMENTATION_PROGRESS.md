@@ -62,6 +62,7 @@ Last updated: 2026-08-20
 - P1.2 DOM driver focus-restoration reentrancy: restoring focus during `show()` or `clear()` can synchronously start a newer show. Both operations now verify their generation/signal immediately after `FocusGuard.deactivate()` and before mutating active state, current step/direction, or starting disappearance.
 - P1.3A root bridge RED: the new focused bridge suite initially failed 9/9 because the factory returned a no-op-driver controller, had no private bridge, and accepted runs without a root. The public-facade enumerable-key regression then failed as expected while private controller fields were still visible.
 - P1.3A review follow-up: RED regressions reproduced a reentrant second `connectRoot()` before its first attribute write, leaked root/prefix claims after a second-attribute failure, an active/rootless controller after release, command loss after remount, root-as-child acceptance, and a mutable `tour.state` facade. GREEN introduces a pending lease before DOM-visible claims, identity-owned best-effort rollback, controller token invalidation before DOM/focus cleanup, and an `idle` publication only after the old lease is detached.
+- P1.3A root bridge correction: the initial pending lease also satisfied `assertConnected()` and published `idle` while rolling back. RED proved an attribute callback could start a run that later resolved after a failed claim, and an `idle` listener could remount before that claim threw. Pending reservation and live binding are now separate: only a committed live binding authorizes runs or lifecycle publication; pending rollback is cleanup-only, including terminal disposal during claim.
 
 ## Remaining
 
@@ -88,6 +89,13 @@ Last updated: 2026-08-20
 | P1.3A review follow-up build and pack | Pass; `bun run build` and `bun run pack` emitted exactly 7 publishable distributions and 7 tarballs; playground excluded. |
 | P1.3A review follow-up tarball smoke | Pass; approved-registry `bun scripts/test-tarballs.ts` exercised the external consumer contract for all 7 tarballs. |
 | P1.3A review follow-up playground build | Pass; `bun run --cwd apps/playground build`; existing Angular chunk-size warning remains (1.38 MB minified). |
+| P1.3A pending/live correction RED `bun test packages/core/src/runtime/root-bridge.test.ts --test-name-pattern 'pending'` | Red; a pending attribute callback started a run that resolved, and failed pending rollback published `idle`, allowing a state listener to mount a replacement before the original claim threw. |
+| P1.3A pending/live correction focused GREEN | Pass; 79 root bridge, controller, and DOM-driver tests. Pending claims reject `run()` as not connected and roll back silently; committed live release retains its documented idle/remount behavior. |
+| P1.3A pending/live correction static checks | Pass; `bun run typecheck` and `bun run check` (95 files, no diagnostics). |
+| P1.3A pending/live correction full test | Pass; `bun test` with 160 tests, 0 failures across 21 files. |
+| P1.3A pending/live correction build and pack | Pass; `bun run build` and `bun run pack` emitted exactly 7 publishable distributions and 7 tarballs; playground excluded. |
+| P1.3A pending/live correction tarball smoke | Pass; approved-registry `bun scripts/test-tarballs.ts` exercised the external consumer contract for all 7 tarballs. |
+| P1.3A pending/live correction playground build | Pass; `bun run --cwd apps/playground build`; existing Angular chunk-size warning remains (1.38 MB minified). |
 | P1.2 DOM driver restoration RED | Red; a focus-restoration handler synchronously started B, leaving stale show state as A and stale clear state as null, so B could not receive keyboard navigation. |
 | P1.2 DOM driver restoration focused GREEN | Pass; 65 tests, 0 failures across DOM driver, FocusGuard, and controller. |
 | P1.2 DOM driver restoration static checks | Pass; `bun run check` (93 files) and `bun run typecheck` (no diagnostics). |

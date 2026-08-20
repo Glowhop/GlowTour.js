@@ -124,13 +124,14 @@ export function attachRootBridge<T>(
   onMountReleaseStart: () => void,
   onMountReleaseComplete: () => void,
 ) {
-  let binding: RootLease | null = null;
+  let binding: TourRootBinding<T> | null = null;
+  let pending: RootLease | null = null;
   const bridge = Object.freeze({
     version: BRIDGE_VERSION,
     connectRoot(options: { adapter: unknown; idPrefix?: string; root: HTMLElement }): RootBinding {
       void options.adapter;
       if (isDisposed()) throw new Error("Cannot connect a root to a disposed glow tour");
-      if (binding) throw new Error("Glow tour already has a live root lease");
+      if (binding || pending) throw new Error("Glow tour already has a live root lease");
       const root = options.root;
       if (!root?.ownerDocument) throw new Error("Glow tour root must belong to a document");
       if (Reflect.has(root, ROOT_OWNER_SYMBOL)) {
@@ -165,21 +166,20 @@ export function attachRootBridge<T>(
           },
         ]);
       };
-      const pending: RootLease = {
+      const pendingLease: RootLease = {
         release: () => {
-          if (binding !== pending || releasing) return;
+          if (pending !== pendingLease || releasing) return;
           releasing = true;
           try {
-            runCleanup([onMountReleaseStart, rollback]);
+            rollback();
           } finally {
-            if (binding === pending) binding = null;
-            onMountReleaseComplete();
+            if (pending === pendingLease) pending = null;
           }
         },
       };
 
-      // The pending lease is visible to reentrant DOM callbacks before this attempt mutates the root.
-      binding = pending;
+      // A pending lease reserves the claim before DOM callbacks can reenter, but is not a runnable mount.
+      pending = pendingLease;
       try {
         prefix = reservePrefix(root.ownerDocument, options.idPrefix);
         claimRootOwner(root, reservation);
@@ -198,7 +198,7 @@ export function attachRootBridge<T>(
         registeredRoot = true;
         driver.registerRoot(root);
         if (isDisposed()) throw new Error("Cannot connect a root to a disposed glow tour");
-        if (binding !== pending)
+        if (pending !== pendingLease)
           throw new Error("Glow tour root lease was released while connecting");
         const live = new TourRootBinding(
           driver,
@@ -213,10 +213,11 @@ export function attachRootBridge<T>(
           },
         );
         binding = live;
+        pending = null;
         return live;
       } catch (error) {
         try {
-          if (binding === pending) pending.release();
+          if (pending === pendingLease) pendingLease.release();
           else rollback();
         } catch {
           // The connection error is the useful public failure; cleanup has already attempted every owned claim.
@@ -237,6 +238,7 @@ export function attachRootBridge<T>(
     },
     release() {
       binding?.release();
+      pending?.release();
     },
   };
 }
