@@ -191,8 +191,14 @@ test("ordinary local scripts contain no npm publish and retain a non-publishing 
   expect(manifest.scripts["version-packages"]).toBe("changeset version");
   expect(manifest.scripts["release:prepare"]).toBe("bun scripts/prepare-release.ts --dry-run");
   expect(manifest.scripts["release:publish"]).toBe("bun scripts/publish-release.ts");
-  expect(manifest.scripts["test:browser"]).toBe(
-    "bun test --conditions=browser ./packages/react/src/react.browser.ts ./packages/solid/src/solid.browser.ts",
+  expect(manifest.scripts["test:browser"]).toBe("bun scripts/test-browser.ts");
+  const browserRunner = read("scripts/test-browser.ts");
+  expect(browserRunner).toContain('"./packages/react/src/react.browser.ts"');
+  expect(browserRunner).toContain('"./packages/solid/src/solid.browser.ts"');
+  expect(browserRunner.indexOf("react.browser.ts")).toBeLessThan(
+    browserRunner.indexOf("solid.browser.ts"),
   );
+  expect(browserRunner).toContain("Bun.spawnSync");
+  expect(browserRunner).toContain("process.exitCode = result.exitCode");
   expect(Object.values(manifest.scripts).join("\n")).not.toMatch(/npm publish/);
 });

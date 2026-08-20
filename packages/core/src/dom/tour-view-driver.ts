@@ -275,6 +275,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (this.isCurrentGeneration(generation)) this.handleKeydown(event as KeyboardEvent);
     });
     this.attachButtonHandlers(step);
+    this.observeControls(step, generation);
     this.syncControlState(step);
     this.syncShortcutLabels(step);
     if (step.behavior?.targetTracking === "continuous") this.schedulePosition(generation);
@@ -429,11 +430,29 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       ["cancel", "cancel"],
     ] as const) {
       const trigger = target.closest<HTMLElement>(`[data-glow-tour-${direction}-trigger]`);
-      if (trigger && scope.contains(trigger)) {
+      if (trigger && this.ownsTrigger(trigger, scope)) {
         return { command, trigger: trigger as HTMLButtonElement };
       }
     }
     return null;
+  }
+
+  private observeControls(step: ActiveStep<T>, generation: number) {
+    const scope = this.root ?? this.popover?.getElement();
+    if (!(scope instanceof HTMLElement) || typeof MutationObserver === "undefined") return;
+    let queued = false;
+    const observer = new MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      queueMicrotask(() => {
+        queued = false;
+        if (!this.isCurrentGeneration(generation) || this.currentStep !== step) return;
+        this.syncControlState(step);
+        this.syncShortcutLabels(step);
+      });
+    });
+    observer.observe(scope, { childList: true, subtree: true });
+    this.stepCleanups.push(() => observer.disconnect());
   }
 
   private deferTriggerCommand(
@@ -468,16 +487,18 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
-  private findTrigger(direction: "next" | "back" | "cancel") {
-    return this.findTriggers(direction)[0] ?? null;
-  }
-
   private findTriggers(direction: "next" | "back" | "cancel") {
     const scope = this.root ?? this.popover?.getElement();
-    if (!scope || typeof scope.querySelectorAll !== "function") return [];
+    if (!(scope instanceof HTMLElement) || typeof scope.querySelectorAll !== "function") return [];
     return Array.from(
       scope.querySelectorAll<HTMLButtonElement>(`[data-glow-tour-${direction}-trigger]`),
-    );
+    ).filter((trigger) => this.ownsTrigger(trigger, scope));
+  }
+
+  private ownsTrigger(trigger: HTMLElement, scope: HTMLElement) {
+    if (!scope.contains(trigger)) return false;
+    const owner = this.root ?? scope.closest<HTMLElement>("[data-glow-tour-root]");
+    return trigger.closest("[data-glow-tour-root]") === owner;
   }
 
   private async command(command: "advance" | "previous" | "cancel") {
@@ -492,11 +513,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private canCommand(
     command: "advance" | "previous" | "cancel",
     step: ActiveStep<T>,
-    trigger = this.findTrigger(
-      command === "advance" ? "next" : command === "previous" ? "back" : "cancel",
-    ),
+    trigger?: HTMLButtonElement | null,
   ) {
-    if (this.isConsumerDisabled(trigger)) return false;
+    if (this.isConsumerDisabled(trigger ?? null)) return false;
     if (command === "advance") {
       return (this.commands?.canAdvance?.() ?? true) && step.props.get().disableNextButton !== true;
     }

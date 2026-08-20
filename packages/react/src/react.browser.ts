@@ -10,6 +10,7 @@ beforeEach(() => {
     Event: window.Event,
     Element: window.Element,
     HTMLElement: window.HTMLElement,
+    KeyboardEvent: window.KeyboardEvent,
     MouseEvent: window.MouseEvent,
     MutationObserver: window.MutationObserver,
     Node: window.Node,
@@ -26,6 +27,161 @@ afterEach(() => {
 });
 
 describe("react adapter browser behavior", () => {
+  test("keeps nested tour controls isolated from the outer root", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const outerTarget = document.createElement("button");
+    const innerTarget = document.createElement("button");
+    document.body.append(container, outerTarget, innerTarget);
+    const outer = createGlowTour();
+    const inner = createGlowTour();
+    const workflow = (tour: typeof outer, target: HTMLElement, name: string) =>
+      tour
+        .create(name)
+        .step({ content: "First", target, title: "First" })
+        .step({ content: "Second", target, title: "Second" })
+        .finish();
+    const root = createRoot(container);
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          GlowTour.Root,
+          { idPrefix: "outer", tour: outer },
+          React.createElement(GlowTour.NextTrigger),
+          React.createElement(
+            GlowTour.Root,
+            { idPrefix: "inner", tour: inner },
+            React.createElement(GlowTour.Popover),
+            React.createElement(GlowTour.NextTrigger),
+          ),
+        ),
+      );
+    });
+    await React.act(async () => {
+      await outer.run(workflow(outer, outerTarget, "outer"));
+      await inner.run(workflow(inner, innerTarget, "inner"));
+    });
+    const [outerNext, innerNext] = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-next-trigger]"),
+    );
+    const outerDisabled = outerNext?.disabled;
+    const outerAriaDisabled = outerNext?.getAttribute("aria-disabled");
+    await React.act(async () => {
+      innerNext?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    assert.equal(inner.state.get().currentStepIndex, 1);
+    assert.equal(outer.state.get().currentStepIndex, 0);
+    assert.equal(outerNext?.disabled, outerDisabled);
+    assert.equal(outerNext?.getAttribute("aria-disabled"), outerAriaDisabled);
+    await React.act(async () => root.unmount());
+  });
+
+  test("uses controller keyboard permission despite consumer-disabled next trigger order", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("keyboard order")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .step({ content: "Third", target, title: "Third" })
+      .finish();
+    let setDisabledFirst!: (value: boolean) => void;
+    function Harness() {
+      const [disabledFirst, updateDisabledFirst] = React.useState(true);
+      setDisabledFirst = updateDisabledFirst;
+      const disabled = React.createElement(GlowTour.NextTrigger, { disabled: true });
+      const enabled = React.createElement(GlowTour.NextTrigger);
+      return React.createElement(
+        GlowTour.Root,
+        { tour },
+        disabledFirst ? disabled : enabled,
+        disabledFirst ? enabled : disabled,
+      );
+    }
+    const root = createRoot(container);
+    await React.act(async () => root.render(React.createElement(Harness)));
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    const disabled = container.querySelector<HTMLButtonElement>(
+      "[data-glow-tour-consumer-disabled]",
+    );
+    await React.act(async () => {
+      disabled?.click();
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    assert.equal(tour.state.get().currentStepIndex, 0);
+    await React.act(async () => {
+      window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    await React.act(async () => {
+      await tour.previous();
+      setDisabledFirst(false);
+    });
+    await React.act(async () => {
+      window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    await React.act(async () => root.unmount());
+  });
+
+  test("synchronizes custom keyboard shortcuts on a late next trigger", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("custom shortcuts")
+      .step({
+        content: "First",
+        popover: { keyboardShortcuts: { next: ["N"] } },
+        target,
+        title: "First",
+      })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    let show!: () => void;
+    function Harness() {
+      const [visible, setVisible] = React.useState(false);
+      show = () => setVisible(true);
+      return React.createElement(
+        GlowTour.Root,
+        { tour },
+        visible ? React.createElement(GlowTour.NextTrigger) : null,
+      );
+    }
+    const root = createRoot(container);
+    await React.act(async () => root.render(React.createElement(Harness)));
+    await React.act(async () => {
+      await tour.run(workflow);
+      show();
+    });
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    assert.equal(next?.getAttribute("aria-keyshortcuts"), "N");
+    await React.act(async () => root.unmount());
+  });
+
   test("delegates commands to controls that appear while a tour is active", async () => {
     const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
       import("react"),
@@ -74,6 +230,7 @@ describe("react adapter browser behavior", () => {
       await tour.run(workflow);
       await tour.advance();
     });
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
     const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
     assert.equal(back?.disabled, false);
     assert.equal(back?.getAttribute("aria-keyshortcuts"), "ArrowLeft Backspace");
@@ -84,6 +241,7 @@ describe("react adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 0);
 
     await React.act(async () => setShowNext(true));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
     const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
     assert.equal(next?.disabled, false);
     assert.equal(next?.getAttribute("aria-keyshortcuts"), "Enter ArrowRight");

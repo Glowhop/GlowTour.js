@@ -105,6 +105,8 @@ class MockElement extends MockNode {
       selector.includes(`data-glow-tour-${direction}-trigger`),
     );
     if (trigger && this.hasAttribute(`data-glow-tour-${trigger}-trigger`)) return this;
+    if (selector.includes("data-glow-tour-root") && this.hasAttribute("data-glow-tour-root"))
+      return this;
     const match =
       (selector.includes("[hidden]") && this.hasAttribute("hidden")) ||
       (selector.includes("[inert]") && this.hasAttribute("inert")) ||
@@ -239,12 +241,27 @@ class TestResizeObserver {
     this.callback([], this as unknown as ResizeObserver);
   }
 }
+class TestMutationObserver {
+  static instances: TestMutationObserver[] = [];
+  disconnected = false;
+  constructor(readonly callback: MutationCallback) {
+    TestMutationObserver.instances.push(this);
+  }
+  disconnect() {
+    this.disconnected = true;
+  }
+  observe() {}
+  trigger() {
+    this.callback([], this as unknown as MutationObserver);
+  }
+}
 
 const globalKeys = [
   "Element",
   "Event",
   "HTMLElement",
   "KeyboardEvent",
+  "MutationObserver",
   "Node",
   "ResizeObserver",
   "SVGSVGElement",
@@ -272,11 +289,13 @@ beforeEach(() => {
   document = new MockDocument();
   window = new MockWindow();
   TestResizeObserver.instances = [];
+  TestMutationObserver.instances = [];
   const replacements = {
     Element: MockElement,
     Event: MockEvent,
     HTMLElement: MockElement,
     KeyboardEvent: MockKeyboardEvent,
+    MutationObserver: TestMutationObserver,
     Node: MockNode,
     ResizeObserver: TestResizeObserver,
     SVGSVGElement: MockElement,
@@ -326,6 +345,7 @@ function createStep(
     targetTracking?: "events" | "continuous";
     animated?: boolean;
     cancellable?: boolean;
+    nextShortcuts?: readonly string[];
   } = {},
 ) {
   const workflow = create<string>("dom-driver", {
@@ -336,7 +356,14 @@ function createStep(
       targetTracking: options.targetTracking,
     },
   })
-    .step({ content: "content", target: "#target", title: "title" })
+    .step({
+      content: "content",
+      popover: options.nextShortcuts
+        ? { keyboardShortcuts: { next: options.nextShortcuts } }
+        : undefined,
+      target: "#target",
+      title: "title",
+    })
     .finish();
   const definition = workflow.steps[0];
   if (!definition) throw new Error("Expected one workflow step");
@@ -351,6 +378,7 @@ function createElements() {
     overlay = document.createElementNS("svg", "svg");
   next.setAttribute("data-glow-tour-next-trigger", "");
   back.setAttribute("data-glow-tour-back-trigger", "");
+  root.setAttribute("data-glow-tour-root", "");
   popover.append(back, next);
   overlay.append(document.createElementNS("svg", "path"));
   root.append(popover, pointer, overlay);
@@ -678,6 +706,52 @@ describe("DomTourViewDriver", () => {
 
     assert.deepEqual(calls, []);
   });
+  test("synchronizes custom shortcuts on a trigger inserted after the active step", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep({ nextShortcuts: ["N"] });
+    step.target = createTarget() as unknown as HTMLElement;
+    const next = document.createElement("button");
+    next.setAttribute("data-glow-tour-next-trigger", "");
+
+    await driver.show(step, "advance", new AbortController().signal);
+    elements.popover.append(next);
+    TestMutationObserver.instances.at(-1)?.trigger();
+    await Promise.resolve();
+
+    assert.equal(next.getAttribute("aria-keyshortcuts"), "N");
+  });
+  test("does not command or synchronize triggers inside a nested root", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    const nestedRoot = document.createElement("section");
+    const nestedNext = document.createElement("button");
+    nestedRoot.setAttribute("data-glow-tour-root", "");
+    nestedNext.setAttribute("data-glow-tour-next-trigger", "");
+    nestedRoot.append(nestedNext);
+    elements.popover.append(nestedRoot);
+    step.target = createTarget() as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    TestMutationObserver.instances.at(-1)?.trigger();
+    await Promise.resolve();
+    elements.root.dispatchEvent(new MockEvent("click", { target: nestedNext }));
+    await Promise.resolve();
+
+    assert.equal(nestedNext.getAttribute("aria-disabled"), null);
+    assert.equal(nestedNext.getAttribute("aria-keyshortcuts"), null);
+    assert.deepEqual(calls, []);
+  });
+  test("disconnects the control observer when clearing the active step", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    const observer = TestMutationObserver.instances.at(-1);
+    await driver.clear(new AbortController().signal);
+
+    assert.equal(observer?.disconnected, true);
+  });
   test("loops modal Tab focus, starts directionally, restores focus, and toggles aria-modal", async () => {
     const initial = document.createElement("button");
     document.body.append(initial);
@@ -807,6 +881,7 @@ describe("DomTourViewDriver", () => {
       replacementOverlay = document.createElementNS("svg", "svg"),
       replacementPointer = document.createElement("div"),
       step = createStep();
+    replacementRoot.setAttribute("data-glow-tour-root", "");
     replacementNext.setAttribute("data-glow-tour-next-trigger", "");
     replacementPopover.append(replacementNext);
     replacementPopover.setRect({ height: 40, left: 0, top: 0, width: 160 });

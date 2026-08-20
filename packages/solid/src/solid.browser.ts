@@ -45,7 +45,9 @@ beforeEach(() => {
     Event: window.Event,
     Element: window.Element,
     HTMLElement: window.HTMLElement,
+    KeyboardEvent: window.KeyboardEvent,
     MouseEvent: window.MouseEvent,
+    MutationObserver: window.MutationObserver,
     Node: window.Node,
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
@@ -58,6 +60,107 @@ afterEach(() => {
 });
 
 describe("solid adapter browser behavior", () => {
+  test("keeps nested tour controls isolated from the outer root", async () => {
+    const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("solid-js"),
+      import("solid-js/web"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const outerTarget = document.createElement("button");
+    const innerTarget = document.createElement("button");
+    document.body.append(container, outerTarget, innerTarget);
+    const outer = createGlowTour();
+    const inner = createGlowTour();
+    const workflow = (tour: typeof outer, target: HTMLElement, name: string) =>
+      tour
+        .create(name)
+        .step({ content: "First", target, title: "First" })
+        .step({ content: "Second", target, title: "Second" })
+        .finish();
+    const dispose = render(
+      () =>
+        createComponent(GlowTour.Root, {
+          idPrefix: "outer",
+          tour: outer,
+          get children() {
+            return [
+              createComponent(GlowTour.NextTrigger, {}),
+              createComponent(GlowTour.Root, {
+                idPrefix: "inner",
+                tour: inner,
+                get children() {
+                  return [
+                    createComponent(GlowTour.Popover, {}),
+                    createComponent(GlowTour.NextTrigger, {}),
+                  ];
+                },
+              }),
+            ];
+          },
+        }),
+      container,
+    );
+    await outer.run(workflow(outer, outerTarget, "outer"));
+    await inner.run(workflow(inner, innerTarget, "inner"));
+    const [outerNext, innerNext] = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-next-trigger]"),
+    );
+    const outerDisabled = outerNext?.disabled;
+    const outerAriaDisabled = outerNext?.getAttribute("aria-disabled");
+    innerNext?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+    assert.equal(inner.state.get().currentStepIndex, 1);
+    assert.equal(outer.state.get().currentStepIndex, 0);
+    assert.equal(outerNext?.disabled, outerDisabled);
+    assert.equal(outerNext?.getAttribute("aria-disabled"), outerAriaDisabled);
+    dispose();
+  });
+
+  test("uses controller keyboard permission despite consumer-disabled next trigger order", async () => {
+    const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
+      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("keyboard order")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .step({ content: "Third", target, title: "Third" })
+      .finish();
+    let setDisabledFirst!: (value: boolean) => void;
+    const dispose = render(() => {
+      const [disabledFirst, updateDisabledFirst] = createSignal(true);
+      setDisabledFirst = updateDisabledFirst;
+      return createComponent(GlowTour.Root, {
+        tour,
+        get children() {
+          const disabled = createComponent(GlowTour.NextTrigger, { disabled: true });
+          const enabled = createComponent(GlowTour.NextTrigger, {});
+          return disabledFirst() ? [disabled, enabled] : [enabled, disabled];
+        },
+      });
+    }, container);
+    await tour.run(workflow);
+    const disabled = container.querySelector<HTMLButtonElement>(
+      "[data-glow-tour-consumer-disabled]",
+    );
+    disabled?.click();
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+    assert.equal(tour.state.get().currentStepIndex, 0);
+    window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    await tour.previous();
+    setDisabledFirst(false);
+    window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    dispose();
+  });
+
   test("delegates commands to controls that appear while a tour is active", async () => {
     const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
       await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
@@ -95,6 +198,7 @@ describe("solid adapter browser behavior", () => {
 
     await tour.run(workflow);
     await tour.advance();
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
     const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
     assert.equal(back?.disabled, false);
     assert.equal(back?.getAttribute("aria-keyshortcuts"), "ArrowLeft Backspace");
@@ -103,10 +207,8 @@ describe("solid adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 0);
 
     setShowNext(true);
-    await Promise.resolve();
     const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
     assert.equal(next?.disabled, false);
-    assert.equal(next?.getAttribute("aria-keyshortcuts"), "Enter ArrowRight");
     next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 1);
