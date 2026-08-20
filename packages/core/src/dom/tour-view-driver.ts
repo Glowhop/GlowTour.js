@@ -20,7 +20,7 @@ export interface TourViewCommands {
   canPrevious(): boolean;
   previous(): Promise<void>;
   cancel(): Promise<void>;
-  subscribeCapabilities?(listener: () => void): () => void;
+  subscribeCapabilities?(listener: (active: boolean) => void): () => void;
 }
 
 export interface TourViewDriver<T> {
@@ -51,6 +51,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private lastTargetRect: RectSnapshot | null = null;
   private overlay: OverlayElement<T> | null = null;
   private pointer: PointerElement<T> | null = null;
+  private pendingFocusGeneration: number | null = null;
   private popover: PopoverElement<T> | null = null;
   private rafId: number | null = null;
   private root: HTMLElement | null = null;
@@ -120,7 +121,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       const popover = this.popover?.getElement();
       this.lastPopoverRect = popover ? snapshotRect(popover.getBoundingClientRect()) : null;
       this.active = true;
-      this.activateFocus(step, target, direction);
+      this.activateFocus(step, target, direction, generation);
       this.throwIfStale(generation, signal);
       this.attachStepResources(step, target, generation);
     } finally {
@@ -186,7 +187,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.throwIfStale(generation);
     const popover = this.popover?.getElement();
     this.lastPopoverRect = popover ? snapshotRect(popover.getBoundingClientRect()) : null;
-    this.activateFocus(step, target, this.direction);
+    this.activateFocus(step, target, this.direction, generation);
     this.throwIfStale(generation);
     this.attachStepResources(step, target, generation);
   }
@@ -238,9 +239,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       }),
     );
     this.stepCleanups.push(
-      this.commands?.subscribeCapabilities?.(() => {
+      this.commands?.subscribeCapabilities?.((active) => {
         if (!this.isCurrentGeneration(generation)) return;
         this.syncControlState(step);
+        if (active && this.pendingFocusGeneration === generation) {
+          this.pendingFocusGeneration = null;
+          this.focusGuard.focus();
+        }
       }) ?? (() => {}),
     );
     for (const handler of step.definition.eventHandlers) {
@@ -366,13 +371,21 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
-  private activateFocus(step: ActiveStep<T>, target: HTMLElement, direction: TourDirection) {
+  private activateFocus(
+    step: ActiveStep<T>,
+    target: HTMLElement,
+    direction: TourDirection,
+    generation: number,
+  ) {
     const popover = this.popover?.getElement();
     if (!(popover instanceof HTMLElement)) return;
+    const autoFocus = step.popover?.disableAutoFocus !== true;
+    const deferFocus = autoFocus && this.commands?.subscribeCapabilities !== undefined;
+    if (deferFocus) this.pendingFocusGeneration = generation;
     this.focusGuard.activate({
       allowedTarget: target,
       allowTargetInteraction: step.behavior?.allowInteraction === true,
-      autoFocus: step.popover?.disableAutoFocus !== true,
+      autoFocus: autoFocus && !deferFocus,
       direction: direction === "advance" ? "next" : "back",
       popover,
     });
@@ -467,6 +480,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private beginGeneration() {
     this.generation += 1;
+    this.pendingFocusGeneration = null;
     this.cancelElementAnimations();
     return this.generation;
   }

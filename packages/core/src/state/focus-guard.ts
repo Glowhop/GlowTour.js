@@ -52,6 +52,10 @@ export class FocusGuard {
     this.direction = scope.direction;
   }
 
+  focus() {
+    if (this.active) this.focusFallback();
+  }
+
   deactivate() {
     if (!this.active) {
       return;

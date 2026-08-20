@@ -79,7 +79,8 @@ export class TourController<T> {
       canPrevious: () => this.canNavigate("previous"),
       cancel: () => this.cancel(),
       previous: () => this.previous(),
-      subscribeCapabilities: (listener) => this.state.subscribe(() => listener()),
+      subscribeCapabilities: (listener) =>
+        this.state.subscribe((state) => listener(state.status === "active")),
     });
   }
 

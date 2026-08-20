@@ -621,6 +621,28 @@ describe("DomTourViewDriver", () => {
     await driver.show(allowed, "advance", new AbortController().signal);
     assert.equal(elements.popover.getAttribute("aria-modal"), null);
   });
+  test("focuses the directional trigger after controller transitions settle", async () => {
+    const { driver, elements } = installDriver(),
+      firstTarget = createTarget(),
+      secondTarget = createTarget(),
+      tour = new TourController(driver),
+      workflow = tour
+        .create("focus-order")
+        .step({ content: "one", target: () => firstTarget as unknown as HTMLElement, title: "one" })
+        .step({
+          content: "two",
+          target: () => secondTarget as unknown as HTMLElement,
+          title: "two",
+        })
+        .finish();
+
+    await tour.run(workflow);
+    assert.equal(document.activeElement, elements.next);
+    await tour.advance();
+    assert.equal(document.activeElement, elements.next);
+    await tour.previous();
+    assert.equal(document.activeElement, elements.back);
+  });
   test("loops modal Tab only through visible enabled controls", async () => {
     const { driver, elements } = installDriver(),
       hidden = document.createElement("button"),
