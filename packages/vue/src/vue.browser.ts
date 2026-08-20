@@ -69,6 +69,63 @@ describe("vue adapter browser behavior", () => {
     app.unmount();
   });
 
+  test("batches a parent tour and prefix update into one lease replacement", async () => {
+    const [{ createApp, h, nextTick, ref }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const calls: string[] = [];
+    const bridgeSymbol = Symbol.for("@glowhop/core-tour/adapter-bridge/v1");
+    const fakeTour = (name: string) => {
+      const tour = {};
+      Object.defineProperty(tour, bridgeSymbol, {
+        configurable: true,
+        value: {
+          connectRoot: ({ idPrefix }: { idPrefix?: string }) => {
+            const prefix = idPrefix ?? "glow-tour";
+            calls.push(`connect:${name}:${prefix}`);
+            return {
+              bindOverlay: () => () => {},
+              bindPointer: () => () => {},
+              bindPopover: () => () => {},
+              ids: {
+                description: `${prefix}-description`,
+                popover: `${prefix}-popover`,
+                root: `${prefix}-root`,
+                title: `${prefix}-title`,
+              },
+              release: () => calls.push(`release:${name}:${prefix}`),
+            };
+          },
+          version: 1,
+        },
+      });
+      return tour as ReturnType<typeof runtime.createGlowTour>;
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    const first = fakeTour("first");
+    const second = fakeTour("second");
+    const activeTour = ref(first);
+    const prefix = ref("first-prefix");
+    const app = createApp({
+      render: () => h(runtime.GlowTourRoot, { idPrefix: prefix.value, tour: activeTour.value }),
+    });
+
+    app.mount(container);
+    assert.deepEqual(calls, ["connect:first:first-prefix"]);
+    calls.length = 0;
+
+    activeTour.value = second;
+    prefix.value = "second-prefix";
+    await nextTick();
+    assert.deepEqual(calls, ["release:first:first-prefix", "connect:second:second-prefix"]);
+
+    calls.length = 0;
+    app.unmount();
+    assert.deepEqual(calls, ["release:second:second-prefix"]);
+  });
+
   test("mounts scoped components with coherent client IDs", async () => {
     const [{ createApp, h, nextTick }, runtime] = await Promise.all([
       import("vue"),

@@ -124,7 +124,7 @@ export const GlowTourRoot = defineComponent({
       connect();
     };
 
-    watch([() => props.tour, () => props.idPrefix], connect, { flush: "sync" });
+    watch([() => props.tour, () => props.idPrefix], connect);
     onBeforeUnmount(release);
 
     return () =>
