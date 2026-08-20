@@ -8,13 +8,19 @@ class MockNode {
 
 class MockElement extends MockNode {
   disabled = false;
+  display = "block";
   hidden = false;
   isConnected = true;
+  visibility = "visible";
   readonly attributes = new Map<string, string>();
   readonly children: MockElement[] = [];
 
   constructor(readonly name: string) {
     super();
+  }
+
+  get parentElement() {
+    return this.parent;
   }
 
   append(...children: MockElement[]) {
@@ -49,17 +55,23 @@ class MockElement extends MockNode {
   }
 
   matches(selector: string) {
-    if (selector === "[data-glow-tour-next-trigger]") {
+    if (selector.includes("data-glow-tour-next-trigger")) {
       return this.attributes.has("data-glow-tour-next-trigger");
     }
-    if (selector === "[data-glow-tour-back-trigger]") {
+    if (selector.includes("data-glow-tour-back-trigger")) {
       return this.attributes.has("data-glow-tour-back-trigger");
     }
-    return false;
+    return (
+      (selector.includes("button") && (this.name === "back" || this.name === "next")) ||
+      (selector.includes("summary") && this.name === "summary") ||
+      (selector.includes("audio") && this.name === "audio") ||
+      (selector.includes("video") && this.name === "video")
+    );
   }
 
-  querySelectorAll(): MockElement[] {
-    return this.children.flatMap((child) => [child, ...child.querySelectorAll()]);
+  querySelectorAll(selector = ""): MockElement[] {
+    const descendants = this.children.flatMap((child) => [child, ...child.querySelectorAll()]);
+    return selector ? descendants.filter((child) => child.matches(selector)) : descendants;
   }
 }
 
@@ -83,8 +95,8 @@ beforeEach(() => {
     configurable: true,
     value: {
       getComputedStyle: (element: MockElement) => ({
-        display: element.hidden ? "none" : "block",
-        visibility: "visible",
+        display: element.hidden ? "none" : element.display,
+        visibility: element.visibility,
       }),
     },
   });
@@ -181,5 +193,23 @@ describe("FocusGuard", () => {
     guard.deactivate();
 
     assert.equal(mockDocument.activeElement, initialFocus);
+  });
+
+  test("falls back to native focusable media and ignores CSS-hidden ancestors", () => {
+    const guard = new FocusGuard();
+    const { backHost, nextHost, popover } = createScope();
+    const hiddenHost = new MockElement("hidden-host");
+    const hiddenSummary = new MockElement("summary");
+    const audio = new MockElement("audio");
+    backHost.attributes.set("hidden", "");
+    nextHost.attributes.set("hidden", "");
+    hiddenHost.visibility = "hidden";
+    hiddenHost.append(hiddenSummary);
+    audio.attributes.set("controls", "");
+    popover.append(hiddenHost, audio);
+
+    guard.activate({ direction: "next", popover: popover as unknown as HTMLElement });
+
+    assert.equal(mockDocument.activeElement, audio);
   });
 });

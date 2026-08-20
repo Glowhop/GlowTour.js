@@ -6,9 +6,9 @@ Last updated: 2026-08-20
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 correction: DOM driver review hardening, including full package, tarball, and playground verification.
-- Current task: P1.2 DOM driver review follow-up completed in `e0251ce`.
-- Next action: hand off the review disposition; continue the remaining P1 runtime audit.
+- Last completed P1 correction: DOM driver second-review lifecycle, capability, and modal-focus hardening.
+- Current task: P1.2 DOM driver second review verified through release gates.
+- Next action: hand off the review disposition, then continue the remaining P1 runtime audit.
 
 ## Completed
 
@@ -55,6 +55,7 @@ Last updated: 2026-08-20
 
 - P1 runtime architecture, concurrency, cleanup, positioning, accessibility, and instance scoping.
 - P1.2 DOM driver review follow-up: focused RED regressions confirmed the review findings: same-placement 10px popover moves were suppressed; nested contenteditable targets triggered navigation; pre-aborted show scrolled; stale show/clear continuations could reactivate or mutate a newer step; and dispose did not cancel pending animations. The GREEN implementation adds operation generations, abort-bound animation cancellation, explicit DOMRect snapshots, active wrapper release/rebinding, semantic modal candidates, controller-authorized cancellation, and workflow/reduced-motion animation policy.
+- P1.2 DOM driver second review: focused RED regressions confirmed that focus activation could attach stale resources after synchronously replacing a tour; async target-event callbacks could command a replacement step; detached popovers retained the focus guard; denied commands still consumed shortcuts and did not disable scoped controls; and modal focus did not consistently cover native candidates or CSS-hidden ancestors. The GREEN implementation rechecks the driver generation after focus activation, binds event callbacks to that generation, deactivates/rebinds the focus guard on popover registration changes, injects readonly controller capability queries with capability-change observation, and shares focusability semantics between modal Tab looping and `FocusGuard`.
 
 ## Remaining
 
@@ -66,6 +67,14 @@ Last updated: 2026-08-20
 
 | Command | Result |
 | --- | --- |
+| P1.2 DOM driver second-review RED `bun test packages/core/src/dom/tour-view-driver.test.ts packages/core/src/state/focus-guard.test.ts packages/core/src/runtime/tour-controller.test.ts` | Red; 5 expected driver failures: denied Escape/ArrowLeft were consumed, native/CSS-hidden modal candidates were wrong, detaching the popover retained focus trapping, a focus-triggered replacement attached stale resources, and an async event callback navigated the replacement. A dedicated FocusGuard native-candidate regression also failed before the shared helper. |
+| P1.2 DOM driver second-review focused GREEN | Pass; 62 tests, 0 failures across DOM driver, FocusGuard, and controller. |
+| P1.2 DOM driver second-review static checks | Pass; `bun run check` (93 files) and `bun run typecheck` (no diagnostics). |
+| P1.2 DOM driver second-review `bun test` | Pass; 136 tests, 0 failures across 20 files. |
+| P1.2 DOM driver second-review `bun run build` | Pass; exactly 7 publishable package distributions built. |
+| P1.2 DOM driver second-review `bun run pack` | Pass; exactly 7 tarballs in `.artifacts/tarballs`, no playground artifact. |
+| P1.2 DOM driver second-review `bun run test:tarballs` | Sandboxed attempt stalled after startup; approved registry retry passed the smoke contract for all 7 packages. |
+| P1.2 DOM driver second-review `bun run --cwd apps/playground build` | Pass; the existing Angular 1.38 MB minified-chunk warning remains. |
 | P1.2 DOM driver review `bun test` | Pass; 131 tests, 0 failures across 20 files. |
 | P1.2 DOM driver review `bun run build` | Pass; publishable distributions built for exactly 7 packages. |
 | P1.2 DOM driver review `bun run pack` | Pass; exactly 7 tarballs in `.artifacts/tarballs`, with no playground artifact. |

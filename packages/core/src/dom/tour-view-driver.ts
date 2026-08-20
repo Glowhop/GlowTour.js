@@ -3,6 +3,7 @@ import PointerElement from "../elements/pointer";
 import PopoverElement from "../elements/popover";
 import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
+import { focusableElements } from "../state/focusable";
 import type { TourDirection } from "../types";
 import { isInViewport } from "../utils/utils";
 
@@ -12,20 +13,14 @@ const DEFAULT_SHORTCUTS = {
   cancel: ["Escape"],
   next: ["Enter", "ArrowRight"],
 } as const;
-const FOCUSABLE_SELECTOR = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  "[contenteditable]:not([contenteditable='false'])",
-  "[tabindex]:not([tabindex='-1'])",
-].join(",");
-
 export interface TourViewCommands {
   advance(): Promise<void>;
+  canAdvance(): boolean;
+  canCancel(): boolean;
+  canPrevious(): boolean;
   previous(): Promise<void>;
   cancel(): Promise<void>;
+  subscribeCapabilities?(listener: () => void): () => void;
 }
 
 export interface TourViewDriver<T> {
@@ -86,6 +81,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   registerPopover(element: HTMLElement | null) {
     if (this.disposed) return;
     if (this.popover?.getElement() === element) return;
+    if (!element && this.active) this.focusGuard.deactivate();
     this.popover?.release();
     this.popover = element ? new PopoverElement<T>(element) : null;
     this.refreshRegisteredElements();
@@ -125,6 +121,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.lastPopoverRect = popover ? snapshotRect(popover.getBoundingClientRect()) : null;
       this.active = true;
       this.activateFocus(step, target, direction);
+      this.throwIfStale(generation, signal);
       this.attachStepResources(step, target, generation);
     } finally {
       removeAbort();
@@ -190,6 +187,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const popover = this.popover?.getElement();
     this.lastPopoverRect = popover ? snapshotRect(popover.getBoundingClientRect()) : null;
     this.activateFocus(step, target, this.direction);
+    this.throwIfStale(generation);
     this.attachStepResources(step, target, generation);
   }
 
@@ -239,15 +237,21 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         invalidate();
       }),
     );
+    this.stepCleanups.push(
+      this.commands?.subscribeCapabilities?.(() => {
+        if (!this.isCurrentGeneration(generation)) return;
+        this.syncControlState(step);
+      }) ?? (() => {}),
+    );
     for (const handler of step.definition.eventHandlers) {
       const listener = (event: Event) => {
         if (!this.isCurrentGeneration(generation)) return;
         void handler.callback(
           event,
           step.props,
-          () => this.command("advance"),
-          () => this.command("previous"),
-          () => this.command("cancel"),
+          () => this.commandForGeneration("advance", generation),
+          () => this.commandForGeneration("previous", generation),
+          () => this.commandForGeneration("cancel", generation),
         );
       };
       this.listen(target, handler.event, listener);
@@ -318,7 +322,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     }
     const shortcuts = step.popover?.keyboardShortcuts;
-    if ((shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key)) {
+    if (
+      (shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key) &&
+      this.canCommand("cancel", step)
+    ) {
       event.preventDefault();
       void this.command("cancel");
       return;
@@ -326,13 +333,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (isEditable(event.target)) return;
     if (
       (shortcuts?.next ?? DEFAULT_SHORTCUTS.next).includes(event.key) &&
-      step.props.get().disableNextButton !== true
+      this.canCommand("advance", step)
     ) {
       event.preventDefault();
       void this.command("advance");
     } else if (
       (shortcuts?.back ?? DEFAULT_SHORTCUTS.back).includes(event.key) &&
-      step.props.get().disableBackButton !== true
+      this.canCommand("previous", step)
     ) {
       event.preventDefault();
       void this.command("previous");
@@ -342,9 +349,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private loopFocus(event: KeyboardEvent) {
     const popover = this.popover?.getElement();
     if (!(popover instanceof HTMLElement)) return;
-    const focusable = Array.from(popover.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-      isFocusable,
-    );
+    const focusable = focusableElements(popover);
     if (focusable.length === 0) {
       event.preventDefault();
       popover.focus();
@@ -385,14 +390,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const back = this.findTrigger("back");
     if (next) {
       this.listen(next, "click", (event) => {
-        if (step.props.get().disableNextButton === true) return;
+        if (!this.canCommand("advance", step)) return;
         event.preventDefault();
         void this.command("advance");
       });
     }
     if (back) {
       this.listen(back, "click", (event) => {
-        if (step.props.get().disableBackButton === true) return;
+        if (!this.canCommand("previous", step)) return;
         event.preventDefault();
         void this.command("previous");
       });
@@ -400,6 +405,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const cancel = this.findTrigger("cancel");
     if (cancel) {
       this.listen(cancel, "click", (event) => {
+        if (!this.canCommand("cancel", step)) return;
         event.preventDefault();
         void this.command("cancel");
       });
@@ -409,8 +415,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private syncControlState(step: ActiveStep<T>) {
     const next = this.findTrigger("next");
     const back = this.findTrigger("back");
-    if (next) next.disabled = step.props.get().disableNextButton === true;
-    if (back) back.disabled = step.props.get().disableBackButton === true;
+    const cancel = this.findTrigger("cancel");
+    this.syncControl(next, !this.canCommand("advance", step));
+    this.syncControl(back, !this.canCommand("previous", step));
+    this.syncControl(cancel, !this.canCommand("cancel", step));
   }
 
   private findTrigger(direction: "next" | "back" | "cancel") {
@@ -421,6 +429,28 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private async command(command: "advance" | "previous" | "cancel") {
     if (this.disposed) return;
     await this.commands?.[command]();
+  }
+
+  private commandForGeneration(command: "advance" | "previous" | "cancel", generation: number) {
+    return this.isCurrentGeneration(generation) ? this.command(command) : Promise.resolve();
+  }
+
+  private canCommand(command: "advance" | "previous" | "cancel", step: ActiveStep<T>) {
+    if (command === "advance") {
+      return (this.commands?.canAdvance?.() ?? true) && step.props.get().disableNextButton !== true;
+    }
+    if (command === "previous") {
+      return (
+        (this.commands?.canPrevious?.() ?? true) && step.props.get().disableBackButton !== true
+      );
+    }
+    return this.commands?.canCancel?.() ?? true;
+  }
+
+  private syncControl(element: HTMLButtonElement | null, disabled: boolean) {
+    if (!element) return;
+    element.disabled = disabled;
+    element.setAttribute("aria-disabled", String(disabled));
   }
 
   private isPointerEnabled(step: ActiveStep<T>) {
@@ -572,19 +602,6 @@ function isEditable(target: EventTarget | null) {
     current = current.parentElement;
   }
   return false;
-}
-
-function isFocusable(element: HTMLElement) {
-  if (
-    element.hasAttribute("disabled") ||
-    element.hasAttribute("hidden") ||
-    element.getAttribute("aria-disabled") === "true" ||
-    element.getAttribute("aria-hidden") === "true" ||
-    element.closest("[hidden], [inert], [aria-hidden='true']") !== null
-  )
-    return false;
-  const style = window.getComputedStyle(element);
-  return style.display !== "none" && style.visibility !== "hidden";
 }
 
 function prefersReducedMotion() {

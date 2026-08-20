@@ -108,6 +108,7 @@ class MockElement extends MockNode {
   }
   focus() {
     document.activeElement = this;
+    document.dispatchEvent(new MockEvent("focusin", { target: this }));
   }
   getAttribute(name: string) {
     return this.attributes.get(name) ?? null;
@@ -130,20 +131,23 @@ class MockElement extends MockNode {
       ? this.hasAttribute("data-glow-tour-next-trigger")
       : selector.includes("back-trigger")
         ? this.hasAttribute("data-glow-tour-back-trigger")
-        : selector.includes(this.tagName)
-          ? true
-          : selector === "path"
-            ? this.tagName === "path"
-            : false;
+        : selector.includes("cancel-trigger")
+          ? this.hasAttribute("data-glow-tour-cancel-trigger")
+          : selector.includes(this.tagName)
+            ? true
+            : selector === "path"
+              ? this.tagName === "path"
+              : false;
   }
   querySelector<T extends MockElement>(selector: string): T | null {
     return this.querySelectorAll<T>().find((element: T) => element.matches(selector)) ?? null;
   }
-  querySelectorAll<T extends MockElement>(_selector = ""): T[] {
-    return this.children.flatMap((child): MockElement[] => [
+  querySelectorAll<T extends MockElement>(selector = ""): T[] {
+    const descendants = this.children.flatMap((child): MockElement[] => [
       child,
       ...child.querySelectorAll<T>(),
-    ]) as T[];
+    ]);
+    return (selector ? descendants.filter((child) => child.matches(selector)) : descendants) as T[];
   }
   removeAttribute(name: string) {
     this.attributes.delete(name);
@@ -303,6 +307,9 @@ function createCommands(): { commands: TourViewCommands; calls: string[] } {
     calls,
     commands: {
       advance: async () => void calls.push("advance"),
+      canAdvance: () => true,
+      canCancel: () => true,
+      canPrevious: () => true,
       cancel: async () => void calls.push("cancel"),
       previous: async () => void calls.push("previous"),
     },
@@ -560,12 +567,22 @@ describe("DomTourViewDriver", () => {
       .step({ content: "content", target: () => target as unknown as HTMLElement, title: "title" })
       .finish();
     await tour.run(denied);
-    window.dispatchEvent(
-      new MockKeyboardEvent("keydown", { key: "Escape", target: elements.popover }),
-    );
+    const escapeEvent = new MockKeyboardEvent("keydown", {
+      key: "Escape",
+      target: elements.popover,
+    });
+    const back = new MockKeyboardEvent("keydown", { key: "ArrowLeft", target: elements.popover });
+    window.dispatchEvent(escapeEvent);
+    window.dispatchEvent(back);
     cancel.dispatchEvent(new MockEvent("click"));
-    await Promise.resolve();
+    await new Promise<void>((resolve) => setTimeout(resolve));
     assert.equal(tour.state.get().status, "active");
+    assert.equal(escapeEvent.defaultPrevented, false);
+    assert.equal(back.defaultPrevented, false);
+    assert.equal(elements.back.disabled, true);
+    assert.equal(elements.back.getAttribute("aria-disabled"), "true");
+    assert.equal(cancel.disabled, true);
+    assert.equal(cancel.getAttribute("aria-disabled"), "true");
 
     const allowed = tour
       .create("allowed", { cancellable: true })
@@ -633,6 +650,29 @@ describe("DomTourViewDriver", () => {
     );
     assert.equal(document.activeElement, visible);
   });
+  test("loops modal Tab through native candidates and excludes CSS-hidden ancestors", async () => {
+    const { driver, elements } = installDriver(),
+      summary = document.createElement("summary"),
+      audio = document.createElement("audio"),
+      hiddenHost = document.createElement("div"),
+      hiddenVideo = document.createElement("video"),
+      step = createStep();
+    audio.setAttribute("controls", "");
+    hiddenHost.visibility = "hidden";
+    hiddenVideo.setAttribute("controls", "");
+    hiddenHost.append(hiddenVideo);
+    elements.popover.append(summary, audio, hiddenHost);
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    audio.focus();
+    window.dispatchEvent(new MockKeyboardEvent("keydown", { key: "Tab", target: audio }));
+    assert.equal(document.activeElement, elements.back);
+    elements.back.focus();
+    window.dispatchEvent(
+      new MockKeyboardEvent("keydown", { key: "Tab", shiftKey: true, target: elements.back }),
+    );
+    assert.equal(document.activeElement, audio);
+  });
   test("scopes trigger lookup to the registered root and follows element replacement and detachment", async () => {
     const outside = document.createElement("button");
     outside.setAttribute("data-glow-tour-next-trigger", "");
@@ -688,6 +728,97 @@ describe("DomTourViewDriver", () => {
     assert.equal(elements.popover.getAttribute("inert"), "true");
     assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
     assert.equal(document.activeElement, replacementNext);
+  });
+  test("deactivates focus guarding when an active popover detaches and reactivates it on replacement", async () => {
+    const initial = document.createElement("button"),
+      outside = document.createElement("button"),
+      { driver, elements } = installDriver(),
+      target = createTarget(),
+      step = createStep();
+    document.body.append(initial, outside);
+    initial.focus();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    driver.registerPopover(null);
+    assert.equal(document.activeElement, initial);
+    outside.focus();
+    assert.equal(document.activeElement, outside);
+
+    const replacement = document.createElement("aside"),
+      replacementNext = document.createElement("button");
+    replacementNext.setAttribute("data-glow-tour-next-trigger", "");
+    replacement.append(replacementNext);
+    replacement.setRect({ height: 40, left: 0, top: 0, width: 160 });
+    elements.root.append(replacement);
+    driver.registerPopover(replacement as unknown as HTMLElement);
+    await new Promise<void>((resolve) => setTimeout(resolve));
+    outside.focus();
+    assert.equal(document.activeElement, replacementNext);
+  });
+  test("does not attach stale resources after focus activation starts a replacement show", async () => {
+    const { calls, driver } = installDriver(),
+      targetA = createTarget(),
+      targetB = createTarget(),
+      workflowA = create<string>("focus-reentrant")
+        .step({ content: "a", target: "#a", title: "a" })
+        .on("click", (_event, _props, next) => next())
+        .finish(),
+      definitionA = workflowA.steps[0],
+      stepB = createStep();
+    if (!definitionA) throw new Error("Expected a step definition");
+    const stepA = new ActiveStep(definitionA, workflowA.options);
+    stepA.target = targetA as unknown as HTMLElement;
+    stepB.target = targetB as unknown as HTMLElement;
+    let replaced = false;
+    document.addEventListener("focusin", () => {
+      if (replaced) return;
+      replaced = true;
+      void driver.show(stepB, "advance", new AbortController().signal);
+    });
+
+    await assert.rejects(() => driver.show(stepA, "advance", new AbortController().signal), {
+      name: "AbortError",
+    });
+    await new Promise<void>((resolve) => setTimeout(resolve));
+    targetA.dispatchEvent(new MockEvent("click"));
+    window.dispatchEvent(new MockKeyboardEvent("keydown", { key: "Enter" }));
+    assert.deepEqual(calls, ["advance"]);
+    assert.equal(targetA.listeners.get("click")?.size ?? 0, 0);
+    assert.equal(window.listeners.get("keydown")?.size ?? 0, 1);
+    assert.equal(
+      TestResizeObserver.instances.filter((observer) => !observer.disconnected).length,
+      1,
+    );
+  });
+  test("binds async event commands to the active step generation", async () => {
+    let release: (() => void) | undefined;
+    const handlerGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { calls, driver } = installDriver(),
+      targetA = createTarget(),
+      targetB = createTarget(),
+      workflowA = create<string>("event-generation")
+        .step({ content: "a", target: "#a", title: "a" })
+        .on("click", async (_event, _props, next) => {
+          await handlerGate;
+          await next();
+        })
+        .finish(),
+      definitionA = workflowA.steps[0],
+      stepB = createStep();
+    if (!definitionA) throw new Error("Expected a step definition");
+    const stepA = new ActiveStep(definitionA, workflowA.options);
+    stepA.target = targetA as unknown as HTMLElement;
+    stepB.target = targetB as unknown as HTMLElement;
+    await driver.show(stepA, "advance", new AbortController().signal);
+    targetA.dispatchEvent(new MockEvent("click"));
+    await Promise.resolve();
+    await driver.show(stepB, "advance", new AbortController().signal);
+    release?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.deepEqual(calls, []);
   });
   test("rejects a pre-aborted show before it scrolls or activates", async () => {
     const { driver } = installDriver(),

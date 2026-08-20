@@ -74,8 +74,12 @@ export class TourController<T> {
     this.snapshot = new Observable<TourState<T>>(this.createSnapshot());
     this.driver.setCommands?.({
       advance: () => this.advance(),
+      canAdvance: () => this.canNavigate("advance"),
+      canCancel: () => this.status === "active" && this.canCancel(),
+      canPrevious: () => this.canNavigate("previous"),
       cancel: () => this.cancel(),
       previous: () => this.previous(),
+      subscribeCapabilities: (listener) => this.state.subscribe(() => listener()),
     });
   }
 

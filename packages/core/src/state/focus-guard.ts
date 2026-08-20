@@ -1,17 +1,5 @@
 import type { WorkflowDirection } from "../types";
-
-const FOCUSABLE_SELECTOR = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  "summary",
-  "audio[controls]",
-  "video[controls]",
-  "[contenteditable]:not([contenteditable='false'])",
-  "[tabindex]:not([tabindex='-1'])",
-].join(",");
+import { focusableElements, isFocusable } from "./focusable";
 
 export interface FocusGuardScope {
   popover: HTMLElement;
@@ -107,35 +95,20 @@ export class FocusGuard {
   }
 
   private findFocusable(root: HTMLElement, direction: WorkflowDirection) {
-    const candidates = root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    const candidates = focusableElements(root);
     const orderedSelectors =
       direction === "next"
         ? ["[data-glow-tour-next-trigger]", "[data-glow-tour-back-trigger]"]
         : ["[data-glow-tour-back-trigger]", "[data-glow-tour-next-trigger]"];
 
     for (const selector of orderedSelectors) {
-      for (const candidate of Array.from(candidates)) {
-        if (candidate.matches(selector) && this.isFocusable(candidate)) {
+      for (const candidate of candidates) {
+        if (candidate.matches(selector) && isFocusable(candidate)) {
           return candidate;
         }
       }
     }
 
-    return null;
-  }
-
-  private isFocusable(element: HTMLElement) {
-    if (
-      element.hasAttribute("disabled") ||
-      element.hasAttribute("hidden") ||
-      element.getAttribute("aria-disabled") === "true" ||
-      element.getAttribute("aria-hidden") === "true" ||
-      element.closest("[hidden], [inert], [aria-hidden='true']") !== null
-    ) {
-      return false;
-    }
-
-    const style = window.getComputedStyle(element);
-    return style.visibility !== "hidden" && style.display !== "none";
+    return candidates[0] ?? null;
   }
 }
