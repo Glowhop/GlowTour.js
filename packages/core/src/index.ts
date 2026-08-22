@@ -12,9 +12,6 @@ export type {
   DynamicStepProps,
   EventHandler,
   GlowTour,
-  GlowTourElementName,
-  HighlightOptions,
-  HighlightStepOverrides,
   IndicatorOptions,
   OverlayOptions,
   PopoverOptions,
@@ -38,7 +35,5 @@ export type {
   TourState,
   TourStatus,
   TryOrderOptions,
-  ViewportDimensions,
   WaitOptions,
-  WorkflowHighlightOptions,
 } from "./types";

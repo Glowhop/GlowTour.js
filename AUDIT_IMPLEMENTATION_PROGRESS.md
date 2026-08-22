@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p3-polish`
 - Parent branch: `codex/audit-p2-contracts` at `8ae482c`
-- Last completed milestone: P2 completed and checkpointed as `8ae482c` after the full gate and independent approval.
-- Current task: persist the P3 branch start, then audit the remaining polish scope.
-- Next action: commit this branch-start journal, inventory dead animation/geometry/Highlight code, package metadata and `sideEffects`, missing MIT/license/readme/changelog/release docs, and the audit recommendation matrix before the first P3 code change.
+- Last completed milestone: P3 branch start committed as `023ce32` directly from P2 checkpoint `8ae482c`.
+- Current task: review and commit the P3 dead-code/public-type cleanup.
+- Next action: resolve the independent cleanup review, commit deletion of the unused animation module and obsolete public types with this journal, then implement release metadata and documentation.
 
 ## Completed
 
@@ -37,6 +37,9 @@ Last updated: 2026-08-22
 - The complete corrected P2 gate passed: frozen install, Biome, typecheck, 176 unit tests, 61 browser tests, exactly 7 builds and tarballs, registry-backed external tarball installation, separate private playground build, release preparation/publish dry-runs, and targeted manifest/declaration scans. No npm publication occurred.
 - Commit `71d9788` (`fix(build): exclude browser acceptance sources`) records the four adapter declaration-build exclusions, their release-contract regression, and the completed P2 gate evidence.
 - P2 is complete and independently approved. Its implementation commits are `81f05e7`, `a9de88c`, `9760ca2`, `93aacb5`, and `71d9788`, with journal checkpoints between logical lots.
+- P3 inventory confirmed `packages/core/src/utils/animations.ts` has no imports and duplicates active overlay geometry; `HighlightOptions`, `HighlightStepOverrides`, `WorkflowHighlightOptions`, `GlowTourElementName`, and `ViewportDimensions` have no consumers. The five adapter `createGlowTour()` wrappers remain because they provide the required framework-specialized factories and no singleton.
+- P3 cleanup RED/GREEN: a release-contract test first failed while the dead module/types existed, then passed after their removal. Biome checked 99 files, typecheck passed, and all 135 Core tests passed.
+- Independent P3 cleanup review approved the deletion with no finding. Active Overlay/Popover/Pointer geometry and all five specialized adapter factories remain intact; generated `dist` will be refreshed by the final P3 gate.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
@@ -110,6 +113,8 @@ Last updated: 2026-08-22
 
 | Command | Result |
 | --- | --- |
+| P3 cleanup RED | Red as expected: the Core public-surface test found the unused `packages/core/src/utils/animations.ts`. |
+| P3 cleanup focused GREEN | Pass: cleanup contract 1/1, Biome 99 files, typecheck, and Core 135/135 after deleting the dead animation module and five obsolete public types. |
 | P2 final `bun run build` initial attempt | Failed: adapter browser suites pulled `scripts/adapter-acceptance.ts` outside declaration `rootDir`; no package artifact was accepted from this run. |
 | P2 adapter build-boundary RED | Red as expected: the release-contract test showed all four Bun/tsc adapters lacked `src/**/*.browser.ts` exclusions. |
 | P2 adapter build-boundary GREEN and `bun run build` | Pass: regression 1/1 and exactly 7 publishable distributions built after excluding browser acceptance sources. |

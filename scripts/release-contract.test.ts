@@ -104,6 +104,22 @@ test("adapter declaration builds exclude browser acceptance sources", () => {
   }
 });
 
+test("Core keeps obsolete animation and highlight contracts out of its public surface", () => {
+  expect(existsSync(join(root, "packages/core/src/utils/animations.ts"))).toBe(false);
+  const publicSurface = `${read("packages/core/src/index.ts")}\n${read(
+    "packages/core/src/types/index.ts",
+  )}`;
+  for (const obsoleteName of [
+    "GlowTourElementName",
+    "HighlightOptions",
+    "HighlightStepOverrides",
+    "ViewportDimensions",
+    "WorkflowHighlightOptions",
+  ]) {
+    expect(publicSurface).not.toContain(obsoleteName);
+  }
+});
+
 test("CI validates pull requests and main with pinned actions and minimal permissions", () => {
   const path = ".github/workflows/ci.yml";
   if (!existsSync(join(root, path))) throw new Error(`${path} is missing`);

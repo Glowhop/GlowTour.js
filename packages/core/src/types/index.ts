@@ -24,37 +24,6 @@ export interface WaitOptions {
   interval?: number;
 }
 
-export type GlowTourElementName =
-  | "root"
-  | "header"
-  | "progress"
-  | "content"
-  | "footer"
-  | "popover"
-  | "pointer"
-  | "back-trigger"
-  | "next-trigger"
-  | "overlay";
-
-export interface ViewportDimensions {
-  width: number;
-  height: number;
-}
-
-export interface HighlightOptions {
-  padding: number;
-  radius: number;
-  overlayColor: string;
-  overlayOpacity: number;
-  animate: boolean;
-}
-
-export interface HighlightStepOverrides extends Partial<HighlightOptions> {}
-
-export interface WorkflowHighlightOptions extends Partial<HighlightOptions> {
-  mountRoot?: HTMLElement | null;
-}
-
 export interface StepBehavior {
   allowInteraction?: boolean;
   targetTracking?: "events" | "continuous";
