@@ -1,14 +1,14 @@
 # Audit implementation progress
 
-Last updated: 2026-08-20
+Last updated: 2026-08-22
 
 ## Current position
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 correction: Vue batched root prop reconciliation.
-- Current task: P1 adapter migration follow-up.
-- Next action: complete the remaining adapter migrations and then narrow legacy Core runtime exports.
+- Last completed P1 correction: approved Vanilla custom-element ownership and live delegated-click hardening, verified locally and by external tarball smoke.
+- Current task: commit the approved P1.3E Vanilla follow-up.
+- Next action: narrow legacy Core runtime exports, remove transitional stores/singletons and run the complete P1 review.
 
 ## Completed
 
@@ -250,6 +250,45 @@ Last updated: 2026-08-20
 - GREEN focused checks: Vanilla contract 2/2 and happy-dom browser suite 6/6. Coverage includes setter before/after connect, null/remount, batched replacement, sibling/nested identity isolation, unique root-local IDs/ARIA, dynamic content and element rebinding, Cancel/Back/late Next, consumer disabled toggling, prevented click, custom shortcut, and duplicate live-instance rejection.
 - Final `bun install --frozen-lockfile`, `bun run check`, and `bun run typecheck`: pass; 367 installs checked, Biome checked 103 files, and TypeScript emitted no diagnostics. Final `bun test`: pass; 163 tests across 21 files. Final `bun run test:browser`: pass; React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, Vanilla 6/6.
 - Final `bun run build`, `bun run pack`, and registry-backed `bun run test:tarballs`: pass for seven public packages. The Vanilla tarball consumer imports `createGlowTour`; playground and both release dry-runs pass. The existing 1.38 MB minified Angular playground warning remains.
+
+## P1.3E Vanilla ownership review follow-up (2026-08-20)
+
+- RED real happy-dom coverage: an unknown `glow-tour-root` with own `tour`/`idPrefix` expandos upgraded without its runtime methods (`this.reconcile is not a function`); an explicit `contained-*` ID family inside its claimed root was rejected as an in-use Core prefix; moving a generated popover left the old IDs/ARIA behind; and consumer `disabled` changes were overwritten by driver synchronization.
+- GREEN root and ownership model: root runtime state is a `WeakMap`, so property replay deletes each own expando then invokes its prototype setter during connect. `ManagedAttributes` snapshots exact prior absence/value per element and only restores an attribute when its current value remains adapter-owned. Explicit header/content/popover IDs therefore remain authoritative and default relationship values derive from those effective IDs.
+- GREEN lifecycle: scoped elements release subscriptions/bindings and restore their owned attributes on disconnect before resolving the nearest new root. Trigger restoration suspends disabled tracking while snapshots are replayed, eliminating reentrant attribute writes on root release/reconnect.
+- GREEN disabled ownership: Vanilla marks its controls as adapter-managed, so the Core driver retains delegated command and consumer-marker checks but does not overwrite the adapter's native `disabled`/ARIA representation. Native property interception plus `setAttribute`/`removeAttribute` wrappers records consumer intent in idle, active, and capability-disabled states; the observer remains a fallback for other DOM mutation APIs.
+- GREEN Core collision rule: `reservePrefix` accepts generated-name collisions only where the matching existing IDs are descendants of the root currently being claimed. Document reservations and IDs outside that root still reject; duplicate authored IDs are deliberately left to the author DOM.
+- Focused GREEN: `bun test packages/core/src/runtime/root-bridge.test.ts packages/core/src/dom/tour-view-driver.test.ts` passed 56/56; `bun test --conditions=browser ./packages/vanilla/src/vanilla.browser.ts` passed 11/11, including pre-upgrade replay, matching authored IDs/ARIA, move-out/root-A-to-B, disabled property/attribute ownership, and generated Finish label after reconnect.
+- Final source gates: `bun install --frozen-lockfile`, `bun run check`, and `bun run typecheck` passed (367 installs, 103 files, no diagnostics). `bun test` passed 165/165 across 21 files; `bun run test:browser` passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, Vanilla 11/11. `bun run build` and `bun run pack` passed for all seven public packages. Playground build and both release dry-runs passed; the existing Angular 1.38 MB chunk warning remains.
+- Tarball smoke note: the sandboxed `bun run test:tarballs` exceeded its local execution window; its required elevated npm-registry attempt was rejected by the environment usage limit, so this follow-up cannot claim a fresh external-registry smoke result. The preceding P1.3E tarball gate passed unchanged before this source-only ownership follow-up.
+
+## P1.3E Vanilla final ownership review follow-up (2026-08-20)
+
+- RED Core collision coverage: with a matching ID inside the claimed root first in document order and a second matching ID outside it, `getElementById` accepted the prefix. The new test runs both document orders and now rejects either external collision.
+- RED connected ownership coverage: after a consumer changed generated header ID, popover ARIA, and trigger ARIA while connected, the next adapter render rewrote the header. `ManagedAttributes` now relinquishes a snapshot when the live DOM differs from its last adapter-owned value; the exact current value or absence remains consumer-owned through update, release, and remount.
+- RED consumer ARIA coverage: authored `aria-disabled="true"` did not disable the native control or publish the consumer marker. Trigger initialization and `aria-disabled` property mutations now participate in the same consumer-intent model as native disabled; adapter writes run under a synchronization guard, and the mutation observer is only the fallback for mutation APIs that bypass wrappers.
+- RED descriptor coverage: trigger cleanup deleted pre-existing own `disabled`, `setAttribute`, and `removeAttribute` descriptors. Tracking now snapshots exact own descriptors, restores only its still-installed wrappers, and preserves consumer replacements made while connected.
+- GREEN focused: `bun test packages/core/src/runtime/root-bridge.test.ts packages/core/src/dom/tour-view-driver.test.ts` passed 57/57; `bun test --conditions=browser ./packages/vanilla/src/vanilla.browser.ts` passed 14/14; `bun run typecheck` passed.
+- GREEN offline gates: `bun install --frozen-lockfile` checked 367 installs with no changes; `bun run check` checked 103 files; `bun test` passed 166/166 across 21 files. Browser retry passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, Vanilla 14/14. `bun run build`, `bun run pack`, playground build, `release:prepare`, and publish dry-run passed. The existing Angular chunk-size warning remains.
+- External blockers: no fresh `test:tarballs` is claimed—the last prior tarball smoke remains the only attested one, because the required npm-registry escalation was rejected by the environment usage limit. The worktree remains deliberately uncommitted because the same environment limit rejected the required linked-worktree Git escalation.
+
+## P1.3E Vanilla final disabled-tracking review follow-up (2026-08-20)
+
+- RED same-tick ARIA test: setting `aria-disabled` true then false without a settle, followed by trigger remove/reappend, restored a stale native `disabled` attribute. `setConsumerDisabled` had discarded the adapter's native snapshot before synchronizing the new state.
+- GREEN same-tick ownership: the native snapshot is retained until a real external native change makes `ManagedAttributes` relinquish it. True/false ARIA intent now updates native disabled and the consumer marker synchronously, and both false and true survive immediate trigger remounts without mutation-observer timing.
+- RED non-configurable setup: a non-configurable own delegating `setAttribute` caused the old all-or-nothing descriptor guard to skip the configurable `disabled` wrapper, so a consumer disabled property set before run was erased by start.
+- GREEN independent setup: wrappers install only for individually configurable own properties; the mutation observer always attaches. When no disabled wrapper is available, the first adapter sync adopts the native/ARIA/marker state so start preserves consumer intent. The non-configurable original descriptor remains exact after cleanup.
+- GREEN focused: Core focused suites passed 57/57, Vanilla happy-dom passed 16/16, then typecheck and Biome passed. Full offline verification passed: frozen install (367), unit 166/166, browser React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, Vanilla 16/16, build/pack 7/7, playground build, and both release dry-runs. Existing Angular chunk warning remains.
+- External blockers unchanged: fresh npm-registry tarball smoke and the linked-worktree Git commit remain unattempted/blocked by the environment usage limit; the prior commit's tarball smoke is the last attested external smoke result.
+
+## P1.3E Vanilla live delegated-click review follow-up (2026-08-20)
+
+- RED delegated-command coverage: Core deferred a click even after the live trigger had native `disabled`, `aria-disabled="true"`, or the consumer-disabled marker, because `canCommand` consulted only the marker.
+- GREEN Core guard: click delegation now reads live native disabled, ARIA disabled, and the marker both before it queues the command and in the queued microtask. Keyboard capability handling and `syncControl` behavior are untouched.
+- GREEN Vanilla coverage: a non-configurable delegating `setAttribute` button can set `aria-disabled="true"` and click in the same task without advancing; after `aria-disabled="false"` and native disabled false, the click advances. This proves the command guard does not wait for MutationObserver delivery.
+- GREEN final offline verification: Core focused passed 58/58; Vanilla focused passed 16/16; frozen install checked 367 packages; unit passed 167/167; browser passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, Vanilla 16/16; build/pack 7/7, playground build, and both release dry-runs passed. Existing Angular chunk warning remains.
+- Fresh external tarball verification on 2026-08-22: `bun run test:tarballs` passed the external consumer smoke contract for all 7 packages after explicit user authorization. The approved Vanilla follow-up is ready for its linked-worktree Git commit.
+- Fresh pre-commit gate on 2026-08-22: frozen install checked 367 packages with no changes; Biome checked 103 files; typecheck emitted no diagnostics; unit tests passed 167/167; browser tests passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, and Vanilla 16/16; build and pack produced exactly 7 public packages/tarballs; the private playground built separately. The existing Angular playground chunk-size warning remains non-blocking.
 
 ## Decisions and deviations
 

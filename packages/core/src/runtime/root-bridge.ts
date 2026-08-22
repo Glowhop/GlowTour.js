@@ -181,7 +181,7 @@ export function attachRootBridge<T>(
       // A pending lease reserves the claim before DOM callbacks can reenter, but is not a runnable mount.
       pending = pendingLease;
       try {
-        prefix = reservePrefix(root.ownerDocument, options.idPrefix);
+        prefix = reservePrefix(root.ownerDocument, options.idPrefix, root);
         claimRootOwner(root, reservation);
         ownsRoot = true;
         reservePrefixOwnership(root.ownerDocument, prefix, reservation);
@@ -304,24 +304,32 @@ function idsFor(prefix: string): RootIds {
   });
 }
 
-function reservePrefix(document: Document, requestedPrefix: string | undefined) {
+function reservePrefix(
+  document: Document,
+  requestedPrefix: string | undefined,
+  root?: HTMLElement,
+) {
   if (requestedPrefix !== undefined && !ID_PREFIX_PATTERN.test(requestedPrefix)) {
     throw new Error("Glow tour idPrefix must match [A-Za-z][A-Za-z0-9_-]*");
   }
   if (requestedPrefix !== undefined) {
-    if (prefixIsAvailable(document, requestedPrefix)) return requestedPrefix;
+    if (prefixIsAvailable(document, requestedPrefix, root)) return requestedPrefix;
     throw new Error(`Glow tour idPrefix is already in use: ${requestedPrefix}`);
   }
   for (let suffix = 1; ; suffix += 1) {
     const prefix = suffix === 1 ? DEFAULT_ID_PREFIX : `${DEFAULT_ID_PREFIX}-${suffix}`;
-    if (prefixIsAvailable(document, prefix)) return prefix;
+    if (prefixIsAvailable(document, prefix, root)) return prefix;
   }
 }
 
-function prefixIsAvailable(document: Document, prefix: string) {
+function prefixIsAvailable(document: Document, prefix: string, root?: HTMLElement) {
   const reservations = prefixReservations(document);
   if (reservations.has(prefix)) return false;
-  return Object.values(idsFor(prefix)).every((id) => document.getElementById(id) === null);
+  return Object.values(idsFor(prefix)).every((id) =>
+    Array.from(document.querySelectorAll<HTMLElement>("[id]"))
+      .filter((element) => element.id === id)
+      .every((element) => root?.contains(element) === true),
+  );
 }
 
 function reservePrefixOwnership(document: Document, prefix: string, reservation: object) {

@@ -26,7 +26,6 @@ declare global {
   }
 }
 
-const ROOT_CONTEXT = Symbol("glow-tour-root-context");
 const ROOT_CHANGE_EVENT = "glow-tour-root-change";
 
 interface RootContext {
@@ -40,14 +39,23 @@ interface ActiveRootBinding {
   readonly tour: VanillaGlowTour;
 }
 
+interface RootState {
+  active: ActiveRootBinding | null;
+  connected: boolean;
+  pending: boolean;
+  tour: VanillaGlowTour | null;
+}
+
+const ROOT_STATES = new WeakMap<HTMLElement, RootState>();
+
 function canRegisterCustomElements() {
   return typeof customElements !== "undefined" && typeof HTMLElement !== "undefined";
 }
 
 function rootContext(root: HTMLElement): RootContext | null {
-  const context: unknown = Reflect.get(root, ROOT_CONTEXT);
-  if (typeof context !== "object" || context === null) return null;
-  return context as RootContext;
+  const state = ROOT_STATES.get(root);
+  if (!state) return null;
+  return { binding: state.active?.binding ?? null, tour: state.tour };
 }
 
 function closestRoot(element: Element) {
@@ -110,45 +118,199 @@ function ownedElements(root: HTMLElement, selector: string) {
   );
 }
 
-function releaseGeneratedAttributes(root: HTMLElement, ids: RootBinding["ids"]) {
-  for (const element of ownedElements(root, "[data-glow-tour-header]")) {
-    if (element.id === ids.title) element.removeAttribute("id");
+function rootState(root: HTMLElement) {
+  const existing = ROOT_STATES.get(root);
+  if (existing) return existing;
+  const state: RootState = { active: null, connected: false, pending: false, tour: null };
+  ROOT_STATES.set(root, state);
+  return state;
+}
+
+function notifyRoot(root: HTMLElement) {
+  root.dispatchEvent(new Event(ROOT_CHANGE_EVENT));
+}
+
+function replayUpgradeProperty(root: HTMLElement, property: "idPrefix" | "tour") {
+  if (!Object.hasOwn(root, property)) return;
+  const value: unknown = Reflect.get(root, property);
+  Reflect.deleteProperty(root, property);
+  Reflect.set(root, property, value);
+}
+
+function releaseRoot(root: HTMLElement) {
+  const state = rootState(root);
+  const active = state.active;
+  if (!active) return;
+  state.active = null;
+  active.binding.release();
+  notifyRoot(root);
+}
+
+function reconcileRoot(root: GlowTourRootElement) {
+  const state = rootState(root);
+  if (!state.connected) return;
+  const current = state.active;
+  const idPrefix = root.idPrefix;
+  if (current?.tour === state.tour && current.idPrefix === idPrefix) return;
+  releaseRoot(root);
+  if (!state.tour) {
+    notifyRoot(root);
+    return;
   }
-  for (const element of ownedElements(root, "[data-glow-tour-content]")) {
-    if (element.id === ids.description) element.removeAttribute("id");
+  const binding = getAdapterBridge(state.tour).connectRoot({
+    adapter: vanillaAdapter,
+    idPrefix,
+    root,
+  });
+  state.active = { binding, idPrefix, tour: state.tour };
+  notifyRoot(root);
+}
+
+function reconcileRootSoon(root: GlowTourRootElement) {
+  const state = rootState(root);
+  if (!state.connected) return;
+  if (!state.active) {
+    reconcileRoot(root);
+    return;
   }
-  for (const element of ownedElements(root, "[data-glow-tour-popover]")) {
-    if (element.id === ids.popover) element.removeAttribute("id");
-    if (element.getAttribute("aria-describedby") === ids.description) {
-      element.removeAttribute("aria-describedby");
+  if (state.pending) return;
+  state.pending = true;
+  queueMicrotask(() => {
+    state.pending = false;
+    reconcileRoot(root);
+  });
+}
+
+interface AttributeSnapshot {
+  readonly previous: string | null;
+  value: string | null;
+}
+
+class ManagedAttributes {
+  private readonly snapshots = new Map<HTMLElement, Map<string, AttributeSnapshot>>();
+  private readonly relinquished = new Map<HTMLElement, Set<string>>();
+
+  isManaged(element: HTMLElement, name: string) {
+    return this.snapshots.get(element)?.has(name) === true;
+  }
+
+  isAuthored(element: HTMLElement, name: string) {
+    return (
+      this.relinquished.get(element)?.has(name) === true ||
+      (!this.isManaged(element, name) && element.hasAttribute(name))
+    );
+  }
+
+  set(element: HTMLElement, name: string, value: string | null) {
+    this.relinquishChanged(element);
+    const attributes = this.snapshots.get(element) ?? new Map<string, AttributeSnapshot>();
+    if (!this.snapshots.has(element)) this.snapshots.set(element, attributes);
+    const snapshot = attributes.get(name) ?? { previous: element.getAttribute(name), value };
+    snapshot.value = value;
+    attributes.set(name, snapshot);
+    if (value === null) element.removeAttribute(name);
+    else element.setAttribute(name, value);
+  }
+
+  capture(element: HTMLElement, name: string) {
+    this.relinquishChanged(element);
+    this.relinquished.get(element)?.delete(name);
+    if (this.isManaged(element, name)) return;
+    const attributes = this.snapshots.get(element) ?? new Map<string, AttributeSnapshot>();
+    if (!this.snapshots.has(element)) this.snapshots.set(element, attributes);
+    attributes.set(name, {
+      previous: element.getAttribute(name),
+      value: element.getAttribute(name),
+    });
+  }
+
+  note(element: HTMLElement, name: string) {
+    const snapshot = this.snapshots.get(element)?.get(name);
+    if (snapshot) snapshot.value = element.getAttribute(name);
+  }
+
+  forget(element: HTMLElement, name: string) {
+    const attributes = this.snapshots.get(element);
+    if (!attributes) return;
+    attributes.delete(name);
+    if (attributes.size === 0) this.snapshots.delete(element);
+  }
+
+  relinquishChanged(element?: HTMLElement) {
+    if (element) this.relinquishElement(element, this.snapshots.get(element));
+    else
+      for (const [currentElement, attributes] of this.snapshots)
+        this.relinquishElement(currentElement, attributes);
+  }
+
+  private relinquishElement(
+    element: HTMLElement,
+    attributes: Map<string, AttributeSnapshot> | undefined,
+  ) {
+    if (!attributes) return;
+    for (const [name, snapshot] of attributes) {
+      if (element.getAttribute(name) === snapshot.value) continue;
+      attributes.delete(name);
+      const names = this.relinquished.get(element) ?? new Set<string>();
+      names.add(name);
+      this.relinquished.set(element, names);
     }
-    if (element.getAttribute("aria-labelledby") === ids.title) {
-      element.removeAttribute("aria-labelledby");
+    if (attributes.size === 0) this.snapshots.delete(element);
+  }
+
+  restore() {
+    this.relinquishChanged();
+    for (const [element, attributes] of this.snapshots) {
+      for (const [name, snapshot] of attributes) {
+        if (element.getAttribute(name) !== snapshot.value) continue;
+        if (snapshot.previous === null) element.removeAttribute(name);
+        else element.setAttribute(name, snapshot.previous);
+      }
     }
+    this.snapshots.clear();
   }
-  for (const element of ownedElements(root, "[aria-controls]")) {
-    if (element.getAttribute("aria-controls") === ids.popover)
-      element.removeAttribute("aria-controls");
-  }
+}
+
+function effectiveId(root: HTMLElement, selector: string, fallback: string) {
+  const element = ownedElements(root, selector)[0];
+  return element?.id || fallback;
+}
+
+function sameDescriptor(left: PropertyDescriptor | undefined, right: PropertyDescriptor) {
+  return (
+    Boolean(left?.configurable) === Boolean(right.configurable) &&
+    Boolean(left?.enumerable) === Boolean(right.enumerable) &&
+    left?.get === right.get &&
+    left?.set === right.set &&
+    left?.value === right.value &&
+    Boolean(left?.writable) === Boolean(right.writable)
+  );
+}
+
+function restoreDescriptor(
+  element: object,
+  name: PropertyKey,
+  original: PropertyDescriptor | undefined,
+  wrapper: PropertyDescriptor,
+) {
+  if (!sameDescriptor(Object.getOwnPropertyDescriptor(element, name), wrapper)) return;
+  if (original) Object.defineProperty(element, name, original);
+  else Reflect.deleteProperty(element, name);
 }
 
 export function registerGlowTourElements() {
   if (!canRegisterCustomElements()) return;
 
   class GlowTourRoot extends HTMLElement implements GlowTourRootElement {
-    private active: ActiveRootBinding | null = null;
-    private connected = false;
-    private pending = false;
-    private currentTour: VanillaGlowTour | null = null;
-
     get tour() {
-      return this.currentTour;
+      return rootState(this).tour;
     }
 
     set tour(value: VanillaGlowTour | null) {
-      if (this.currentTour === value) return;
-      this.currentTour = value;
-      this.reconcileSoon();
+      const state = rootState(this);
+      if (state.tour === value) return;
+      state.tour = value;
+      reconcileRootSoon(this);
     }
 
     get idPrefix() {
@@ -165,81 +327,29 @@ export function registerGlowTourElements() {
     }
 
     connectedCallback() {
-      this.connected = true;
+      Object.setPrototypeOf(this, GlowTourRoot.prototype);
+      replayUpgradeProperty(this, "idPrefix");
+      replayUpgradeProperty(this, "tour");
+      rootState(this).connected = true;
       this.setAttribute("data-glow-tour-root", "");
-      this.reconcile();
+      reconcileRoot(this);
     }
 
     disconnectedCallback() {
-      this.connected = false;
-      this.pending = false;
-      this.release();
+      const state = rootState(this);
+      state.connected = false;
+      state.pending = false;
+      releaseRoot(this);
     }
 
     attributeChangedCallback(name: string) {
-      if (name === "id-prefix") this.reconcileSoon();
-    }
-
-    private reconcileSoon() {
-      if (!this.connected) return;
-      if (!this.active) {
-        this.reconcile();
-        return;
-      }
-      if (this.pending) return;
-      this.pending = true;
-      queueMicrotask(() => {
-        this.pending = false;
-        this.reconcile();
-      });
-    }
-
-    private reconcile() {
-      if (!this.connected) return;
-      const tour = this.currentTour;
-      const idPrefix = this.idPrefix;
-      const current = this.active;
-      if (current?.tour === tour && current.idPrefix === idPrefix) return;
-      this.release();
-      if (current && this.id === current.binding.ids.root) this.removeAttribute("id");
-      if (!tour) {
-        this.notify();
-        return;
-      }
-      const binding = getAdapterBridge(tour).connectRoot({
-        adapter: vanillaAdapter,
-        idPrefix,
-        root: this,
-      });
-      this.active = { binding, idPrefix, tour };
-      this.notify();
-    }
-
-    private release() {
-      const active = this.active;
-      if (!active) return;
-      this.active = null;
-      releaseGeneratedAttributes(this, active.binding.ids);
-      active.binding.release();
-      this.notify();
-    }
-
-    private notify() {
-      this.dispatchEvent(new Event(ROOT_CHANGE_EVENT));
-    }
-
-    constructor() {
-      super();
-      Object.defineProperty(this, ROOT_CONTEXT, {
-        configurable: false,
-        enumerable: false,
-        get: (): RootContext => ({ binding: this.active?.binding ?? null, tour: this.currentTour }),
-      });
+      if (name === "id-prefix") reconcileRootSoon(this);
     }
   }
 
   abstract class ScopedElement extends HTMLElement {
     private cleanup?: () => void;
+    protected readonly managedAttributes = new ManagedAttributes();
     private root?: GlowTourRootElement;
 
     connectedCallback() {
@@ -249,13 +359,20 @@ export function registerGlowTourElements() {
     disconnectedCallback() {
       this.cleanup?.();
       this.cleanup = undefined;
+      this.restoreManagedAttributes();
       this.root?.removeEventListener(ROOT_CHANGE_EVENT, this.rebind);
       this.root = undefined;
+    }
+
+    protected restoreManagedAttributes() {
+      this.managedAttributes.restore();
     }
 
     protected readonly rebind = () => {
       this.cleanup?.();
       this.cleanup = undefined;
+      this.managedAttributes.relinquishChanged();
+      this.restoreManagedAttributes();
       const nextRoot = closestRoot(this);
       if (nextRoot !== this.root) {
         this.root?.removeEventListener(ROOT_CHANGE_EVENT, this.rebind);
@@ -276,7 +393,10 @@ export function registerGlowTourElements() {
   abstract class ReactiveElement extends ScopedElement {
     protected override bind(context: RootContext) {
       if (!context.tour) return;
-      return subscribeToCurrentStep(context.tour, (state, props) => this.render(state, props));
+      return subscribeToCurrentStep(context.tour, (state, props) => {
+        this.managedAttributes.relinquishChanged();
+        this.render(state, props);
+      });
     }
 
     protected abstract render(
@@ -295,15 +415,20 @@ export function registerGlowTourElements() {
       _state: TourState<VanillaTourContent>,
       props: DynamicStepProps<VanillaTourContent>,
     ) {
-      const binding = rootContext(closestRoot(this) as HTMLElement)?.binding;
-      if (binding) this.id = binding.ids.title;
+      const root = closestRoot(this);
+      const binding = root ? rootContext(root)?.binding : null;
+      if (binding && !this.managedAttributes.isAuthored(this, "id")) {
+        this.managedAttributes.set(this, "id", binding.ids.title);
+      }
       renderValue(this, props.title);
     }
   }
 
   class GlowTourContent extends ReactiveElement {
     connectedCallback() {
-      this.setAttribute("aria-live", "polite");
+      if (!this.managedAttributes.isAuthored(this, "aria-live")) {
+        this.managedAttributes.set(this, "aria-live", "polite");
+      }
       this.setAttribute("data-glow-tour-content", "");
       super.connectedCallback();
     }
@@ -312,8 +437,11 @@ export function registerGlowTourElements() {
       _state: TourState<VanillaTourContent>,
       props: DynamicStepProps<VanillaTourContent>,
     ) {
-      const binding = rootContext(closestRoot(this) as HTMLElement)?.binding;
-      if (binding) this.id = binding.ids.description;
+      const root = closestRoot(this);
+      const binding = root ? rootContext(root)?.binding : null;
+      if (binding && !this.managedAttributes.isAuthored(this, "id")) {
+        this.managedAttributes.set(this, "id", binding.ids.description);
+      }
       renderValue(this, props.content);
     }
   }
@@ -335,16 +463,35 @@ export function registerGlowTourElements() {
   class GlowTourPopover extends ScopedElement {
     connectedCallback() {
       this.setAttribute("data-glow-tour-popover", "");
-      this.setAttribute("role", "dialog");
-      if (!this.hasAttribute("tabindex")) this.tabIndex = -1;
+      if (!this.managedAttributes.isAuthored(this, "role"))
+        this.managedAttributes.set(this, "role", "dialog");
+      if (!this.managedAttributes.isAuthored(this, "tabindex"))
+        this.managedAttributes.set(this, "tabindex", "-1");
       super.connectedCallback();
     }
 
     protected override bind(context: RootContext) {
       if (!context.binding) return;
-      this.id = context.binding.ids.popover;
-      this.setAttribute("aria-describedby", context.binding.ids.description);
-      this.setAttribute("aria-labelledby", context.binding.ids.title);
+      this.managedAttributes.relinquishChanged();
+      const root = closestRoot(this);
+      if (!root) return;
+      if (!this.managedAttributes.isAuthored(this, "id")) {
+        this.managedAttributes.set(this, "id", context.binding.ids.popover);
+      }
+      if (!this.managedAttributes.isAuthored(this, "aria-describedby")) {
+        this.managedAttributes.set(
+          this,
+          "aria-describedby",
+          effectiveId(root, "[data-glow-tour-content]", context.binding.ids.description),
+        );
+      }
+      if (!this.managedAttributes.isAuthored(this, "aria-labelledby")) {
+        this.managedAttributes.set(
+          this,
+          "aria-labelledby",
+          effectiveId(root, "[data-glow-tour-header]", context.binding.ids.title),
+        );
+      }
       return context.binding.bindPopover(this);
     }
   }
@@ -383,26 +530,29 @@ export function registerGlowTourElements() {
   abstract class GlowTourTrigger extends ReactiveElement {
     protected abstract readonly action: "back" | "cancel" | "next";
     private button?: HTMLButtonElement;
-    private ownsLabel = false;
-    private ownsAriaLabel = false;
+    private labelOwned = false;
+    private labelSnapshot?: string;
     private capabilityDisabled = false;
-    private managedDisabled = false;
     private consumerDisabled = false;
+    private disabledPropertyWrapped = false;
     private syncingDisabled = false;
+    private status: TourState<VanillaTourContent>["status"] = "idle";
     private restoreDisabledTracking?: () => void;
+    private disabledObserver?: MutationObserver;
 
     connectedCallback() {
       this.button =
         this.querySelector<HTMLButtonElement>("button") ?? document.createElement("button");
-      this.ownsLabel = this.button.childNodes.length === 0;
-      this.ownsAriaLabel = !this.button.hasAttribute("aria-label");
+      this.labelOwned = this.button.childNodes.length === 0;
+      this.labelSnapshot = this.button.textContent ?? "";
       this.consumerDisabled =
-        this.button.disabled || this.button.getAttribute("aria-disabled") === "true";
+        this.button.disabled ||
+        this.button.getAttribute("aria-disabled") === "true" ||
+        this.button.getAttribute("data-glow-tour-consumer-disabled") === "true";
       if (!this.button.parentElement) this.appendChild(this.button);
       this.button.type = "button";
       this.button.setAttribute(`data-glow-tour-${this.action}-trigger`, "");
-      if (this.consumerDisabled)
-        this.button.setAttribute("data-glow-tour-consumer-disabled", "true");
+      this.managedAttributes.set(this.button, "data-glow-tour-control-managed", "");
       this.trackConsumerDisabled();
       super.connectedCallback();
     }
@@ -410,7 +560,19 @@ export function registerGlowTourElements() {
     override disconnectedCallback() {
       this.restoreDisabledTracking?.();
       this.restoreDisabledTracking = undefined;
+      this.disabledObserver?.disconnect();
+      this.disabledObserver = undefined;
+      if (this.button && this.labelOwned && this.labelSnapshot !== undefined) {
+        this.button.textContent = this.labelSnapshot;
+      }
+      this.labelSnapshot = undefined;
       super.disconnectedCallback();
+    }
+
+    protected override restoreManagedAttributes() {
+      this.syncingDisabled = true;
+      super.restoreManagedAttributes();
+      this.syncingDisabled = false;
     }
 
     protected render(
@@ -420,50 +582,164 @@ export function registerGlowTourElements() {
       const binding = rootContext(closestRoot(this) as HTMLElement)?.binding;
       const button = this.button;
       if (!binding || !button) return;
-      button.setAttribute("aria-controls", binding.ids.popover);
+      this.managedAttributes.set(button, "data-glow-tour-control-managed", "");
+      if (!this.managedAttributes.isAuthored(button, "aria-controls")) {
+        const root = closestRoot(this);
+        this.managedAttributes.set(
+          button,
+          "aria-controls",
+          root
+            ? effectiveId(root, "[data-glow-tour-popover]", binding.ids.popover)
+            : binding.ids.popover,
+        );
+      }
       const details = this.details(state, props);
+      this.status = state.status;
       this.hidden = details.hidden;
-      this.capabilityDisabled = details.disabled;
+      this.capabilityDisabled = state.status === "active" && details.disabled;
       this.syncDisabled();
-      if (this.ownsLabel) button.textContent = details.label;
-      if (this.ownsAriaLabel) button.setAttribute("aria-label", details.label);
+      if (this.labelOwned) button.textContent = details.label;
+      if (!this.managedAttributes.isAuthored(button, "aria-label")) {
+        this.managedAttributes.set(button, "aria-label", details.label);
+      }
     }
 
     private syncDisabled() {
       if (!this.button) return;
-      this.managedDisabled = this.capabilityDisabled || this.consumerDisabled;
-      this.syncingDisabled = true;
-      this.button.disabled = this.managedDisabled;
-      this.syncingDisabled = false;
-      this.button.setAttribute("aria-disabled", String(this.managedDisabled));
-      if (this.consumerDisabled) {
-        this.button.setAttribute("data-glow-tour-consumer-disabled", "true");
-      } else {
-        this.button.removeAttribute("data-glow-tour-consumer-disabled");
+      if (
+        !this.disabledPropertyWrapped &&
+        !this.managedAttributes.isManaged(this.button, "disabled")
+      ) {
+        this.consumerDisabled =
+          this.button.disabled ||
+          this.button.getAttribute("aria-disabled") === "true" ||
+          this.button.getAttribute("data-glow-tour-consumer-disabled") === "true";
       }
+      const disabled = this.effectiveDisabled();
+      this.managedAttributes.capture(this.button, "disabled");
+      this.syncingDisabled = true;
+      try {
+        this.button.disabled = disabled;
+        this.managedAttributes.note(this.button, "disabled");
+        if (!this.managedAttributes.isAuthored(this.button, "aria-disabled")) {
+          this.managedAttributes.set(this.button, "aria-disabled", String(disabled));
+        }
+        if (!this.managedAttributes.isAuthored(this.button, "data-glow-tour-consumer-disabled")) {
+          this.managedAttributes.set(
+            this.button,
+            "data-glow-tour-consumer-disabled",
+            this.consumerDisabled ? "true" : null,
+          );
+        }
+      } finally {
+        this.syncingDisabled = false;
+      }
+    }
+
+    private effectiveDisabled() {
+      return this.capabilityDisabled || this.consumerDisabled;
     }
 
     private trackConsumerDisabled() {
       const button = this.button;
       if (!button) return;
+      const originalDisabled = Object.getOwnPropertyDescriptor(button, "disabled");
+      const originalSetAttribute = Object.getOwnPropertyDescriptor(button, "setAttribute");
+      const originalRemoveAttribute = Object.getOwnPropertyDescriptor(button, "removeAttribute");
       let prototype: object | null = Object.getPrototypeOf(button);
-      let descriptor: PropertyDescriptor | undefined;
-      while (prototype && !descriptor) {
-        descriptor = Object.getOwnPropertyDescriptor(prototype, "disabled");
+      let inheritedDisabled: PropertyDescriptor | undefined;
+      while (prototype && !inheritedDisabled) {
+        inheritedDisabled = Object.getOwnPropertyDescriptor(prototype, "disabled");
         prototype = Object.getPrototypeOf(prototype);
       }
-      if (!descriptor?.get || !descriptor.set) return;
-      Object.defineProperty(button, "disabled", {
-        configurable: true,
-        get: () => descriptor.get?.call(button),
-        set: (value: boolean) => {
-          descriptor.set?.call(button, value);
-          if (this.syncingDisabled || this.capabilityDisabled) return;
-          this.consumerDisabled = Boolean(value);
-          this.syncDisabled();
-        },
+      const descriptor = originalDisabled ?? inheritedDisabled;
+      const setAttribute = button.setAttribute;
+      const removeAttribute = button.removeAttribute;
+      const restores: (() => void)[] = [];
+      if (descriptor?.get && descriptor.set && originalDisabled?.configurable !== false) {
+        const disabledWrapper: PropertyDescriptor = {
+          configurable: true,
+          get: () => descriptor.get?.call(button),
+          set: (value: boolean) => {
+            descriptor.set?.call(button, value);
+            if (this.syncingDisabled) return;
+            if (this.status === "starting" || this.status === "transitioning") return;
+            this.setConsumerDisabled(Boolean(value));
+          },
+        };
+        Object.defineProperty(button, "disabled", disabledWrapper);
+        this.disabledPropertyWrapped = true;
+        restores.push(() =>
+          restoreDescriptor(button, "disabled", originalDisabled, disabledWrapper),
+        );
+      }
+      if (originalRemoveAttribute?.configurable !== false) {
+        const removeAttributeWrapper: PropertyDescriptor = {
+          configurable: true,
+          value: (name: string) => {
+            removeAttribute.call(button, name);
+            if (name === "disabled" && !this.syncingDisabled) this.setConsumerDisabled(false);
+            if (name === "aria-disabled" && !this.syncingDisabled) this.setConsumerDisabled(false);
+          },
+        };
+        Object.defineProperty(button, "removeAttribute", removeAttributeWrapper);
+        restores.push(() =>
+          restoreDescriptor(
+            button,
+            "removeAttribute",
+            originalRemoveAttribute,
+            removeAttributeWrapper,
+          ),
+        );
+      }
+      if (originalSetAttribute?.configurable !== false) {
+        const setAttributeWrapper: PropertyDescriptor = {
+          configurable: true,
+          value: (name: string, value: string) => {
+            setAttribute.call(button, name, value);
+            if (name === "disabled" && !this.syncingDisabled) this.setConsumerDisabled(true);
+            if (name === "aria-disabled" && !this.syncingDisabled) {
+              this.setConsumerDisabled(value === "true");
+            }
+          },
+        };
+        Object.defineProperty(button, "setAttribute", setAttributeWrapper);
+        restores.push(() =>
+          restoreDescriptor(button, "setAttribute", originalSetAttribute, setAttributeWrapper),
+        );
+      }
+      this.restoreDisabledTracking = () => {
+        for (const restore of restores) restore();
+        this.disabledPropertyWrapped = false;
+      };
+      this.disabledObserver = new MutationObserver((records) => {
+        if (!this.button || this.syncingDisabled) return;
+        this.managedAttributes.relinquishChanged(this.button);
+        if (
+          records.some((record) => record.attributeName === "aria-disabled") &&
+          this.managedAttributes.isAuthored(this.button, "aria-disabled")
+        ) {
+          this.setConsumerDisabled(this.button.getAttribute("aria-disabled") === "true");
+          return;
+        }
+        if (
+          records.some((record) => record.attributeName === "aria-disabled") &&
+          this.button.disabled === this.effectiveDisabled()
+        ) {
+          return;
+        }
+        this.setConsumerDisabled(this.button.disabled);
       });
-      this.restoreDisabledTracking = () => Reflect.deleteProperty(button, "disabled");
+      this.disabledObserver.observe(button, {
+        attributeFilter: ["aria-disabled", "disabled"],
+        attributes: true,
+      });
+    }
+
+    private setConsumerDisabled(disabled: boolean) {
+      if (!this.button) return;
+      this.consumerDisabled = disabled;
+      this.syncDisabled();
     }
 
     protected abstract details(

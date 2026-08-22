@@ -65,6 +65,10 @@ class MockElement {
     readonly ownerDocument: MockDocument,
   ) {}
 
+  get id() {
+    return this.getAttribute("id") ?? "";
+  }
+
   append(...children: MockElement[]) {
     for (const child of children) {
       child.parentElement = this;
@@ -126,6 +130,11 @@ class MockDocument {
     return this.find(this.body, (element) => element.getAttribute("id") === id);
   }
 
+  querySelectorAll<T extends MockElement>(selector: string): T[] {
+    if (selector !== "[id]") return [];
+    return this.findAll(this.body, (element) => element.getAttribute("id") !== null) as T[];
+  }
+
   private find(root: MockElement, matches: (element: MockElement) => boolean): MockElement | null {
     if (matches(root)) return root;
     for (const child of root.children) {
@@ -133,6 +142,13 @@ class MockDocument {
       if (found) return found;
     }
     return null;
+  }
+
+  private findAll(root: MockElement, matches: (element: MockElement) => boolean): MockElement[] {
+    return [
+      ...(matches(root) ? [root] : []),
+      ...root.children.flatMap((child) => this.findAll(child, matches)),
+    ];
   }
 }
 
@@ -472,6 +488,50 @@ describe("private root bridge", () => {
     explicitRoot.setAttribute("id", "changed-by-host");
     explicit.release();
     assert.equal(explicitRoot.getAttribute("id"), "changed-by-host");
+  });
+
+  test("allows an explicit prefix when matching authored IDs are contained by its root", () => {
+    const tour = createGlowTour<string>();
+    const mount = root();
+    const header = child(mount);
+    const popover = child(mount);
+    header.setAttribute("id", "contained-title");
+    popover.setAttribute("id", "contained-popover");
+
+    const binding = rootBridge(tour).connectRoot({
+      adapter: {},
+      idPrefix: "contained",
+      root: mount,
+    });
+
+    assert.equal(binding.ids.title, "contained-title");
+    assert.equal(binding.ids.popover, "contained-popover");
+    assert.equal(header.getAttribute("id"), "contained-title");
+    assert.equal(popover.getAttribute("id"), "contained-popover");
+  });
+
+  test("rejects a matching authored ID outside the claimed root regardless of DOM order", () => {
+    for (const outsideFirst of [false, true]) {
+      const mount = document.createElement("section") as unknown as HTMLElement;
+      const external = document.createElement("div") as unknown as HTMLElement;
+      const header = child(mount);
+      header.setAttribute("id", "collision-title");
+      external.setAttribute("id", "collision-title");
+      if (outsideFirst)
+        document.body.append(external as unknown as MockElement, mount as unknown as MockElement);
+      else
+        document.body.append(mount as unknown as MockElement, external as unknown as MockElement);
+
+      assert.throws(
+        () =>
+          rootBridge(createGlowTour<string>()).connectRoot({
+            adapter: {},
+            idPrefix: "collision",
+            root: mount,
+          }),
+        /idPrefix is already in use/i,
+      );
+    }
   });
 
   test("releases active driver resources, aborts the operation, and permits a later remount", async () => {

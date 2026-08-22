@@ -642,6 +642,19 @@ describe("DomTourViewDriver", () => {
     elements.next.dispatchEvent(new MockEvent("click"));
     assert.deepEqual(calls, []);
   });
+  test("leaves an adapter-managed control's native disabled and ARIA state untouched", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    elements.next.disabled = true;
+    elements.next.setAttribute("aria-disabled", "true");
+    elements.next.setAttribute("data-glow-tour-control-managed", "");
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(elements.next.disabled, true);
+    assert.equal(elements.next.getAttribute("aria-disabled"), "true");
+  });
   test("does not command a trigger click already prevented by the consumer", async () => {
     const { calls, driver, elements } = installDriver();
     const step = createStep();
@@ -652,6 +665,25 @@ describe("DomTourViewDriver", () => {
 
     elements.next.dispatchEvent(new MockEvent("click"));
     assert.deepEqual(calls, []);
+  });
+  test("denies delegated clicks for live native, ARIA, or consumer-disabled controls", async () => {
+    for (const disable of [
+      (element: MockElement) => {
+        element.disabled = true;
+      },
+      (element: MockElement) => element.setAttribute("aria-disabled", "true"),
+      (element: MockElement) => element.setAttribute("data-glow-tour-consumer-disabled", "true"),
+    ]) {
+      const { calls, driver, elements } = installDriver();
+      const step = createStep();
+      step.target = createTarget() as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      disable(elements.next);
+      elements.root.dispatchEvent(new MockEvent("click", { target: elements.next }));
+      await Promise.resolve();
+
+      assert.deepEqual(calls, []);
+    }
   });
   test("defers trigger commands until a later consumer listener can prevent the native event", async () => {
     const { calls, driver, elements } = installDriver();

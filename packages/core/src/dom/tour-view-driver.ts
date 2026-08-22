@@ -462,10 +462,16 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
     trigger: HTMLButtonElement,
   ) {
-    if (event.defaultPrevented || !this.canCommand(command, step, trigger)) return;
+    if (
+      event.defaultPrevented ||
+      this.isLiveDisabled(trigger) ||
+      !this.canCommand(command, step, trigger)
+    )
+      return;
     queueMicrotask(() => {
       if (
         event.defaultPrevented ||
+        this.isLiveDisabled(trigger) ||
         !this.isCurrentGeneration(generation) ||
         this.currentStep !== step ||
         !this.canCommand(command, step, trigger)
@@ -529,13 +535,24 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private syncControl(element: HTMLButtonElement | null, disabled: boolean) {
     if (!element) return;
+    if (element.hasAttribute("data-glow-tour-control-managed")) return;
     const isDisabled = disabled || this.isConsumerDisabled(element);
-    element.disabled = isDisabled;
-    element.setAttribute("aria-disabled", String(isDisabled));
+    if (element.disabled !== isDisabled) element.disabled = isDisabled;
+    if (element.getAttribute("aria-disabled") !== String(isDisabled)) {
+      element.setAttribute("aria-disabled", String(isDisabled));
+    }
   }
 
   private isConsumerDisabled(element: HTMLButtonElement | null) {
     return element?.getAttribute("data-glow-tour-consumer-disabled") === "true";
+  }
+
+  private isLiveDisabled(element: HTMLButtonElement) {
+    return (
+      element.disabled ||
+      element.getAttribute("aria-disabled") === "true" ||
+      this.isConsumerDisabled(element)
+    );
   }
 
   private isPointerEnabled(step: ActiveStep<T>) {
