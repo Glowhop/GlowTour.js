@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { createGlowTour as createCoreGlowTour } from "@glowhop/core-tour";
 import { Window } from "happy-dom";
+import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
 
 type VanillaRuntime = typeof import("./index");
 
@@ -63,6 +64,59 @@ function workflow(
 }
 
 describe("vanilla adapter browser behavior", () => {
+  test("passes the shared mounted adapter acceptance contract", async () => {
+    const primaryTour = runtime.createGlowTour();
+    const secondaryTour = runtime.createGlowTour();
+    const primaryTarget = document.createElement("button");
+    const secondaryTarget = document.createElement("button");
+    const primaryRoot = root(primaryTour, "vanilla-accept-primary");
+    const secondaryRoot = root(secondaryTour, "vanilla-accept-secondary");
+    primaryRoot.innerHTML =
+      "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content><glow-tour-next-trigger></glow-tour-next-trigger></glow-tour-popover>";
+    secondaryRoot.innerHTML =
+      "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content><glow-tour-next-trigger></glow-tour-next-trigger></glow-tour-popover>";
+    document.body.append(primaryTarget, secondaryTarget, primaryRoot, secondaryRoot);
+    await settle();
+
+    await runAdapterAcceptance({
+      content: (value) => value,
+      name: "vanilla",
+      primaryRoot,
+      primaryTarget,
+      primaryTour,
+      secondaryRoot,
+      secondaryTarget,
+      secondaryTour,
+      mountDuplicatePrimary: async () => {
+        const duplicateRoot = root(primaryTour, "vanilla-accept-duplicate");
+        let error: unknown;
+        let failed = false;
+        try {
+          document.body.append(duplicateRoot);
+          await settle();
+        } catch (caught) {
+          error = caught;
+          failed = true;
+        }
+        try {
+          duplicateRoot.remove();
+          await settle();
+        } catch (cleanupError) {
+          if (!failed) throw cleanupError;
+        }
+        if (failed) throw error;
+      },
+      settle,
+      unmount: async () => {
+        primaryRoot.remove();
+        secondaryRoot.remove();
+        primaryTarget.remove();
+        secondaryTarget.remove();
+        await settle();
+      },
+    });
+  });
+
   test("replays pre-upgrade tour and idPrefix properties before connecting", async () => {
     document.body.append(preUpgradeRoot);
     await settle();

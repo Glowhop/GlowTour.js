@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
+import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
 
 let window: Window;
 
@@ -14,6 +15,8 @@ beforeEach(() => {
     MouseEvent: window.MouseEvent,
     MutationObserver: window.MutationObserver,
     Node: window.Node,
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
     document: window.document,
@@ -645,6 +648,131 @@ describe("react adapter browser behavior", () => {
 
     await React.act(async () => {
       root.unmount();
+    });
+  });
+
+  test("passes the shared adapter acceptance contract with sibling roots", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const primaryTarget = document.createElement("button");
+    const secondaryTarget = document.createElement("button");
+    document.body.append(container, primaryTarget, secondaryTarget);
+    const primaryTour = createGlowTour();
+    const secondaryTour = createGlowTour();
+    const root = createRoot(container);
+    const actTour = (tour: typeof primaryTour) => ({
+      async advance() {
+        await React.act(() => tour.advance());
+      },
+      async cancel() {
+        await React.act(() => tour.cancel());
+      },
+      create: tour.create.bind(tour),
+      dispose() {
+        React.act(() => tour.dispose());
+      },
+      async goToStep(index: number) {
+        await React.act(() => tour.goToStep(index));
+      },
+      async previous() {
+        await React.act(() => tour.previous());
+      },
+      async run(workflow: Parameters<typeof tour.run>[0]) {
+        await React.act(() => tour.run(workflow));
+      },
+      state: tour.state,
+      updateCurrentStep(update: Parameters<typeof tour.updateCurrentStep>[0]) {
+        React.act(() => tour.updateCurrentStep(update));
+      },
+    });
+
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(
+            GlowTour.Root,
+            { idPrefix: "react-primary", tour: primaryTour },
+            React.createElement(GlowTour.Popover),
+            React.createElement(GlowTour.Header),
+            React.createElement(GlowTour.Content),
+            React.createElement(GlowTour.NextTrigger),
+          ),
+          React.createElement(
+            GlowTour.Root,
+            { idPrefix: "react-secondary", tour: secondaryTour },
+            React.createElement(GlowTour.Popover),
+            React.createElement(GlowTour.Header),
+            React.createElement(GlowTour.Content),
+            React.createElement(GlowTour.NextTrigger),
+          ),
+        ),
+      );
+    });
+    const [primaryRoot, secondaryRoot] = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-glow-tour-root]"),
+    );
+    assert.ok(primaryRoot);
+    assert.ok(secondaryRoot);
+
+    await runAdapterAcceptance({
+      content(value) {
+        return value;
+      },
+      name: "react",
+      async mountDuplicatePrimary() {
+        const duplicateContainer = document.createElement("div");
+        document.body.append(duplicateContainer);
+        const duplicateRoot = createRoot(duplicateContainer);
+        let mountError: unknown;
+        try {
+          await React.act(async () => {
+            duplicateRoot.render(
+              React.createElement(
+                GlowTour.Root,
+                { idPrefix: "react-duplicate", tour: primaryTour },
+                React.createElement(GlowTour.Popover),
+                React.createElement(GlowTour.Header),
+                React.createElement(GlowTour.Content),
+                React.createElement(GlowTour.NextTrigger),
+              ),
+            );
+          });
+        } catch (error) {
+          mountError = error;
+        }
+        let cleanupError: unknown;
+        try {
+          await React.act(async () => duplicateRoot.unmount());
+        } catch (error) {
+          cleanupError = error;
+        }
+        duplicateContainer.remove();
+        if (mountError) throw mountError;
+        if (cleanupError) throw cleanupError;
+      },
+      primaryRoot,
+      primaryTarget,
+      primaryTour: actTour(primaryTour),
+      secondaryRoot,
+      secondaryTarget,
+      secondaryTour: actTour(secondaryTour),
+      async settle() {
+        await React.act(async () => {
+          await new Promise((resolve) => window.setTimeout(resolve, 0));
+        });
+      },
+      async unmount() {
+        await React.act(async () => root.unmount());
+        container.remove();
+        primaryTarget.remove();
+        secondaryTarget.remove();
+      },
     });
   });
 });
