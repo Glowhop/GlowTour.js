@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 correction: Vanilla custom-element ownership and live delegated-click hardening committed as `a1a9d95`.
-- Current task: commit the approved P1 Core public-surface cleanup.
-- Next action: create `codex/audit-p2-contracts` directly from the resulting P1 commit and begin the P2 contract migration.
+- Last completed P1 correction: Core legacy runtime removal committed as `bfd0ebe` after independent approval and the complete branch gate.
+- Current task: P1 complete; preparing the required chained branch transition.
+- Next action: create `codex/audit-p2-contracts` directly from the P1 tip containing this journal checkpoint, then update the journal to the new branch before P2 code changes.
 
 ## Completed
 
@@ -302,6 +302,7 @@ Last updated: 2026-08-22
 - Independent review found that deleting the legacy workflow suite also removed two presentation-default assertions. They were migrated to a focused `ActiveStep` test, which now validates both workflow inheritance and step-level overrides against the actual runtime owner.
 - Independent re-review approved the migrated `ActiveStep` coverage with no remaining finding.
 - Final P1 distribution gate passed again: build and pack produced exactly 7 public packages/tarballs, external tarball installation passed for all 7 packages, and the private playground built separately. Next exact action is to commit this cleanup with the journal.
+- P1 completion: `bfd0ebe refactor(core): remove legacy runtime surface` records the final code cleanup. All P1 tasks are complete and independently approved; no P1 blocker remains.
 
 ## Decisions and deviations
 
