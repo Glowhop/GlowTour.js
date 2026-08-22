@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
+import type { ReadonlyTourState } from "../index";
 import { createGlowTour } from "../index";
 
 const BRIDGE_SYMBOL = Symbol.for("@glowhop/core-tour/adapter-bridge/v1");
@@ -7,6 +8,10 @@ const ROOT_OWNER_SYMBOL = Symbol.for("@glowhop/core-tour/root-owner/v1");
 const PREFIX_RESERVATIONS_SYMBOL = Symbol.for("@glowhop/core-tour/id-prefix-reservations/v1");
 
 type Cleanup = () => void;
+
+function acceptReadonlyTourState<T>(state: ReadonlyTourState<T>) {
+  return state;
+}
 
 interface RootBinding {
   readonly ids: Readonly<{
@@ -234,6 +239,7 @@ describe("private root bridge", () => {
   test("keeps the bridge non-enumerable on the public controller contract", () => {
     const tour = createGlowTour<string>();
 
+    assert.equal(acceptReadonlyTourState(tour.state), tour.state);
     assert.deepEqual(Object.keys(tour).sort(), [
       "advance",
       "cancel",

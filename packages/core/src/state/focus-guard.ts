@@ -1,9 +1,10 @@
-import type { WorkflowDirection } from "../types";
 import { focusableElements, isFocusable } from "./focusable";
+
+type FocusDirection = "next" | "back";
 
 export interface FocusGuardScope {
   popover: HTMLElement;
-  direction: WorkflowDirection;
+  direction: FocusDirection;
   allowedTarget?: HTMLElement | null;
   allowTargetInteraction?: boolean;
   autoFocus?: boolean;
@@ -14,7 +15,7 @@ export class FocusGuard {
   private popover: HTMLElement | null = null;
   private allowedTarget: HTMLElement | null = null;
   private allowTargetInteraction = false;
-  private direction: WorkflowDirection = "next";
+  private direction: FocusDirection = "next";
   private active = false;
   private redirecting = false;
 
@@ -98,7 +99,7 @@ export class FocusGuard {
     this.redirecting = false;
   }
 
-  private findFocusable(root: HTMLElement, direction: WorkflowDirection) {
+  private findFocusable(root: HTMLElement, direction: FocusDirection) {
     const candidates = focusableElements(root);
     const orderedSelectors =
       direction === "next"

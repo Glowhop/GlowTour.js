@@ -20,6 +20,7 @@ export type {
   PopoverOptions,
   PrimitiveValue,
   ReadonlyStepState,
+  ReadonlyTourState,
   ResolvedPlacement,
   ScrollOptions,
   StartOptions,

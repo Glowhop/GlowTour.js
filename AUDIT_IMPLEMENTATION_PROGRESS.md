@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p2-contracts`
 - Parent branch: `codex/audit-p1-runtime` at `c33accc`
-- Last completed milestone: P2 shared five-framework acceptance contract committed as `a9de88c` after independent approval.
-- Current task: commit the independently approved current-contract documentation rewrite.
-- Next action: commit `project.md`, `todo.md`, and this journal; then perform the final cross-cutting P2 review and complete branch gate.
+- Last completed milestone: P2 current-contract documentation committed as `9760ca2` after independent approval.
+- Current task: commit the approved final P2 public-state type correction.
+- Next action: commit the named `ReadonlyTourState<T>` contract and legacy type cleanup with this journal, then execute the complete mandatory P2 branch gate and scan regenerated declarations.
 
 ## Completed
 
@@ -29,6 +29,9 @@ Last updated: 2026-08-22
 - P2 documentation review found and corrected one factual wording error: target resolvers receive `TargetResolverContext` containing an `AbortSignal`, not the signal directly. Re-review approved `project.md` and `todo.md` with no remaining finding.
 - P2 acceptance re-review approved the corrections with no blocking finding. One optional strengthening remains for the final P2 review: use distinct initial contents and assert the secondary DOM/modal state remains unchanged after primary mutation and navigation.
 - Commit `a9de88c` (`test(adapters): add shared acceptance contract`) contains the shared harness, all five native framework fixtures, and its crash-recovery journal checkpoint.
+- Commit `9760ca2` (`docs(project): define current public contract`) rewrites `project.md` as the current implemented contract and reduces `todo.md` to the remaining P3 work.
+- Final P2 review found one blocking named-type gap: `GlowTour.state` was readonly but `ReadonlyTourState<T>` was not publicly named/exported. A typecheck RED reproduced TS2724 from a real public import; GREEN adds the named interface, uses it on `GlowTour.state`, and exports it from Core. The review's minor legacy-vocabulary finding was also removed by deleting dead `WorkflowStatus` and moving `next`/`back` focus direction to an internal `FocusDirection`.
+- Final P2 re-review approved both corrections with no remaining finding. Generated `dist` is intentionally stale until the mandatory gate rebuild; the final declaration scan must confirm the legacy names disappear there too.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
@@ -102,6 +105,11 @@ Last updated: 2026-08-22
 
 | Command | Result |
 | --- | --- |
+| P2 `ReadonlyTourState` RED `bun run typecheck` | Red as expected with TS2724: Core had no exported member named `ReadonlyTourState`. |
+| P2 `ReadonlyTourState` GREEN | Pass: typecheck plus 21/21 root-bridge tests after exporting the named readonly state type. |
+| P2 final-review correction focused gate | Initial `bun run check` found only import ordering in the new contract test; after ordering, check/typecheck and 28/28 root-bridge/focus-guard tests passed. |
+| P2 final gate `bun install --frozen-lockfile` | Pass; Bun 1.3.12 checked 367 installs across 479 packages with no changes. |
+| P2 final legacy API scan | Pass; no old runtime/factory/builder alias remains in product or playground sources; the only `.then()` matches are internal Promise chaining. |
 | P2 documentation final `bun run check && git diff --check` | Pass; Biome checked 100 files and the documentation/journal diff has no whitespace errors. |
 | P2 acceptance review correction `bun run check` | Initial run failed on two `noUnsafeFinally` diagnostics in React/Solid duplicate-root cleanup; after separating mount and cleanup error capture, pass on 100 files. |
 | P2 acceptance review correction `bun run typecheck` | Pass; no TypeScript diagnostics. |

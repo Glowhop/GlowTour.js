@@ -24,17 +24,6 @@ export interface WaitOptions {
   interval?: number;
 }
 
-export type WorkflowStatus =
-  | "not-started"
-  | "idle"
-  | "starting"
-  | "running"
-  | "paused"
-  | "finished"
-  | "cancelled"
-  | "error";
-
-export type WorkflowDirection = "next" | "back";
 export type GlowTourElementName =
   | "root"
   | "header"
@@ -238,6 +227,11 @@ export interface TourState<T> {
   readonly error: Error | null;
 }
 
+export interface ReadonlyTourState<T> {
+  get(): TourState<T>;
+  subscribe(listener: (state: TourState<T>) => void): () => void;
+}
+
 export interface GlowTour<T> {
   create(name: string, options?: StartOptions): WorkflowBuilder<T>;
   run(workflow: WorkflowDefinition<T>): Promise<void>;
@@ -247,10 +241,7 @@ export interface GlowTour<T> {
   cancel(): Promise<void>;
   updateCurrentStep(update: (props: ReadonlyStepProps<T>) => DynamicStepProps<T>): void;
   dispose(): void;
-  readonly state: {
-    get(): TourState<T>;
-    subscribe(listener: (state: TourState<T>) => void): () => void;
-  };
+  readonly state: ReadonlyTourState<T>;
 }
 
 export interface StepConstructor<T> {
