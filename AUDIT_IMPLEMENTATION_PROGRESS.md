@@ -7,10 +7,21 @@ Last updated: 2026-08-22
 - Branch: `codex/audit-p2-contracts`
 - Parent branch: `codex/audit-p1-runtime` at `c33accc`
 - Last completed milestone: P1 runtime completed and verified; P2 was created directly from its journaled tip.
-- Current task: inventory the P2 public controller, state, builder, wait-helper, acceptance, playground, and documentation deltas.
-- Next action: implement the final builder and wait contracts tests-first without reintroducing any public runtime factory besides `createGlowTour`.
+- Current task: commit the independently approved P2 builder/wait contract migration.
+- Next action: add the common adapter acceptance contract for React, Vue, Angular, Solid, and Vanilla, then rewrite `project.md` and clean `todo.md`.
 
 ## Completed
+
+- P2 builder RED: the canonical `WorkflowBuilder` contract test fails because the source still exports only the old `Builder` and its former method names. This is the expected starting failure before the P2 builder migration.
+- P2 builder/wait GREEN: renamed the fluent contract to `WorkflowBuilder`/`WorkflowStepBuilder` with `build`, `delay`, `do`, `on`, `advance`, `previous`, and `before*`; removed the former aliases; migrated Core, every adapter suite, and all five private playground entries.
+- P2 waits now compile to readonly discriminated instructions. The controller evaluates immediately, retries with abortable timers, defaults to 3000 ms/50 ms, rejects invalid timing options, and turns expiration or predicate errors into the existing terminal `error` cleanup path.
+- P2 readonly callback state: actions, transition hooks, and event handlers receive a frozen `ReadonlyStepState` facade with only `get` and `subscribe`; the mutable observable remains internal to `ActiveStep` and DOM synchronization.
+- P2 focused verification: builder/controller tests passed 45/45 after an expected scheduling-sensitive RED test was corrected to wait for actual predicate entry. Full unit tests passed 174/174 across 21 files; browser tests passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, and Vanilla 16/16.
+- P2 static/distribution verification: Biome checked 100 files after formatting four mechanical migration diffs; typecheck passed; build/pack produced exactly 7 public packages/tarballs; Core ESM still exposes only `createGlowTour`; removed builder/type aliases are absent from public declarations; external tarball smoke passed for all 7 packages; the private playground built separately with only its existing Angular chunk warning.
+- P2 builder/wait review is in progress. Next exact action: resolve any finding, verify public declarations/tarballs, then commit the builder/wait lot with this journal.
+- P2 builder/wait review requested two corrections: bound slow or never-resolving async predicates by both the remaining timeout and the operation abort signal, and refresh stale crash-recovery instructions. The predicate evaluator now owns a cleaned timer/abort race; regression tests cover slow success, never resolution, and cancellation during a pending async predicate.
+- P2 builder/wait re-review approved both corrections with no remaining finding. Final unit verification passed 175/175; browser suites remained React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, and Vanilla 16/16.
+- Final approved artifact gate: build/pack produced exactly 7 public packages/tarballs, external tarball smoke passed all 7 including the canonical builder chain in the type consumer, and the private playground built separately. The Angular chunk warning remains unchanged and non-blocking.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
@@ -347,6 +358,6 @@ Last updated: 2026-08-22
 
 ## Recovery instructions
 
-1. Open `.worktrees/audit-p0-release` (the worktree path is retained while the branch is now P1).
+1. Open `.worktrees/audit-p0-release` (the retained worktree path currently hosts `codex/audit-p2-contracts`).
 2. Confirm the current branch with `git status --short --branch`.
-3. Continue the P1 core runtime task from the next action recorded above.
+3. Resume from the exact next action in `Current position`; the approved builder/wait lot is ready to commit, and P2 already descends from completed P1 commit `c33accc`.

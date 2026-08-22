@@ -37,7 +37,7 @@ const tourDefinition = tour
     content: "The target remains interactive and receives the pointer.",
     behavior: { allowInteraction: true },
   })
-  .finish();
+  .build();
 
 createApp({
   setup() {

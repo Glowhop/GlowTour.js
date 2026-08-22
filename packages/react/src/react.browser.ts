@@ -44,7 +44,7 @@ describe("react adapter browser behavior", () => {
         .create(name)
         .step({ content: "First", target, title: "First" })
         .step({ content: "Second", target, title: "Second" })
-        .finish();
+        .build();
     const root = createRoot(container);
     await React.act(async () => {
       root.render(
@@ -96,7 +96,7 @@ describe("react adapter browser behavior", () => {
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
       .step({ content: "Third", target, title: "Third" })
-      .finish();
+      .build();
     let setDisabledFirst!: (value: boolean) => void;
     function Harness() {
       const [disabledFirst, updateDisabledFirst] = React.useState(true);
@@ -159,7 +159,7 @@ describe("react adapter browser behavior", () => {
         title: "First",
       })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let show!: () => void;
     function Harness() {
       const [visible, setVisible] = React.useState(false);
@@ -196,7 +196,7 @@ describe("react adapter browser behavior", () => {
       .create("dynamic controls")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let setShowNext!: (show: boolean) => void;
 
     function Harness() {
@@ -268,7 +268,7 @@ describe("react adapter browser behavior", () => {
       .create("composed handlers")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let childClicks = 0;
     let wrapperClicks = 0;
     const root = createRoot(container);
@@ -315,7 +315,7 @@ describe("react adapter browser behavior", () => {
       .create("prevented")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -352,11 +352,11 @@ describe("react adapter browser behavior", () => {
     const workflow = tour
       .create("nonpreventing")
       .step({ content: "First", target, title: "First" })
-      .onNext(() => {
+      .beforeAdvance(() => {
         advances += 1;
       })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -392,12 +392,12 @@ describe("react adapter browser behavior", () => {
       .create("first")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const replacement = tour
       .create("replacement")
       .step({ content: "Replacement", target, title: "Replacement" })
       .step({ content: "Replacement next", target, title: "Replacement next" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -437,7 +437,7 @@ describe("react adapter browser behavior", () => {
       .create("toggle disabled")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let setDisabled!: (disabled: boolean) => void;
 
     function Harness() {
@@ -489,7 +489,7 @@ describe("react adapter browser behavior", () => {
       .create("child disabled")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -537,7 +537,7 @@ describe("react adapter browser behavior", () => {
       .create("consumer disabled")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -609,11 +609,11 @@ describe("react adapter browser behavior", () => {
     const firstWorkflow = first
       .create("first")
       .step({ content: "First tour", target, title: "First" })
-      .finish();
+      .build();
     const secondWorkflow = second
       .create("second")
       .step({ content: "Second tour", target, title: "Second" })
-      .finish();
+      .build();
     let replaceTour!: (tour: typeof second) => void;
 
     function Harness() {

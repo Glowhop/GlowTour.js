@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { create } from "../builder";
+import { WorkflowBuilder } from "../builder";
 import { ActiveStep } from "../runtime/active-step";
 import { TourController } from "../runtime/tour-controller";
 import { DomTourViewDriver, type TourViewCommands } from "./tour-view-driver";
@@ -348,7 +348,7 @@ function createStep(
     nextShortcuts?: readonly string[];
   } = {},
 ) {
-  const workflow = create<string>("dom-driver", {
+  const workflow = new WorkflowBuilder<string>("dom-driver", {
     animated: options.animated,
     cancellable: options.cancellable,
     behavior: {
@@ -364,7 +364,7 @@ function createStep(
       target: "#target",
       title: "title",
     })
-    .finish();
+    .build();
   const definition = workflow.steps[0];
   if (!definition) throw new Error("Expected one workflow step");
   return new ActiveStep(definition, workflow.options);
@@ -599,7 +599,7 @@ describe("DomTourViewDriver", () => {
     const denied = tour
       .create("denied", { cancellable: false })
       .step({ content: "content", target: () => target as unknown as HTMLElement, title: "title" })
-      .finish();
+      .build();
     await tour.run(denied);
     const escapeEvent = new MockKeyboardEvent("keydown", {
       key: "Escape",
@@ -621,7 +621,7 @@ describe("DomTourViewDriver", () => {
     const allowed = tour
       .create("allowed", { cancellable: true })
       .step({ content: "content", target: () => target as unknown as HTMLElement, title: "title" })
-      .finish();
+      .build();
     await tour.run(allowed);
     window.dispatchEvent(
       new MockKeyboardEvent("keydown", { key: "Escape", target: elements.popover }),
@@ -823,7 +823,7 @@ describe("DomTourViewDriver", () => {
           target: () => secondTarget as unknown as HTMLElement,
           title: "two",
         })
-        .finish();
+        .build();
 
     await tour.run(workflow);
     assert.equal(document.activeElement, elements.next);
@@ -996,10 +996,10 @@ describe("DomTourViewDriver", () => {
     const { calls, driver } = installDriver(),
       targetA = createTarget(),
       targetB = createTarget(),
-      workflowA = create<string>("focus-reentrant")
+      workflowA = new WorkflowBuilder<string>("focus-reentrant")
         .step({ content: "a", target: "#a", title: "a" })
         .on("click", (_event, _props, next) => next())
-        .finish(),
+        .build(),
       definitionA = workflowA.steps[0],
       stepB = createStep();
     if (!definitionA) throw new Error("Expected a step definition");
@@ -1034,9 +1034,9 @@ describe("DomTourViewDriver", () => {
       targetA = createTarget(),
       targetB = createTarget(),
       oldStep = createStep(),
-      workflowA = create<string>("restored-show")
+      workflowA = new WorkflowBuilder<string>("restored-show")
         .step({ content: "a", disableNextButton: true, target: "#a", title: "a" })
-        .finish(),
+        .build(),
       definitionA = workflowA.steps[0],
       stepB = createStep();
     if (!definitionA) throw new Error("Expected a step definition");
@@ -1121,13 +1121,13 @@ describe("DomTourViewDriver", () => {
     const { calls, driver } = installDriver(),
       targetA = createTarget(),
       targetB = createTarget(),
-      workflowA = create<string>("event-generation")
+      workflowA = new WorkflowBuilder<string>("event-generation")
         .step({ content: "a", target: "#a", title: "a" })
         .on("click", async (_event, _props, next) => {
           await handlerGate;
           await next();
         })
-        .finish(),
+        .build(),
       definitionA = workflowA.steps[0],
       stepB = createStep();
     if (!definitionA) throw new Error("Expected a step definition");

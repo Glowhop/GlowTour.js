@@ -1,5 +1,5 @@
 import { Observable } from "@glowhop/observables";
-import { Builder } from "../builder";
+import { WorkflowBuilder } from "../builder";
 import {
   cloneStepProps,
   freezeStepProps,
@@ -15,6 +15,7 @@ import type {
   DynamicStepProps,
   GlowTour,
   StartOptions,
+  StepWaitInstruction,
   TourDirection,
   TourState,
   TourStatus,
@@ -99,7 +100,7 @@ export class TourController<T> {
   }
 
   create(name: string, options: StartOptions = {}) {
-    return new Builder<T>(name, options);
+    return new WorkflowBuilder<T>(name, options);
   }
 
   async run(workflow: WorkflowDefinition<T>) {
@@ -253,7 +254,7 @@ export class TourController<T> {
     this.setStatus("transitioning");
     this.assertCurrent(operation);
     const hook = direction === "advance" ? step.definition.nextAction : step.definition.backAction;
-    await hook?.(step.target, step.props);
+    await hook?.(step.target, step.state);
     this.assertCurrent(operation);
 
     if (destination !== undefined) {
@@ -284,18 +285,92 @@ export class TourController<T> {
         this.assertCurrent(operation);
         continue;
       }
-      if (action === "next") {
+      if (action === "advance") {
         await this.navigate("advance", operation);
         return;
       }
-      if (action === "back") {
+      if (action === "previous") {
         await this.navigate("previous", operation);
         return;
       }
-      const shouldContinue = await action(step.target, step.props);
+      if (typeof action === "object") {
+        await this.waitForAction(action, step, operation);
+        continue;
+      }
+      const shouldContinue = await action(step.target, step.state);
       this.assertCurrent(operation);
       if (shouldContinue === false) return;
     }
+  }
+
+  private async waitForAction(
+    action: StepWaitInstruction<T>,
+    step: ActiveStep<T>,
+    operation: number,
+  ) {
+    const startedAt = Date.now();
+    while (true) {
+      this.assertCurrent(operation);
+      const elapsedBeforePredicate = Date.now() - startedAt;
+      if (
+        await this.evaluateWaitPredicate(
+          action,
+          step,
+          operation,
+          Math.max(0, action.timeout - elapsedBeforePredicate),
+        )
+      ) {
+        return;
+      }
+      this.assertCurrent(operation);
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= action.timeout) {
+        throw new Error(`Timed out waiting for ${action.description} after ${action.timeout}ms`);
+      }
+      await waitForTimer(
+        Math.min(action.interval, action.timeout - elapsed),
+        this.signalFor(operation),
+      );
+    }
+  }
+
+  private evaluateWaitPredicate(
+    action: StepWaitInstruction<T>,
+    step: ActiveStep<T>,
+    operation: number,
+    remaining: number,
+  ) {
+    const signal = this.signalFor(operation);
+    return new Promise<boolean>((resolve, reject) => {
+      let settled = false;
+      const cleanup = () => {
+        clearTimeout(timeout);
+        signal.removeEventListener("abort", onAbort);
+      };
+      const settle = (callback: () => void) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback();
+      };
+      const onAbort = () => settle(() => reject(abortError()));
+      const timeout = setTimeout(
+        () =>
+          settle(() =>
+            reject(
+              new Error(`Timed out waiting for ${action.description} after ${action.timeout}ms`),
+            ),
+          ),
+        remaining,
+      );
+      signal.addEventListener("abort", onAbort, { once: true });
+      Promise.resolve()
+        .then(() => action.predicate(step.target, step.state))
+        .then(
+          (ready) => settle(() => resolve(ready)),
+          (error) => settle(() => reject(error)),
+        );
+    });
   }
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
@@ -327,7 +402,7 @@ export class TourController<T> {
 
   private async cancelCurrent(operation: number) {
     const step = this.currentStep();
-    await step?.definition.cancelAction?.(step.target, step.props);
+    await step?.definition.cancelAction?.(step.target, step.state);
     this.assertCurrent(operation);
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);

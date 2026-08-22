@@ -257,7 +257,7 @@ describe("private root bridge", () => {
 
   test("requires a root before run and uses the DOM driver after a root is connected", async () => {
     const tour = createGlowTour<string>();
-    const definition = tour.create("empty").finish();
+    const definition = tour.create("empty").build();
 
     await assert.rejects(() => tour.run(definition), /connected root/i);
     rootBridge(tour).connectRoot({ adapter: {}, root: root() });
@@ -329,7 +329,7 @@ describe("private root bridge", () => {
   test("does not treat a pending claim as a connected root when an attribute callback runs a tour", async () => {
     const tour = createGlowTour<string>();
     const mount = root() as unknown as MockElement;
-    const definition = tour.create("pending-run").finish();
+    const definition = tour.create("pending-run").build();
     let pendingRun: Promise<void> | null = null;
     mount.onSetAttribute = (name) => {
       if (name === "id") pendingRun = tour.run(definition);
@@ -532,7 +532,7 @@ describe("private root bridge", () => {
     const definition = tour
       .create("active")
       .step({ content: "content", target: () => target, title: "title" })
-      .finish();
+      .build();
 
     await tour.run(definition);
     binding.release();
@@ -556,7 +556,7 @@ describe("private root bridge", () => {
         onStart: () => binding.release(),
       })
       .step({ content: "content", target: () => root(), title: "title" })
-      .finish();
+      .build();
 
     await tour.run(definition);
 
@@ -578,7 +578,7 @@ describe("private root bridge", () => {
           },
           title: "title",
         })
-        .finish(),
+        .build(),
     );
     assert.equal(resolverTour.state.get().status, "idle");
 
@@ -587,8 +587,8 @@ describe("private root bridge", () => {
     const hookDefinition = hookTour
       .create("release-hook")
       .step({ content: "content", target: () => root(), title: "title" })
-      .onNext(() => hookBinding.release())
-      .finish();
+      .beforeAdvance(() => hookBinding.release())
+      .build();
     await hookTour.run(hookDefinition);
     await hookTour.advance();
     assert.equal(hookTour.state.get().status, "idle");
@@ -600,7 +600,7 @@ describe("private root bridge", () => {
     const definition = tour
       .create("release-remount")
       .step({ content: "content", target: () => root(), title: "title" })
-      .finish();
+      .build();
     await tour.run(definition);
     let remounts = 0;
     const unsubscribe = tour.state.subscribe((state) => {

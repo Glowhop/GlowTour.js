@@ -263,7 +263,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         if (!this.isCurrentGeneration(generation)) return;
         void handler.callback(
           event,
-          step.props,
+          step.state,
           () => this.commandForGeneration("advance", generation),
           () => this.commandForGeneration("previous", generation),
           () => this.commandForGeneration("cancel", generation),

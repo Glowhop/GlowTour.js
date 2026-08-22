@@ -1,5 +1,4 @@
-import type { Observable } from "@glowhop/observables";
-import type { Builder } from "../builder";
+import type { WorkflowBuilder } from "../builder";
 import type { ReadonlyStepProps, WorkflowDefinition } from "../definition";
 
 export type {
@@ -14,10 +13,15 @@ export type PrimitiveValue = string | number | boolean | null;
 export type TargetResolver =
   | string
   | HTMLElement
-  | ((context: TargetResolutionContext) => HTMLElement | null | Promise<HTMLElement | null>);
+  | ((context: TargetResolverContext) => HTMLElement | null | Promise<HTMLElement | null>);
 
-export interface TargetResolutionContext {
+export interface TargetResolverContext {
   signal: AbortSignal;
+}
+
+export interface WaitOptions {
+  timeout?: number;
+  interval?: number;
 }
 
 export type WorkflowStatus =
@@ -158,25 +162,44 @@ export interface StartOptions {
   onFinish?: () => void | Promise<void>;
 }
 
-export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
+export interface ReadonlyStepState<T> {
+  get(): ReadonlyStepProps<T>;
+  subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
+}
 // biome-ignore lint/suspicious/noConfusingVoidType: `void` preserves the optional action result contract.
 export type StepActionResult = boolean | void;
 
 export type StepAction<T> = (
   element: HTMLElement | null,
-  stepProps: StepPropsStore<T>,
+  stepState: ReadonlyStepState<T>,
 ) => Promise<StepActionResult> | StepActionResult;
-export type StepActionInstruction<T> = StepAction<T> | number | "back" | "next";
+export type StepWaitPredicate<T> = (
+  element: HTMLElement | null,
+  stepState: ReadonlyStepState<T>,
+) => Promise<boolean> | boolean;
+export interface StepWaitInstruction<T> {
+  readonly type: "waitFor";
+  readonly predicate: StepWaitPredicate<T>;
+  readonly timeout: number;
+  readonly interval: number;
+  readonly description: string;
+}
+export type StepActionInstruction<T> =
+  | StepAction<T>
+  | StepWaitInstruction<T>
+  | number
+  | "advance"
+  | "previous";
 export type StepTransitionAction<T> = (
   element: HTMLElement | null,
-  stepProps: StepPropsStore<T>,
+  stepState: ReadonlyStepState<T>,
 ) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   event: string;
   callback: (
     event: TEvent,
-    stepProps: StepPropsStore<TStepProps>,
+    stepState: ReadonlyStepState<TStepProps>,
     next: () => Promise<void>,
     back: () => Promise<void>,
     cancel: () => Promise<void>,
@@ -216,7 +239,7 @@ export interface TourState<T> {
 }
 
 export interface GlowTour<T> {
-  create(name: string, options?: StartOptions): Builder<T>;
+  create(name: string, options?: StartOptions): WorkflowBuilder<T>;
   run(workflow: WorkflowDefinition<T>): Promise<void>;
   advance(): Promise<void>;
   previous(): Promise<void>;
@@ -228,36 +251,6 @@ export interface GlowTour<T> {
     get(): TourState<T>;
     subscribe(listener: (state: TourState<T>) => void): () => void;
   };
-}
-
-export interface WorkflowStepPublicProps<T> {
-  initialProps: Readonly<DynamicStepProps<T>>;
-  currentProps: StepPropsStore<T>;
-  target: HTMLElement | null;
-}
-
-export interface WorkflowState<T> {
-  name: string;
-  totalSteps: number;
-  currentStepIndex: number;
-  currentStep: WorkflowStepPublicProps<T> | null;
-  direction: WorkflowDirection;
-  canGoNext: boolean;
-  canGoBack: boolean;
-  canCancel: boolean;
-  isFirstStep: boolean;
-  isLastStep: boolean;
-  status: WorkflowStatus;
-  startOptions: StartOptions;
-  error: Error | null;
-}
-
-export interface WorkflowControls<T> {
-  start: (workflow?: WorkflowDefinition<T>) => Promise<void>;
-  next: () => Promise<void>;
-  back: () => Promise<void>;
-  cancel: () => Promise<void>;
-  goTo: (index: number) => Promise<void>;
 }
 
 export interface StepConstructor<T> {

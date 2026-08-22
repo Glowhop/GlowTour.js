@@ -27,7 +27,7 @@ const workflow = tour
     content: "The target remains interactive and receives the pointer.",
     behavior: { allowInteraction: true },
   })
-  .finish();
+  .build();
 
 document.querySelector("[data-start-tour]")?.addEventListener("click", () => {
   void tour.run(workflow);

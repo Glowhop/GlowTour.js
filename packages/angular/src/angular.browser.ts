@@ -99,7 +99,7 @@ describe("angular adapter browser behavior", () => {
       .create("angular lifecycle")
       .step({ content: "First content", target, title: "First title" })
       .step({ content: "Second content", target, title: "Second title" })
-      .finish();
+      .build();
     await tour.run(workflow);
     await settle();
     app.tick();
@@ -132,7 +132,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 1);
 
     await app.destroy();
-    await assert.rejects(() => tour.run(tour.create("released").finish()), /connected root/i);
+    await assert.rejects(() => tour.run(tour.create("released").build()), /connected root/i);
   });
 
   test("reconnects only the latest Angular input pair and isolates nearest nested roots", async () => {
@@ -176,7 +176,7 @@ describe("angular adapter browser behavior", () => {
     await settle();
     assert.equal(document.querySelector("[data-glow-tour-root]")?.id, "second-root");
     await assert.rejects(
-      () => first.run(first.create("first released").finish()),
+      () => first.run(first.create("first released").build()),
       /connected root/i,
     );
 
@@ -185,7 +185,7 @@ describe("angular adapter browser behavior", () => {
         .create(name)
         .step({ content: "One", target, title: "One" })
         .step({ content: "Two", target, title: "Two" })
-        .finish();
+        .build();
     await second.run(workflow(second, outerTarget, "outer"));
     await inner.run(workflow(inner, innerTarget, "inner"));
     const [outerNext, innerNext] = Array.from(
@@ -237,7 +237,7 @@ describe("angular adapter browser behavior", () => {
         .create(name)
         .step({ content: `${name} one`, target, title: `${name} one` })
         .step({ content: `${name} two`, target, title: `${name} two` })
-        .finish();
+        .build();
     await first.run(workflow(first, firstTarget, "first"));
     await second.run(workflow(second, secondTarget, "second"));
     await settle();
@@ -282,7 +282,7 @@ describe("angular adapter browser behavior", () => {
     @Component({ selector: "angular-descendant-runner", standalone: true, template: "" })
     class DescendantRunner implements OnInit {
       ngOnInit() {
-        started = tour.run(tour.create("descendant initialization").finish());
+        started = tour.run(tour.create("descendant initialization").build());
       }
     }
 
@@ -390,7 +390,7 @@ describe("angular adapter browser behavior", () => {
         title: "One",
       })
       .step({ content: "Two", target, title: "Two" })
-      .finish();
+      .build();
     await tour.run(workflow);
     const harness = app.components[0]?.instance;
     assert.ok(harness instanceof LateTriggerHarness);
@@ -506,7 +506,7 @@ describe("angular adapter browser behavior", () => {
       .create("dynamic trigger inputs")
       .step({ content: "One", target, title: "One" })
       .step({ content: "Two", target, title: "Two" })
-      .finish();
+      .build();
     await tour.run(workflow);
     await settle();
     app.tick();

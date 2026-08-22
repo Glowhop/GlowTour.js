@@ -88,7 +88,7 @@ class AngularPlayground {
         content: "The target remains interactive and receives the pointer.",
         behavior: { allowInteraction: true },
       })
-      .finish();
+      .build();
     void this.tour.run(workflow);
   }
 }

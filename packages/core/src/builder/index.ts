@@ -11,15 +11,32 @@ import type {
   StepAction,
   StepParameters,
   StepTransitionAction,
+  StepWaitPredicate,
+  WaitOptions,
 } from "../types";
 
 export type EventName = keyof HTMLElementEventMap;
 
 type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
 
-export class Builder<T> {
+const DEFAULT_WAIT_TIMEOUT = 3000;
+const DEFAULT_WAIT_INTERVAL = 50;
+
+function waitOptions(options: WaitOptions = {}) {
+  const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
+  const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
+  if (!Number.isFinite(timeout) || timeout < 0) {
+    throw new TypeError("wait timeout must be a finite non-negative number");
+  }
+  if (!Number.isFinite(interval) || interval <= 0) {
+    throw new TypeError("wait interval must be a finite positive number");
+  }
+  return { interval, timeout };
+}
+
+export class WorkflowBuilder<T> {
   private readonly steps: WorkflowStepDraft<T>[] = [];
-  private currentStep: StepBuilder<T> | null = null;
+  private currentStep: WorkflowStepBuilder<T> | null = null;
 
   constructor(
     public readonly name: string,
@@ -30,7 +47,7 @@ export class Builder<T> {
     if (this.currentStep) {
       this.steps.push(this.currentStep.toDraft());
     }
-    this.currentStep = new StepBuilder(this, {
+    this.currentStep = new WorkflowStepBuilder(this, {
       target: options.target,
       props: {
         title: options.title,
@@ -58,8 +75,8 @@ export class Builder<T> {
     return this.currentStep;
   }
 
-  concat(builder: StepBuilder<T>) {
-    const definition = builder.builder.finish();
+  concat(builder: WorkflowStepBuilder<T>) {
+    const definition = builder.builder.build();
     const drafts = definition.steps.map(cloneWorkflowStepDraft);
     const lastStep = drafts.at(-1);
     if (!lastStep) {
@@ -69,19 +86,19 @@ export class Builder<T> {
       this.steps.push(this.currentStep.toDraft());
     }
     this.steps.push(...drafts.slice(0, -1));
-    this.currentStep = new StepBuilder(this, lastStep);
+    this.currentStep = new WorkflowStepBuilder(this, lastStep);
     return this.currentStep;
   }
 
-  finish(): WorkflowDefinition<T> {
+  build(): WorkflowDefinition<T> {
     const drafts = this.currentStep ? [...this.steps, this.currentStep.toDraft()] : this.steps;
     return createWorkflowDefinition(this.name, this.options, drafts);
   }
 }
 
-export class StepBuilder<T> {
+export class WorkflowStepBuilder<T> {
   constructor(
-    public readonly builder: Builder<T>,
+    public readonly builder: WorkflowBuilder<T>,
     private readonly draft: WorkflowStepDraft<T>,
   ) {}
 
@@ -89,11 +106,11 @@ export class StepBuilder<T> {
     return this.builder.step(options);
   }
 
-  finish() {
-    return this.builder.finish();
+  build() {
+    return this.builder.build();
   }
 
-  concat(builder: StepBuilder<T>) {
+  concat(builder: WorkflowStepBuilder<T>) {
     return this.builder.concat(builder);
   }
 
@@ -113,61 +130,60 @@ export class StepBuilder<T> {
     return this;
   }
 
-  wait(timeMs: number) {
+  delay(timeMs: number) {
+    if (!Number.isFinite(timeMs) || timeMs < 0) {
+      throw new TypeError("delay must be a finite non-negative number");
+    }
     this.draft.actions.push(timeMs);
     return this;
   }
 
-  waitFor(callback: (nextTarget: HTMLElement | null) => Promise<boolean> | boolean) {
-    this.draft.actions.push(async (nextTarget) => callback(nextTarget));
-    return this;
-  }
-
-  alter(callback: StepAction<T>) {
-    return this.action(callback);
-  }
-
-  waitForElement(target: string) {
-    this.draft.actions.push(
-      async () => typeof document !== "undefined" && document.querySelector(target) !== null,
-    );
-    return this;
-  }
-
-  next() {
-    this.draft.actions.push("next");
-    return this;
-  }
-
-  back() {
-    this.draft.actions.push("back");
-    return this;
-  }
-
-  exec(callback: (nextTarget: HTMLElement | null) => Promise<void> | void) {
-    this.draft.actions.push(async (nextTarget) => {
-      await callback(nextTarget);
-      return true;
+  waitFor(predicate: StepWaitPredicate<T>, options?: WaitOptions) {
+    this.draft.actions.push({
+      description: "condition",
+      predicate,
+      type: "waitFor",
+      ...waitOptions(options),
     });
     return this;
   }
 
-  action(callback: StepAction<T>) {
+  waitForElement(target: string, options?: WaitOptions) {
+    this.draft.actions.push({
+      description: `element ${target}`,
+      predicate: () => typeof document !== "undefined" && document.querySelector(target) !== null,
+      type: "waitFor",
+      ...waitOptions(options),
+    });
+    return this;
+  }
+
+  advance() {
+    this.draft.actions.push("advance");
+    return this;
+  }
+
+  previous() {
+    this.draft.actions.push("previous");
+    return this;
+  }
+
+  do(callback: StepAction<T>) {
     this.draft.actions.push(callback);
     return this;
   }
 
-  onNext(callback: StepTransitionAction<T>) {
+  beforeAdvance(callback: StepTransitionAction<T>) {
     this.draft.nextAction = callback;
     return this;
   }
 
-  onBack(callback: StepTransitionAction<T>) {
+  beforePrevious(callback: StepTransitionAction<T>) {
     this.draft.backAction = callback;
     return this;
   }
 
-  onCancel(callback: StepTransitionAction<T>) {
+  beforeCancel(callback: StepTransitionAction<T>) {
     this.draft.cancelAction = callback;
     return this;
   }
@@ -187,21 +203,6 @@ export class StepBuilder<T> {
     return this.addEventHandlers(eventOrEvents, callback);
   }
 
-  onEvent<const TEventName extends EventName>(
-    event: TEventName,
-    callback: EventHandler<T, EventForName<TEventName>>["callback"],
-  ): this;
-  onEvent<const TEventNames extends readonly EventName[]>(
-    events: TEventNames,
-    callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
-  ): this;
-  onEvent(
-    eventOrEvents: EventName | readonly EventName[],
-    callback: EventHandler<T, never>["callback"],
-  ) {
-    return this.addEventHandlers(eventOrEvents, callback);
-  }
-
   toDraft(): WorkflowStepDraft<T> {
     return cloneWorkflowStepDraft(this.draft);
   }
@@ -215,8 +216,4 @@ export class StepBuilder<T> {
     }
     return this;
   }
-}
-
-export function create<T>(name: string, options: StartOptions = {}) {
-  return new Builder<T>(name, options);
 }

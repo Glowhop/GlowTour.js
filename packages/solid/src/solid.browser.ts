@@ -77,7 +77,7 @@ describe("solid adapter browser behavior", () => {
         .create(name)
         .step({ content: "First", target, title: "First" })
         .step({ content: "Second", target, title: "Second" })
-        .finish();
+        .build();
     const dispose = render(
       () =>
         createComponent(GlowTour.Root, {
@@ -129,7 +129,7 @@ describe("solid adapter browser behavior", () => {
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
       .step({ content: "Third", target, title: "Third" })
-      .finish();
+      .build();
     let setDisabledFirst!: (value: boolean) => void;
     const dispose = render(() => {
       const [disabledFirst, updateDisabledFirst] = createSignal(true);
@@ -172,7 +172,7 @@ describe("solid adapter browser behavior", () => {
       .create("dynamic controls")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let setShowNext!: (show: boolean) => void;
     const dispose = render(() => {
       const [showNext, updateShowNext] = createSignal(false);
@@ -227,7 +227,7 @@ describe("solid adapter browser behavior", () => {
       .create("toggle disabled")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let setDisabled!: (disabled: boolean) => void;
     const dispose = render(() => {
       const [disabled, updateDisabled] = createSignal(true);
@@ -322,7 +322,7 @@ describe("solid adapter browser behavior", () => {
       .create("trigger updates")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
 
     const dispose = render(
       () =>
@@ -363,11 +363,11 @@ describe("solid adapter browser behavior", () => {
     const firstWorkflow = first.tour
       .create("first")
       .step({ content: "First tour", target, title: "First" })
-      .finish();
+      .build();
     const secondWorkflow = second.tour
       .create("second")
       .step({ content: "Second tour", target, title: "Second" })
-      .finish();
+      .build();
 
     const dispose = render(
       () =>
@@ -419,7 +419,7 @@ describe("solid adapter browser behavior", () => {
       .create("disabled commands")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const dispose = render(
       () =>
         createComponent(GlowTour.Root, {

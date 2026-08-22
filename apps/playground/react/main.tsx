@@ -32,10 +32,10 @@ const workflow = tour
       color: "red",
     },
   })
-  .onBack(() => {
+  .beforePrevious(() => {
     console.log("Back button clicked");
   })
-  .onNext(() => {
+  .beforeAdvance(() => {
     console.log("Next button clicked");
   })
   .step({
@@ -46,7 +46,7 @@ const workflow = tour
       allowInteraction: true,
     },
   })
-  .onEvent("click", (event) => {
+  .on("click", (event) => {
     console.log("Click event on step 3", event);
     void tour.advance();
   })
@@ -64,7 +64,7 @@ const workflow = tour
       animated: true,
     },
   })
-  .finish();
+  .build();
 
 function ReactPlayground() {
   return (
