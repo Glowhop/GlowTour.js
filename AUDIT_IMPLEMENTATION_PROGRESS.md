@@ -4,11 +4,11 @@ Last updated: 2026-08-22
 
 ## Current position
 
-- Branch: `codex/audit-p1-runtime`
-- Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 correction: Core legacy runtime removal committed as `bfd0ebe` after independent approval and the complete branch gate.
-- Current task: P1 complete; preparing the required chained branch transition.
-- Next action: create `codex/audit-p2-contracts` directly from the P1 tip containing this journal checkpoint, then update the journal to the new branch before P2 code changes.
+- Branch: `codex/audit-p2-contracts`
+- Parent branch: `codex/audit-p1-runtime` at `c33accc`
+- Last completed milestone: P1 runtime completed and verified; P2 was created directly from its journaled tip.
+- Current task: inventory the P2 public controller, state, builder, wait-helper, acceptance, playground, and documentation deltas.
+- Next action: implement the final builder and wait contracts tests-first without reintroducing any public runtime factory besides `createGlowTour`.
 
 ## Completed
 
