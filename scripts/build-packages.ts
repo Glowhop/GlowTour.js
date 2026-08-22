@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { buildPublishedManifest, type PackageManifest } from "./package-manifests";
 
@@ -11,6 +11,7 @@ type PackageBuild = {
 
 const root = resolve(import.meta.dir, "..");
 const packageRoot = join(root, "packages");
+const releaseDocuments = ["README.md", "LICENSE", "CHANGELOG.md"] as const;
 const packageBuilds: readonly PackageBuild[] = [
   { id: "core", entrypoint: "src/index.ts" },
   { id: "react", entrypoint: "src/index.ts" },
@@ -57,6 +58,12 @@ function buildManifest(packageDirectory: string) {
   );
 }
 
+function copyReleaseDocuments(distDirectory: string) {
+  for (const document of releaseDocuments) {
+    copyFileSync(join(root, document), join(distDirectory, document));
+  }
+}
+
 async function buildPackage(build: PackageBuild) {
   const directory = join(packageRoot, build.id);
   const distDirectory = join(directory, "dist");
@@ -75,6 +82,7 @@ async function buildPackage(build: PackageBuild) {
   }
 
   run("bunx", ["tsc", "--project", join("packages", build.id, "tsconfig.build.json")]);
+  copyReleaseDocuments(distDirectory);
   buildManifest(directory);
 }
 
@@ -85,6 +93,7 @@ function buildStyles() {
   mkdirSync(distDirectory, { recursive: true });
   cpSync(join(directory, "default.css"), join(distDirectory, "default.css"));
   cpSync(join(directory, "default.css.d.ts"), join(distDirectory, "default.css.d.ts"));
+  copyReleaseDocuments(distDirectory);
   buildManifest(directory);
 }
 
@@ -93,6 +102,7 @@ function buildAngular() {
   const distDirectory = join(directory, "dist");
   rmSync(distDirectory, { force: true, recursive: true });
   run("bunx", ["ng-packagr", "--project", "packages/angular/ng-package.json"]);
+  copyReleaseDocuments(distDirectory);
   buildManifest(directory);
 }
 

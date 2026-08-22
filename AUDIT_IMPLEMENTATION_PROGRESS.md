@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p3-polish`
 - Parent branch: `codex/audit-p2-contracts` at `8ae482c`
-- Last completed milestone: P3 obsolete animation/highlight cleanup committed as `b092647` after independent approval.
-- Current task: implement npm metadata/artifact documentation and the public documentation/audit matrix in non-overlapping scopes.
-- Next action: add tests-first manifest/build/tarball metadata rules; add README, MIT license, changelog, compatibility and release docs plus the audit resolution matrix; review both scopes before separate commits.
+- Last completed milestone: P3 release/compatibility documentation committed as `55d6c2a` after independent approval.
+- Current task: complete the independent re-review and commit the npm metadata/artifact lot.
+- Next action: resolve any remaining release-review finding, commit the seven manifests and build/pack regression tests with this journal, then run the complete P3 release rehearsal.
 
 ## Completed
 
@@ -44,6 +44,8 @@ Last updated: 2026-08-22
 - P3 documentation now adds a root README, MIT license, factual unreleased changelog, framework compatibility matrix, stable GitHub Release/OIDC process, and a branch-resolution matrix covering every audit recommendation. Documentation review corrected semver bounds and replaced an incomplete snippet with a mounted React example, then approved the lot with no remaining finding.
 - P3 npm metadata adds descriptions, MIT, homepage/bugs, keywords, Node engine, publish files/access, and package-specific side-effect policy to all seven outputs. Shared README/LICENSE/CHANGELOG files are copied into every `dist` and asserted inside each tarball.
 - P3 metadata validation exposed a Bun workspace-build interaction: source `sideEffects: false` caused Bun to erase reexported implementations while leaving named exports. The failing external tarball runtime import was the RED. Source manifests now declare only required positive effects (Styles CSS and Vanilla registration); published manifests default the other five packages to `false`. Rebuilt bundles are non-empty and the 7-package external smoke passes.
+- Commit `55d6c2a` (`docs(project): add release and compatibility guides`) contains the approved README, MIT license, changelog, compatibility/release guides, audit matrix, and its journal checkpoint.
+- Independent P3 release re-review approved the corrected source/published `sideEffects` boundary and strengthened tarball assertions with no remaining finding.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.

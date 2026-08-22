@@ -38,7 +38,7 @@ export function buildPublishedManifest(source: PackageManifest, versions: Packag
     dependencies: resolveDependencies(source.dependencies, versions),
     exports: preparePublishedValue(source.exports, versions),
     files: ["**/*"],
-    sideEffects: source.name === "@glowhop/styles-tour" ? ["*.css"] : source.name === "@glowhop/vanilla-tour",
+    sideEffects: source.sideEffects ?? false,
     types: preparePublishedValue(source.types, versions),
   };
 

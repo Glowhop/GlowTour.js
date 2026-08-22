@@ -1,6 +1,20 @@
 {
   "name": "@glowhop/styles-tour",
   "version": "0.1.0",
+  "description": "Default CSS theme for Glow Tour.",
+  "license": "MIT",
+  "homepage": "https://github.com/Glowhop/glow-tour#readme",
+  "bugs": {
+    "url": "https://github.com/Glowhop/glow-tour/issues"
+  },
+  "keywords": [
+    "tour",
+    "guided-tour",
+    "css"
+  ],
+  "engines": {
+    "node": ">=18.19.1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Glowhop/glow-tour.git",
@@ -10,6 +24,9 @@
   "files": [
     "dist/**/*"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "sideEffects": [
     "*.css"
   ],

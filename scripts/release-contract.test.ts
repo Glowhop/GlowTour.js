@@ -77,6 +77,38 @@ test("source manifests contain the repository metadata required for trusted publ
   }
 });
 
+test("source manifests contain complete public npm metadata and preserve required side effects", () => {
+  const expectedSideEffects: Record<string, unknown> = {
+    core: undefined,
+    styles: ["*.css"],
+    react: undefined,
+    vue: undefined,
+    angular: undefined,
+    solid: undefined,
+    vanilla: true,
+  };
+
+  for (const packageId of packageIds) {
+    const manifest = JSON.parse(read(`packages/${packageId}/package.json`)) as Record<string, unknown>;
+    expect(manifest.description).toBeString();
+    expect(manifest.license).toBe("MIT");
+    expect(manifest.homepage).toBe("https://github.com/Glowhop/glow-tour#readme");
+    expect(manifest.bugs).toEqual({ url: "https://github.com/Glowhop/glow-tour/issues" });
+    expect(manifest.keywords).toBeArray();
+    expect(manifest.engines).toEqual({ node: ">=18.19.1" });
+    expect(manifest.files).toEqual(["dist/**/*"]);
+    expect(manifest.publishConfig).toEqual({ access: "public" });
+    expect(manifest.sideEffects).toEqual(expectedSideEffects[packageId]);
+  }
+});
+
+test("package builds copy the shared release documents into every distribution", () => {
+  const buildScript = read("scripts/build-packages.ts");
+  expect(buildScript).toContain('"README.md"');
+  expect(buildScript).toContain('"LICENSE"');
+  expect(buildScript).toContain('"CHANGELOG.md"');
+});
+
 test("the private playground stays outside all package build, pack, release, and tarball sets", () => {
   const playground = JSON.parse(read("apps/playground/package.json")) as { private?: boolean };
   const buildScript = read("scripts/build-packages.ts");
