@@ -4,11 +4,11 @@ Last updated: 2026-08-22
 
 ## Current position
 
-- Branch: `codex/audit-p2-contracts`
-- Parent branch: `codex/audit-p1-runtime` at `c33accc`
-- Last completed milestone: P2 declaration-build boundary and complete branch gate committed as `71d9788`.
-- Current task: checkpoint P2 completion before changing branches.
-- Next action: commit this P2 completion checkpoint, create `codex/audit-p3-polish` directly from it, then update the journal on P3 before any polish implementation.
+- Branch: `codex/audit-p3-polish`
+- Parent branch: `codex/audit-p2-contracts` at `8ae482c`
+- Last completed milestone: P2 completed and checkpointed as `8ae482c` after the full gate and independent approval.
+- Current task: persist the P3 branch start, then audit the remaining polish scope.
+- Next action: commit this branch-start journal, inventory dead animation/geometry/Highlight code, package metadata and `sideEffects`, missing MIT/license/readme/changelog/release docs, and the audit recommendation matrix before the first P3 code change.
 
 ## Completed
 
