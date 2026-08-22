@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p2-contracts`
 - Parent branch: `codex/audit-p1-runtime` at `c33accc`
-- Last completed milestone: P2 current-contract documentation committed as `9760ca2` after independent approval.
-- Current task: commit the approved final P2 public-state type correction.
-- Next action: commit the named `ReadonlyTourState<T>` contract and legacy type cleanup with this journal, then execute the complete mandatory P2 branch gate and scan regenerated declarations.
+- Last completed milestone: P2 named readonly state contract committed as `93aacb5` after final independent review approval.
+- Current task: commit the final P2 declaration-build boundary correction and completed gate evidence.
+- Next action: commit the adapter build-config exclusions and regression test with this journal, re-check the branch tip, then create the P2 completion checkpoint before branching P3 from it.
 
 ## Completed
 
@@ -32,6 +32,9 @@ Last updated: 2026-08-22
 - Commit `9760ca2` (`docs(project): define current public contract`) rewrites `project.md` as the current implemented contract and reduces `todo.md` to the remaining P3 work.
 - Final P2 review found one blocking named-type gap: `GlowTour.state` was readonly but `ReadonlyTourState<T>` was not publicly named/exported. A typecheck RED reproduced TS2724 from a real public import; GREEN adds the named interface, uses it on `GlowTour.state`, and exports it from Core. The review's minor legacy-vocabulary finding was also removed by deleting dead `WorkflowStatus` and moving `next`/`back` focus direction to an internal `FocusDirection`.
 - Final P2 re-review approved both corrections with no remaining finding. Generated `dist` is intentionally stale until the mandatory gate rebuild; the final declaration scan must confirm the legacy names disappear there too.
+- Commit `93aacb5` (`fix(core): export readonly tour state contract`) contains the reviewed named state type, public export, type-level regression, legacy type cleanup, and its journal checkpoint.
+- The final P2 build initially failed because the new `*.browser.ts` suites imported the shared acceptance helper outside each adapter declaration `rootDir`. A release-contract RED reproduced the missing exclusion; React, Vue, Solid, and Vanilla declaration builds now exclude `src/**/*.browser.ts`, keeping all acceptance sources out of published artifacts.
+- The complete corrected P2 gate passed: frozen install, Biome, typecheck, 176 unit tests, 61 browser tests, exactly 7 builds and tarballs, registry-backed external tarball installation, separate private playground build, release preparation/publish dry-runs, and targeted manifest/declaration scans. No npm publication occurred.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
@@ -105,6 +108,16 @@ Last updated: 2026-08-22
 
 | Command | Result |
 | --- | --- |
+| P2 final `bun run build` initial attempt | Failed: adapter browser suites pulled `scripts/adapter-acceptance.ts` outside declaration `rootDir`; no package artifact was accepted from this run. |
+| P2 adapter build-boundary RED | Red as expected: the release-contract test showed all four Bun/tsc adapters lacked `src/**/*.browser.ts` exclusions. |
+| P2 adapter build-boundary GREEN and `bun run build` | Pass: regression 1/1 and exactly 7 publishable distributions built after excluding browser acceptance sources. |
+| P2 final `bun run pack` | Pass: exactly 7 local tarballs; playground absent. |
+| P2 final `bun run test:tarballs` | Sandboxed run stalled and was interrupted; approved registry-backed retry passed the external smoke contract for all 7 tarballs. |
+| P2 final `bun run --cwd apps/playground build` | Pass as a separate private-app gate; existing Angular 1.38 MB minified chunk warning remains. |
+| P2 final release dry-runs | Pass: preparation and publish dry-run printed Core, Styles, React, Vue, Angular, Solid, Vanilla without registry publication. |
+| P2 final artifact scan | Pass: 7 tarballs; no `workspace:*` or `src` target in dist manifests; no legacy runtime/status types in `.d.ts`; Core declarations export `ReadonlyTourState` and runtime `createGlowTour`. |
+| P2 final post-correction static/unit gate | Pass: Biome 100 files, typecheck no diagnostics, 176 unit tests across 21 files. |
+| P2 final post-correction browser gate | Pass: 61/61 across React 13, Solid 9, Vue 11, Angular 11, Vanilla 17. |
 | P2 `ReadonlyTourState` RED `bun run typecheck` | Red as expected with TS2724: Core had no exported member named `ReadonlyTourState`. |
 | P2 `ReadonlyTourState` GREEN | Pass: typecheck plus 21/21 root-bridge tests after exporting the named readonly state type. |
 | P2 final-review correction focused gate | Initial `bun run check` found only import ordering in the new contract test; after ordering, check/typecheck and 28/28 root-bridge/focus-guard tests passed. |
