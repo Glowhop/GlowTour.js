@@ -1,279 +1,139 @@
-# Description
+# Glow Tour — current contract
 
-On va faire un package npm de tuto/onboard framework agnostic 
-Avec un package pour React, Angular, Vue et en Vanilla.
+Glow Tour is a framework-agnostic guided-tour library for React 19, Vue, Angular, Solid,
+and native custom elements. The project is in `dev`; breaking changes remain allowed until that
+status changes.
 
-Chaque état dynamique et "écoutable" doit être géré par @glowhop/observables
+## Published packages
 
-# Decisions validees
+The release contains exactly seven version-locked packages:
 
-- L'API publique principale expose un objet `glowTour`.
-- `glowTour` fournit des utilitaires, la creation de workflow avec `glowTour.create(...)`, le lancement avec `glowTour.run(...)`, et un acces au store avec `glowTour.state`.
-- `glowTour.run(workflow)` delegue au store.
-- Le store doit utiliser le package `@glowhop/observables` directement. Ne pas reimplementer un systeme pub/sub local a la place.
-- Le builder n'utilise pas `id` pour les steps. Une step utilise uniquement `target`, qui est un query selector.
-- Les options de step (`overlay`, `popover`, `scroll`, `animation`, `behavior` / `missingTargetStrategy`) vivent au niveau de la step.
-- Les callbacks `onStart`, `onCancel`, `onFinish` sont definies dans les `startProps` et ne recoivent aucun argument.
-- La compatibilite SSR est ignoree pour le moment.
-- Angular doit avoir un wrapper leger reel en v1 avec `GlowTourService` et les composants `GlowTourRoot`, `GlowTourHeader`, etc.
-- `AnimationOptions` contient uniquement `{ duration, easing }`.
-- Pour `missingTargetStrategy: "wait"`, le timeout par defaut est `3000`.
-- Pour `missingTargetStrategy: "skip"`, on saute automatiquement a l'etape suivante.
-- Les boutons par defaut des triggers vides doivent etre configurables via les props `nextLabel` et `previousLabel`.
-- La methode d'arret du store s'appelle `cancel()`, pas `stop()`.
+- `@glowhop/core-tour`
+- `@glowhop/styles-tour`
+- `@glowhop/react-tour`
+- `@glowhop/vue-tour`
+- `@glowhop/angular-tour`
+- `@glowhop/solid-tour`
+- `@glowhop/vanilla-tour`
 
-# Le builder 
+`apps/playground` is a private validation application. It is built separately and is never packed,
+versioned, grouped by Changesets, or published.
 
-Pour construire le workflow on utilise le Builder pattern cf : packages/core/src/builder/index.ts
-- on va ajouter `glowTour.create(name: string, startProps)`
+## Instance model
+
+`createGlowTour<TContent>()` is the only public instance factory. There is no public singleton,
+global store, or second workflow factory.
+
+Each adapter exposes its specialized `createGlowTour()` and native components. One instance can be
+connected to only one live root at a time. Separate instances and roots keep their state, IDs,
+events, DOM resources, and dependency-injection context isolated.
 
 ```ts
+const tour = createGlowTour<string>();
 
-const workflow = glowTour.create("test", { overlay:{color: "red"} })
+const workflow = tour
+  .create("onboarding", { cancellable: true })
   .step({
-    target: "#question-bipolar-fancy.score.expanded",
-    title:"",
-    content:""
-  })
-  .onPrevious(() => {
-    setTimeout(() => {
-      const closeBtn = document.querySelector<HTMLButtonElement>(selector("dialog.close"));
-      if (closeBtn) closeBtn.click();
-    }, 500);
+    target: "#welcome",
+    title: "Welcome",
+    content: "This is the first step.",
   })
   .step({
-    target: "#question-bipolar-fancy.expanded-modes.comments",
-    title: "",
-    content: "",
+    target: ({ signal }) => resolveTarget(signal),
+    title: "Continue",
+    content: "This target may resolve asynchronously.",
   })
-  .clickTarget()
-  .step({
-    target: "#comments-or-words.display-mode.analysis",
-    title: "",
-    content: "",
-  }).finish()
+  .build();
 
+await tour.run(workflow);
 ```
 
+## Controller
 
-# Le store 
-Chaque état dynamique et "écoutable" doit être géré par @glowhop/observables
+An instance exposes:
 
-Celui qui gère tous les états du tuto est un store 
+- `create(name, options?)`
+- `run(workflow)`
+- `advance()`
+- `previous()`
+- `goToStep(index)`
+- `cancel()`
+- `updateCurrentStep(update)`
+- `dispose()`
+- `state.get()` and `state.subscribe(listener)`
 
-les états dynamiques (@glowhop/observables) : 
-status: "idle" | "starting" | "running" | "paused" | "finished" | "cancelled" | "error"
-currentStepIndex
-currentStep
-direction: "next" | "previous"
-canGoNext
-canGoPrevious
-isFirstStep
-isLastStep
+The public statuses are `idle`, `starting`, `transitioning`, `active`, `finished`, `cancelled`, and
+`error`. State snapshots also expose `canAdvance`, `canPrevious`, `canCancel`, `isFirstStep`, and
+`isLastStep`.
 
-les états statiques
+State and active-step callback facades are readonly. Dynamic step props are changed only through
+`updateCurrentStep`. `dispose()` is terminal and idempotent.
 
-workflow
-error
+## Builder
 
-détient la liste des étapes 
-à une callback onStart, onCancel, onFinish
-à les fonctions suivantes :
-- getWorkflow()
-- cancel()
-- start(workflow: WorkflowDefinition)
-- next()
-- previous()
+The canonical fluent methods are:
 
-`glowTour.state` donne acces au store.
-`glowTour.run(workflow)` delegue a `store.start(workflow)`.
+- `step(options)` and `build()`
+- `delay(milliseconds)`
+- `do(callback)`
+- `on(event | events, callback)`
+- `advance()` and `previous()`
+- `beforeAdvance(callback)`, `beforePrevious(callback)`, and `beforeCancel(callback)`
+- `waitFor(predicate, options?)` and `waitForElement(selector, options?)`
+- `clickTarget()`, `focusTarget()`, and `concat(builder)`
 
-# Fonctionnement
+`waitFor` and `waitForElement` poll immediately, then retry until success. Their defaults are a
+3000 ms timeout and a 50 ms interval. Expiration is a terminal tour error: the view is cleaned and
+the public Promise rejects. A newer run, cancellation, root release, or disposal invalidates the
+pending wait.
 
-le tuto suit les étapes. si lors d'une passage à une étape, le composant (target) n'est pas apparu, on se fie à missingTargetStrategy (défault error) 
+Workflow definitions and step definitions are frozen readonly values. Mutable active-step state is
+created separately for each run.
 
-`target` est obligatoire et correspond a un query selector.
-Il n'y a pas de `id` de step.
+## Targets and behavior
 
-`missingTargetStrategy` :
-- `"error"` est la valeur par defaut.
-- `"wait"` attend jusqu'au timeout configure, avec `3000` par defaut.
-- `"skip"` saute automatiquement a l'etape suivante.
+A step target may be a selector, an `HTMLElement`, or a resolver receiving a
+`TargetResolverContext` containing an `AbortSignal`. Resolvers may be synchronous or asynchronous.
+Obsolete resolutions never update the current tour.
 
-# Composants
+Missing targets use `behavior.missingTargetStrategy`:
 
-Chaque composant est un web-composant qui anglobe son métier
-/components/
- popover/ 
-    service.ts
-    render.ts
-    ...etc
- overlay/ 
-    service.ts
-    render.ts
-    ...etc
+- `error` (default): enter terminal `error` state;
+- `wait`: retry until `targetTimeout`, 3000 ms by default;
+- `skip`: continue in the current navigation direction.
 
-les services sont autonomes et s'occupe de gérer le composant en écoutant le store
+Target geometry is event-driven by default through observers, scroll, resize, and coalesced animation
+frames. `behavior.targetTracking: "continuous"` enables continuous tracking when required.
 
-## Popover
+## DOM and accessibility
 
-Est composé de plusieurs web-components
-<glow-tour-root>
-    <glow-tour-header class="" />
-    <glow-tour-progress class="" />
-    <glow-tour-content class="" />
-    <glow-tour-footer class="">
-         <glow-tour-previous-trigger >
-            <button>prev</button> (implémenter par le dev)
-        </glow-tour-previous-trigger >
-        <glow-tour-next-trigger>
-            <button>next</button> (implémenter par le dev)
-        </glow-tour-next-trigger >
-    </glow-tour-footer>
-<glow-tour-root>
+Each root owns a unique ID family, optionally prefixed with `idPrefix`. Explicit prefixes are
+rejected when they collide outside their root.
 
-Chaque composant s'auto gère avec son propre service. le placement se fait de manière intelligente en fonction du view-port et de la taille de la popover. la props (optionnelle) placementTryOrder donne l'ordre de placement à esssayer
+The DOM driver:
 
-## Overlay 
-Inspiration https://github.com/nilbuild/driver.js
-Est un web-component svg 
+- isolates nested and sibling roots;
+- respects editable fields, IME composition, modifiers, and consumer-disabled controls;
+- loops Tab and Shift+Tab inside modal tours;
+- restores focus on cleanup;
+- adds `aria-modal` only when target interaction is blocked;
+- centralizes listeners, timers, observers, subscriptions, and animation frames for cleanup.
 
-<glow-tour-overlay > = <svg><path /></svg>
+## Adapter injection
 
-il permet de faire le backdrop + le trou.
-Il est intéractif ou non
-On peut changer la couleur et régler son affichage depuis StepPresentation (ajouter ce fonctionnement)
+- React and Solid use Context.
+- Vue uses provide/inject.
+- Angular uses DI scoped by `GlowTourRoot`.
+- Vanilla receives the instance through the root element's `tour` property.
 
-Si l'étape est interactif il faut ajouter un ☝️ qui pointe vers le composant avec une animation lente
-Le placement du smiley et son sens se fait intelligemment en fonction du view-port est de la popover en sachant que la props (optionnelle) interactionIndicatorPlacementTryOrder donne l'ordre de placement à esssayer
+Unmounting a root releases its lease and DOM resources. A non-disposed instance may later connect to
+another root; a disposed instance may not.
 
-## Animations 
+## Release contract
 
-Par défaut tout est animé. On disable l'animation si reduce-motion
-enter : fade-in
-exit : fade-in
-move : transition / mouvement 
+All public packages build to ESM with declarations. Angular uses Angular Package Format with partial
+compilation. Distribution manifests contain no `src`, raw TypeScript, or `workspace:*` references.
 
-`AnimationOptions` contient uniquement `{ duration, easing }`.
-
-utilise une méthode d'animation avec requestAnimationFrame, modifie la valeur avec du js progressivement. 
-Une animation s'adapte. ex : si on une prop doit aller vers une valeur mais que pendant l'animation, la valeur de fin change, alors on ne reset pas l'animation, on adapte l'animation. 
-
-* JS/RAF pour overlay path, position, dimensions
-* CSS pour fade, opacity, transform de la popover
-* respect automatique de prefers-reduced-motion
-
-refère toi à AnimationOptions
-
-# Autres informations 
-J'ai modifié packages/core/src/builder/index.ts, adapte le code
-web components auto-register 
-
-les packages expose : 
-le builder 
-le store
-tous les types utiles
-
-essaye de ne pas être en conflit avec le systeme de SSR
-=> ignore pour le moment
-
-les web-components sont montés au lancement et le container est body ou container si la valeur est précisé dans les startProps
-
-# utilisation 
-
-wrappers légers en v1. les triggers peuvent être vide, dans ce cas, on monte nos boutons
-Les boutons montes par defaut doivent etre configurables via les props `nextLabel` et `previousLabel`.
-
-## en React 
-
-```tsx
-import { glowTour, GlowTour } from "@glowhop/react-tour"
-
-const tour =  glowTour.create("test", { overlay: { color: "red" } }).step({
-    target: "#react-tour-id"
-    title:"Hello",
-    content:"word"
-}).finish()
-
-
-glowTour.run(tour)
-
-return (
-    <div>
-        <span id="react-tour-id" >AHHH</span>
-
-        <GlowTour.Root>
-            <GlowTour.Header className="" />
-            <GlowTour.Content className="" />
-            <GlowTour.Footer>
-                <GlowTour.PreviousTrigger>
-                    <button>prev</button> (implémenter optionnellement par le dev, si vide alors on monte nous mêmes un bouton)
-                </GlowTour.PreviousTrigger >
-                <GlowTour.NextTrigger>
-                    <button>next</button> (implémenter optionnellement par le dev, si vide alors on monte nous mêmes un bouton)
-                </GlowTour.NextTrigger >
-            </GlowTour.Footer>
-        </GlowTour.Root>
-    </div>
-)
-
-```
-
-## en VueJS
-
-```vue 
-
-<script setup lang="ts">
-import {
-  glowTour,
-  GlowTourRoot,
-  GlowTourHeader,
-  GlowTourContent,
-  GlowTourFooter,
-  GlowTourPreviousTrigger,
-  GlowTourNextTrigger,
-} from "@glowhop/vue-tour";
-
-const tour = glowTour
-  .create("test", { overlay: { color: "red" } })
-  .step({
-    target: "#vue-tour-id",
-    title: "Hello",
-    content: "world",
-  })
-  .finish();
-
-function startTour() {
-  glowTour.run(tour);
-}
-</script>
-
-<template>
-  <div>
-    <span id="vue-tour-id">AHHH</span>
-
-    <button @click="startTour">
-      Start tour
-    </button>
-
-    <GlowTourRoot>
-      <GlowTourHeader class="" />
-      <GlowTourContent class="" />
-
-      <GlowTourFooter>
-        <GlowTourPreviousTrigger>
-          <button>prev</button>
-        </GlowTourPreviousTrigger>
-
-        <GlowTourNextTrigger>
-          <button>next</button>
-        </GlowTourNextTrigger>
-      </GlowTourFooter>
-    </GlowTourRoot>
-  </div>
-</template>
-```
-
-## en Angular
-
-Wrapper leger reel en v1 avec `GlowTourService` et les composants `GlowTourRoot`, `GlowTourHeader`, etc.
+Changesets keeps the seven packages in one fixed version group. Stable GitHub Releases are the only
+npm publication trigger. Publication uses npm trusted publishing/OIDC and never relies on a permanent
+npm token. Local release commands and dry-runs must not publish.

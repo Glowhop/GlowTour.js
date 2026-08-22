@@ -1,16 +1,16 @@
-[x] interactivity
-[x] cleaner le typage et surtout StepConstructor
+# Remaining work
 
-P0
-[x] focus trigger n'est pas bon. en fonction de la direction, on doit focus next ou previous
-[x] Ajouter gap à IndicatorOptions pour gérer l'espacement de l'indicteur et mettre 16px par défaut
-[x] améliorer la gestion du placement de la popover
-[x] ajouter une fleche (arrow) à la popover désactivable depuis PopoverOptions.disableArrow. la fleche est collée à la popover et est de la même couleur que le fond de la popover. Un peu comme une tooltip.
+The authoritative implementation status and exact recovery action live in
+`AUDIT_IMPLEMENTATION_PROGRESS.md`.
 
-P1
-[] probleme de gestion du style par défaut
-[] surcharge onEvent pour pouvoir mettre un event ou plusieurs 
+## Before leaving `dev`
 
-P2
-[] mega cleaning du code
+- Complete the P3 code and geometry cleanup.
+- Add the final README, changelogs, compatibility table, MIT license, and release guide.
+- Complete npm metadata and package-specific `sideEffects` declarations.
+- Record the resolving branch for every item in `AUDIT_RECOMMANDATIONS.md`.
+- Run the final build, pack, tarball inspection, and external installation rehearsal without
+  publishing.
+- Configure npm trusted publishing for the seven packages before the first stable GitHub Release.
 
+Completed audit tasks are intentionally not duplicated here.

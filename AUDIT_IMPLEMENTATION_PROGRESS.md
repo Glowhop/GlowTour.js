@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p2-contracts`
 - Parent branch: `codex/audit-p1-runtime` at `c33accc`
-- Last completed milestone: P2 builder/wait and readonly callback contracts committed as `81f05e7` after independent approval and full artifact smoke.
-- Current task: commit the independently approved common adapter acceptance harness.
-- Next action: commit the acceptance helper and five framework fixtures with this journal, then record its hash and commit the independently approved `project.md`/`todo.md` rewrite.
+- Last completed milestone: P2 shared five-framework acceptance contract committed as `a9de88c` after independent approval.
+- Current task: commit the independently approved current-contract documentation rewrite.
+- Next action: commit `project.md`, `todo.md`, and this journal; then perform the final cross-cutting P2 review and complete branch gate.
 
 ## Completed
 
@@ -28,6 +28,7 @@ Last updated: 2026-08-22
 - P2 acceptance review corrections are green: all five native fixtures now attempt a third root using the already-connected primary tour and preserve the Core lease error through cleanup. The aggregate checks pass again: Biome 100 files, typecheck, browser 61/61, and unit 175/175. A transient Biome failure identified unsafe `throw` statements inside React/Solid cleanup `finally` blocks; cleanup errors are now captured separately and the original mount error retains priority.
 - P2 documentation review found and corrected one factual wording error: target resolvers receive `TargetResolverContext` containing an `AbortSignal`, not the signal directly. Re-review approved `project.md` and `todo.md` with no remaining finding.
 - P2 acceptance re-review approved the corrections with no blocking finding. One optional strengthening remains for the final P2 review: use distinct initial contents and assert the secondary DOM/modal state remains unchanged after primary mutation and navigation.
+- Commit `a9de88c` (`test(adapters): add shared acceptance contract`) contains the shared harness, all five native framework fixtures, and its crash-recovery journal checkpoint.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
@@ -101,6 +102,7 @@ Last updated: 2026-08-22
 
 | Command | Result |
 | --- | --- |
+| P2 documentation final `bun run check && git diff --check` | Pass; Biome checked 100 files and the documentation/journal diff has no whitespace errors. |
 | P2 acceptance review correction `bun run check` | Initial run failed on two `noUnsafeFinally` diagnostics in React/Solid duplicate-root cleanup; after separating mount and cleanup error capture, pass on 100 files. |
 | P2 acceptance review correction `bun run typecheck` | Pass; no TypeScript diagnostics. |
 | P2 acceptance review correction `bun run test:browser` | Pass; 61/61 with duplicate-root rejection and full ID/ARIA relation checks in all five adapter fixtures. |
