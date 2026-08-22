@@ -24,7 +24,7 @@ type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children
 };
 type BackTriggerProps = ButtonProps & { backLabel?: string };
 type NextTriggerProps = ButtonProps & { finishLabel?: string; nextLabel?: string };
-type CancelTriggerProps = ButtonProps & { cancelLabel?: string };
+type CancelTriggerProps = ButtonProps;
 
 interface TourContextValue {
   readonly binding: RootBinding | null;
@@ -259,7 +259,7 @@ export function NextTrigger({ finishLabel, nextLabel, ...props }: NextTriggerPro
   );
 }
 
-export function CancelTrigger({ cancelLabel = "Cancel tour", ...props }: CancelTriggerProps) {
+export function CancelTrigger(props: CancelTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
   if (!snapshot.canCancel) return null;
@@ -267,7 +267,7 @@ export function CancelTrigger({ cancelLabel = "Cancel tour", ...props }: CancelT
     <Trigger
       {...props}
       capabilityDisabled={!snapshot.canCancel}
-      label={cancelLabel}
+      label="Cancel tour"
       marker="cancel"
     />
   );

@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { WorkflowStep } from "../engine/workflow-step";
 import type { TryOrderOptions } from "../types";
+import type { TourElementStep } from "./base";
 import PopoverElement from "./popover";
 
 class TestPopoverElement<T> extends PopoverElement<T> {
-  getStyles(position: DOMRect, step: WorkflowStep<T>) {
+  getStyles(position: DOMRect, step: TourElementStep) {
     return this._getNextStyles(position, step);
   }
 }
@@ -71,11 +71,9 @@ function createStep(
   placementTryOrder: TryOrderOptions[],
   options: { disableArrow?: boolean; gap?: number } = {},
 ) {
-  return new WorkflowStep<string>({
+  return {
     popover: { ...options, placementTryOrder },
-    props: { content: "content", title: "title" },
-    target: "#target",
-  });
+  } satisfies TourElementStep;
 }
 
 const originalWindow = globalThis.window;

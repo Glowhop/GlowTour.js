@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { WorkflowStep } from "../engine/workflow-step";
+import type { TourElementStep } from "./base";
 import PointerElement from "./pointer";
 
 class TestPointerElement<T> extends PointerElement<T> {
-  getStyles(position: DOMRect, step: WorkflowStep<T>) {
+  getStyles(position: DOMRect, step: TourElementStep) {
     return this._getNextStyles(position, step);
   }
 }
@@ -70,11 +70,9 @@ afterEach(() => {
 });
 
 function createStep(placement: "top" | "bottom" | "left" | "right", gap?: number) {
-  return new WorkflowStep<string>({
+  return {
     indicator: { gap, placementTryOrder: [placement] },
-    props: { content: "content", title: "title" },
-    target: "#target",
-  });
+  } satisfies TourElementStep;
 }
 
 describe("PointerElement", () => {

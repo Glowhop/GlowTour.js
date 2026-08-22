@@ -68,7 +68,6 @@ export function mergePopoverOptions(
       ? {
           backLabel: overrides?.buttons?.backLabel ?? defaults?.buttons?.backLabel,
           nextLabel: overrides?.buttons?.nextLabel ?? defaults?.buttons?.nextLabel,
-          cancelLabel: overrides?.buttons?.cancelLabel ?? defaults?.buttons?.cancelLabel,
           finishLabel: overrides?.buttons?.finishLabel ?? defaults?.buttons?.finishLabel,
         }
       : undefined,

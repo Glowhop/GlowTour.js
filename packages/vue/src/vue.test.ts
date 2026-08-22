@@ -72,6 +72,6 @@ describe("vue adapter contract", () => {
     assert.equal("previousLabel" in (runtime.GlowTourBackTrigger.props ?? {}), false);
     assert.equal("nextLabel" in (runtime.GlowTourNextTrigger.props ?? {}), true);
     assert.equal("finishLabel" in (runtime.GlowTourNextTrigger.props ?? {}), true);
-    assert.equal("cancelLabel" in (runtime.GlowTourCancelTrigger.props ?? {}), true);
+    assert.equal("cancelLabel" in (runtime.GlowTourCancelTrigger.props ?? {}), false);
   });
 });

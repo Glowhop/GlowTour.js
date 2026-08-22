@@ -249,20 +249,10 @@ describe("private root bridge", () => {
     assert.equal(rootBridge(tour).version, 1);
   });
 
-  test("does not add a root runtime export while legacy adapter exports remain transitional", async () => {
+  test("exposes createGlowTour as the only public runtime value", async () => {
     const runtime = await import("../index");
 
-    assert.deepEqual(Object.keys(runtime).sort(), [
-      "Builder",
-      "StepBuilder",
-      "TourStore",
-      "WorkflowInstance",
-      "WorkflowStep",
-      "create",
-      "createGlowTour",
-      "createTourStore",
-      "createWorkflow",
-    ]);
+    assert.deepEqual(Object.keys(runtime), ["createGlowTour"]);
   });
 
   test("requires a root before run and uses the DOM driver after a root is connected", async () => {

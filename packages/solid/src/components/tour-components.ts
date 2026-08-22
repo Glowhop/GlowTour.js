@@ -38,7 +38,7 @@ type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" 
 };
 type BackTriggerProps = ButtonProps & { backLabel?: string };
 type NextTriggerProps = ButtonProps & { finishLabel?: string; nextLabel?: string };
-type CancelTriggerProps = ButtonProps & { cancelLabel?: string };
+type CancelTriggerProps = ButtonProps;
 type ButtonClickEvent = MouseEvent & { currentTarget: HTMLButtonElement; target: Element };
 
 interface TourContextValue {
@@ -382,7 +382,7 @@ export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
           get capabilityDisabled() {
             return !snapshot().canCancel;
           },
-          label: props.cancelLabel ?? "Cancel tour",
+          label: "Cancel tour",
           marker: "cancel" as const,
         }),
       );

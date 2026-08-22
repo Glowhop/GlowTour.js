@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p1-runtime`
 - Parent branch: `codex/audit-p0-release` at `577bd46`
-- Last completed P1 correction: approved Vanilla custom-element ownership and live delegated-click hardening, verified locally and by external tarball smoke.
-- Current task: commit the approved P1.3E Vanilla follow-up.
-- Next action: narrow legacy Core runtime exports, remove transitional stores/singletons and run the complete P1 review.
+- Last completed P1 correction: Vanilla custom-element ownership and live delegated-click hardening committed as `a1a9d95`.
+- Current task: commit the approved P1 Core public-surface cleanup.
+- Next action: create `codex/audit-p2-contracts` directly from the resulting P1 commit and begin the P2 contract migration.
 
 ## Completed
 
@@ -289,6 +289,19 @@ Last updated: 2026-08-22
 - GREEN final offline verification: Core focused passed 58/58; Vanilla focused passed 16/16; frozen install checked 367 packages; unit passed 167/167; browser passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, Vanilla 16/16; build/pack 7/7, playground build, and both release dry-runs passed. Existing Angular chunk warning remains.
 - Fresh external tarball verification on 2026-08-22: `bun run test:tarballs` passed the external consumer smoke contract for all 7 packages after explicit user authorization. The approved Vanilla follow-up is ready for its linked-worktree Git commit.
 - Fresh pre-commit gate on 2026-08-22: frozen install checked 367 packages with no changes; Biome checked 103 files; typecheck emitted no diagnostics; unit tests passed 167/167; browser tests passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, and Vanilla 16/16; build and pack produced exactly 7 public packages/tarballs; the private playground built separately. The existing Angular playground chunk-size warning remains non-blocking.
+
+## P1 Core public-surface cleanup (2026-08-22)
+
+- Core now exposes `createGlowTour` as its only runtime value. `Builder`, `StepBuilder`, and their event type remain type-only/internal so P2 can complete the builder contract without publishing another instance factory.
+- Deleted the obsolete `TourStore`, `createTourStore`, `WorkflowInstance`, `createWorkflow`, and `WorkflowStep` implementations and the dedicated legacy workflow tests. Geometry tests now use the readonly `TourElementStep` contract directly.
+- Removed `cancelLabel` from Core popover options and from React, Solid, Vue, and Vanilla cancellation controls. Framework-native children/slots/content and `aria-label` remain the customization path; Angular was already compliant.
+- Updated the tarball consumer to import `createGlowTour` and assert that the installed Core runtime namespace contains exactly that value.
+- Targeted verification passed 56/56 across Core element/root contracts and all adapter public contracts. Typecheck passed with no diagnostics.
+- Final P1 source verification passed: frozen install checked 367 installs with no changes; Biome checked 100 files; typecheck emitted no diagnostics; unit tests passed 167/167 across 21 files; browser tests passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, and Vanilla 16/16.
+- Distribution verification passed: build and pack produced exactly 7 public packages; the Core ESM namespace contains only `createGlowTour`; external tarball smoke passed for all 7 packages; the private playground built separately; release preparation and publication dry-runs preserved the required seven-package order without publishing. The existing Angular playground chunk-size warning remains non-blocking.
+- Independent review found that deleting the legacy workflow suite also removed two presentation-default assertions. They were migrated to a focused `ActiveStep` test, which now validates both workflow inheritance and step-level overrides against the actual runtime owner.
+- Independent re-review approved the migrated `ActiveStep` coverage with no remaining finding.
+- Final P1 distribution gate passed again: build and pack produced exactly 7 public packages/tarballs, external tarball installation passed for all 7 packages, and the private playground built separately. Next exact action is to commit this cleanup with the journal.
 
 ## Decisions and deviations
 

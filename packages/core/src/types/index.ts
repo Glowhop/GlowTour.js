@@ -99,7 +99,6 @@ export interface PopoverOptions extends BaseOptions {
   buttons?: {
     backLabel?: string;
     nextLabel?: string;
-    cancelLabel?: string;
     finishLabel?: string;
   };
   keyboardShortcuts?: {

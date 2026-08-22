@@ -334,14 +334,14 @@ export const GlowTourNextTrigger = defineComponent({
 export const GlowTourCancelTrigger = defineComponent({
   name: componentName("CancelTrigger"),
   inheritAttrs: false,
-  props: { ariaLabel: { type: String }, cancelLabel: { type: String } },
+  props: { ariaLabel: { type: String } },
   setup(props, { attrs, slots }) {
     const context = useTourContext();
     const snapshot = useTourSnapshot(context.tour);
     const renderTrigger = trigger(
       "cancel",
       () => !snapshot.value.canCancel,
-      () => props.cancelLabel ?? "Cancel tour",
+      () => "Cancel tour",
       () => props.ariaLabel,
       attrs,
       slots,

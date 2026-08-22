@@ -790,7 +790,7 @@ export function registerGlowTourElements() {
       return {
         disabled: !state.canCancel,
         hidden: !state.canCancel,
-        label: this.getAttribute("cancel-label") ?? "Cancel tour",
+        label: "Cancel tour",
       };
     }
   }
