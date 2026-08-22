@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p3-polish`
 - Parent branch: `codex/audit-p2-contracts` at `8ae482c`
-- Last completed milestone: P3 release/compatibility documentation committed as `55d6c2a` after independent approval.
-- Current task: complete the independent re-review and commit the npm metadata/artifact lot.
-- Next action: resolve any remaining release-review finding, commit the seven manifests and build/pack regression tests with this journal, then run the complete P3 release rehearsal.
+- Last completed milestone: P3 is complete, independently approved, and recorded by the current completion commit.
+- Current task: audit implementation complete; the user explicitly authorized the verified four-branch push to the configured GitHub `origin`.
+- Next action: outside repository implementation, configure npm trusted publishing for the seven packages before the first stable GitHub Release.
 
 ## Completed
 
@@ -18,13 +18,12 @@ Last updated: 2026-08-22
 - P2 readonly callback state: actions, transition hooks, and event handlers receive a frozen `ReadonlyStepState` facade with only `get` and `subscribe`; the mutable observable remains internal to `ActiveStep` and DOM synchronization.
 - P2 focused verification: builder/controller tests passed 45/45 after an expected scheduling-sensitive RED test was corrected to wait for actual predicate entry. Full unit tests passed 174/174 across 21 files; browser tests passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, and Vanilla 16/16.
 - P2 static/distribution verification: Biome checked 100 files after formatting four mechanical migration diffs; typecheck passed; build/pack produced exactly 7 public packages/tarballs; Core ESM still exposes only `createGlowTour`; removed builder/type aliases are absent from public declarations; external tarball smoke passed for all 7 packages; the private playground built separately with only its existing Angular chunk warning.
-- P2 builder/wait review is in progress. Next exact action: resolve any finding, verify public declarations/tarballs, then commit the builder/wait lot with this journal.
 - P2 builder/wait review requested two corrections: bound slow or never-resolving async predicates by both the remaining timeout and the operation abort signal, and refresh stale crash-recovery instructions. The predicate evaluator now owns a cleaned timer/abort race; regression tests cover slow success, never resolution, and cancellation during a pending async predicate.
 - P2 builder/wait re-review approved both corrections with no remaining finding. Final unit verification passed 175/175; browser suites remained React 12/12, Solid 8/8, Vue 10/10, Angular 10/10, and Vanilla 16/16.
 - Final approved artifact gate: build/pack produced exactly 7 public packages/tarballs, external tarball smoke passed all 7 including the canonical builder chain in the type consumer, and the private playground built separately. The Angular chunk warning remains unchanged and non-blocking.
 - P2 common acceptance harness: `scripts/adapter-acceptance.ts` now drives real mounted sibling roots in React 19, Solid, Vue, Angular, and Vanilla. It covers simultaneous instances, distinct root/popover IDs, command isolation, modal and nonmodal ARIA, dynamic step updates, completion, teardown, and root release.
 - P2 common acceptance verification: Biome passed on 100 files, TypeScript passed with no diagnostics, all browser suites passed 61/61 (React 13, Solid 9, Vue 11, Angular 11, Vanilla 17), all unit suites passed 175/175, and `git diff --check` reported no whitespace errors.
-- P2 acceptance review found one important coverage gap: the common contract mounted two distinct instances but did not attempt the prohibited same-instance/two-root mount in every adapter. It also noted minor ID-relation and second-root teardown gaps. The shared harness now requires a real duplicate-mount attempt, validates both full ARIA ID families, and verifies both leases are released; framework fixtures are being updated.
+- P2 acceptance review found one important coverage gap: the common contract mounted two distinct instances but did not attempt the prohibited same-instance/two-root mount in every adapter. It also noted minor ID-relation and second-root teardown gaps. The shared harness now requires a real duplicate-mount attempt, validates both full ARIA ID families, and verifies both leases are released; framework fixtures were updated.
 - P2 acceptance review corrections are green: all five native fixtures now attempt a third root using the already-connected primary tour and preserve the Core lease error through cleanup. The aggregate checks pass again: Biome 100 files, typecheck, browser 61/61, and unit 175/175. A transient Biome failure identified unsafe `throw` statements inside React/Solid cleanup `finally` blocks; cleanup errors are now captured separately and the original mount error retains priority.
 - P2 documentation review found and corrected one factual wording error: target resolvers receive `TargetResolverContext` containing an `AbortSignal`, not the signal directly. Re-review approved `project.md` and `todo.md` with no remaining finding.
 - P2 acceptance re-review approved the corrections with no blocking finding. One optional strengthening remains for the final P2 review: use distinct initial contents and assert the secondary DOM/modal state remains unchanged after primary mutation and navigation.
@@ -46,6 +45,12 @@ Last updated: 2026-08-22
 - P3 metadata validation exposed a Bun workspace-build interaction: source `sideEffects: false` caused Bun to erase reexported implementations while leaving named exports. The failing external tarball runtime import was the RED. Source manifests now declare only required positive effects (Styles CSS and Vanilla registration); published manifests default the other five packages to `false`. Rebuilt bundles are non-empty and the 7-package external smoke passes.
 - Commit `55d6c2a` (`docs(project): add release and compatibility guides`) contains the approved README, MIT license, changelog, compatibility/release guides, audit matrix, and its journal checkpoint.
 - Independent P3 release re-review approved the corrected source/published `sideEffects` boundary and strengthened tarball assertions with no remaining finding.
+- Commit `1575b33` (`build(packages): complete npm metadata`) contains all seven source metadata manifests, shared document copying, published-manifest side-effect policy, strengthened tarball checks, and its journal checkpoint.
+- Final P3 rehearsal is green: frozen install, Biome, typecheck, 180 unit tests, 61 browser tests, 7 builds/tarballs, external registry-backed tarball installation, separate private playground build, and both non-publishing release dry-runs.
+- Final artifact inspection confirms no `workspace:*`, `src` export target, raw TypeScript, legacy runtime/status/Highlight declaration, or playground tarball. Core runtime exports only `createGlowTour`; `ReadonlyTourState` is present; all seven manifests carry MIT/engines/public access and the intended package-specific `sideEffects`.
+- Final review corrections: the distributable README now uses absolute repository links; package builds prefer Changesets-generated package changelogs with the root changelog only as bootstrap fallback; tarball smoke asserts the selected changelog bytes; the audit matrix and remaining-work ledger now reflect their actual resolution branches.
+- P3 final-review RED/GREEN: the release-contract suite first failed on the three relative README links and missing package-changelog selection, then passed 12/12 after correction. Biome checked 99 files and `git diff --check` passed.
+- Final independent P3 re-review approved the changelog selection, tarball assertion, absolute README links, audit matrix, remaining-work ledger, defective-version procedure, and recovery instructions with no remaining finding.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
@@ -95,30 +100,28 @@ Last updated: 2026-08-22
 
 ## In progress
 
-- P2 acceptance and documentation are implemented and undergoing independent read-only review before their commits.
-- P1.2 DOM driver review follow-up: focused RED regressions confirmed the review findings: same-placement 10px popover moves were suppressed; nested contenteditable targets triggered navigation; pre-aborted show scrolled; stale show/clear continuations could reactivate or mutate a newer step; and dispose did not cancel pending animations. The GREEN implementation adds operation generations, abort-bound animation cancellation, explicit DOMRect snapshots, active wrapper release/rebinding, semantic modal candidates, controller-authorized cancellation, and workflow/reduced-motion animation policy.
-- P1.2 DOM driver second review: focused RED regressions confirmed that focus activation could attach stale resources after synchronously replacing a tour; async target-event callbacks could command a replacement step; detached popovers retained the focus guard; denied commands still consumed shortcuts and did not disable scoped controls; and modal focus did not consistently cover native candidates or CSS-hidden ancestors. The GREEN implementation rechecks the driver generation after focus activation, binds event callbacks to that generation, deactivates/rebinds the focus guard on popover registration changes, injects readonly controller capability queries with capability-change observation, and shares focusability semantics between modal Tab looping and `FocusGuard`.
-- P1.2 DOM driver focus-order correction: the controller’s `transitioning` capability publication disabled inherited controls before `FocusGuard` selected the incoming step’s directional trigger, so forward/backward navigation could focus the popover fallback. The driver now defers controller-bound autofocus until its active capability notification, without enabling commands during the transition.
-- P1.2 DOM driver focus-restoration reentrancy: restoring focus during `show()` or `clear()` can synchronously start a newer show. Both operations now verify their generation/signal immediately after `FocusGuard.deactivate()` and before mutating active state, current step/direction, or starting disappearance.
-- P1.3A root bridge RED: the new focused bridge suite initially failed 9/9 because the factory returned a no-op-driver controller, had no private bridge, and accepted runs without a root. The public-facade enumerable-key regression then failed as expected while private controller fields were still visible.
-- P1.3A review follow-up: RED regressions reproduced a reentrant second `connectRoot()` before its first attribute write, leaked root/prefix claims after a second-attribute failure, an active/rootless controller after release, command loss after remount, root-as-child acceptance, and a mutable `tour.state` facade. GREEN introduces a pending lease before DOM-visible claims, identity-owned best-effort rollback, controller token invalidation before DOM/focus cleanup, and an `idle` publication only after the old lease is detached.
-- P1.3A root bridge correction: the initial pending lease also satisfied `assertConnected()` and published `idle` while rolling back. RED proved an attribute callback could start a run that later resolved after a failed claim, and an `idle` listener could remount before that claim threw. Pending reservation and live binding are now separate: only a committed live binding authorizes runs or lifecycle publication; pending rollback is cleanup-only, including terminal disposal during claim.
-- P1 adapter interaction follow-up: trigger commands now defer past event propagation and revalidate the native event, active driver generation/current step, command capability, consumer-disabled marker, and disposal state before navigating. This lets React's delegated consumer handlers veto a target-native driver listener and prevents stale commands after a clear or workflow replacement. React and Solid render their marker, native `disabled`, and `aria-disabled` from one coherent capability/consumer-disabled value; React custom child buttons contribute their own disabled state and retain their click handler. The root `test:browser` gate runs the React and Solid happy-DOM suites with Bun's browser export condition and is required after unit tests in CI and stable release validation.
-- P1 dynamic adapter triggers: the initial deferred driver listener was still attached only to controls present during `show()`, making Cancel/Back/conditionally mounted Next controls inert after adapters stopped issuing direct commands. The driver now attaches one delegated root-or-popover click listener per active step, finds the nearest recognized trigger only within its claimed scope, and revalidates the captured generation, step, current native event, capability, and consumer marker in its microtask. It synchronizes every current trigger, while React/Solid emit default shortcut metadata so newly mounted Back/Next controls are immediately accessible.
-- P1 nested and late trigger correction: delegated root ownership now filters controls by their nearest tour-root boundary, so an outer driver neither commands nor synchronizes an inner tour. Keyboard commands use controller/step capability only, leaving consumer-disabled markers as individual button-click permissions rather than DOM-order-dependent global permission. A step-scoped, cleanup-bound mutation observer synchronizes late owned controls with the active custom/default shortcut metadata and ignores stale generations and nested roots.
-- P1.3C Vue adapter RED/GREEN: the Vue package initially lacked `createGlowTour()` and cancellation exports, so the scoped public contract failed. GREEN replaces the singleton with injected instance context, private bridge leases, native named controls, SSR-safe omitted IDs/ARIA, and a Vue happy-DOM browser suite. The private playground now creates and passes one instance.
-- P1.3C Vue root timing RED/GREEN: the initial `flush: "post"` root lease watcher left a synchronously mounted app and descendant `onMounted` hook rootless until the next tick. GREEN uses a native ref callback to connect once during mount plus synchronous prop reconciliation; the active lease record releases only the matching live binding.
-- P1.3C Vue batched reconciliation RED/GREEN: the synchronous prop watcher connected an intermediate old-tour/new-prefix lease when a parent changed both props in one render. GREEN uses the default batched watcher; an exact fake-bridge log now proves one old release, one new-tour/new-prefix connection, and one final unmount release.
+- No repository implementation remains. This checkpoint is the authorized P3 head for the verified P0 → P1 → P2 → P3 push.
 
 ## Remaining
 
-- P2: commit the reviewed acceptance and documentation lots, run the complete branch gate, perform the final P2 review, and checkpoint the branch.
-- P3: dead-code cleanup, MIT license, package metadata/documentation, audit recommendation matrix, and final release rehearsal.
+- External: configure npm trusted publishing for the seven packages before the first stable GitHub Release.
 
 ## Verification log
 
 | Command | Result |
 | --- | --- |
+| P3 final `bun install --frozen-lockfile` / check / typecheck | Pass: Bun 1.3.12 checked 367 installs with no changes; Biome 99 files; no TypeScript diagnostics. |
+| P3 corrected final `bun test` | Pass: 181 tests, 0 failures across 21 files. |
+| P3 final `bun run test:browser` | Pass: 61/61 across React 13, Solid 9, Vue 11, Angular 11, Vanilla 17. |
+| P3 final build/pack | Pass: exactly 7 non-empty publishable distributions and 7 tarballs; playground excluded. |
+| P3 corrected final `bun run test:tarballs` | Pass with approved registry access: all 7 tarballs installed and exercised externally; README links and selected package/root changelog content are validated alongside metadata/runtime/CSS/APF. |
+| P3 final playground build | Pass as separate private validation; existing Angular 1.38 MB minified chunk warning remains. |
+| P3 final release dry-runs | Pass: preparation and publish dry-run print the exact seven-package order without publication. |
+| P3 final artifact/declaration scan | Pass: 7 tarballs; correct MIT/engines/access/sideEffects; no source/workspace/raw TS/legacy declarations; Core exposes runtime `createGlowTour` and type `ReadonlyTourState`. |
+| P3 final-review correction gate | Pass: release-contract tests 12/12, Biome 99 files, typecheck, browser 61/61, exactly 7 builds/tarballs, separate playground build, both non-publishing dry-runs, and `git diff --check`. |
+| Final Git chain verification | Pass: clean P3 worktree before push; P1 descends from P0, P2 from P1, and P3 from P2. |
+| Push attempt | Blocked before transfer by the protected execution layer pending explicit approval of the configured `origin`; no remote branch changed. |
+| Final push authorization | Approved explicitly by the user for the configured GitHub `origin`; push must remain non-forced and include the four named audit branches. |
 | P3 metadata/docs targeted gate | Pass: Biome 99 files, typecheck, 14 release/manifest tests with 169 assertions. |
 | P3 metadata initial build/pack | Build and pack created 7 artifacts, but external tarball smoke failed because Bun had erased Core/React/Vue/Solid implementations after reading source `sideEffects: false`. |
 | P3 metadata corrected build/pack | Pass: 7 non-empty distributions and 7 tarballs after keeping false side-effect defaults in the published-manifest generator rather than the Bun workspace manifests. |
@@ -304,7 +307,7 @@ Last updated: 2026-08-22
 - P1.3D quality coverage was added tests-first against an already-green implementation: `bun --conditions=browser test ./packages/angular/src/angular.browser.ts --test-name-pattern 'sibling root|dynamic trigger'` passed 2/2. The new cases bootstrap two sibling roots, assert their distinct root/popover IDs and delegated command isolation, dispatch bubbling synthetic clicks while consumer-disabled (including Back and Cancel), toggle disabled in both directions, and update `finishLabel` dynamically on the last step.
 - Mutation RED evidence: temporarily removing the Angular `finishLabel` backing-signal setter made `bun --conditions=browser test ./packages/angular/src/angular.browser.ts --test-name-pattern 'dynamic trigger'` fail 0/1: the last-step control rendered `Finish tour` rather than `Finish one`. The setter was restored before the GREEN rerun, which passed 2/2 with the Angular contract suite (3/3) and typecheck.
 - Quality final gates: `bun --conditions=browser test ./packages/angular/src/angular.browser.ts` passed 10/10; `bun install --frozen-lockfile`, `bun run check`, and `bun run typecheck` passed; `bun test` passed 164/164 across 21 files; `bun run test:browser` passed React 12/12, Solid 8/8, Vue 10/10, Angular 10/10; `bun run build`, `bun run pack`, and registry-backed `bun run test:tarballs` passed for 7 packages; playground build and both release dry-runs passed. The existing Angular playground chunk-size warning remains.
-- Next action: retain legacy Core export narrowing for a later cross-adapter migration after every public adapter has adopted the instance-scoped facade.
+- At this checkpoint, legacy Core export narrowing remained deferred until every public adapter had adopted the instance-scoped facade; P1 later completed that migration.
 
 ## P1.3E Vanilla root property injection (2026-08-20)
 
@@ -366,7 +369,7 @@ Last updated: 2026-08-22
 - Distribution verification passed: build and pack produced exactly 7 public packages; the Core ESM namespace contains only `createGlowTour`; external tarball smoke passed for all 7 packages; the private playground built separately; release preparation and publication dry-runs preserved the required seven-package order without publishing. The existing Angular playground chunk-size warning remains non-blocking.
 - Independent review found that deleting the legacy workflow suite also removed two presentation-default assertions. They were migrated to a focused `ActiveStep` test, which now validates both workflow inheritance and step-level overrides against the actual runtime owner.
 - Independent re-review approved the migrated `ActiveStep` coverage with no remaining finding.
-- Final P1 distribution gate passed again: build and pack produced exactly 7 public packages/tarballs, external tarball installation passed for all 7 packages, and the private playground built separately. Next exact action is to commit this cleanup with the journal.
+- Final P1 distribution gate passed again: build and pack produced exactly 7 public packages/tarballs, external tarball installation passed for all 7 packages, and the private playground built separately before the cleanup commit.
 - P1 completion: `bfd0ebe refactor(core): remove legacy runtime surface` records the final code cleanup. All P1 tasks are complete and independently approved; no P1 blocker remains.
 
 ## Decisions and deviations
@@ -409,9 +412,10 @@ Last updated: 2026-08-22
 - `packages/*/package.json`, declaration build configs, `packages/angular/ng-package.json`, and explicit public entrypoints.
 - `apps/playground/package.json`, `biome.json`, `.gitignore`, `bun.lock`, source-manifest contract tests, and the Styles CSS declaration.
 - `.changeset/config.json`, `.github/workflows/{ci,changesets,release}.yml`, `scripts/{prepare-release,release-contract.test}.ts`, and root release scripts/dependencies.
+- P3 final lot: `README.md`, `LICENSE`, `CHANGELOG.md`, `docs/{compatibility,release}.md`, package metadata, `scripts/{build-packages,test-tarballs,release-contract.test}.ts`, `AUDIT_RECOMMANDATIONS.md`, `todo.md`, and this journal.
 
 ## Recovery instructions
 
-1. Open `.worktrees/audit-p0-release` (the retained worktree path currently hosts `codex/audit-p2-contracts`).
-2. Confirm the current branch with `git status --short --branch`.
-3. Resume from the exact next action in `Current position`; the approved builder/wait lot is ready to commit, and P2 already descends from completed P1 commit `c33accc`.
+1. Open `.worktrees/audit-p0-release`; this retained worktree hosts `codex/audit-p3-polish`.
+2. Confirm the branch and the eight pending files with `git status --short --branch`.
+3. Verify that `origin` contains the four named branch heads. If any is absent, push only the missing verified branch without force; otherwise the only remaining action is external npm trusted-publishing configuration.

@@ -1,5 +1,13 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -53,6 +61,12 @@ function assertPackedArtifact(packageName: PackageName) {
   const tarball = tarballFor(packageName);
   const contents = run("tar", ["-tzf", tarball]);
   const manifest = readPackedManifest(tarball);
+  const packageId = packageName.replace("@glowhop/", "").replace("-tour", "");
+  const packageChangelog = join(root, "packages", packageId, "CHANGELOG.md");
+  const expectedChangelog = readFileSync(
+    existsSync(packageChangelog) ? packageChangelog : join(root, "CHANGELOG.md"),
+    "utf8",
+  );
 
   assert.equal(manifest.name, packageName);
   assert.equal(manifest.type, "module");
@@ -93,6 +107,11 @@ function assertPackedArtifact(packageName: PackageName) {
   assert.match(contents, /package\/README\.md$/m);
   assert.match(contents, /package\/LICENSE$/m);
   assert.match(contents, /package\/CHANGELOG\.md$/m);
+  assert.equal(
+    run("tar", ["-xOzf", tarball, "package/CHANGELOG.md"]),
+    expectedChangelog,
+    `${packageName} must publish its package changelog, falling back to the root bootstrap changelog`,
+  );
   if (packageName === "@glowhop/styles-tour") {
     assert.match(contents, /package\/default\.css$/m);
     assert.match(contents, /package\/default\.css\.d\.ts$/m);

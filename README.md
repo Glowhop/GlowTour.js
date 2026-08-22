@@ -62,8 +62,8 @@ export async function startOnboarding() {
 
 The controller provides `run`, `advance`, `previous`, `goToStep`, `cancel`,
 `updateCurrentStep`, `dispose`, and readonly `state.get()` / `state.subscribe()`. Builder waits
-default to a 3000 ms timeout and a 50 ms interval. See [project.md](project.md) for the current
-contract.
+default to a 3000 ms timeout and a 50 ms interval. See the
+[current contract](https://github.com/Glowhop/glow-tour/blob/main/project.md) for details.
 
 ## Compatibility
 
@@ -75,7 +75,8 @@ contract.
 | Solid | Solid 1.9.x (`^1.9.14`) |
 | Vanilla | Modern browsers with custom elements and DOM APIs |
 
-See [docs/compatibility.md](docs/compatibility.md) for adapter notes.
+See the [compatibility guide](https://github.com/Glowhop/glow-tour/blob/main/docs/compatibility.md)
+for adapter notes.
 
 ## Development
 
@@ -94,5 +95,6 @@ The playground is validated separately with `bun run --cwd apps/playground build
 
 Changesets keeps all seven public packages in one fixed version group. A stable GitHub Release is
 the only publication trigger. The workflow uses npm trusted publishing/OIDC and publishes in the
-order documented in [docs/release.md](docs/release.md). Local release commands are dry-runs and
-must not publish to npm.
+order documented in the
+[release guide](https://github.com/Glowhop/glow-tour/blob/main/docs/release.md). Local release
+commands are dry-runs and must not publish to npm.

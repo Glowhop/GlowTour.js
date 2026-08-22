@@ -33,3 +33,6 @@ packages already present in the registry.
 Do not run a real `npm publish` locally. Use the repository's release preparation and publish
 dry-run commands when inspecting the process.
 
+If a published version is defective, deprecate that exact version in npm with a concise reason,
+prepare a corrective Changeset, and publish a new patch release through the same stable GitHub
+Release workflow. Never overwrite or reuse an existing npm version.

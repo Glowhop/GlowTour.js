@@ -102,11 +102,20 @@ test("source manifests contain complete public npm metadata and preserve require
   }
 });
 
-test("package builds copy the shared release documents into every distribution", () => {
+test("package builds copy shared documents and prefer package changelogs", () => {
   const buildScript = read("scripts/build-packages.ts");
   expect(buildScript).toContain('"README.md"');
   expect(buildScript).toContain('"LICENSE"');
-  expect(buildScript).toContain('"CHANGELOG.md"');
+  expect(buildScript).toContain('join(packageDirectory, "CHANGELOG.md")');
+  expect(buildScript).toContain('join(root, "CHANGELOG.md")');
+});
+
+test("the published README links only to packaged files or absolute repository URLs", () => {
+  const readme = read("README.md");
+  const relativeLinks = [...readme.matchAll(/\[[^\]]+\]\((?!https?:\/\/|#)([^)]+)\)/g)].map(
+    (match) => match[1],
+  );
+  expect(relativeLinks).toEqual([]);
 });
 
 test("the private playground stays outside all package build, pack, release, and tarball sets", () => {

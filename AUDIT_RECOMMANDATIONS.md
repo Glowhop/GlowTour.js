@@ -492,7 +492,10 @@ branches empilées. Les tests P2 couvrent la suite d'acceptation commune et les 
 | P2.7–P2.10 | `codex/audit-p1-runtime` | Roots et instances injectés par adaptateur, parité des contrôles, labels dynamiques et suppression de `cancelLabel`. |
 | P2.11–P2.12 | `codex/audit-p2-contracts` | `project.md` décrit le contrat courant et `todo.md` ne conserve que le travail restant. |
 | P2 — Tests manquants | `codex/audit-p2-contracts` | Suite d'acceptation commune montée dans React 19, Vue, Angular, Solid et Vanilla; smoke tests des tarballs. |
-| P3.1–P3.5 | `codex/audit-p3-polish` | Nettoyage final du code, types, factories, métadonnées, licence, documentation et `sideEffects`. |
+| P3.1 | `codex/audit-p2-contracts` | Les alias du builder ont été supprimés lors de la finalisation de son contrat canonique. |
+| P3.2–P3.3 | `codex/audit-p3-polish` | Le module d'animation/géométrie mort et les anciens types Highlight ont été supprimés. |
+| P3.4 | `codex/audit-p1-runtime` | Les adaptateurs délèguent à la factory Core tout en conservant leur spécialisation de contenu; aucun singleton public ne subsiste. |
+| P3.5 | `codex/audit-p3-polish` | Licence, documentation, métadonnées npm et `sideEffects` propres à chaque package ont été ajoutés. |
 
 ## Points positifs à préserver
 
