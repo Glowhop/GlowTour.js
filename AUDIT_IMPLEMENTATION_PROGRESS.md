@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p3-polish`
 - Parent branch: `codex/audit-p2-contracts` at `8ae482c`
-- Last completed milestone: P3 branch start committed as `023ce32` directly from P2 checkpoint `8ae482c`.
-- Current task: review and commit the P3 dead-code/public-type cleanup.
-- Next action: resolve the independent cleanup review, commit deletion of the unused animation module and obsolete public types with this journal, then implement release metadata and documentation.
+- Last completed milestone: P3 obsolete animation/highlight cleanup committed as `b092647` after independent approval.
+- Current task: implement npm metadata/artifact documentation and the public documentation/audit matrix in non-overlapping scopes.
+- Next action: add tests-first manifest/build/tarball metadata rules; add README, MIT license, changelog, compatibility and release docs plus the audit resolution matrix; review both scopes before separate commits.
 
 ## Completed
 
@@ -40,6 +40,10 @@ Last updated: 2026-08-22
 - P3 inventory confirmed `packages/core/src/utils/animations.ts` has no imports and duplicates active overlay geometry; `HighlightOptions`, `HighlightStepOverrides`, `WorkflowHighlightOptions`, `GlowTourElementName`, and `ViewportDimensions` have no consumers. The five adapter `createGlowTour()` wrappers remain because they provide the required framework-specialized factories and no singleton.
 - P3 cleanup RED/GREEN: a release-contract test first failed while the dead module/types existed, then passed after their removal. Biome checked 99 files, typecheck passed, and all 135 Core tests passed.
 - Independent P3 cleanup review approved the deletion with no finding. Active Overlay/Popover/Pointer geometry and all five specialized adapter factories remain intact; generated `dist` will be refreshed by the final P3 gate.
+- Commit `b092647` (`refactor(core): remove obsolete highlight surface`) contains the approved dead-code/type removal and its regression contract.
+- P3 documentation now adds a root README, MIT license, factual unreleased changelog, framework compatibility matrix, stable GitHub Release/OIDC process, and a branch-resolution matrix covering every audit recommendation. Documentation review corrected semver bounds and replaced an incomplete snippet with a mounted React example, then approved the lot with no remaining finding.
+- P3 npm metadata adds descriptions, MIT, homepage/bugs, keywords, Node engine, publish files/access, and package-specific side-effect policy to all seven outputs. Shared README/LICENSE/CHANGELOG files are copied into every `dist` and asserted inside each tarball.
+- P3 metadata validation exposed a Bun workspace-build interaction: source `sideEffects: false` caused Bun to erase reexported implementations while leaving named exports. The failing external tarball runtime import was the RED. Source manifests now declare only required positive effects (Styles CSS and Vanilla registration); published manifests default the other five packages to `false`. Rebuilt bundles are non-empty and the 7-package external smoke passes.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
@@ -113,6 +117,10 @@ Last updated: 2026-08-22
 
 | Command | Result |
 | --- | --- |
+| P3 metadata/docs targeted gate | Pass: Biome 99 files, typecheck, 14 release/manifest tests with 169 assertions. |
+| P3 metadata initial build/pack | Build and pack created 7 artifacts, but external tarball smoke failed because Bun had erased Core/React/Vue/Solid implementations after reading source `sideEffects: false`. |
+| P3 metadata corrected build/pack | Pass: 7 non-empty distributions and 7 tarballs after keeping false side-effect defaults in the published-manifest generator rather than the Bun workspace manifests. |
+| P3 metadata corrected `bun run test:tarballs` | Pass with approved registry access: all 7 tarballs retain metadata/docs, exclude dev fields/sources/workspace refs, install externally, import at runtime, bundle CSS, and compile Angular APF. |
 | P3 cleanup RED | Red as expected: the Core public-surface test found the unused `packages/core/src/utils/animations.ts`. |
 | P3 cleanup focused GREEN | Pass: cleanup contract 1/1, Biome 99 files, typecheck, and Core 135/135 after deleting the dead animation module and five obsolete public types. |
 | P2 final `bun run build` initial attempt | Failed: adapter browser suites pulled `scripts/adapter-acceptance.ts` outside declaration `rootDir`; no package artifact was accepted from this run. |

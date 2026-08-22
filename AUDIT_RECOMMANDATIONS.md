@@ -479,6 +479,21 @@ Ajouter avant publication :
 
 Le package Vanilla a un effet de bord volontaire lors de l'enregistrement automatique des custom elements. Il ne faut donc pas appliquer `sideEffects: false` indistinctement à tous les packages.
 
+## Matrice finale de résolution
+
+La branche indiquée est celle qui porte la correction de la recommandation, selon la chaîne de
+branches empilées. Les tests P2 couvrent la suite d'acceptation commune et les contrats d'installation.
+
+| Recommandations | Branche | Preuve concise |
+| --- | --- | --- |
+| P0.1, P0.2, P0.5 | `codex/audit-p0-release` | Distributions ESM/APF, manifests publiés, CI/release OIDC, peer dependencies et smoke tarballs. |
+| P1.1–P1.11 | `codex/audit-p1-runtime` | Controller/runtime séparés, transitions annulables, DOM driver, focus/clavier, IDs et cleanup isolés. |
+| P2.1–P2.6 | `codex/audit-p2-contracts` | Statuts et capacités canoniques, `createGlowTour`, builder public, attentes bornées et exports explicites. |
+| P2.7–P2.10 | `codex/audit-p1-runtime` | Roots et instances injectés par adaptateur, parité des contrôles, labels dynamiques et suppression de `cancelLabel`. |
+| P2.11–P2.12 | `codex/audit-p2-contracts` | `project.md` décrit le contrat courant et `todo.md` ne conserve que le travail restant. |
+| P2 — Tests manquants | `codex/audit-p2-contracts` | Suite d'acceptation commune montée dans React 19, Vue, Angular, Solid et Vanilla; smoke tests des tarballs. |
+| P3.1–P3.5 | `codex/audit-p3-polish` | Nettoyage final du code, types, factories, métadonnées, licence, documentation et `sideEffects`. |
+
 ## Points positifs à préserver
 
 - Le moteur DOM partagé évite de réimplémenter le comportement dans chaque framework.
