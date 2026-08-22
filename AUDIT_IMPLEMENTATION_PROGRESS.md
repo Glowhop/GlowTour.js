@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p2-contracts`
 - Parent branch: `codex/audit-p1-runtime` at `c33accc`
-- Last completed milestone: P2 named readonly state contract committed as `93aacb5` after final independent review approval.
-- Current task: commit the final P2 declaration-build boundary correction and completed gate evidence.
-- Next action: commit the adapter build-config exclusions and regression test with this journal, re-check the branch tip, then create the P2 completion checkpoint before branching P3 from it.
+- Last completed milestone: P2 declaration-build boundary and complete branch gate committed as `71d9788`.
+- Current task: checkpoint P2 completion before changing branches.
+- Next action: commit this P2 completion checkpoint, create `codex/audit-p3-polish` directly from it, then update the journal on P3 before any polish implementation.
 
 ## Completed
 
@@ -35,6 +35,8 @@ Last updated: 2026-08-22
 - Commit `93aacb5` (`fix(core): export readonly tour state contract`) contains the reviewed named state type, public export, type-level regression, legacy type cleanup, and its journal checkpoint.
 - The final P2 build initially failed because the new `*.browser.ts` suites imported the shared acceptance helper outside each adapter declaration `rootDir`. A release-contract RED reproduced the missing exclusion; React, Vue, Solid, and Vanilla declaration builds now exclude `src/**/*.browser.ts`, keeping all acceptance sources out of published artifacts.
 - The complete corrected P2 gate passed: frozen install, Biome, typecheck, 176 unit tests, 61 browser tests, exactly 7 builds and tarballs, registry-backed external tarball installation, separate private playground build, release preparation/publish dry-runs, and targeted manifest/declaration scans. No npm publication occurred.
+- Commit `71d9788` (`fix(build): exclude browser acceptance sources`) records the four adapter declaration-build exclusions, their release-contract regression, and the completed P2 gate evidence.
+- P2 is complete and independently approved. Its implementation commits are `81f05e7`, `a9de88c`, `9760ca2`, `93aacb5`, and `71d9788`, with journal checkpoints between logical lots.
 
 - Added the instance-first `createGlowTour<T>()` API, `TourController`, readonly/plain workflow definitions, isolated `ActiveStep` runtime data, and the internal no-op `TourViewDriver` boundary.
 - Added operation tokens and abort signals for stale-run invalidation, transition exclusion, cancellation/disposal, abortable target waiting, awaited lifecycle/transition hooks, action execution, normalized terminal failures, coherent readonly state snapshots, and terminal idempotent disposal.
