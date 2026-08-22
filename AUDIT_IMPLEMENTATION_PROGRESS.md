@@ -6,9 +6,9 @@ Last updated: 2026-08-22
 
 - Branch: `codex/audit-p2-contracts`
 - Parent branch: `codex/audit-p1-runtime` at `c33accc`
-- Last completed milestone: P1 runtime completed and verified; P2 was created directly from its journaled tip.
-- Current task: commit the independently approved P2 builder/wait contract migration.
-- Next action: add the common adapter acceptance contract for React, Vue, Angular, Solid, and Vanilla, then rewrite `project.md` and clean `todo.md`.
+- Last completed milestone: P2 builder/wait and readonly callback contracts committed as `81f05e7` after independent approval and full artifact smoke.
+- Current task: design the common adapter acceptance harness around the existing real framework mounts.
+- Next action: add one shared acceptance contract used by React, Vue, Angular, Solid, and Vanilla for lifecycle, isolation, IDs, modality, dynamic props, and teardown; keep the playground private.
 
 ## Completed
 
