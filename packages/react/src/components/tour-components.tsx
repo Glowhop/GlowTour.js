@@ -51,10 +51,12 @@ function useBoundElement<T extends Element>(
   const { binding } = useTourContext();
   const [element, setElement] = React.useState<T | null>(null);
 
+  const binder = React.useEffectEvent(bind);
+
   React.useEffect(() => {
     if (!binding || !element) return;
-    return bind(binding, element);
-  }, [bind, binding, element]);
+    return binder(binding, element);
+  }, [binding, element]);
 
   return setElement;
 }
