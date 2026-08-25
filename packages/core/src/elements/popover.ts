@@ -196,7 +196,6 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       void this.moveToTarget(nextPosition, step, false);
       return;
     }
-
   }
 
   async _appear(position: DOMRect, step: WorkflowStep<T>) {

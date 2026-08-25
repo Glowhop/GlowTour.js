@@ -1,6 +1,6 @@
+import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { describe, test } from "bun:test";
 
 const examples = [
   new URL("../react/main.tsx", import.meta.url),

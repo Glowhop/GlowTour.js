@@ -1,9 +1,18 @@
 {
   "name": "@glowhop/vanilla-tour",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Glowhop/glow-tour.git",
+    "directory": "packages/vanilla"
+  },
   "type": "module",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "dependencies": {
     "@glowhop/core-tour": "workspace:*"

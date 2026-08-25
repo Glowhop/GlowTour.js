@@ -317,13 +317,13 @@ export class TourStore<T> {
     }
   }
 
-  alterCurrentStep(callback: (props: DynamicStepProps<T>) => DynamicStepProps<T>){
+  alterCurrentStep(callback: (props: DynamicStepProps<T>) => DynamicStepProps<T>) {
     const step = this._getCurrentWorkflowStep();
     if (!step) {
       console.warn("No current step found for altering props");
       return;
     }
-    step.props.set((p) =>callback(p));
+    step.props.set((p) => callback(p));
   }
 
   destroy() {

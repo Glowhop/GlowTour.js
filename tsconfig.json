@@ -10,8 +10,17 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
     "experimentalDecorators": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@glowhop/angular-tour": ["packages/angular/src/public-api.ts"],
+      "@glowhop/core-tour": ["packages/core/src/index.ts"],
+      "@glowhop/react-tour": ["packages/react/src/index.ts"],
+      "@glowhop/solid-tour": ["packages/solid/src/index.ts"],
+      "@glowhop/vanilla-tour": ["packages/vanilla/src/index.ts"],
+      "@glowhop/vue-tour": ["packages/vue/src/index.ts"]
+    }
   },
   "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts"],
   "exclude": ["services"]

@@ -1,15 +1,29 @@
 {
   "name": "@glowhop/react-tour",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Glowhop/glow-tour.git",
+    "directory": "packages/react"
+  },
   "type": "module",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "dependencies": {
     "@glowhop/core-tour": "workspace:*",
-    "@types/react": "^18.3.18",
     "@glowhop/react-observables": "^1.1.1",
-    "@glowhop/observables": "^1.3.3",
-    "react": "^18.3.1"
+    "@glowhop/observables": "^1.3.3"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0"
   }
 }

@@ -9,7 +9,7 @@ const packageManifest = JSON.parse(
 
 describe("default tour theme", () => {
   test("publishes the stylesheet as the package side effect", () => {
-    assert.deepEqual(packageManifest.files, ["default.css"]);
+    assert.deepEqual(packageManifest.files, ["dist/**/*"]);
     assert.deepEqual(packageManifest.sideEffects, ["*.css"]);
   });
 

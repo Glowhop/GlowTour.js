@@ -1,14 +1,22 @@
 {
   "name": "@glowhop/styles-tour",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Glowhop/glow-tour.git",
+    "directory": "packages/styles"
+  },
   "type": "module",
   "files": [
-    "default.css"
+    "dist/**/*"
   ],
   "sideEffects": [
     "*.css"
   ],
   "exports": {
-    "./default.css": "./default.css"
+    "./default.css": {
+      "types": "./dist/default.css.d.ts",
+      "default": "./dist/default.css"
+    }
   }
 }

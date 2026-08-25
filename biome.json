@@ -7,7 +7,19 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/dist", "!**/coverage", "!.agents","!.codex", "!dist", "!coverage"]
+    "includes": [
+      "apps/**",
+      "packages/**",
+      "biome.json",
+      "package.json",
+      "tsconfig.json",
+      "!!.worktrees",
+      "!!apps/**/dist",
+      "!!apps/**/coverage",
+      "!!.artifacts",
+      "!!packages/**/dist",
+      "!!packages/**/coverage"
+    ]
   },
   "formatter": {
     "enabled": true,

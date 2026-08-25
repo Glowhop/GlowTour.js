@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, test } from "bun:test";
+import assert from "node:assert/strict";
 import { WorkflowStep } from "../engine/workflow-step";
 import type { TryOrderOptions } from "../types";
 import PopoverElement from "./popover";

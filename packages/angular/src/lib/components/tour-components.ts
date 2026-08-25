@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
+  Directive,
   type ElementRef,
   Input,
   signal,
@@ -33,6 +34,7 @@ export const GLOW_TOUR_COMPONENT_TEMPLATES = {
     '@if (!isHidden()) { <button type="button" data-action="next" data-glow-tour-next-trigger [attr.aria-label]="ariaLabel || label()" [attr.aria-controls]="ariaControls" [disabled]="isDisabled()" (click)="next($event)"><ng-content>{{ label() }}</ng-content></button> }',
 } as const;
 
+@Directive()
 abstract class GlowTourReactiveComponent {
   readonly snapshot = signal<WorkflowState<AngularTourContent>>(glowTour.state.get());
   readonly stepProps = signal<DynamicStepProps<AngularTourContent>>({ content: "", title: "" });
