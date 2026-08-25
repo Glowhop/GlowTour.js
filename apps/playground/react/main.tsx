@@ -18,6 +18,9 @@ const workflow = tour
     indicator: {
       animated: false,
     },
+    onFinish() {
+      alert("Tour finished");
+    },
   })
   .step({
     target: "#react-tour-id-1",
@@ -46,7 +49,7 @@ const workflow = tour
       allowInteraction: true,
     },
   })
-  .onEvent("click", (event) => {
+  .onTargetEvent("click", (event) => {
     console.log("Click event on step 3", event);
     void tour.advance();
   })

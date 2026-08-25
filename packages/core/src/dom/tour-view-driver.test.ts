@@ -114,6 +114,7 @@ class MockElement extends MockNode {
     return match ? this : (this.parent?.closest(selector) ?? null);
   }
   focus() {
+    if (this.closest("[hidden], [inert], [aria-hidden='true']")) return;
     document.activeElement = this;
     document.dispatchEvent(new MockEvent("focusin", { target: this }));
   }
@@ -134,17 +135,21 @@ class MockElement extends MockNode {
     return this.attributes.has(name);
   }
   matches(selector: string) {
-    return selector.includes("next-trigger")
-      ? this.hasAttribute("data-glow-tour-next-trigger")
-      : selector.includes("back-trigger")
-        ? this.hasAttribute("data-glow-tour-back-trigger")
-        : selector.includes("cancel-trigger")
-          ? this.hasAttribute("data-glow-tour-cancel-trigger")
-          : selector.includes(this.tagName)
-            ? true
-            : selector === "path"
-              ? this.tagName === "path"
-              : false;
+    const triggerAttributes = [
+      "data-glow-tour-back-trigger",
+      "data-glow-tour-cancel-trigger",
+      "data-glow-tour-next-trigger",
+    ];
+    if (triggerAttributes.some((attribute) => selector.includes(attribute))) {
+      return triggerAttributes.some(
+        (attribute) => selector.includes(attribute) && this.hasAttribute(attribute),
+      );
+    }
+    return selector.includes(this.tagName)
+      ? true
+      : selector === "path"
+        ? this.tagName === "path"
+        : false;
   }
   querySelector<T extends MockElement>(selector: string): T | null {
     return this.querySelectorAll<T>().find((element: T) => element.matches(selector)) ?? null;
@@ -322,6 +327,9 @@ afterEach(() => {
 function flushFrame() {
   animationFrames.shift()?.(0);
 }
+async function flushMicrotasks() {
+  for (let index = 0; index < 5; index += 1) await Promise.resolve();
+}
 function resolveAnimations(start: number, end = createdAnimations.length) {
   for (const animation of createdAnimations.slice(start, end)) animation.resolve();
 }
@@ -335,14 +343,53 @@ function createCommands(): { commands: TourViewCommands; calls: string[] } {
       canCancel: () => true,
       canPrevious: () => true,
       cancel: async () => void calls.push("cancel"),
+      isAdvanceDisabled: () => false,
+      isCancelDisabled: () => false,
+      isPreviousDisabled: () => false,
       previous: async () => void calls.push("previous"),
+      reportError: async (error) =>
+        void calls.push(`error:${error instanceof Error ? error.message : String(error)}`),
+    },
+  };
+}
+function createToggleableCommands() {
+  const calls: string[] = [];
+  const listeners = new Set<(active: boolean) => void>();
+  let active = true;
+  let advanceDisabled = false;
+  return {
+    calls,
+    commands: {
+      advance: async () => void calls.push("advance"),
+      canAdvance: () => active,
+      canCancel: () => active,
+      canPrevious: () => active,
+      cancel: async () => void calls.push("cancel"),
+      isAdvanceDisabled: () => advanceDisabled,
+      isCancelDisabled: () => false,
+      isPreviousDisabled: () => false,
+      previous: async () => void calls.push("previous"),
+      reportError: async (error) =>
+        void calls.push(`error:${error instanceof Error ? error.message : String(error)}`),
+      subscribeCapabilities: (listener: (active: boolean) => void) => {
+        listener(active);
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    } satisfies TourViewCommands,
+    setActive(next: boolean) {
+      active = next;
+      for (const listener of listeners) listener(active);
+    },
+    setAdvanceDisabled(next: boolean) {
+      advanceDisabled = next;
+      for (const listener of listeners) listener(active);
     },
   };
 }
 function createStep(
   options: {
     allowInteraction?: boolean;
-    targetTracking?: "events" | "continuous";
     animated?: boolean;
     cancellable?: boolean;
     nextShortcuts?: readonly string[];
@@ -353,7 +400,6 @@ function createStep(
     cancellable: options.cancellable,
     behavior: {
       allowInteraction: options.allowInteraction,
-      targetTracking: options.targetTracking,
     },
   })
     .step({
@@ -405,31 +451,165 @@ function createTarget() {
 }
 
 describe("DomTourViewDriver", () => {
-  test("coalesces resize and capture scroll invalidations into one animation frame", async () => {
+  test("tracks geometry continuously with exactly one animation frame", async () => {
     const { driver } = installDriver(),
       step = createStep();
     step.target = createTarget() as unknown as HTMLElement;
     await driver.show(step, "advance", new AbortController().signal);
-    TestResizeObserver.instances[0]?.trigger();
-    window.dispatchEvent(new MockEvent("resize"));
-    window.dispatchEvent(new MockEvent("scroll"));
     assert.equal(animationFrames.length, 1);
     flushFrame();
+    assert.equal(animationFrames.length, 1);
+    flushFrame();
+    assert.equal(animationFrames.length, 1);
+    assert.equal(TestResizeObserver.instances.length, 0);
+  });
+  test("changes popover content after fade-out and before fade-in", async () => {
+    const { driver } = installDriver(),
+      target = createTarget(),
+      firstStep = createStep(),
+      secondStep = createStep();
+    firstStep.target = target as unknown as HTMLElement;
+    secondStep.target = target as unknown as HTMLElement;
+    await driver.show(firstStep, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    let contentChanged = false;
+
+    const showing = driver.show(secondStep, "advance", new AbortController().signal, async () => {
+      contentChanged = true;
+    });
+    await flushMicrotasks();
+    assert.equal(contentChanged, false);
+    assert.equal(createdAnimations.length, animationStart + 3);
+
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
+    assert.equal(contentChanged, true);
+    assert.equal(createdAnimations.length, animationStart + 4);
+
+    resolveAnimations(animationStart);
+    await showing;
+  });
+  for (const [key, command] of [
+    ["Enter", "advance"],
+    ["ArrowRight", "advance"],
+    ["ArrowLeft", "previous"],
+    ["Backspace", "previous"],
+    ["Escape", "cancel"],
+  ] as const) {
+    test(`keeps one ${key} command pressed during the popover fade-in`, async () => {
+      const commandState = createToggleableCommands();
+      const driver = new DomTourViewDriver<string>(commandState.commands);
+      const elements = createElements();
+      driver.registerRoot(elements.root as unknown as HTMLElement);
+      driver.registerPopover(elements.popover as unknown as HTMLElement);
+      driver.registerOverlay(elements.overlay as unknown as SVGSVGElement);
+      driver.registerPointer(elements.pointer as unknown as HTMLElement);
+      const target = createTarget();
+      const firstStep = createStep();
+      const secondStep = createStep();
+      firstStep.target = target as unknown as HTMLElement;
+      secondStep.target = target as unknown as HTMLElement;
+      await driver.show(firstStep, "advance", new AbortController().signal);
+
+      commandState.setActive(false);
+      animationMode = "controlled";
+      const animationStart = createdAnimations.length;
+      const showing = driver.show(secondStep, "advance", new AbortController().signal, () => {});
+      await flushMicrotasks();
+      createdAnimations[animationStart]?.resolve();
+      await flushMicrotasks();
+
+      const event = new MockKeyboardEvent("keydown", { key, target: elements.popover });
+      window.dispatchEvent(event);
+      assert.equal(event.defaultPrevented, true);
+      assert.deepEqual(commandState.calls, []);
+
+      resolveAnimations(animationStart);
+      await showing;
+      commandState.setActive(true);
+      await flushMicrotasks();
+      assert.deepEqual(commandState.calls, [command]);
+    });
+  }
+  test("blocks inactive commands without visually disabling controls", async () => {
+    const commandState = createToggleableCommands();
+    const driver = new DomTourViewDriver<string>(commandState.commands);
+    const elements = createElements();
+    driver.registerRoot(elements.root as unknown as HTMLElement);
+    driver.registerPopover(elements.popover as unknown as HTMLElement);
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    assert.equal(elements.next.disabled, false);
+    assert.equal(elements.next.getAttribute("aria-disabled"), "false");
+
+    commandState.setActive(false);
+    assert.equal(elements.next.disabled, false);
+    assert.equal(elements.next.getAttribute("aria-disabled"), "false");
+    elements.next.dispatchEvent(new MockEvent("click"));
+    await Promise.resolve();
+    assert.deepEqual(commandState.calls, []);
+  });
+  test("updates unmanaged control visuals when the next step commits", async () => {
+    const commandState = createToggleableCommands();
+    const driver = new DomTourViewDriver<string>(commandState.commands);
+    const elements = createElements();
+    driver.registerRoot(elements.root as unknown as HTMLElement);
+    driver.registerPopover(elements.popover as unknown as HTMLElement);
+    driver.registerOverlay(elements.overlay as unknown as SVGSVGElement);
+    driver.registerPointer(elements.pointer as unknown as HTMLElement);
+    const target = createTarget();
+    const firstStep = createStep();
+    const secondStep = createStep();
+    firstStep.target = target as unknown as HTMLElement;
+    secondStep.target = target as unknown as HTMLElement;
+    await driver.show(firstStep, "advance", new AbortController().signal);
+    assert.equal(elements.popover.hasAttribute("inert"), false);
+    commandState.setActive(false);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    const showing = driver.show(secondStep, "advance", new AbortController().signal, () => {
+      commandState.setAdvanceDisabled(true);
+    });
+    await flushMicrotasks();
+    assert.equal(elements.next.disabled, false);
+    assert.equal(elements.popover.hasAttribute("inert"), true);
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
+    assert.equal(elements.next.disabled, true);
+    assert.equal(elements.next.getAttribute("aria-disabled"), "true");
+
+    resolveAnimations(animationStart);
+    await showing;
   });
   test("does not write geometry when target and popover rectangles are unchanged", async () => {
     const { driver, elements } = installDriver(),
       step = createStep();
     step.target = createTarget() as unknown as HTMLElement;
     await driver.show(step, "advance", new AbortController().signal);
-    let writes = 0;
+    flushFrame();
+    const writes: string[] = [];
     const original = elements.popover.style.setProperty.bind(elements.popover.style);
     elements.popover.style.setProperty = (name, value) => {
-      writes += 1;
+      writes.push(`popover:${name}`);
       original(name, value);
     };
-    window.dispatchEvent(new MockEvent("resize"));
+    const overlayPath = elements.overlay.querySelector("path");
+    assert.ok(overlayPath);
+    const originalOverlay = overlayPath.style.setProperty.bind(overlayPath.style);
+    overlayPath.style.setProperty = (name, value) => {
+      writes.push(`overlay:${name}`);
+      originalOverlay(name, value);
+    };
+    const originalPointer = elements.pointer.style.setProperty.bind(elements.pointer.style);
+    elements.pointer.style.setProperty = (name, value) => {
+      writes.push(`pointer:${name}`);
+      originalPointer(name, value);
+    };
     flushFrame();
-    assert.equal(writes, 0);
+    assert.deepEqual(writes, []);
   });
   test("snapshots prototype-accessor rectangles without rewriting unchanged geometry", async () => {
     const { driver, elements } = installDriver(),
@@ -472,7 +652,27 @@ describe("DomTourViewDriver", () => {
     assert.equal(overlay.getAttribute("viewBox"), "0 0 1200 800");
     assert.equal(overlay.querySelector("path")?.style.getPropertyValue("d").includes("NaN"), false);
   });
-  test("updates popover geometry for a same-placement ten-pixel target move", async () => {
+  test("moves overlay and pointer but keeps the popover below its replacement threshold", async () => {
+    const { driver, elements } = installDriver(),
+      step = createStep({ allowInteraction: true }),
+      target = createTarget();
+    target.setRect({ height: 20, left: 500, top: 100, width: 20 });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const popoverBefore = elements.popover.style.transform,
+      overlayBefore = elements.overlay.querySelector("path")?.style.getPropertyValue("d"),
+      pointerBefore = elements.pointer.style.getPropertyValue("top");
+    target.setRect({ height: 20, left: 510, top: 110, width: 20 });
+    flushFrame();
+    assert.equal(elements.popover.style.transform, popoverBefore);
+    assert.equal(elements.popover.style.getPropertyValue("--glow-tour-arrow-offset"), "90px");
+    assert.notEqual(
+      elements.overlay.querySelector("path")?.style.getPropertyValue("d"),
+      overlayBefore,
+    );
+    assert.notEqual(elements.pointer.style.getPropertyValue("top"), pointerBefore);
+  });
+  test("uses a strict fifty-pixel popover replacement threshold", async () => {
     const { driver, elements } = installDriver(),
       step = createStep(),
       target = createTarget();
@@ -480,27 +680,158 @@ describe("DomTourViewDriver", () => {
     step.target = target as unknown as HTMLElement;
     await driver.show(step, "advance", new AbortController().signal);
     const before = elements.popover.style.transform;
-    target.setRect({ height: 20, left: 500, top: 110, width: 20 });
-    window.dispatchEvent(new MockEvent("scroll"));
+
+    target.setRect({ height: 20, left: 500, top: 150, width: 20 });
     flushFrame();
+    assert.equal(elements.popover.style.transform, before);
+
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    target.setRect({ height: 20, left: 500, top: 151, width: 20 });
+    flushFrame();
+    assert.equal(createdAnimations.length, animationStart + 1);
+    assert.equal(elements.popover.style.transform, before);
+
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
     assert.notEqual(elements.popover.style.transform, before);
+    assert.equal(createdAnimations.length, animationStart + 2);
+    resolveAnimations(animationStart + 1);
   });
-  test("tracks only event invalidations by default and schedules continuous frames on request", async () => {
-    const events = installDriver(),
-      eventsStep = createStep();
-    eventsStep.target = createTarget() as unknown as HTMLElement;
-    await events.driver.show(eventsStep, "advance", new AbortController().signal);
-    window.dispatchEvent(new MockEvent("resize"));
+  test("coalesces popover movement while a fade transition is active", async () => {
+    const { driver, elements } = installDriver(),
+      step = createStep(),
+      target = createTarget();
+    target.setRect({ height: 20, left: 500, top: 100, width: 20 });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    target.setRect({ height: 20, left: 500, top: 151, width: 20 });
     flushFrame();
-    assert.equal(animationFrames.length, 0);
-    await events.driver.clear(new AbortController().signal);
-    const continuous = installDriver(),
-      continuousStep = createStep({ targetTracking: "continuous" });
-    continuousStep.target = createTarget() as unknown as HTMLElement;
-    await continuous.driver.show(continuousStep, "advance", new AbortController().signal);
-    assert.equal(animationFrames.length, 1);
+    target.setRect({ height: 20, left: 500, top: 220, width: 20 });
     flushFrame();
-    assert.equal(animationFrames.length, 1);
+    assert.equal(createdAnimations.length, animationStart + 1);
+
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
+    assert.equal(elements.popover.style.transform, "translate(430px, 254px)");
+    assert.equal(createdAnimations.length, animationStart + 2);
+    resolveAnimations(animationStart + 1);
+  });
+  test("uses the latest target even when it returns below threshold during fade-out", async () => {
+    const { driver, elements } = installDriver(),
+      step = createStep(),
+      target = createTarget();
+    target.setRect({ height: 20, left: 500, top: 100, width: 20 });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    target.setRect({ height: 20, left: 500, top: 151, width: 20 });
+    flushFrame();
+    target.setRect({ height: 20, left: 500, top: 120, width: 20 });
+    flushFrame();
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
+
+    assert.equal(elements.popover.style.transform, "translate(430px, 154px)");
+    assert.equal(createdAnimations.length, animationStart + 2);
+    resolveAnimations(animationStart + 1);
+  });
+  test("clears a stale follow-up when the target returns during fade-in", async () => {
+    const { driver, elements } = installDriver(),
+      step = createStep(),
+      target = createTarget();
+    target.setRect({ height: 20, left: 500, top: 100, width: 20 });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    target.setRect({ height: 20, left: 500, top: 151, width: 20 });
+    flushFrame();
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
+    assert.equal(elements.popover.style.transform, "translate(430px, 185px)");
+
+    target.setRect({ height: 20, left: 500, top: 220, width: 20 });
+    flushFrame();
+    target.setRect({ height: 20, left: 500, top: 160, width: 20 });
+    flushFrame();
+    createdAnimations[animationStart + 1]?.resolve();
+    await flushMicrotasks();
+
+    assert.equal(createdAnimations.length, animationStart + 2);
+    assert.equal(elements.popover.style.transform, "translate(430px, 185px)");
+  });
+  test("cancels an active popover reposition without late geometry writes", async () => {
+    const { driver, elements } = installDriver(),
+      step = createStep(),
+      target = createTarget();
+    target.setRect({ height: 20, left: 500, top: 100, width: 20 });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    target.setRect({ height: 20, left: 500, top: 151, width: 20 });
+    flushFrame();
+    const reposition = createdAnimations[animationStart];
+    assert.ok(reposition);
+    driver.dispose();
+    assert.equal(reposition.cancelled, true);
+
+    reposition.resolve();
+    await flushMicrotasks();
+    assert.equal(elements.popover.style.transform, "");
+    assert.equal(elements.popover.getAttribute("aria-hidden"), "true");
+    assert.equal(createdAnimations.length, animationStart + 1);
+  });
+  test("updates viewport geometry and fades on a placement change below fifty pixels", async () => {
+    const { driver, elements } = installDriver(),
+      step = createStep(),
+      target = createTarget();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const before = elements.popover.style.transform;
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    window.innerWidth = 180;
+    window.innerHeight = 60;
+    flushFrame();
+    assert.equal(elements.overlay.getAttribute("viewBox"), "0 0 180 60");
+    assert.equal(createdAnimations.length, animationStart + 1);
+
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
+    assert.notEqual(elements.popover.style.transform, before);
+    assert.equal(elements.popover.getAttribute("data-glow-tour-placement"), "center");
+    resolveAnimations(animationStart + 1);
+  });
+  test("tracks fractional overlay and pointer movement above zero", async () => {
+    const { driver, elements } = installDriver(),
+      step = createStep({ allowInteraction: true }),
+      target = createTarget();
+    target.setRect({ height: 20, left: 500, top: 100, width: 20 });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const overlayBefore = elements.overlay.querySelector("path")?.style.getPropertyValue("d"),
+      pointerLeftBefore = elements.pointer.style.getPropertyValue("left"),
+      pointerTopBefore = elements.pointer.style.getPropertyValue("top");
+
+    target.setRect({ height: 20, left: 500.4, top: 100.4, width: 20 });
+    flushFrame();
+
+    assert.notEqual(
+      elements.overlay.querySelector("path")?.style.getPropertyValue("d"),
+      overlayBefore,
+    );
+    assert.notEqual(elements.pointer.style.getPropertyValue("left"), pointerLeftBefore);
+    assert.notEqual(elements.pointer.style.getPropertyValue("top"), pointerTopBefore);
   });
   test("disables every element animation and pointer loop for workflow animation policy or reduced motion", async () => {
     for (const mode of ["workflow", "reduced-motion"] as const) {
@@ -515,10 +846,10 @@ describe("DomTourViewDriver", () => {
   });
   test("clears step resources and terminal dispose remains idempotent", async () => {
     const { driver } = installDriver(),
-      step = createStep({ targetTracking: "continuous" });
+      step = createStep();
     step.target = createTarget() as unknown as HTMLElement;
     await driver.show(step, "advance", new AbortController().signal);
-    assert.equal(TestResizeObserver.instances.length, 1);
+    assert.equal(TestResizeObserver.instances.length, 0);
     await driver.clear(new AbortController().signal);
     await driver.clear(new AbortController().signal);
     driver.dispose();
@@ -764,6 +1095,8 @@ describe("DomTourViewDriver", () => {
     step.target = createTarget() as unknown as HTMLElement;
 
     await driver.show(step, "advance", new AbortController().signal);
+    nestedNext.focus();
+    assert.equal(document.activeElement, elements.next);
     TestMutationObserver.instances.at(-1)?.trigger();
     await Promise.resolve();
     elements.root.dispatchEvent(new MockEvent("click", { target: nestedNext }));
@@ -830,9 +1163,50 @@ describe("DomTourViewDriver", () => {
     await tour.advance();
     assert.equal(document.activeElement, elements.next);
     await tour.previous();
-    assert.equal(document.activeElement, elements.back);
+    assert.equal(document.activeElement, elements.next);
   });
-  test("loops modal Tab only through visible enabled controls", async () => {
+  test("never restores external focus while replacing an active step", async () => {
+    const launcher = document.createElement("button");
+    document.body.append(launcher);
+    launcher.focus();
+    const { driver, elements } = installDriver(),
+      firstStep = createStep(),
+      secondStep = createStep(),
+      external = document.createElement("button");
+    document.body.append(external);
+    firstStep.target = createTarget() as unknown as HTMLElement;
+    secondStep.target = createTarget() as unknown as HTMLElement;
+    await driver.show(firstStep, "advance", new AbortController().signal);
+    assert.equal(elements.root.getAttribute("tabindex"), "-1");
+    let launcherFocusCount = 0;
+    const trackLauncherFocus = (event: MockEvent) => {
+      if (event.target === launcher) launcherFocusCount += 1;
+    };
+    document.addEventListener("focusin", trackLauncherFocus);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    const showing = driver.show(secondStep, "advance", new AbortController().signal, () => {});
+    await flushMicrotasks();
+
+    assert.equal(launcherFocusCount, 0);
+    assert.notEqual(document.activeElement, launcher);
+
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
+    assert.equal(elements.popover.hasAttribute("inert"), true);
+    external.focus();
+    assert.notEqual(document.activeElement, external);
+
+    resolveAnimations(animationStart);
+    await showing;
+    assert.equal(document.activeElement, elements.next);
+    animationMode = "resolved";
+    await driver.clear(new AbortController().signal);
+    assert.equal(document.activeElement, launcher);
+    assert.equal(elements.root.getAttribute("tabindex"), null);
+  });
+  test("loops modal Tab only through visible enabled tour controls", async () => {
     const { driver, elements } = installDriver(),
       hidden = document.createElement("button"),
       disabled = document.createElement("button"),
@@ -849,6 +1223,7 @@ describe("DomTourViewDriver", () => {
     displayNone.display = "none";
     inertHost.setAttribute("inert", "");
     inertHost.append(inertButton);
+    visible.setAttribute("data-glow-tour-cancel-trigger", "");
     elements.popover.append(hidden, disabled, ariaDisabled, displayNone, inertHost, visible);
     step.target = createTarget() as unknown as HTMLElement;
     await driver.show(step, "advance", new AbortController().signal);
@@ -861,7 +1236,7 @@ describe("DomTourViewDriver", () => {
     );
     assert.equal(document.activeElement, visible);
   });
-  test("loops modal Tab through native candidates and excludes CSS-hidden ancestors", async () => {
+  test("excludes arbitrary popover controls from the modal Tab loop", async () => {
     const { driver, elements } = installDriver(),
       summary = document.createElement("summary"),
       audio = document.createElement("audio"),
@@ -876,13 +1251,39 @@ describe("DomTourViewDriver", () => {
     step.target = createTarget() as unknown as HTMLElement;
     await driver.show(step, "advance", new AbortController().signal);
     audio.focus();
-    window.dispatchEvent(new MockKeyboardEvent("keydown", { key: "Tab", target: audio }));
+    assert.equal(document.activeElement, elements.next);
+
+    const tab = new MockKeyboardEvent("keydown", { key: "Tab", target: elements.next });
+    window.dispatchEvent(tab);
+    assert.equal(tab.defaultPrevented, true);
     assert.equal(document.activeElement, elements.back);
-    elements.back.focus();
-    window.dispatchEvent(
-      new MockKeyboardEvent("keydown", { key: "Tab", shiftKey: true, target: elements.back }),
-    );
-    assert.equal(document.activeElement, audio);
+  });
+  test("allows only the current interactive target subtree outside the popover", async () => {
+    const { driver, elements } = installDriver(),
+      firstTarget = createTarget(),
+      firstChild = document.createElement("button"),
+      secondTarget = createTarget(),
+      secondChild = document.createElement("button"),
+      external = document.createElement("button"),
+      firstStep = createStep({ allowInteraction: true }),
+      secondStep = createStep({ allowInteraction: true });
+    firstTarget.append(firstChild);
+    secondTarget.append(secondChild);
+    document.body.append(external);
+    firstStep.target = firstTarget as unknown as HTMLElement;
+    secondStep.target = secondTarget as unknown as HTMLElement;
+
+    await driver.show(firstStep, "advance", new AbortController().signal);
+    firstChild.focus();
+    assert.equal(document.activeElement, firstChild);
+    external.focus();
+    assert.equal(document.activeElement, elements.next);
+
+    await driver.show(secondStep, "advance", new AbortController().signal);
+    firstChild.focus();
+    assert.equal(document.activeElement, elements.next);
+    secondChild.focus();
+    assert.equal(document.activeElement, secondChild);
   });
   test("scopes trigger lookup to the registered root and follows element replacement and detachment", async () => {
     const outside = document.createElement("button");
@@ -904,7 +1305,7 @@ describe("DomTourViewDriver", () => {
     driver.registerPopover(null);
     await driver.clear(new AbortController().signal);
   });
-  test("releases active wrappers and rebinds focus, observers, and controls after replacement", async () => {
+  test("releases active wrappers and rebinds focus and controls after replacement", async () => {
     const { calls, driver, elements } = installDriver(),
       target = createTarget(),
       replacementRoot = document.createElement("section"),
@@ -922,7 +1323,6 @@ describe("DomTourViewDriver", () => {
     document.body.append(replacementRoot);
     step.target = target as unknown as HTMLElement;
     await driver.show(step, "advance", new AbortController().signal);
-    const oldObserver = TestResizeObserver.instances[0];
     driver.registerRoot(replacementRoot as unknown as HTMLElement);
     driver.registerPopover(replacementPopover as unknown as HTMLElement);
     driver.registerOverlay(replacementOverlay as unknown as SVGSVGElement);
@@ -932,11 +1332,7 @@ describe("DomTourViewDriver", () => {
     replacementNext.dispatchEvent(new MockEvent("click"));
     await Promise.resolve();
     assert.deepEqual(calls, ["advance"]);
-    assert.equal(oldObserver?.disconnected, true);
-    assert.equal(
-      TestResizeObserver.instances.filter((observer) => !observer.disconnected).length,
-      1,
-    );
+    assert.equal(TestResizeObserver.instances.length, 0);
     assert.equal(elements.popover.getAttribute("aria-hidden"), "true");
     assert.equal(elements.popover.getAttribute("inert"), "true");
     assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
@@ -998,7 +1394,7 @@ describe("DomTourViewDriver", () => {
       targetB = createTarget(),
       workflowA = create<string>("focus-reentrant")
         .step({ content: "a", target: "#a", title: "a" })
-        .on("click", (_event, _props, next) => next())
+        .onTargetEvent("click", (_event, { advance }) => advance())
         .finish(),
       definitionA = workflowA.steps[0],
       stepB = createStep();
@@ -1022,57 +1418,7 @@ describe("DomTourViewDriver", () => {
     assert.deepEqual(calls, ["advance"]);
     assert.equal(targetA.listeners.get("click")?.size ?? 0, 0);
     assert.equal(window.listeners.get("keydown")?.size ?? 0, 1);
-    assert.equal(
-      TestResizeObserver.instances.filter((observer) => !observer.disconnected).length,
-      1,
-    );
-  });
-  test("abandons a show when focus restoration starts a replacement", async () => {
-    const initial = document.createElement("button"),
-      { calls, driver, elements } = installDriver(),
-      oldTarget = createTarget(),
-      targetA = createTarget(),
-      targetB = createTarget(),
-      oldStep = createStep(),
-      workflowA = create<string>("restored-show")
-        .step({ content: "a", disableNextButton: true, target: "#a", title: "a" })
-        .finish(),
-      definitionA = workflowA.steps[0],
-      stepB = createStep();
-    if (!definitionA) throw new Error("Expected a step definition");
-    const stepA = new ActiveStep(definitionA, workflowA.options);
-    document.body.append(initial);
-    initial.focus();
-    oldStep.target = oldTarget as unknown as HTMLElement;
-    stepA.target = targetA as unknown as HTMLElement;
-    stepB.target = targetB as unknown as HTMLElement;
-    await driver.show(oldStep, "advance", new AbortController().signal);
-
-    let replacement: Promise<void> | undefined;
-    const startReplacement = (event: MockEvent) => {
-      if (event.target === initial && !replacement) {
-        replacement = driver.show(stepB, "advance", new AbortController().signal);
-      }
-    };
-    document.addEventListener("focusin", startReplacement);
-    try {
-      await assert.rejects(() => driver.show(stepA, "advance", new AbortController().signal), {
-        name: "AbortError",
-      });
-      await replacement;
-    } finally {
-      document.removeEventListener("focusin", startReplacement);
-    }
-
-    window.dispatchEvent(
-      new MockKeyboardEvent("keydown", { key: "Enter", target: elements.popover }),
-    );
-    assert.deepEqual(calls, ["advance"]);
-    assert.equal(targetA.listeners.get("click")?.size ?? 0, 0);
-    assert.equal(
-      TestResizeObserver.instances.filter((observer) => !observer.disconnected).length,
-      1,
-    );
+    assert.equal(TestResizeObserver.instances.length, 0);
   });
   test("abandons a clear when focus restoration starts a replacement", async () => {
     const initial = document.createElement("button"),
@@ -1108,10 +1454,7 @@ describe("DomTourViewDriver", () => {
     );
     assert.deepEqual(calls, ["advance"]);
     assert.equal(elements.popover.getAttribute("aria-hidden"), null);
-    assert.equal(
-      TestResizeObserver.instances.filter((observer) => !observer.disconnected).length,
-      1,
-    );
+    assert.equal(TestResizeObserver.instances.length, 0);
   });
   test("binds async event commands to the active step generation", async () => {
     let release: (() => void) | undefined;
@@ -1123,9 +1466,9 @@ describe("DomTourViewDriver", () => {
       targetB = createTarget(),
       workflowA = create<string>("event-generation")
         .step({ content: "a", target: "#a", title: "a" })
-        .on("click", async (_event, _props, next) => {
+        .onTargetEvent("click", async (_event, { advance }) => {
           await handlerGate;
-          await next();
+          await advance();
         })
         .finish(),
       definitionA = workflowA.steps[0],
@@ -1142,6 +1485,150 @@ describe("DomTourViewDriver", () => {
     await Promise.resolve();
     await Promise.resolve();
     assert.deepEqual(calls, []);
+  });
+  test("provides an event context and reports rejected event handlers", async () => {
+    const controller = new AbortController();
+    const { calls, driver } = installDriver();
+    const target = createTarget();
+    const workflow = create<string>("event-context")
+      .step({ content: "a", target: "#a", title: "a" })
+      .onTargetEvent("click", (_event, context) => {
+        assert.equal(context.target, target);
+        assert.equal(context.signal, controller.signal);
+        assert.equal(context.props.get().title, "a");
+        throw new Error("event failed");
+      })
+      .finish();
+    const definition = workflow.steps[0];
+    if (!definition) throw new Error("Expected a step definition");
+    const step = new ActiveStep(definition, workflow.options);
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", controller.signal);
+    target.dispatchEvent(new MockEvent("click"));
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["error:event failed"]);
+  });
+  test("ignores an event handler rejection after the active step changes", async () => {
+    let release: (() => void) | undefined;
+    const handlerGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { calls, driver } = installDriver();
+    const targetA = createTarget();
+    const targetB = createTarget();
+    const workflowA = create<string>("stale-event-error")
+      .step({ content: "a", target: "#a", title: "a" })
+      .onTargetEvent("click", async () => {
+        await handlerGate;
+        throw new Error("stale event failed");
+      })
+      .finish();
+    const definitionA = workflowA.steps[0];
+    if (!definitionA) throw new Error("Expected a step definition");
+    const stepA = new ActiveStep(definitionA, workflowA.options);
+    const stepB = createStep();
+    stepA.target = targetA as unknown as HTMLElement;
+    stepB.target = targetB as unknown as HTMLElement;
+
+    await driver.show(stepA, "advance", new AbortController().signal);
+    targetA.dispatchEvent(new MockEvent("click"));
+    await Promise.resolve();
+    await driver.show(stepB, "advance", new AbortController().signal);
+    release?.();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, []);
+  });
+  test("ignores an event handler rejection after its operation is aborted", async () => {
+    let release: (() => void) | undefined;
+    const handlerGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const operation = new AbortController();
+    const { calls, driver } = installDriver();
+    const target = createTarget();
+    const workflow = create<string>("aborted-event-error")
+      .step({ content: "a", target: "#a", title: "a" })
+      .onTargetEvent("click", async () => {
+        await handlerGate;
+        throw new Error("aborted event failed");
+      })
+      .finish();
+    const definition = workflow.steps[0];
+    if (!definition) throw new Error("Expected a step definition");
+    const step = new ActiveStep(definition, workflow.options);
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", operation.signal);
+    target.dispatchEvent(new MockEvent("click"));
+    await Promise.resolve();
+    operation.abort();
+    release?.();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, []);
+  });
+  test("reports a live event handler rejection after UI resources remount", async () => {
+    let release: (() => void) | undefined;
+    const handlerGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const operation = new AbortController();
+    const { calls, driver } = installDriver();
+    const target = createTarget();
+    const workflow = create<string>("remounted-event-error")
+      .step({ content: "a", target: "#a", title: "a" })
+      .onTargetEvent("click", async () => {
+        await handlerGate;
+        throw new Error("live event failed");
+      })
+      .finish();
+    const definition = workflow.steps[0];
+    if (!definition) throw new Error("Expected a step definition");
+    const step = new ActiveStep(definition, workflow.options);
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", operation.signal);
+    target.dispatchEvent(new MockEvent("click"));
+    await Promise.resolve();
+    driver.registerRoot(document.createElement("section") as unknown as HTMLElement);
+    await flushMicrotasks();
+    release?.();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["error:live event failed"]);
+  });
+  test("keeps live event navigation available after UI resources remount", async () => {
+    let release: (() => void) | undefined;
+    const handlerGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const operation = new AbortController();
+    const { calls, driver } = installDriver();
+    const target = createTarget();
+    const workflow = create<string>("remounted-event-command")
+      .step({ content: "a", target: "#a", title: "a" })
+      .onTargetEvent("click", async (_event, { advance }) => {
+        await handlerGate;
+        await advance();
+      })
+      .finish();
+    const definition = workflow.steps[0];
+    if (!definition) throw new Error("Expected a step definition");
+    const step = new ActiveStep(definition, workflow.options);
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", operation.signal);
+    target.dispatchEvent(new MockEvent("click"));
+    await Promise.resolve();
+    driver.registerRoot(document.createElement("section") as unknown as HTMLElement);
+    await flushMicrotasks();
+    release?.();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["advance"]);
   });
   test("rejects a pre-aborted show before it scrolls or activates", async () => {
     const { driver } = installDriver(),
@@ -1206,10 +1693,7 @@ describe("DomTourViewDriver", () => {
     await assert.rejects(() => shownA, { name: "AbortError" });
     await assert.rejects(() => clearA, { name: "AbortError" });
     assert.equal(document.activeElement, elements.next);
-    assert.equal(
-      TestResizeObserver.instances.filter((observer) => !observer.disconnected).length,
-      1,
-    );
+    assert.equal(TestResizeObserver.instances.length, 0);
     assert.equal(elements.popover.style.values.get("opacity"), "1");
   });
   test("cancels pending show animations on disposal without late activation or DOM writes", async () => {

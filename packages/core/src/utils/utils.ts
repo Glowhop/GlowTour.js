@@ -30,16 +30,16 @@ export function roundedRectPath(
 ) {
   const padding = options.padding;
   const radius = options.radius;
-  const x = Math.round(rect.left - padding);
-  const y = Math.round(rect.top - padding);
-  const width = Math.round(rect.width + padding * 2);
-  const height = Math.round(rect.height + padding * 2);
-  const right = x + width;
-  const bottom = y + height;
-  const corner = Math.max(0, Math.min(radius, width / 2, height / 2));
+  const x = roundByDPR(rect.left - padding);
+  const y = roundByDPR(rect.top - padding);
+  const width = rect.width + padding * 2;
+  const height = rect.height + padding * 2;
+  const right = roundByDPR(rect.left + rect.width + padding);
+  const bottom = roundByDPR(rect.top + rect.height + padding);
+  const corner = roundByDPR(Math.max(0, Math.min(radius, width / 2, height / 2)));
 
   return [
-    `M0,0 H${Math.round(viewport.width)} V${Math.round(viewport.height)} H0 Z`,
+    `M0,0 H${roundByDPR(viewport.width)} V${roundByDPR(viewport.height)} H0 Z`,
     `M${x},${y + corner}`,
     `Q${x},${y} ${x + corner},${y}`,
     `H${right - corner}`,

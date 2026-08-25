@@ -17,6 +17,7 @@ export type {
   HighlightStepOverrides,
   IndicatorOptions,
   OverlayOptions,
+  PopoverArrowOptions,
   PopoverOptions,
   PrimitiveValue,
   ResolvedPlacement,
@@ -27,6 +28,8 @@ export type {
   StepActionResult,
   StepBehavior,
   StepConstructor,
+  StepContext,
+  StepEventContext,
   StepParameters,
   StepPropsStore,
   StepTransitionAction,
@@ -38,5 +41,6 @@ export type {
   TourStatus,
   TryOrderOptions,
   ViewportDimensions,
+  WaitUntilOptions,
   WorkflowHighlightOptions,
 } from "./types";

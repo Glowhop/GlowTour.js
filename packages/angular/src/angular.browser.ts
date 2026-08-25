@@ -105,6 +105,9 @@ describe("angular adapter browser behavior", () => {
     app.tick();
     assert.match(document.body.textContent ?? "", /First title/);
     assert.match(document.body.textContent ?? "", /First content/);
+    const firstBack = document.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(firstBack?.disabled, true);
+    assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
 
     tour.updateCurrentStep((props) => ({
       ...props,

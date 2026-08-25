@@ -84,6 +84,10 @@ class MockElement {
     return this.attributes.get(name) ?? null;
   }
 
+  hasAttribute(name: string) {
+    return this.attributes.has(name);
+  }
+
   getBoundingClientRect() {
     return {
       bottom: 20,
@@ -154,7 +158,6 @@ class MockDocument {
 
 const globals = [
   "HTMLElement",
-  "ResizeObserver",
   "cancelAnimationFrame",
   "document",
   "requestAnimationFrame",
@@ -164,27 +167,22 @@ const originalGlobals = new Map(
   globals.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
 );
 let document: MockDocument;
-let resizeObserverDisconnections = 0;
+let animationFrameCancellations = 0;
 
 beforeEach(() => {
   document = new MockDocument();
-  resizeObserverDisconnections = 0;
+  animationFrameCancellations = 0;
   const window = {
     addEventListener() {},
     innerHeight: 800,
     innerWidth: 1200,
     removeEventListener() {},
   };
-  class ResizeObserver {
-    disconnect() {
-      resizeObserverDisconnections += 1;
-    }
-    observe() {}
-  }
   const replacements = {
     HTMLElement: MockElement,
-    ResizeObserver,
-    cancelAnimationFrame() {},
+    cancelAnimationFrame() {
+      animationFrameCancellations += 1;
+    },
     document,
     requestAnimationFrame() {
       return 1;
@@ -423,7 +421,7 @@ describe("private root bridge", () => {
     binding.bindPopover(second);
     releaseFirst();
 
-    assert.equal((second as unknown as MockElement).style.values.get("opacity"), undefined);
+    assert.equal((second as unknown as MockElement).style.values.get("opacity"), "0");
   });
 
   test("rejects elements outside the claimed root", () => {
@@ -536,7 +534,7 @@ describe("private root bridge", () => {
 
     await tour.run(definition);
     binding.release();
-    assert.equal(resizeObserverDisconnections, 1);
+    assert.equal(animationFrameCancellations, 1);
     assert.equal(tour.state.get().status, "idle");
     await assert.rejects(() => tour.run(definition), /connected root/i);
     rootBridge(tour).connectRoot({ adapter: {}, root: root() });

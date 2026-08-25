@@ -64,7 +64,6 @@ export interface WorkflowHighlightOptions extends Partial<HighlightOptions> {
 
 export interface StepBehavior {
   allowInteraction?: boolean;
-  targetTracking?: "events" | "continuous";
   missingTargetStrategy?: "wait" | "skip" | "error";
   targetTimeout?: number;
 }
@@ -90,9 +89,18 @@ export interface OverlayOptions extends BaseOptions {
   radius?: number;
 }
 
+export interface PopoverArrowOptions {
+  disabled?: boolean;
+  color?: string;
+  size?: number;
+  borderWidth?: number;
+  borderRadius?: number;
+  edgePadding?: number;
+}
+
 export interface PopoverOptions extends BaseOptions {
   placementTryOrder?: readonly TryOrderOptions[];
-  disableArrow?: boolean;
+  arrow?: PopoverArrowOptions;
   disableAutoFocus?: boolean;
   hideProgressIndicator?: boolean;
   gap?: number;
@@ -159,28 +167,37 @@ export interface StartOptions {
 }
 
 export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
+export interface StepContext<T> {
+  readonly target: HTMLElement;
+  readonly props: StepPropsStore<T>;
+  readonly signal: AbortSignal;
+}
+
+export interface StepEventContext<T> extends StepContext<T> {
+  advance(): Promise<void>;
+  previous(): Promise<void>;
+  cancel(): Promise<void>;
+}
+
+export interface WaitUntilOptions {
+  /** @default 16 */
+  interval?: number;
+  /** @default 3000 */
+  timeout?: number;
+}
+
 // biome-ignore lint/suspicious/noConfusingVoidType: `void` preserves the optional action result contract.
 export type StepActionResult = boolean | void;
 
 export type StepAction<T> = (
-  element: HTMLElement | null,
-  stepProps: StepPropsStore<T>,
+  context: StepContext<T>,
 ) => Promise<StepActionResult> | StepActionResult;
-export type StepActionInstruction<T> = StepAction<T> | number | "back" | "next";
-export type StepTransitionAction<T> = (
-  element: HTMLElement | null,
-  stepProps: StepPropsStore<T>,
-) => void | Promise<void>;
+export type StepActionInstruction<T> = StepAction<T> | number | "advance" | "previous";
+export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   event: string;
-  callback: (
-    event: TEvent,
-    stepProps: StepPropsStore<TStepProps>,
-    next: () => Promise<void>,
-    back: () => Promise<void>,
-    cancel: () => Promise<void>,
-  ) => void | Promise<void>;
+  callback: (event: TEvent, context: StepEventContext<TStepProps>) => void | Promise<void>;
 }
 
 export type TourStatus =

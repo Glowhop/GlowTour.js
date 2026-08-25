@@ -328,7 +328,7 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
   return Show({
     get when() {
       const step = currentStep(snapshot());
-      return !snapshot().isFirstStep && !step?.hideBackButton;
+      return !step?.hideBackButton;
     },
     get children() {
       return Trigger(

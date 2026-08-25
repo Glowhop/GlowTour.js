@@ -51,6 +51,8 @@ beforeEach(() => {
     Node: window.Node,
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     window,
   });
 });
@@ -190,6 +192,9 @@ describe("solid adapter browser behavior", () => {
     }, container);
 
     await tour.run(workflow);
+    const firstBack = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(firstBack?.disabled, true);
+    assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     assert.equal(cancel?.disabled, false);
     cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));

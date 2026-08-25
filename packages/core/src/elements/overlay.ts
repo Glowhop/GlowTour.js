@@ -107,9 +107,15 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       console.warn("No overlay path element found");
       return;
     }
-    path.style.setProperty("d", `path("${pathValue}")`);
+    const pathStyle = `path("${pathValue}")`;
+    if (path.style.getPropertyValue("d") !== pathStyle) {
+      path.style.setProperty("d", pathStyle);
+    }
     const viewport = viewportDimensions();
-    this.element.setAttribute("viewBox", `0 0 ${viewport.width} ${viewport.height}`);
+    const viewBox = `0 0 ${viewport.width} ${viewport.height}`;
+    if (this.element.getAttribute("viewBox") !== viewBox) {
+      this.element.setAttribute("viewBox", viewBox);
+    }
   }
 
   async _appear(position: DOMRect, step: TourElementStep) {

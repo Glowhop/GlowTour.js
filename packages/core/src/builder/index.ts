@@ -9,27 +9,104 @@ import type {
   EventHandler,
   StartOptions,
   StepAction,
+  StepContext,
   StepParameters,
   StepTransitionAction,
+  WaitUntilOptions,
 } from "../types";
+
+const DEFAULT_WAIT_INTERVAL = 16;
+const DEFAULT_WAIT_TIMEOUT = 3000;
+const INACTIVE_STEP_ERROR = "StepBuilder is no longer active";
+const STEP_BUILDER_INTERNAL = Symbol("StepBuilder.internal");
 
 export type EventName = keyof HTMLElementEventMap;
 
 type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
+type WaitUntilPredicate<T> = (context: StepContext<T>) => Promise<boolean> | boolean;
+
+function abortError(): DOMException {
+  return new DOMException("The operation was aborted", "AbortError");
+}
+
+function assertTimingValue(name: string, value: number): void {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new TypeError(`${name} must be a finite non-negative number`);
+  }
+}
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw abortError();
+}
+
+function waitTimeoutError(timeout: number): Error {
+  return new Error(`waitUntil timed out after ${timeout}ms`);
+}
+
+function waitForDelay(delay: number, signal: AbortSignal): Promise<void> {
+  throwIfAborted(signal);
+  return new Promise((resolve, reject) => {
+    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      cleanup();
+      reject(abortError());
+    };
+    const timeoutId = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, delay);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function waitForPredicate(
+  predicate: () => Promise<boolean> | boolean,
+  remainingTime: number,
+  timeout: number,
+  signal: AbortSignal,
+): Promise<boolean> {
+  throwIfAborted(signal);
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      signal.removeEventListener("abort", onAbort);
+    };
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback();
+    };
+    const onAbort = () => settle(() => reject(abortError()));
+    const timeoutId = setTimeout(
+      () => settle(() => reject(waitTimeoutError(timeout))),
+      remainingTime,
+    );
+    signal.addEventListener("abort", onAbort, { once: true });
+    void Promise.resolve()
+      .then(predicate)
+      .then(
+        (result) => settle(() => resolve(result)),
+        (error) => settle(() => reject(error)),
+      );
+  });
+}
 
 export class Builder<T> {
   private readonly steps: WorkflowStepDraft<T>[] = [];
   private currentStep: StepBuilder<T> | null = null;
+  private definition: WorkflowDefinition<T> | null = null;
 
   constructor(
     public readonly name: string,
     private readonly options: StartOptions = {},
   ) {}
 
-  step(options: StepParameters<T>) {
-    if (this.currentStep) {
-      this.steps.push(this.currentStep.toDraft());
-    }
+  step(options: StepParameters<T>): StepBuilder<T> {
+    this.assertBuilding();
+    this.commitCurrentStep();
     this.currentStep = new StepBuilder(this, {
       target: options.target,
       props: {
@@ -58,165 +135,202 @@ export class Builder<T> {
     return this.currentStep;
   }
 
-  concat(builder: StepBuilder<T>) {
-    const definition = builder.builder.finish();
-    const drafts = definition.steps.map(cloneWorkflowStepDraft);
+  append(workflow: WorkflowDefinition<T>): StepBuilder<T> {
+    this.assertBuilding();
+    const drafts = workflow.steps.map(cloneWorkflowStepDraft);
     const lastStep = drafts.at(-1);
-    if (!lastStep) {
-      throw new Error("Cannot concat a builder without steps");
-    }
-    if (this.currentStep) {
-      this.steps.push(this.currentStep.toDraft());
-    }
+    if (!lastStep) throw new Error("Cannot append a workflow without steps");
+
+    this.commitCurrentStep();
     this.steps.push(...drafts.slice(0, -1));
     this.currentStep = new StepBuilder(this, lastStep);
     return this.currentStep;
   }
 
   finish(): WorkflowDefinition<T> {
-    const drafts = this.currentStep ? [...this.steps, this.currentStep.toDraft()] : this.steps;
-    return createWorkflowDefinition(this.name, this.options, drafts);
+    if (this.definition) return this.definition;
+    this.commitCurrentStep();
+    this.definition = createWorkflowDefinition(this.name, this.options, this.steps);
+    return this.definition;
+  }
+
+  private assertBuilding(): void {
+    if (this.definition) throw new Error("Builder is already finished");
+  }
+
+  private commitCurrentStep(): void {
+    if (!this.currentStep) return;
+    this.steps.push(this.currentStep[STEP_BUILDER_INTERNAL]());
+    this.currentStep = null;
   }
 }
 
 export class StepBuilder<T> {
+  private active = true;
+
   constructor(
-    public readonly builder: Builder<T>,
+    private readonly owner: Builder<T>,
     private readonly draft: WorkflowStepDraft<T>,
   ) {}
 
-  step(options: StepParameters<T>) {
-    return this.builder.step(options);
+  step(options: StepParameters<T>): StepBuilder<T> {
+    this.assertActive();
+    return this.owner.step(options);
   }
 
-  finish() {
-    return this.builder.finish();
+  append(workflow: WorkflowDefinition<T>): StepBuilder<T> {
+    this.assertActive();
+    return this.owner.append(workflow);
   }
 
-  concat(builder: StepBuilder<T>) {
-    return this.builder.concat(builder);
+  finish(): WorkflowDefinition<T> {
+    this.assertActive();
+    return this.owner.finish();
   }
 
-  clickTarget() {
-    this.draft.actions.push(async (nextTarget) => {
-      nextTarget?.click();
+  clickTarget(): this {
+    return this.action(({ target }) => {
+      target.click();
       return true;
     });
-    return this;
   }
 
-  focusTarget() {
-    this.draft.actions.push(async (nextTarget) => {
-      nextTarget?.focus();
+  focusTarget(): this {
+    return this.action(({ target }) => {
+      target.focus();
       return true;
     });
-    return this;
   }
 
-  wait(timeMs: number) {
+  wait(timeMs: number): this {
+    this.assertActive();
+    assertTimingValue("timeMs", timeMs);
     this.draft.actions.push(timeMs);
     return this;
   }
 
-  waitFor(callback: (nextTarget: HTMLElement | null) => Promise<boolean> | boolean) {
-    this.draft.actions.push(async (nextTarget) => callback(nextTarget));
-    return this;
-  }
+  waitUntil(predicate: WaitUntilPredicate<T>, options: WaitUntilOptions = {}): this {
+    this.assertActive();
+    const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
+    const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
+    assertTimingValue("interval", interval);
+    assertTimingValue("timeout", timeout);
 
-  alter(callback: StepAction<T>) {
-    return this.action(callback);
-  }
-
-  waitForElement(target: string) {
-    this.draft.actions.push(
-      async () => typeof document !== "undefined" && document.querySelector(target) !== null,
-    );
-    return this;
-  }
-
-  next() {
-    this.draft.actions.push("next");
-    return this;
-  }
-
-  back() {
-    this.draft.actions.push("back");
-    return this;
-  }
-
-  exec(callback: (nextTarget: HTMLElement | null) => Promise<void> | void) {
-    this.draft.actions.push(async (nextTarget) => {
-      await callback(nextTarget);
-      return true;
+    this.draft.actions.push(async (context) => {
+      const startedAt = Date.now();
+      let attempted = false;
+      while (true) {
+        throwIfAborted(context.signal);
+        const elapsed = Date.now() - startedAt;
+        if (attempted && elapsed >= timeout) throw waitTimeoutError(timeout);
+        attempted = true;
+        if (
+          await waitForPredicate(
+            () => predicate(context),
+            Math.max(0, timeout - elapsed),
+            timeout,
+            context.signal,
+          )
+        )
+          return true;
+        const remainingTime = timeout - (Date.now() - startedAt);
+        if (remainingTime <= 0) throw waitTimeoutError(timeout);
+        await waitForDelay(Math.min(interval, remainingTime), context.signal);
+      }
     });
     return this;
   }
 
-  action(callback: StepAction<T>) {
+  waitUntilElement(selector: string, options?: WaitUntilOptions): this {
+    if (selector.length === 0) throw new TypeError("selector must not be empty");
+    return this.waitUntil(
+      () => typeof document !== "undefined" && document.querySelector(selector) !== null,
+      options,
+    );
+  }
+
+  advance(): this {
+    this.assertActive();
+    this.draft.actions.push("advance");
+    return this;
+  }
+
+  previous(): this {
+    this.assertActive();
+    this.draft.actions.push("previous");
+    return this;
+  }
+
+  exec(callback: (context: StepContext<T>) => Promise<void> | void): this {
+    return this.action(async (context) => {
+      await callback(context);
+      return true;
+    });
+  }
+
+  action(callback: StepAction<T>): this {
+    this.assertActive();
     this.draft.actions.push(callback);
     return this;
   }
 
-  onNext(callback: StepTransitionAction<T>) {
+  onNext(callback: StepTransitionAction<T>): this {
+    this.assertActive();
     this.draft.nextAction = callback;
     return this;
   }
 
-  onBack(callback: StepTransitionAction<T>) {
+  onBack(callback: StepTransitionAction<T>): this {
+    this.assertActive();
     this.draft.backAction = callback;
     return this;
   }
 
-  onCancel(callback: StepTransitionAction<T>) {
+  onCancel(callback: StepTransitionAction<T>): this {
+    this.assertActive();
     this.draft.cancelAction = callback;
     return this;
   }
 
-  on<const TEventName extends EventName>(
+  onTargetEvent<const TEventName extends EventName>(
     event: TEventName,
     callback: EventHandler<T, EventForName<TEventName>>["callback"],
   ): this;
-  on<const TEventNames extends readonly EventName[]>(
+  onTargetEvent<const TEventNames extends readonly EventName[]>(
     events: TEventNames,
     callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
   ): this;
-  on(
-    eventOrEvents: EventName | readonly EventName[],
-    callback: EventHandler<T, never>["callback"],
-  ) {
-    return this.addEventHandlers(eventOrEvents, callback);
-  }
-
-  onEvent<const TEventName extends EventName>(
-    event: TEventName,
-    callback: EventHandler<T, EventForName<TEventName>>["callback"],
+  onTargetEvent<TEvent extends Event>(
+    event: string,
+    callback: EventHandler<T, TEvent>["callback"],
   ): this;
-  onEvent<const TEventNames extends readonly EventName[]>(
-    events: TEventNames,
-    callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
-  ): this;
-  onEvent(
-    eventOrEvents: EventName | readonly EventName[],
-    callback: EventHandler<T, never>["callback"],
-  ) {
-    return this.addEventHandlers(eventOrEvents, callback);
-  }
-
-  toDraft(): WorkflowStepDraft<T> {
-    return cloneWorkflowStepDraft(this.draft);
-  }
-
-  private addEventHandlers(
-    eventOrEvents: EventName | readonly EventName[],
-    callback: EventHandler<T, never>["callback"],
-  ) {
-    for (const event of typeof eventOrEvents === "string" ? [eventOrEvents] : eventOrEvents) {
-      this.draft.eventHandlers.push({ event, callback: callback as EventHandler<T>["callback"] });
+  onTargetEvent(
+    eventOrEvents: string | readonly string[],
+    callback: EventHandler<T, Event>["callback"],
+  ): this {
+    this.assertActive();
+    const events = typeof eventOrEvents === "string" ? [eventOrEvents] : eventOrEvents;
+    if (events.length === 0) throw new TypeError("events must not be empty");
+    for (const event of events) {
+      if (event.length === 0) throw new TypeError("event name must not be empty");
+      this.draft.eventHandlers.push({
+        event,
+        callback: callback as EventHandler<T>["callback"],
+      });
     }
     return this;
   }
+
+  [STEP_BUILDER_INTERNAL](): WorkflowStepDraft<T> {
+    this.active = false;
+    return cloneWorkflowStepDraft(this.draft);
+  }
+
+  private assertActive(): void {
+    if (!this.active) throw new Error(INACTIVE_STEP_ERROR);
+  }
 }
 
-export function create<T>(name: string, options: StartOptions = {}) {
+export function create<T>(name: string, options: StartOptions = {}): Builder<T> {
   return new Builder<T>(name, options);
 }

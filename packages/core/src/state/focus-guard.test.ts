@@ -44,6 +44,7 @@ class MockElement extends MockNode {
 
   focus() {
     mockDocument.activeElement = this;
+    mockDocument.dispatchFocusIn(this);
   }
 
   getAttribute(name: string) {
@@ -55,14 +56,19 @@ class MockElement extends MockNode {
   }
 
   matches(selector: string) {
-    if (selector.includes("data-glow-tour-next-trigger")) {
-      return this.attributes.has("data-glow-tour-next-trigger");
-    }
-    if (selector.includes("data-glow-tour-back-trigger")) {
-      return this.attributes.has("data-glow-tour-back-trigger");
+    const triggerAttributes = [
+      "data-glow-tour-back-trigger",
+      "data-glow-tour-cancel-trigger",
+      "data-glow-tour-next-trigger",
+    ];
+    if (triggerAttributes.some((attribute) => selector.includes(attribute))) {
+      return triggerAttributes.some(
+        (attribute) => selector.includes(attribute) && this.attributes.has(attribute),
+      );
     }
     return (
-      (selector.includes("button") && (this.name === "back" || this.name === "next")) ||
+      (selector.includes("button") &&
+        ["back", "custom-button", "next", "target-button"].includes(this.name)) ||
       (selector.includes("summary") && this.name === "summary") ||
       (selector.includes("audio") && this.name === "audio") ||
       (selector.includes("video") && this.name === "video")
@@ -73,12 +79,30 @@ class MockElement extends MockNode {
     const descendants = this.children.flatMap((child) => [child, ...child.querySelectorAll()]);
     return selector ? descendants.filter((child) => child.matches(selector)) : descendants;
   }
+
+  removeAttribute(name: string) {
+    this.attributes.delete(name);
+  }
+
+  setAttribute(name: string, value: string) {
+    this.attributes.set(name, value);
+  }
 }
 
 const mockDocument = {
   activeElement: null as MockElement | null,
-  addEventListener() {},
-  removeEventListener() {},
+  focusInListeners: new Set<(event: FocusEvent) => void>(),
+  addEventListener(type: string, listener: (event: FocusEvent) => void) {
+    if (type === "focusin") this.focusInListeners.add(listener);
+  },
+  dispatchFocusIn(target: MockElement) {
+    for (const listener of this.focusInListeners) {
+      listener({ target } as unknown as FocusEvent);
+    }
+  },
+  removeEventListener(type: string, listener: (event: FocusEvent) => void) {
+    if (type === "focusin") this.focusInListeners.delete(listener);
+  },
 };
 
 const originalDocument = globalThis.document;
@@ -88,6 +112,7 @@ const originalWindow = globalThis.window;
 
 beforeEach(() => {
   mockDocument.activeElement = null;
+  mockDocument.focusInListeners.clear();
   Object.defineProperty(globalThis, "document", { configurable: true, value: mockDocument });
   Object.defineProperty(globalThis, "HTMLElement", { configurable: true, value: MockElement });
   Object.defineProperty(globalThis, "Node", { configurable: true, value: MockNode });
@@ -195,7 +220,7 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, initialFocus);
   });
 
-  test("falls back to native focusable media and ignores CSS-hidden ancestors", () => {
+  test("rejects arbitrary popover controls and ignores CSS-hidden ancestors", () => {
     const guard = new FocusGuard();
     const { backHost, nextHost, popover } = createScope();
     const hiddenHost = new MockElement("hidden-host");
@@ -210,6 +235,84 @@ describe("FocusGuard", () => {
 
     guard.activate({ direction: "next", popover: popover as unknown as HTMLElement });
 
-    assert.equal(mockDocument.activeElement, audio);
+    assert.equal(mockDocument.activeElement, popover);
+  });
+
+  test("redirects focus from arbitrary popover controls and external elements", () => {
+    const guard = new FocusGuard();
+    const { next, popover } = createScope();
+    const customButton = new MockElement("custom-button");
+    const launcher = new MockElement("custom-button");
+    popover.append(customButton);
+
+    guard.activate({ direction: "next", popover: popover as unknown as HTMLElement });
+    customButton.focus();
+    assert.equal(mockDocument.activeElement, next);
+
+    launcher.focus();
+    assert.equal(mockDocument.activeElement, next);
+  });
+
+  test("allows only the current target subtree when interaction is enabled", () => {
+    const guard = new FocusGuard();
+    const { next, popover } = createScope();
+    const firstTarget = new MockElement("target");
+    const firstButton = new MockElement("target-button");
+    const secondTarget = new MockElement("target");
+    const secondButton = new MockElement("target-button");
+    firstTarget.append(firstButton);
+    secondTarget.append(secondButton);
+
+    guard.activate({
+      allowedTarget: firstTarget as unknown as HTMLElement,
+      allowTargetInteraction: true,
+      direction: "next",
+      popover: popover as unknown as HTMLElement,
+    });
+    firstButton.focus();
+    assert.equal(mockDocument.activeElement, firstButton);
+
+    guard.update({
+      allowedTarget: secondTarget as unknown as HTMLElement,
+      allowTargetInteraction: true,
+      direction: "next",
+      popover: popover as unknown as HTMLElement,
+    });
+    firstButton.focus();
+    assert.equal(mockDocument.activeElement, next);
+    secondButton.focus();
+    assert.equal(mockDocument.activeElement, secondButton);
+  });
+
+  test("enforces the focus scope when automatic directional focus is disabled", () => {
+    const launcher = new MockElement("custom-button");
+    mockDocument.activeElement = launcher;
+    const guard = new FocusGuard();
+    const { next, popover } = createScope();
+
+    guard.activate({
+      autoFocus: false,
+      direction: "next",
+      popover: popover as unknown as HTMLElement,
+    });
+
+    assert.equal(mockDocument.activeElement, next);
+  });
+
+  test("restores an authored fallback tabindex when deactivated", () => {
+    const fallback = new MockElement("fallback");
+    fallback.attributes.set("tabindex", "0");
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+
+    guard.activate({
+      direction: "next",
+      fallback: fallback as unknown as HTMLElement,
+      popover: popover as unknown as HTMLElement,
+    });
+    assert.equal(fallback.getAttribute("tabindex"), "-1");
+
+    guard.deactivate();
+    assert.equal(fallback.getAttribute("tabindex"), "0");
   });
 });

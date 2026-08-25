@@ -49,6 +49,7 @@ function freezePopover(options: StepParameters<unknown>["popover"]) {
     freezeRecord({
       ...options,
       animation: freezeAnimation(options.animation),
+      arrow: options.arrow && freezeRecord({ ...options.arrow }),
       buttons: options.buttons && freezeRecord({ ...options.buttons }),
       keyboardShortcuts:
         options.keyboardShortcuts &&

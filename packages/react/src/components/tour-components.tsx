@@ -66,6 +66,7 @@ function useStep(snapshot: TourState<ReactTourContent>) {
 export function Root({ children, idPrefix, tour, ...props }: RootProps) {
   const mounted = React.useRef<{ binding: RootBinding; element: HTMLDivElement } | null>(null);
   const [binding, setBinding] = React.useState<RootBinding | null>(null);
+
   const release = React.useCallback(() => {
     const current = mounted.current;
     if (!current) return;
@@ -73,6 +74,7 @@ export function Root({ children, idPrefix, tour, ...props }: RootProps) {
     current.binding.release();
     setBinding((active) => (active === current.binding ? null : active));
   }, []);
+
   const connect = React.useCallback(
     (element: HTMLDivElement | null) => {
       release();
@@ -231,7 +233,7 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
   const step = useStep(snapshot);
-  if (snapshot.isFirstStep || step?.hideBackButton) return null;
+  if (step?.hideBackButton) return null;
   const label = backLabel ?? "Back step";
   return (
     <Trigger

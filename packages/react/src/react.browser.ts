@@ -16,7 +16,9 @@ beforeEach(() => {
     Node: window.Node,
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
     document: window.document,
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     window,
   });
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
@@ -218,6 +220,9 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       await tour.run(workflow);
     });
+    const firstBack = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(firstBack?.disabled, true);
+    assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     assert.equal(cancel?.disabled, false);
     await React.act(async () => {

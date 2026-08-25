@@ -299,7 +299,7 @@ export const GlowTourBackTrigger = defineComponent({
       attrs,
       slots,
     );
-    return () => (snapshot.value.isFirstStep || step()?.hideBackButton ? null : renderTrigger());
+    return () => (step()?.hideBackButton ? null : renderTrigger());
   },
 });
 

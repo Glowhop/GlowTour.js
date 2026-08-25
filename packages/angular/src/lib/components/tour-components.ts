@@ -288,7 +288,7 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   selector: "glow-tour-back-trigger",
   standalone: true,
   template: `
-    @if (!snapshot()?.isFirstStep && !step()?.hideBackButton) {
+    @if (!step()?.hideBackButton) {
       <button
         data-glow-tour-back-trigger
         [attr.aria-controls]="ariaControls()"
