@@ -1,17 +1,10 @@
 import type { WorkflowDirection } from "../types";
-
-const FOCUSABLE_SELECTOR = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  "summary",
-  "audio[controls]",
-  "video[controls]",
-  "[contenteditable]:not([contenteditable='false'])",
-  "[tabindex]:not([tabindex='-1'])",
-].join(",");
+import {
+  FOCUSABLE_SELECTOR,
+  focusableElements,
+  focusableTourControls,
+  isFocusable,
+} from "./focusable";
 
 export interface FocusGuardScope {
   popover: HTMLElement;
@@ -19,6 +12,7 @@ export interface FocusGuardScope {
   allowedTarget?: HTMLElement | null;
   allowTargetInteraction?: boolean;
   autoFocus?: boolean;
+  fallback?: HTMLElement | null;
 }
 
 export class FocusGuard {
@@ -26,6 +20,8 @@ export class FocusGuard {
   private popover: HTMLElement | null = null;
   private allowedTarget: HTMLElement | null = null;
   private allowTargetInteraction = false;
+  private fallback: HTMLElement | null = null;
+  private fallbackTabIndex: string | null = null;
   private direction: WorkflowDirection = "next";
   private active = false;
   private redirecting = false;
@@ -52,7 +48,12 @@ export class FocusGuard {
     }
 
     this.update(scope);
-    if (scope.autoFocus !== false) {
+    const currentFocus = document.activeElement;
+    if (
+      scope.autoFocus !== false ||
+      !(currentFocus instanceof Node) ||
+      !this.isAllowed(currentFocus)
+    ) {
       this.focusFallback();
     }
   }
@@ -62,6 +63,11 @@ export class FocusGuard {
     this.allowedTarget = scope.allowedTarget ?? null;
     this.allowTargetInteraction = scope.allowTargetInteraction ?? false;
     this.direction = scope.direction;
+    this.setFallback(scope.fallback ?? null);
+  }
+
+  focus() {
+    if (this.active) this.focusFallback();
   }
 
   deactivate() {
@@ -74,6 +80,7 @@ export class FocusGuard {
     this.popover = null;
     this.allowedTarget = null;
     this.allowTargetInteraction = false;
+    this.restoreFallback();
 
     const focusToRestore = this.initialFocus;
     this.initialFocus = null;
@@ -84,13 +91,37 @@ export class FocusGuard {
   }
 
   private isAllowed(target: Node) {
-    if (this.popover?.contains(target)) {
-      return true;
+    if (target === this.fallback) return true;
+
+    const popover = this.popover;
+    if (popover?.contains(target)) {
+      if (target === popover) return true;
+      return this.containsFocusable(popover, focusableTourControls(popover), target);
     }
 
     return (
-      this.allowTargetInteraction && !!this.allowedTarget && this.allowedTarget.contains(target)
+      this.allowTargetInteraction &&
+      !!this.allowedTarget &&
+      this.allowedTarget.contains(target) &&
+      this.containsFocusable(
+        this.allowedTarget,
+        focusableElements(this.allowedTarget),
+        target,
+        true,
+      )
     );
+  }
+
+  private containsFocusable(
+    root: HTMLElement,
+    candidates: HTMLElement[],
+    target: Node,
+    includeRoot = false,
+  ) {
+    if (includeRoot && target === root && root.matches(FOCUSABLE_SELECTOR) && isFocusable(root)) {
+      return true;
+    }
+    return candidates.some((candidate) => candidate === target || candidate.contains(target));
   }
 
   private focusFallback() {
@@ -99,43 +130,53 @@ export class FocusGuard {
       return;
     }
 
-    const nextFocus = this.findFocusable(popover, this.direction) ?? popover;
+    const nextFocus =
+      this.findFocusable(popover, this.direction) ??
+      (isFocusable(popover)
+        ? popover
+        : this.fallback?.isConnected && isFocusable(this.fallback)
+          ? this.fallback
+          : null);
+    if (!nextFocus) return;
 
     this.redirecting = true;
     nextFocus.focus();
     this.redirecting = false;
   }
 
+  private setFallback(fallback: HTMLElement | null) {
+    if (this.fallback === fallback) return;
+    this.restoreFallback();
+    this.fallback = fallback;
+    if (!fallback) return;
+    this.fallbackTabIndex = fallback.getAttribute("tabindex");
+    fallback.setAttribute("tabindex", "-1");
+  }
+
+  private restoreFallback() {
+    const fallback = this.fallback;
+    if (!fallback) return;
+    if (this.fallbackTabIndex === null) fallback.removeAttribute("tabindex");
+    else fallback.setAttribute("tabindex", this.fallbackTabIndex);
+    this.fallback = null;
+    this.fallbackTabIndex = null;
+  }
+
   private findFocusable(root: HTMLElement, direction: WorkflowDirection) {
-    const candidates = root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    const candidates = focusableTourControls(root);
     const orderedSelectors =
       direction === "next"
-        ? ["[data-glow-tour-next-trigger]", "[data-glow-tour-back-trigger]"]
-        : ["[data-glow-tour-back-trigger]", "[data-glow-tour-next-trigger]"];
+        ? ["[data-glow-tour-next-trigger]", "[data-glow-tour-previous-trigger]"]
+        : ["[data-glow-tour-previous-trigger]", "[data-glow-tour-next-trigger]"];
 
     for (const selector of orderedSelectors) {
-      for (const candidate of Array.from(candidates)) {
-        if (candidate.matches(selector) && this.isFocusable(candidate)) {
+      for (const candidate of candidates) {
+        if (candidate.matches(selector) && isFocusable(candidate)) {
           return candidate;
         }
       }
     }
 
-    return null;
-  }
-
-  private isFocusable(element: HTMLElement) {
-    if (
-      element.hasAttribute("disabled") ||
-      element.hasAttribute("hidden") ||
-      element.getAttribute("aria-disabled") === "true" ||
-      element.getAttribute("aria-hidden") === "true" ||
-      element.closest("[hidden], [inert], [aria-hidden='true']") !== null
-    ) {
-      return false;
-    }
-
-    const style = window.getComputedStyle(element);
-    return style.visibility !== "hidden" && style.display !== "none";
+    return candidates[0] ?? null;
   }
 }

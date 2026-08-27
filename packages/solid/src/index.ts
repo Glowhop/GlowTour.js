@@ -1,19 +1,9 @@
 export type {
   DynamicStepProps,
+  GlowTour as Tour,
   StartOptions,
-  StepParameters,
   WorkflowDefinition,
-  WorkflowState,
 } from "@glowhop/core-tour";
-export {
-  Builder,
-  create,
-  createTourStore,
-  StepBuilder,
-  TourStore,
-  WorkflowInstance,
-  WorkflowStep,
-} from "@glowhop/core-tour";
-export { GlowTour } from "./components/tour-components";
+export { GlowTour, useTour } from "./components/tour-components";
 export type { SolidTourContent } from "./glow-tour";
-export { glowTour } from "./glow-tour";
+export { createGlowTour } from "./glow-tour";

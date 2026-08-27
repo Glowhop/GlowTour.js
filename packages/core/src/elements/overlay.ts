@@ -1,7 +1,5 @@
-import type { WorkflowStep } from "../engine/workflow-step";
-
 import { roundedRectPath, viewportDimensions } from "../utils/utils";
-import GlowTourElement from "./base";
+import GlowTourElement, { type TourElementStep } from "./base";
 
 const DEFAULT_OVERLAY_PADDING = 16;
 const DEFAULT_OVERLAY_RADIUS = 12;
@@ -12,7 +10,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     this.element.setAttribute("data-glow-tour-allow-interaction", String(allowed));
   }
 
-  async moveToTarget(nextPosition: DOMRect, step: WorkflowStep<T>) {
+  async moveToTarget(nextPosition: DOMRect, step: TourElementStep) {
     const keyframe = this._getNextStyles(nextPosition, step);
 
     const path = this._getPathElement();
@@ -32,12 +30,10 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       fill: "none",
     });
 
-    await animation.finished;
-
-    animation.commitStyles();
+    if (await this._waitForAnimation(animation)) animation.commitStyles();
   }
 
-  _getNextStyles(position: DOMRect, step: WorkflowStep<T>): Keyframe {
+  _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
     const { padding, radius, color, opacity } = step.overlay || {};
 
     const path = roundedRectPath(position, viewportDimensions(), {
@@ -92,7 +88,15 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     return this.element.querySelector("path");
   }
 
-  updatePosition(nextPosition: DOMRect, step: WorkflowStep<T>) {
+  protected _release() {
+    const path = this._getPathElement();
+    path?.style.removeProperty("d");
+    path?.style.removeProperty("fill");
+    path?.style.setProperty("opacity", "0");
+    this.element.style.setProperty("pointer-events", "none");
+  }
+
+  updatePosition(nextPosition: DOMRect, step: TourElementStep) {
     const { padding, radius } = step.overlay || {};
     const pathValue = roundedRectPath(nextPosition, viewportDimensions(), {
       padding: padding ?? DEFAULT_OVERLAY_PADDING,
@@ -103,12 +107,18 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       console.warn("No overlay path element found");
       return;
     }
-    path.style.setProperty("d", `path("${pathValue}")`);
+    const pathStyle = `path("${pathValue}")`;
+    if (path.style.getPropertyValue("d") !== pathStyle) {
+      path.style.setProperty("d", pathStyle);
+    }
     const viewport = viewportDimensions();
-    this.element.setAttribute("viewBox", `0 0 ${viewport.width} ${viewport.height}`);
+    const viewBox = `0 0 ${viewport.width} ${viewport.height}`;
+    if (this.element.getAttribute("viewBox") !== viewBox) {
+      this.element.setAttribute("viewBox", viewBox);
+    }
   }
 
-  async _appear(position: DOMRect, step: WorkflowStep<T>) {
+  async _appear(position: DOMRect, step: TourElementStep) {
     const path = this._getPathElement();
     if (!path) {
       console.warn("No overlay path element found");
@@ -127,7 +137,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
 
     const animation = path.animate([keyframe], this._getAnimationOptions());
 
-    await animation.finished;
+    await this._waitForAnimation(animation);
   }
 
   async _disappear() {
@@ -144,7 +154,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       { ...this._getAnimationOptions(), fill: "none" },
     );
 
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     animation.commitStyles();
 

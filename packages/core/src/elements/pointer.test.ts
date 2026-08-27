@@ -1,16 +1,18 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { WorkflowStep } from "../engine/workflow-step";
+import type { TourElementStep } from "./base";
 import PointerElement from "./pointer";
 
 class TestPointerElement<T> extends PointerElement<T> {
-  getStyles(position: DOMRect, step: WorkflowStep<T>) {
+  getStyles(position: DOMRect, step: TourElementStep) {
     return this._getNextStyles(position, step);
   }
 }
 
 class MockElement {
   readonly attributes = new Map<string, string>();
+  animationCalls = 0;
+  readonly animations: Array<{ cancelled: boolean }> = [];
   readonly style = {
     removeProperty() {},
     setProperty() {},
@@ -20,12 +22,23 @@ class MockElement {
     return this.attributes.get(name) ?? null;
   }
 
+  removeAttribute(name: string) {
+    this.attributes.delete(name);
+  }
+
   setAttribute(name: string, value: string) {
     this.attributes.set(name, value);
   }
 
   getBoundingClientRect() {
     return rect(0, 0, 20, 10);
+  }
+
+  animate() {
+    this.animationCalls += 1;
+    const animation = { cancelled: false };
+    this.animations.push(animation);
+    return { cancel: () => (animation.cancelled = true), finished: Promise.resolve() };
   }
 }
 
@@ -57,11 +70,9 @@ afterEach(() => {
 });
 
 function createStep(placement: "top" | "bottom" | "left" | "right", gap?: number) {
-  return new WorkflowStep<string>({
+  return {
     indicator: { gap, placementTryOrder: [placement] },
-    props: { content: "content", title: "title" },
-    target: "#target",
-  });
+  } satisfies TourElementStep;
 }
 
 describe("PointerElement", () => {
@@ -94,5 +105,25 @@ describe("PointerElement", () => {
 
     assert.equal(defaultPointer.getStyles(target, createStep("bottom")).top, "136px");
     assert.equal(zeroPointer.getStyles(target, createStep("bottom", -10)).top, "120px");
+  });
+
+  test("does not start a continuous pointer animation when duration is zero", async () => {
+    const element = new MockElement();
+    const pointer = new PointerElement<string>(element as unknown as HTMLElement);
+    pointer.setAnimationOptions({ duration: 0 });
+
+    await pointer.moveToTarget(rect(100, 100, 40, 20), createStep("bottom"), true);
+
+    assert.equal(element.animationCalls, 1);
+  });
+
+  test("cancels the continuous pointer animation when its owner is invalidated", async () => {
+    const element = new MockElement();
+    const pointer = new PointerElement<string>(element as unknown as HTMLElement);
+
+    await pointer.moveToTarget(rect(100, 100, 40, 20), createStep("bottom"), true);
+    pointer.cancelAnimations();
+
+    assert.equal(element.animations.at(-1)?.cancelled, true);
   });
 });

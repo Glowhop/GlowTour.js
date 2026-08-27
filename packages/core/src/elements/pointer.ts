@@ -1,7 +1,6 @@
-import type { WorkflowStep } from "../engine/workflow-step";
 import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { isInViewport, roundByDPR, viewportDimensions } from "../utils/utils";
-import GlowTourElement from "./base";
+import GlowTourElement, { type TourElementStep } from "./base";
 
 const DEFAULT_INDICATOR_GAP = 16;
 const POINTER_ANIMATION_DISTANCE = 8;
@@ -34,7 +33,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     this.element.setAttribute("aria-hidden", "true");
   }
 
-  protected _getNextStyles(position: DOMRect, step: WorkflowStep<T>): Keyframe {
+  protected _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
     const nextPosition = this._resolvePosition(position, step);
     this.element.setAttribute("data-glow-tour-placement", nextPosition.placement);
 
@@ -46,7 +45,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
 
   async moveToTarget(
     nextPosition: DOMRect,
-    step: WorkflowStep<T>,
+    step: TourElementStep,
     appear: boolean,
     popoverPlacement?: ResolvedPlacement,
   ) {
@@ -59,28 +58,35 @@ export default class PointerElement<T> extends GlowTourElement<T> {
 
   updatePosition(
     nextPosition: DOMRect,
-    step: WorkflowStep<T>,
+    step: TourElementStep,
     popoverPlacement?: ResolvedPlacement,
   ) {
     this.popoverPlacement = popoverPlacement;
     const currentPlacement = this.element.getAttribute("data-glow-tour-placement");
-    const styles = this._getNextStyles(nextPosition, step);
-
-    for (const [property, value] of Object.entries(styles)) {
-      if (value != null) this.element.style.setProperty(property, String(value));
+    const nextPositionState = this._resolvePosition(nextPosition, step);
+    const nextPlacement = nextPositionState.placement;
+    const left = `${roundByDPR(nextPositionState.x)}px`;
+    const top = `${roundByDPR(nextPositionState.y)}px`;
+    if (this.element.style.getPropertyValue("left") !== left) {
+      this.element.style.setProperty("left", left);
     }
-
-    const nextPlacement = this.element.getAttribute("data-glow-tour-placement");
-    if (
-      nextPlacement &&
-      nextPlacement !== currentPlacement &&
-      this.element.getAttribute("aria-hidden") !== "true"
-    ) {
-      this._startAnimation(nextPlacement as TryOrderOptions);
+    if (this.element.style.getPropertyValue("top") !== top) {
+      this.element.style.setProperty("top", top);
+    }
+    if (currentPlacement !== nextPlacement) {
+      this.element.setAttribute("data-glow-tour-placement", nextPlacement);
+    }
+    if (nextPlacement !== currentPlacement && this.element.getAttribute("aria-hidden") !== "true") {
+      this._startAnimation(nextPlacement);
     }
   }
 
-  private async _appear(position: DOMRect, step: WorkflowStep<T>) {
+  override cancelAnimations() {
+    super.cancelAnimations();
+    this._stopAnimation();
+  }
+
+  private async _appear(position: DOMRect, step: TourElementStep) {
     const styles = this._getNextStyles(position, step);
     for (const [property, value] of Object.entries(styles)) {
       if (value != null) this.element.style.setProperty(property, String(value));
@@ -93,7 +99,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
         fill: "none",
       },
     );
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "1");
     this.element.removeAttribute("aria-hidden");
@@ -110,14 +116,14 @@ export default class PointerElement<T> extends GlowTourElement<T> {
         fill: "none",
       },
     );
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "0");
     this.element.setAttribute("aria-hidden", "true");
     this.element.removeAttribute("data-glow-tour-placement");
   }
 
-  private _resolvePosition(targetPosition: DOMRect, step: WorkflowStep<T>): PointerPosition {
+  private _resolvePosition(targetPosition: DOMRect, step: TourElementStep): PointerPosition {
     const pointerPosition = this.element.getBoundingClientRect();
     const excludedPlacement =
       this.popoverPlacement === "center" ? undefined : this.popoverPlacement;
@@ -197,6 +203,13 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     this.animation?.cancel();
     this.animation = null;
     this.element.style.removeProperty("transform");
+  }
+
+  protected _release() {
+    this._stopAnimation();
+    this.element.style.setProperty("opacity", "0");
+    this.element.setAttribute("aria-hidden", "true");
+    this.element.removeAttribute("data-glow-tour-placement");
   }
 
   private _getTargetTransform(placement: TryOrderOptions) {

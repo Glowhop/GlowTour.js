@@ -128,35 +128,35 @@ export default defineConfig({
   writeFileSync(
     join(directory, "runtime-imports.mjs"),
     `import assert from "node:assert/strict";
-import { create } from "@glowhop/core-tour";
+import * as CoreTour from "@glowhop/core-tour";
 import { GlowTour as ReactGlowTour } from "@glowhop/react-tour";
 import { GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
 import { GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
-import { registerGlowTourElements } from "@glowhop/vanilla-tour";
+import { createGlowTour } from "@glowhop/vanilla-tour";
 
-assert.equal(typeof create, "function");
+assert.deepEqual(Object.keys(CoreTour), ["createGlowTour"]);
 assert.equal(typeof ReactGlowTour.Root, "function");
 assert.equal(typeof VueGlowTourRoot, "object");
 assert.equal(typeof SolidGlowTour.Root, "function");
-assert.equal(typeof registerGlowTourElements, "function");
+assert.equal(typeof createGlowTour, "function");
 `,
   );
   writeFileSync(
     join(directory, "consumer.ts"),
-    `import { create } from "@glowhop/core-tour";
+    `import { createGlowTour as createCoreGlowTour } from "@glowhop/core-tour";
 import "@glowhop/styles-tour/default.css";
 import { GlowTour as ReactGlowTour } from "@glowhop/react-tour";
 import { GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
 import { GlowTourRoot as AngularGlowTourRoot } from "@glowhop/angular-tour";
 import { GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
-import { registerGlowTourElements } from "@glowhop/vanilla-tour";
+import { createGlowTour } from "@glowhop/vanilla-tour";
 
-void create("tarball-consumer");
+void createCoreGlowTour<string>();
 void ReactGlowTour;
 void VueGlowTourRoot;
 void AngularGlowTourRoot;
 void SolidGlowTour;
-void registerGlowTourElements;
+void createGlowTour;
 `,
   );
   writeFileSync(
@@ -184,15 +184,17 @@ void registerGlowTourElements;
     join(angularDirectory, "main.ts"),
     `import { Component } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
-import { GlowTourRoot } from "@glowhop/angular-tour";
+import { createGlowTour, GlowTourRoot } from "@glowhop/angular-tour";
 
 @Component({
   imports: [GlowTourRoot],
   selector: "tarball-angular-app",
   standalone: true,
-  template: "<glow-tour-root />",
+  template: '<glow-tour-root [tour]="tour" />',
 })
-export class TarballAngularApp {}
+export class TarballAngularApp {
+  readonly tour = createGlowTour();
+}
 
 void bootstrapApplication(TarballAngularApp);
 `,

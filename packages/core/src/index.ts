@@ -1,18 +1,23 @@
-export type { EventName } from "./builder";
-export { Builder, create, StepBuilder } from "./builder";
-export { createWorkflow, WorkflowInstance } from "./engine/create-workflow";
-export { WorkflowStep } from "./engine/workflow-step";
-export { createTourStore, TourStore } from "./state/store";
+export type { Builder, EventName, StepBuilder } from "./builder";
+export type {
+  ReadonlyStartOptions,
+  ReadonlyStepProps,
+  WorkflowDefinition,
+  WorkflowStepDefinition,
+} from "./definition";
+export { createGlowTour } from "./runtime/tour-controller";
 export type {
   AnimationOptions,
   BaseOptions,
   DynamicStepProps,
   EventHandler,
+  GlowTour,
   GlowTourElementName,
   HighlightOptions,
   HighlightStepOverrides,
   IndicatorOptions,
   OverlayOptions,
+  PopoverArrowOptions,
   PopoverOptions,
   PrimitiveValue,
   ResolvedPlacement,
@@ -23,17 +28,19 @@ export type {
   StepActionResult,
   StepBehavior,
   StepConstructor,
+  StepContext,
+  StepEventContext,
   StepParameters,
   StepPropsStore,
   StepTransitionAction,
+  TargetResolutionContext,
   TargetResolver,
+  TourCurrentStep,
+  TourDirection,
+  TourState,
+  TourStatus,
   TryOrderOptions,
   ViewportDimensions,
-  WorkflowControls,
-  WorkflowDefinition,
-  WorkflowDirection,
+  WaitUntilOptions,
   WorkflowHighlightOptions,
-  WorkflowState,
-  WorkflowStatus,
-  WorkflowStepPublicProps,
 } from "./types";

@@ -1,10 +1,10 @@
-import type { WorkflowStep } from "../engine/workflow-step";
 import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { roundByDPR, toggleElementAttribute, viewportDimensions } from "../utils/utils";
-import GlowTourElement from "./base";
+import GlowTourElement, { type TourElementStep } from "./base";
+import { ensurePopoverArrowStyles } from "./popover-arrow-styles";
 
 const DEFAULT_POPOVER_GAP = 14;
-const ARROW_EDGE_INSET = 16;
+const DEFAULT_ARROW_EDGE_PADDING = 16;
 const DEFAULT_TRY_ORDER = ["bottom", "top", "right", "left"] as const;
 const REPLACEMENT_DIFF = 50; // pixels
 
@@ -15,17 +15,43 @@ export interface PopoverPosition {
   arrowOffset: number | null;
 }
 
+interface PendingReposition {
+  readonly position: DOMRect;
+  readonly step: TourElementStep;
+}
+
+interface InlineStyleSnapshot {
+  readonly priority: string;
+  readonly value: string;
+}
+
+const ARROW_STYLE_PROPERTIES = {
+  borderRadius: "--glow-tour-arrow-border-radius",
+  borderWidth: "--glow-tour-arrow-border-width",
+  color: "--glow-tour-arrow-color",
+  size: "--glow-tour-arrow-size",
+} as const;
+
 export default class PopoverElement<T> extends GlowTourElement<T> {
-  protected _getNextStyles(position: DOMRect, step: WorkflowStep<T>): Keyframe {
+  private appliedPosition: PopoverPosition | null = null;
+  private pendingReposition: PendingReposition | null = null;
+  private repositionPhase: "idle" | "fading-out" | "fading-in" = "idle";
+  private repositionGeneration = 0;
+  private readonly originalArrowStyles = new Map<string, InlineStyleSnapshot>();
+  private readonly overriddenArrowStyles = new Set<string>();
+
+  protected _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
+    this._applyArrowStyles(step);
     const nextPosition = this.resolvePosition(position, step);
     this._applyPositionState(nextPosition);
+    this.appliedPosition = nextPosition;
 
     return {
       transform: `translate(${roundByDPR(nextPosition.x)}px, ${roundByDPR(nextPosition.y)}px)`,
     };
   }
 
-  resolvePosition(targetPosition: DOMRect, step: WorkflowStep<T>): PopoverPosition {
+  resolvePosition(targetPosition: DOMRect, step: TourElementStep): PopoverPosition {
     const currentElement = this.getElement();
     if (!currentElement) {
       return {
@@ -37,7 +63,8 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     }
 
     const gap = Math.max(0, step.popover?.gap ?? DEFAULT_POPOVER_GAP);
-    const arrowDisabled = step.popover?.disableArrow === true;
+    const arrowDisabled = step.popover?.arrow?.disabled === true;
+    const arrowEdgePadding = step.popover?.arrow?.edgePadding ?? DEFAULT_ARROW_EDGE_PADDING;
 
     const popoverPosition = currentElement.getBoundingClientRect();
     const viewport = viewportDimensions();
@@ -99,7 +126,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
 
       if (
         arrowOffset !== null &&
-        (arrowOffset < ARROW_EDGE_INSET || arrowOffset > arrowAxisSize - ARROW_EDGE_INSET)
+        (arrowOffset < arrowEdgePadding || arrowOffset > arrowAxisSize - arrowEdgePadding)
       ) {
         continue;
       }
@@ -123,33 +150,36 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
   }
 
   private _applyPositionState(position: PopoverPosition) {
-    this.element.setAttribute("data-glow-tour-placement", position.placement);
-    toggleElementAttribute(
-      this.element,
-      "data-glow-tour-arrow-hidden",
-      position.arrowOffset === null,
-    );
+    if (this.element.getAttribute("data-glow-tour-placement") !== position.placement) {
+      this.element.setAttribute("data-glow-tour-placement", position.placement);
+    }
+    const arrowHidden = position.arrowOffset === null;
+    if (this.element.hasAttribute("data-glow-tour-arrow-hidden") !== arrowHidden) {
+      toggleElementAttribute(this.element, "data-glow-tour-arrow-hidden", arrowHidden);
+    }
     if (position.arrowOffset === null) {
-      this.element.style.removeProperty("--glow-tour-arrow-offset");
+      if (this.element.style.getPropertyValue("--glow-tour-arrow-offset")) {
+        this.element.style.removeProperty("--glow-tour-arrow-offset");
+      }
     } else {
-      this.element.style.setProperty(
-        "--glow-tour-arrow-offset",
-        `${roundByDPR(position.arrowOffset)}px`,
-      );
+      const arrowOffset = `${roundByDPR(position.arrowOffset)}px`;
+      if (this.element.style.getPropertyValue("--glow-tour-arrow-offset") !== arrowOffset) {
+        this.element.style.setProperty("--glow-tour-arrow-offset", arrowOffset);
+      }
     }
   }
 
   async moveToTarget(
     nextPosition: DOMRect,
-    step: WorkflowStep<T>,
+    step: TourElementStep,
     appear: boolean,
-    onChange?: () => void,
+    onChange?: () => void | Promise<void>,
   ) {
     if (!appear) {
       await this._disappear();
     }
 
-    onChange?.();
+    if (onChange) await onChange();
 
     await this._appear(nextPosition, step);
   }
@@ -160,6 +190,8 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       console.warn("No popover element found");
       return;
     }
+
+    ensurePopoverArrowStyles(el);
 
     el.style.setProperty("position", "fixed");
     el.style.setProperty("z-index", "10001");
@@ -175,30 +207,147 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     // el.style.setProperty("transform", "translate(0px, 0px)");
   }
 
-  updatePosition(nextPosition: DOMRect, step: WorkflowStep<T>): void {
+  updatePosition(nextPosition: DOMRect, step: TourElementStep): ResolvedPlacement {
     const nextCoordinates = this.resolvePosition(nextPosition, step);
-    const currentPlacement = this.element.getAttribute("data-glow-tour-placement");
-    const currentTransform = this.element.style.transform;
-    const currentCoordinatesStr = currentTransform.match(/translate\(([^)]+)\)/)?.[1];
-    const currentCoordinatesList = currentCoordinatesStr
-      ? currentCoordinatesStr.split(",").map((coord) => parseFloat(coord.trim()))
-      : [0, 0];
-    const currentCoordinates = { x: currentCoordinatesList[0], y: currentCoordinatesList[1] };
-    const diffX = Math.abs(nextCoordinates.x - currentCoordinates.x);
-    const diffY = Math.abs(nextCoordinates.y - currentCoordinates.y);
-    this._applyPositionState(nextCoordinates);
+    const appliedPosition = this.appliedPosition;
+    if (!appliedPosition) {
+      this._applyPositionState(nextCoordinates);
+      this.appliedPosition = nextCoordinates;
+      this._applyTransform(nextCoordinates);
+      return nextCoordinates.placement;
+    }
+    if (this.repositionPhase === "fading-out") {
+      this.pendingReposition = { position: nextPosition, step };
+      return nextCoordinates.placement;
+    }
+    const shouldReposition =
+      appliedPosition.placement !== nextCoordinates.placement ||
+      Math.abs(nextCoordinates.x - appliedPosition.x) > REPLACEMENT_DIFF ||
+      Math.abs(nextCoordinates.y - appliedPosition.y) > REPLACEMENT_DIFF;
+    if (shouldReposition) {
+      this.pendingReposition = { position: nextPosition, step };
+      if (this.repositionPhase === "idle") void this._flushReposition();
+    } else if (this.repositionPhase === "fading-in") {
+      this.pendingReposition = null;
+    } else {
+      const stationaryPosition = this._stationaryPosition(
+        appliedPosition,
+        nextCoordinates,
+        nextPosition,
+        step,
+      );
+      this._applyPositionState(stationaryPosition);
+      this.appliedPosition = stationaryPosition;
+    }
+    return nextCoordinates.placement;
+  }
 
-    if (
-      currentPlacement !== nextCoordinates.placement ||
-      diffX > REPLACEMENT_DIFF ||
-      diffY > REPLACEMENT_DIFF
-    ) {
-      void this.moveToTarget(nextPosition, step, false);
-      return;
+  override cancelAnimations() {
+    this.repositionGeneration += 1;
+    this.pendingReposition = null;
+    this.repositionPhase = "idle";
+    super.cancelAnimations();
+  }
+
+  private async _flushReposition() {
+    if (this.repositionPhase !== "idle") return;
+    const generation = ++this.repositionGeneration;
+    try {
+      while (this.pendingReposition && generation === this.repositionGeneration) {
+        let pending = this.pendingReposition;
+        this.pendingReposition = null;
+        this.repositionPhase = "fading-out";
+        await this._disappear();
+        if (generation !== this.repositionGeneration || !this.getElement()) return;
+        pending = this.pendingReposition ?? pending;
+        this.pendingReposition = null;
+        this.repositionPhase = "fading-in";
+        await this._appear(pending.position, pending.step);
+      }
+    } finally {
+      if (generation === this.repositionGeneration) this.repositionPhase = "idle";
     }
   }
 
-  async _appear(position: DOMRect, step: WorkflowStep<T>) {
+  private _applyTransform(position: PopoverPosition) {
+    const transform = `translate(${roundByDPR(position.x)}px, ${roundByDPR(position.y)}px)`;
+    if (this.element.style.transform !== transform) {
+      this.element.style.setProperty("transform", transform);
+    }
+  }
+
+  private _stationaryPosition(
+    appliedPosition: PopoverPosition,
+    nextPosition: PopoverPosition,
+    targetPosition: DOMRect,
+    step: TourElementStep,
+  ): PopoverPosition {
+    if (nextPosition.arrowOffset === null) {
+      return { ...appliedPosition, arrowOffset: null };
+    }
+    const popoverRect = this.element.getBoundingClientRect();
+    const horizontal =
+      appliedPosition.placement === "top" || appliedPosition.placement === "bottom";
+    const targetCenter = horizontal
+      ? targetPosition.left + targetPosition.width / 2
+      : targetPosition.top + targetPosition.height / 2;
+    const popoverStart = horizontal ? appliedPosition.x : appliedPosition.y;
+    const popoverSize = horizontal ? popoverRect.width : popoverRect.height;
+    const arrowEdgePadding = step.popover?.arrow?.edgePadding ?? DEFAULT_ARROW_EDGE_PADDING;
+    return {
+      ...appliedPosition,
+      arrowOffset: clamp(
+        targetCenter - popoverStart,
+        arrowEdgePadding,
+        Math.max(arrowEdgePadding, popoverSize - arrowEdgePadding),
+      ),
+    };
+  }
+
+  private _applyArrowStyles(step: TourElementStep) {
+    const arrow = step.popover?.arrow;
+    this._applyArrowStyle(ARROW_STYLE_PROPERTIES.color, arrow?.color);
+    this._applyArrowStyle(ARROW_STYLE_PROPERTIES.size, toPixels(arrow?.size));
+    this._applyArrowStyle(ARROW_STYLE_PROPERTIES.borderWidth, toPixels(arrow?.borderWidth));
+    this._applyArrowStyle(ARROW_STYLE_PROPERTIES.borderRadius, toPixels(arrow?.borderRadius));
+  }
+
+  private _applyArrowStyle(property: string, value: string | undefined) {
+    if (value === undefined) {
+      this._restoreArrowStyle(property);
+      return;
+    }
+    if (!this.overriddenArrowStyles.has(property)) {
+      this.originalArrowStyles.set(property, {
+        priority: this.element.style.getPropertyPriority(property),
+        value: this.element.style.getPropertyValue(property),
+      });
+      this.overriddenArrowStyles.add(property);
+    }
+    if (
+      this.element.style.getPropertyValue(property) !== value ||
+      this.element.style.getPropertyPriority(property)
+    ) {
+      this.element.style.setProperty(property, value);
+    }
+  }
+
+  private _restoreArrowStyle(property: string) {
+    if (!this.overriddenArrowStyles.delete(property)) return;
+    const original = this.originalArrowStyles.get(property);
+    this.originalArrowStyles.delete(property);
+    if (original?.value) {
+      this.element.style.setProperty(property, original.value, original.priority);
+    } else {
+      this.element.style.removeProperty(property);
+    }
+  }
+
+  private _restoreArrowStyles() {
+    for (const property of [...this.overriddenArrowStyles]) this._restoreArrowStyle(property);
+  }
+
+  async _appear(position: DOMRect, step: TourElementStep) {
     const defaultStyles = this._getNextStyles(position, step);
 
     for (const [key, value] of Object.entries(defaultStyles)) {
@@ -213,7 +362,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       ],
       this._getAnimationOptions(),
     );
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "1");
     this.element.removeAttribute("aria-hidden");
@@ -228,7 +377,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       this._getAnimationOptions(),
     );
 
-    await animation.finished;
+    if (!(await this._waitForAnimation(animation))) return;
 
     animation.commitStyles();
 
@@ -238,6 +387,18 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     this.element.style.removeProperty("transform");
     this.element.style.setProperty("opacity", "0");
   }
+
+  protected _release() {
+    this._restoreArrowStyles();
+    this.element.style.setProperty("opacity", "0");
+    this.element.setAttribute("aria-hidden", "true");
+    this.element.setAttribute("inert", "true");
+    this.element.style.removeProperty("transform");
+  }
+}
+
+function toPixels(value: number | undefined) {
+  return value === undefined ? undefined : `${Math.max(0, value)}px`;
 }
 
 function clamp(value: number, min: number, max: number) {

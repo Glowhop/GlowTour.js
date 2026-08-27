@@ -1,22 +1,12 @@
 export type {
   DynamicStepProps,
+  GlowTour as Tour,
   StartOptions,
-  StepParameters,
   WorkflowDefinition,
-  WorkflowState,
 } from "@glowhop/core-tour";
 export {
-  Builder,
-  create,
-  createTourStore,
-  StepBuilder,
-  TourStore,
-  WorkflowInstance,
-  WorkflowStep,
-} from "@glowhop/core-tour";
-export {
-  GLOW_TOUR_COMPONENT_TEMPLATES,
   GlowTourBackTrigger,
+  GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
   GlowTourHeader,
@@ -25,7 +15,7 @@ export {
   GlowTourPointer,
   GlowTourPopover,
   GlowTourRoot,
+  injectGlowTour,
 } from "./lib/components/tour-components";
 export type { AngularTourContent } from "./lib/glow-tour";
-export { glowTour } from "./lib/glow-tour";
-export { GlowTourService } from "./lib/services/glow-tour.service";
+export { createGlowTour } from "./lib/glow-tour";

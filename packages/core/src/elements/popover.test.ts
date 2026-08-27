@@ -1,30 +1,49 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { WorkflowStep } from "../engine/workflow-step";
-import type { TryOrderOptions } from "../types";
+import type { PopoverOptions, TryOrderOptions } from "../types";
+import type { TourElementStep } from "./base";
 import PopoverElement from "./popover";
 
 class TestPopoverElement<T> extends PopoverElement<T> {
-  getStyles(position: DOMRect, step: WorkflowStep<T>) {
+  getStyles(position: DOMRect, step: TourElementStep) {
     return this._getNextStyles(position, step);
   }
 }
 
 class MockElement {
   readonly attributes = new Map<string, string>();
+  readonly priorities = new Map<string, string>();
   readonly styles = new Map<string, string>();
   readonly style = {
     get transform() {
       return "";
     },
-    removeProperty: (name: string) => this.styles.delete(name),
-    setProperty: (name: string, value: string) => this.styles.set(name, value),
+    getPropertyPriority: (name: string) => this.priorities.get(name) ?? "",
+    getPropertyValue: (name: string) => this.styles.get(name) ?? "",
+    removeProperty: (name: string) => {
+      this.priorities.delete(name);
+      return this.styles.delete(name);
+    },
+    setProperty: (name: string, value: string, priority = "") => {
+      this.styles.set(name, value);
+      if (priority) this.priorities.set(name, priority);
+      else this.priorities.delete(name);
+    },
   };
 
   constructor(
     private readonly width: number,
     private readonly height: number,
+    private readonly root?: MockStyleRoot,
   ) {}
+
+  get ownerDocument() {
+    return this.root?.ownerDocument;
+  }
+
+  getRootNode() {
+    return this.root ?? this;
+  }
 
   getAttribute(name: string) {
     return this.attributes.get(name) ?? null;
@@ -53,6 +72,43 @@ class MockElement {
   }
 }
 
+class MockStyleElement {
+  readonly attributes = new Map<string, string>();
+  textContent = "";
+
+  setAttribute(name: string, value: string) {
+    this.attributes.set(name, value);
+  }
+}
+
+class MockStyleRoot {
+  readonly styles: MockStyleElement[] = [];
+  readonly head = { append: (style: MockStyleElement) => this.styles.push(style) };
+  readonly documentElement = this.head;
+  readonly ownerDocument: MockStyleRoot;
+
+  constructor(
+    readonly nodeType: 9 | 11,
+    ownerDocument?: MockStyleRoot,
+  ) {
+    this.ownerDocument = ownerDocument ?? this;
+  }
+
+  append(style: MockStyleElement) {
+    this.styles.push(style);
+  }
+
+  createElement(name: string) {
+    assert.equal(name, "style");
+    return new MockStyleElement();
+  }
+
+  querySelector(selector: string) {
+    assert.equal(selector, "style[data-glow-tour-core-arrow-styles]");
+    return this.styles.find((style) => style.attributes.has("data-glow-tour-core-arrow-styles"));
+  }
+}
+
 function rect(left: number, top: number, width: number, height: number): DOMRect {
   return {
     bottom: top + height,
@@ -69,13 +125,11 @@ function rect(left: number, top: number, width: number, height: number): DOMRect
 
 function createStep(
   placementTryOrder: TryOrderOptions[],
-  options: { disableArrow?: boolean; gap?: number } = {},
+  options: Omit<PopoverOptions, "placementTryOrder"> = {},
 ) {
-  return new WorkflowStep<string>({
+  return {
     popover: { ...options, placementTryOrder },
-    props: { content: "content", title: "title" },
-    target: "#target",
-  });
+  } satisfies TourElementStep;
 }
 
 const originalWindow = globalThis.window;
@@ -196,15 +250,27 @@ describe("PopoverElement positioning", () => {
     });
   });
 
-  test("accepts a clamped candidate without an arrow when disableArrow is true", () => {
+  test("accepts a clamped candidate without an arrow when arrow.disabled is true", () => {
     const popover = new PopoverElement<string>(new MockElement(100, 60) as unknown as HTMLElement);
 
     assert.deepEqual(
       popover.resolvePosition(
         rect(270, 80, 20, 20),
-        createStep(["bottom"], { disableArrow: true }),
+        createStep(["bottom"], { arrow: { disabled: true } }),
       ),
       { arrowOffset: null, placement: "bottom", x: 186, y: 114 },
+    );
+  });
+
+  test("uses arrow.edgePadding when validating a placement near a corner", () => {
+    const popover = new PopoverElement<string>(new MockElement(100, 60) as unknown as HTMLElement);
+
+    assert.deepEqual(
+      popover.resolvePosition(
+        rect(10, 80, 20, 20),
+        createStep(["bottom"], { arrow: { edgePadding: 4 } }),
+      ),
+      { arrowOffset: 6, placement: "bottom", x: 14, y: 114 },
     );
   });
 
@@ -230,8 +296,79 @@ describe("PopoverElement positioning", () => {
     assert.equal(element.attributes.has("data-glow-tour-arrow-hidden"), false);
     assert.equal(element.styles.get("--glow-tour-arrow-offset"), "16px");
 
-    popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"], { disableArrow: true }));
+    popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"], { arrow: { disabled: true } }));
     assert.equal(element.attributes.has("data-glow-tour-arrow-hidden"), true);
     assert.equal(element.styles.has("--glow-tour-arrow-offset"), false);
+  });
+
+  test("publishes arrow styles and restores consumer variables when overrides disappear", () => {
+    const element = new MockElement(100, 60);
+    element.style.setProperty("--glow-tour-arrow-color", "var(--consumer-arrow)", "important");
+    const popover = new TestPopoverElement<string>(element as unknown as HTMLElement);
+
+    popover.getStyles(
+      rect(20, 80, 20, 20),
+      createStep(["bottom"], {
+        arrow: {
+          borderRadius: 3,
+          borderWidth: 2,
+          color: "#4c35fd",
+          size: 16,
+        },
+      }),
+    );
+
+    assert.equal(element.styles.get("--glow-tour-arrow-color"), "#4c35fd");
+    assert.equal(element.styles.get("--glow-tour-arrow-size"), "16px");
+    assert.equal(element.styles.get("--glow-tour-arrow-border-width"), "2px");
+    assert.equal(element.styles.get("--glow-tour-arrow-border-radius"), "3px");
+
+    popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"]));
+
+    assert.equal(element.styles.get("--glow-tour-arrow-color"), "var(--consumer-arrow)");
+    assert.equal(element.priorities.get("--glow-tour-arrow-color"), "important");
+    assert.equal(element.styles.has("--glow-tour-arrow-size"), false);
+    assert.equal(element.styles.has("--glow-tour-arrow-border-width"), false);
+    assert.equal(element.styles.has("--glow-tour-arrow-border-radius"), false);
+  });
+
+  test("restores consumer arrow variables on release", () => {
+    const element = new MockElement(100, 60);
+    element.style.setProperty("--glow-tour-arrow-size", "24px");
+    const popover = new TestPopoverElement<string>(element as unknown as HTMLElement);
+
+    popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"], { arrow: { size: 16 } }));
+    popover.release();
+
+    assert.equal(element.styles.get("--glow-tour-arrow-size"), "24px");
+  });
+});
+
+describe("PopoverElement arrow stylesheet", () => {
+  test("injects the structural pseudo-element rules once per document", () => {
+    const document = new MockStyleRoot(9);
+    const firstElement = new MockElement(100, 60, document);
+    const secondElement = new MockElement(100, 60, document);
+
+    new PopoverElement<string>(firstElement as unknown as HTMLElement).initializeProps();
+    new PopoverElement<string>(secondElement as unknown as HTMLElement).initializeProps();
+
+    assert.equal(document.styles.length, 1);
+    assert.match(
+      document.styles[0]?.textContent ?? "",
+      /:where\(\[data-glow-tour-popover\]\)::before/,
+    );
+    assert.match(document.styles[0]?.textContent ?? "", /--glow-tour-arrow-color/);
+    assert.match(document.styles[0]?.textContent ?? "", /--glow-tour-color-surface/);
+  });
+
+  test("injects the structural rules inside a shadow root", () => {
+    const document = new MockStyleRoot(9);
+    const root = new MockStyleRoot(11, document);
+    const element = new MockElement(100, 60, root);
+
+    new PopoverElement<string>(element as unknown as HTMLElement).initializeProps();
+
+    assert.equal(root.styles.length, 1);
   });
 });

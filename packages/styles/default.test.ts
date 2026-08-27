@@ -64,18 +64,9 @@ describe("default tour theme", () => {
     assert.match(stylesheet, /prefers-reduced-motion:\s*reduce/);
   });
 
-  test("renders the popover arrow on every placement and supports hiding it", () => {
-    assert.match(stylesheet, /\[data-glow-tour-popover\]::before/);
-    assert.match(stylesheet, /--glow-tour-arrow-offset/);
-    assert.match(stylesheet, /background-color:\s*inherit/);
-
-    for (const placement of ["top", "bottom", "left", "right"]) {
-      assert.match(
-        stylesheet,
-        new RegExp(`data-glow-tour-placement=["']${placement}["'][^}]*::before`),
-      );
-    }
-
-    assert.match(stylesheet, /data-glow-tour-arrow-hidden[^}]*::before[^{]*\{[^}]*display:\s*none/);
+  test("exposes arrow theme variables without owning its pseudo-element", () => {
+    assert.match(stylesheet, /--glow-tour-arrow-color:\s*var\(--glow-tour-color-surface\)/);
+    assert.match(stylesheet, /--glow-tour-arrow-border-color:\s*var\(--glow-tour-color-border\)/);
+    assert.doesNotMatch(stylesheet, /\[data-glow-tour-popover[^}]*::before/);
   });
 });

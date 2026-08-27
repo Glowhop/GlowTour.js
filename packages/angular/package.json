@@ -25,6 +25,9 @@
   "devDependencies": {
     "@angular/common": "18.2.13",
     "@angular/compiler": "18.2.13",
-    "@angular/core": "18.2.13"
+    "@angular/core": "18.2.13",
+    "@angular/platform-browser": "18.2.13",
+    "happy-dom": "^18.0.1",
+    "zone.js": "0.14.10"
   }
 }

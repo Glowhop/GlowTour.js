@@ -1,117 +1,58 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { createComponent, mergeProps } from "solid-js";
-import { Dynamic, renderToString } from "solid-js/web";
-import { GlowTour } from "./index";
-
-const packageManifest = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-) as Record<string, unknown>;
+import { renderToString } from "solid-js/web";
+import * as runtime from "./index";
 
 describe("solid adapter contract", () => {
-  test("declares the SolidJS workspace package", () => {
-    assert.equal(existsSync(new URL("../package.json", import.meta.url)), true);
-    assert.equal(packageManifest.name, "@glowhop/solid-tour");
-    assert.deepEqual(packageManifest.exports, {
-      ".": { import: "./dist/index.js", types: "./dist/index.d.ts" },
-    });
-    assert.deepEqual(packageManifest.peerDependencies, { "solid-js": "^1.9.14" });
-  });
+  test("exports an instance factory and component namespace without legacy runtime values", () => {
+    assert.equal(typeof runtime.createGlowTour, "function");
+    assert.equal(typeof runtime.GlowTour, "object");
+    assert.equal(typeof runtime.useTour, "function");
 
-  test("exports the shared core API and the Solid tour singleton", async () => {
-    const entrypoint = new URL("./index.ts", import.meta.url);
-    assert.equal(existsSync(entrypoint), true);
-
-    const { createTourStore, glowTour } = await import(entrypoint.href);
-    assert.equal(typeof createTourStore, "function");
-    assert.equal(typeof glowTour.create, "function");
-    assert.equal(typeof glowTour.run, "function");
-    assert.equal(typeof glowTour.state.get, "function");
-  });
-
-  test("exports every public SolidJS component", async () => {
-    const componentsModule = new URL("./components/tour-components.ts", import.meta.url);
-    assert.equal(existsSync(componentsModule), true);
-
-    const { GlowTour } = await import("./index");
-    for (const component of [
-      GlowTour.Root,
-      GlowTour.Header,
-      GlowTour.Content,
-      GlowTour.Footer,
-      GlowTour.Popover,
-      GlowTour.Overlay,
-      GlowTour.Pointer,
-      GlowTour.BackTrigger,
-      GlowTour.NextTrigger,
+    for (const legacy of [
+      "Builder",
+      "create",
+      "createTourStore",
+      "TourStore",
+      "WorkflowInstance",
+      "WorkflowStep",
+      "glowTour",
     ]) {
-      assert.equal(typeof component, "function");
+      assert.equal(legacy in runtime, false, `${legacy} must not be public`);
     }
   });
 
-  test("preserves the accessible React adapter contract", () => {
-    const componentsModule = new URL("./components/tour-components.ts", import.meta.url);
-    assert.equal(existsSync(componentsModule), true);
-
-    const source = readFileSync(componentsModule, "utf8");
-    assert.match(source, /role:.*"dialog"/);
-    assert.match(source, /"aria-hidden":\s*"true"/);
-    assert.match(source, /role:\s*"presentation"/);
-    assert.match(source, /data-glow-tour-pointer-content/);
-    assert.match(source, /backLabel/);
-    assert.match(source, /finishLabel/);
-    assert.match(source, /glowTour\.state\.back\(\)/);
-    assert.match(source, /glowTour\.state\.next\(\)/);
-  });
-
-  test("renders the accessible popover, overlay and pointer structure", () => {
-    const html = renderToString(() => [
-      GlowTour.Popover({ children: "Content" }),
-      GlowTour.Overlay({}),
-      GlowTour.Pointer({ children: "Pointer" }),
-    ]);
-
-    assert.match(html, /role="dialog"/);
-    assert.match(html, /aria-labelledby="glow-tour-title"/);
-    assert.match(html, /aria-describedby="glow-tour-description"/);
-    assert.match(html, /data-glow-tour-overlay=""/);
-    assert.match(html, /role="presentation"/);
-    assert.match(html, /data-glow-tour-pointer-content=""/);
-  });
-
-  test("keeps a generated accessible name when aria-label is empty", () => {
-    const html = renderToString(() => GlowTour.NextTrigger({ "aria-label": "" }));
-
-    assert.match(html, /aria-label="Finish tour"/);
-  });
-
-  test("customizes triggers through a callback without nested controls", () => {
+  test("renders a root boundary without client-generated IDs during SSR", () => {
+    const tour = runtime.createGlowTour();
     const html = renderToString(() =>
-      GlowTour.NextTrigger({
-        children: (props) =>
-          createComponent(
-            Dynamic,
-            mergeProps(props, {
-              component: "button",
-              children: "Continue",
-            }),
-          ),
+      runtime.GlowTour.Root({
+        tour,
+        get children() {
+          return runtime.GlowTour.Popover({ children: "Content" });
+        },
       }),
     );
 
-    assert.equal(html.match(/<button/g)?.length, 1);
-    assert.match(html, /aria-label="Finish tour"/);
-    assert.match(html, />Continue<\/button>/);
+    assert.match(html, /data-glow-tour-root/);
+    assert.doesNotMatch(html, /id="glow-tour/);
+    assert.doesNotMatch(html, /aria-labelledby/);
+    assert.doesNotMatch(html, /aria-describedby/);
   });
 
-  test("passes the SolidJS browser lifecycle contract", () => {
-    const repositoryRoot = new URL("../../../", import.meta.url).pathname;
-    const result = Bun.spawnSync(
-      ["bun", "--conditions=browser", "test", "./packages/solid/src/solid.browser.ts"],
-      { cwd: repositoryRoot },
-    );
-
-    assert.equal(result.exitCode, 0, result.stderr.toString() || result.stdout.toString());
+  test("exposes every instance-scoped component including cancellation", () => {
+    for (const component of [
+      runtime.GlowTour.Root,
+      runtime.GlowTour.Header,
+      runtime.GlowTour.Content,
+      runtime.GlowTour.Footer,
+      runtime.GlowTour.Popover,
+      runtime.GlowTour.Overlay,
+      runtime.GlowTour.Pointer,
+      runtime.GlowTour.BackTrigger,
+      runtime.GlowTour.NextTrigger,
+      runtime.GlowTour.CancelTrigger,
+    ]) {
+      assert.equal(typeof component, "function");
+    }
   });
 });

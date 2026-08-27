@@ -1,9 +1,18 @@
-import type { WorkflowStep } from "../engine/workflow-step";
+import type { IndicatorOptions, OverlayOptions, PopoverOptions } from "../types";
+
+export interface TourElementStep {
+  readonly indicator?: IndicatorOptions;
+  readonly overlay?: OverlayOptions;
+  readonly popover?: PopoverOptions;
+}
 
 const DEFAULT_ANIMATION_DURATION = 180;
 const DEFAULT_ANIMATION_EASING = "ease-out";
 
-export default abstract class GlowTourElement<T> {
+export default abstract class GlowTourElement<_T> {
+  private readonly animations = new Set<Animation>();
+  private readonly cancelledAnimations = new WeakSet<Animation>();
+  private released = false;
   constructor(
     protected element: HTMLElement | SVGSVGElement,
     public options?: { duration?: number; easing?: string; disabled?: boolean },
@@ -22,22 +31,55 @@ export default abstract class GlowTourElement<T> {
   }
 
   protected _isAnimated() {
-    return this.options?.disabled !== true;
+    return this.options?.disabled !== true && this.options?.duration !== 0;
+  }
+
+  protected async _waitForAnimation(animation: Animation) {
+    if (this.released) {
+      animation.cancel();
+      return false;
+    }
+    this.animations.add(animation);
+    try {
+      await animation.finished;
+      return !this.released && !this.cancelledAnimations.has(animation);
+    } catch {
+      return false;
+    } finally {
+      this.animations.delete(animation);
+    }
   }
 
   protected abstract _disappear(): Promise<void>;
 
-  protected abstract _getNextStyles(position: DOMRect, step: WorkflowStep<T>): Keyframe;
+  protected abstract _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe;
 
-  abstract updatePosition(nextPosition: DOMRect, step: WorkflowStep<T>): void;
+  abstract updatePosition(nextPosition: DOMRect, step: TourElementStep): void;
 
   abstract initializeProps(): void;
 
   getElement(): HTMLElement | SVGSVGElement | null {
-    return this.element;
+    return this.released ? null : this.element;
   }
 
   disappear() {
     return this._disappear();
   }
+
+  release() {
+    if (this.released) return;
+    this.released = true;
+    this.cancelAnimations();
+    this._release();
+  }
+
+  cancelAnimations() {
+    for (const animation of this.animations) {
+      this.cancelledAnimations.add(animation);
+      animation.cancel();
+    }
+    this.animations.clear();
+  }
+
+  protected abstract _release(): void;
 }

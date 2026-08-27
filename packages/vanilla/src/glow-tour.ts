@@ -1,16 +1,9 @@
-import type { StartOptions, WorkflowDefinition } from "@glowhop/core-tour";
-import { create, createTourStore } from "@glowhop/core-tour";
+import type { GlowTour } from "@glowhop/core-tour";
+import { createGlowTour as createCoreGlowTour } from "@glowhop/core-tour";
 
 export type VanillaTourContent = string | Node;
+export type VanillaGlowTour = GlowTour<VanillaTourContent>;
 
-const state = createTourStore<VanillaTourContent>();
-
-export const glowTour = {
-  create(name: string, options: StartOptions = {}) {
-    return create<VanillaTourContent>(name, options);
-  },
-  run(workflow: WorkflowDefinition<VanillaTourContent>) {
-    return state.start(workflow);
-  },
-  state,
-};
+export function createGlowTour(): VanillaGlowTour {
+  return createCoreGlowTour<VanillaTourContent>();
+}

@@ -1,6 +1,8 @@
-import type { DynamicStepProps, WorkflowState } from "@glowhop/core-tour";
+import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
 import {
+  type Accessor,
   createComponent,
+  createContext,
   createEffect,
   createSignal,
   type JSX,
@@ -9,98 +11,153 @@ import {
   type ParentProps,
   Show,
   splitProps,
+  useContext,
   type ValidComponent,
 } from "solid-js";
 import { Dynamic } from "solid-js/web";
+import { getAdapterBridge, type RootBinding, solidAdapter } from "../adapter-bridge";
 import type { SolidTourContent } from "../glow-tour";
-import { glowTour } from "../glow-tour";
 
-type ElementProps = ParentProps<
-  JSX.HTMLAttributes<HTMLElement> & {
-    as?: ValidComponent;
+type Tour = CoreGlowTour<SolidTourContent>;
+type RootProps = ParentProps<
+  Omit<JSX.HTMLAttributes<HTMLDivElement>, "id" | "ref"> & {
+    idPrefix?: string;
+    tour: Tour;
   }
 >;
-type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children">;
-type FooterProps = ParentProps<JSX.HTMLAttributes<HTMLElement>>;
+type ElementProps = ParentProps<
+  Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref"> & { as?: ValidComponent }
+>;
+type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = ParentProps<Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "ref">>;
 type PointerProps = ParentProps<
-  Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden"> & {
-    as?: ValidComponent;
-  }
+  Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden" | "ref"> & { as?: ValidComponent }
 >;
 type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
   children?: (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => JSX.Element;
+  disabled?: boolean;
 };
 type BackTriggerProps = ButtonProps & { backLabel?: string };
 type NextTriggerProps = ButtonProps & { finishLabel?: string; nextLabel?: string };
+type CancelTriggerProps = ButtonProps;
+type ButtonClickEvent = MouseEvent & { currentTarget: HTMLButtonElement; target: Element };
 
-const POPOVER_ID = "glow-tour-popover";
-const TITLE_ID = "glow-tour-title";
-const DESCRIPTION_ID = "glow-tour-description";
+interface TourContextValue {
+  readonly binding: () => RootBinding | null;
+  readonly tour: () => Tour;
+}
 
-function useTourSnapshot() {
-  const [snapshot, setSnapshot] = createSignal<WorkflowState<SolidTourContent>>(
-    glowTour.state.get(),
-  );
-  const unsubscribe = glowTour.state.subscribe(setSnapshot);
-  onCleanup(unsubscribe);
+const TourContext = createContext<TourContextValue>();
+
+function useTourContext() {
+  const context = useContext(TourContext);
+  if (!context) {
+    throw new Error("GlowTour components must be rendered inside <GlowTour.Root tour={...}>.");
+  }
+  return context;
+}
+
+function useTourSnapshot(tour: () => Tour) {
+  const [snapshot, setSnapshot] = createSignal<TourState<SolidTourContent>>(tour().state.get());
+  createEffect(() => {
+    const activeTour = tour();
+    setSnapshot(activeTour.state.get());
+    const unsubscribe = activeTour.state.subscribe(setSnapshot);
+    onCleanup(unsubscribe);
+  });
   return snapshot;
 }
 
-function useCurrentStepProps() {
-  const snapshot = useTourSnapshot();
-  const [stepProps, setStepProps] = createSignal<DynamicStepProps<SolidTourContent>>({
-    content: null,
-    title: null,
-  });
-
-  createEffect(() => {
-    const step = snapshot().currentStep;
-    if (!step) {
-      setStepProps({ content: null, title: null });
-      return;
-    }
-
-    setStepProps(step.currentProps.get());
-    onCleanup(step.currentProps.subscribe(setStepProps));
-  });
-
-  return stepProps;
+export function useTour(): Accessor<TourState<SolidTourContent>> {
+  return useTourSnapshot(useTourContext().tour);
 }
 
-export function Root(props: ParentProps): JSX.Element {
-  return props.children;
+function useBoundElement<T extends Element>(
+  bind: (binding: RootBinding, element: T) => () => void,
+) {
+  const context = useTourContext();
+  const [element, setElement] = createSignal<T | null>(null);
+  createEffect(() => {
+    const activeBinding = context.binding();
+    const activeElement = element();
+    if (!activeBinding || !activeElement) return;
+    return bind(activeBinding, activeElement);
+  });
+  return setElement;
+}
+
+function currentStep(snapshot: TourState<SolidTourContent>) {
+  return snapshot.currentStep?.currentProps ?? null;
+}
+
+export function Root(props: RootProps): JSX.Element {
+  const [local, other] = splitProps(props, ["children", "idPrefix", "tour"]);
+  const [element, setElement] = createSignal<HTMLElement | null>(null);
+  const [binding, setBinding] = createSignal<RootBinding | null>(null);
+
+  createEffect(() => {
+    const root = element();
+    const tour = local.tour;
+    const idPrefix = local.idPrefix;
+    if (!root) return;
+    const lease = getAdapterBridge(tour).connectRoot({
+      adapter: solidAdapter,
+      idPrefix,
+      root,
+    });
+    setBinding(lease);
+    onCleanup(() => {
+      lease.release();
+      setBinding((active) => (active === lease ? null : active));
+    });
+  });
+
+  return createComponent(TourContext.Provider, {
+    value: {
+      binding,
+      tour() {
+        return local.tour;
+      },
+    },
+    get children() {
+      return createComponent(
+        Dynamic,
+        mergeProps(other, {
+          component: "div",
+          "data-glow-tour-root": "",
+          ref: setElement,
+          get children() {
+            return local.children;
+          },
+        }),
+      );
+    },
+  });
 }
 
 export function Popover(props: ElementProps): JSX.Element {
-  const [local, other] = splitProps(props, [
-    "as",
-    "children",
-    "aria-describedby",
-    "aria-labelledby",
-    "id",
-    "role",
-  ]);
-  onCleanup(() => glowTour.state.registerElementPopover(null));
+  const context = useTourContext();
+  const [local, other] = splitProps(props, ["as", "children"]);
+  const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPopover(element));
 
   return createComponent(
     Dynamic,
     mergeProps(other, {
+      get "aria-describedby"() {
+        return context.binding()?.ids.description;
+      },
+      get "aria-labelledby"() {
+        return context.binding()?.ids.title;
+      },
       get component() {
         return local.as ?? "section";
       },
-      get "aria-describedby"() {
-        return local["aria-describedby"] ?? DESCRIPTION_ID;
-      },
-      get "aria-labelledby"() {
-        return local["aria-labelledby"] ?? TITLE_ID;
-      },
       "data-glow-tour-popover": "",
       get id() {
-        return local.id ?? POPOVER_ID;
+        return context.binding()?.ids.popover;
       },
-      ref: (element: HTMLElement) => glowTour.state.registerElementPopover(element),
-      role: local.role ?? "dialog",
+      ref,
+      role: "dialog",
       tabIndex: -1,
       get children() {
         return local.children;
@@ -110,47 +167,48 @@ export function Popover(props: ElementProps): JSX.Element {
 }
 
 export function Header(props: ContentProps): JSX.Element {
-  const stepProps = useCurrentStepProps();
+  const context = useTourContext();
+  const snapshot = useTourSnapshot(context.tour);
   return createComponent(
     Dynamic,
     mergeProps(props, {
       component: "header",
       "data-glow-tour-header": "",
       get id() {
-        return props.id ?? TITLE_ID;
+        return context.binding()?.ids.title;
       },
       get children() {
-        return stepProps().title;
+        return currentStep(snapshot())?.title ?? null;
       },
     }),
   );
 }
 
 export function Content(props: ContentProps): JSX.Element {
-  const stepProps = useCurrentStepProps();
+  const context = useTourContext();
+  const snapshot = useTourSnapshot(context.tour);
   return createComponent(
     Dynamic,
     mergeProps(props, {
-      get "aria-live"() {
-        return props["aria-live"] ?? "polite";
-      },
+      "aria-live": "polite",
       component: "div",
       "data-glow-tour-content": "",
       get id() {
-        return props.id ?? DESCRIPTION_ID;
+        return context.binding()?.ids.description;
       },
       get children() {
-        return stepProps().content;
+        return currentStep(snapshot())?.content ?? null;
       },
     }),
   );
 }
 
-export function Footer(props: FooterProps): JSX.Element {
-  const stepProps = useCurrentStepProps();
+export function Footer(props: ElementProps): JSX.Element {
+  const context = useTourContext();
+  const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return !stepProps().hideFooter;
+      return !currentStep(snapshot())?.hideFooter;
     },
     get children() {
       return createComponent(
@@ -158,9 +216,6 @@ export function Footer(props: FooterProps): JSX.Element {
         mergeProps(props, {
           component: "footer",
           "data-glow-tour-footer": "",
-          get children() {
-            return props.children;
-          },
         }),
       );
     },
@@ -168,9 +223,8 @@ export function Footer(props: FooterProps): JSX.Element {
 }
 
 export function Overlay(props: OverlayProps): JSX.Element {
-  const [local, other] = splitProps(props, ["aria-hidden", "children", "viewBox"]);
-  onCleanup(() => glowTour.state.registerElementOverlay(null));
-
+  const [local, other] = splitProps(props, ["children", "viewBox"]);
+  const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
   const path = createComponent(Dynamic, {
     component: "path",
     "data-glow-tour-overlay-path": "",
@@ -180,13 +234,11 @@ export function Overlay(props: OverlayProps): JSX.Element {
   return createComponent(
     Dynamic,
     mergeProps(other, {
-      get "aria-hidden"() {
-        return local["aria-hidden"] ?? true;
-      },
+      "aria-hidden": true,
       component: "svg",
       "data-glow-tour-overlay": "",
       focusable: "false",
-      ref: (element: SVGSVGElement) => glowTour.state.registerElementOverlay(element),
+      ref,
       role: "presentation",
       get viewBox() {
         return local.viewBox ?? "0 0 0 0";
@@ -200,8 +252,7 @@ export function Overlay(props: OverlayProps): JSX.Element {
 
 export function Pointer(props: PointerProps): JSX.Element {
   const [local, other] = splitProps(props, ["as", "children"]);
-  onCleanup(() => glowTour.state.registerElementPointer(null));
-
+  const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const content = createComponent(Dynamic, {
     component: "div",
     "data-glow-tour-pointer-content": "",
@@ -213,63 +264,85 @@ export function Pointer(props: PointerProps): JSX.Element {
   return createComponent(
     Dynamic,
     mergeProps(other, {
+      "aria-hidden": "true",
       get component() {
         return local.as ?? "div";
       },
-      "aria-hidden": "true",
       "data-glow-tour-pointer": "",
-      ref: (element: HTMLElement) => glowTour.state.registerElementPointer(element),
+      ref,
       children: content,
     }),
   );
 }
 
-export function BackTrigger(props: BackTriggerProps): JSX.Element {
-  const [local, other] = splitProps(props, [
-    "aria-controls",
-    "aria-label",
-    "backLabel",
-    "children",
-  ]);
-  const snapshot = useTourSnapshot();
-  const stepProps = useCurrentStepProps();
-  const label = () =>
-    local.backLabel ?? snapshot().startOptions.popover?.buttons?.backLabel ?? "Back step";
-  const buttonProps = mergeProps(
-    {
-      get "aria-controls"() {
-        return local["aria-controls"] ?? POPOVER_ID;
-      },
-      get "aria-label"() {
-        return local["aria-label"] || label();
-      },
-      "data-action": "back",
-      "data-glow-tour-back-trigger": true,
-      get disabled() {
-        return !snapshot().canGoBack || stepProps().disableBackButton;
-      },
-      onClick(event: MouseEvent) {
-        event.preventDefault();
-        void glowTour.state.back();
-      },
-      type: "button" as const,
+function Trigger(
+  props: ButtonProps & {
+    capabilityDisabled: boolean;
+    label: string;
+    marker: "back" | "cancel" | "next";
+  },
+): JSX.Element {
+  const context = useTourContext();
+  const [local, other] = splitProps(props, ["children", "capabilityDisabled", "label", "marker"]);
+  const buttonProps = mergeProps(other, {
+    get "aria-controls"() {
+      return context.binding()?.ids.popover;
     },
-    other,
-  );
+    get "aria-label"() {
+      return other["aria-label"] || local.label;
+    },
+    get "aria-disabled"() {
+      return local.capabilityDisabled || other.disabled === true;
+    },
+    get "data-glow-tour-back-trigger"() {
+      return local.marker === "back" ? true : undefined;
+    },
+    get "data-glow-tour-cancel-trigger"() {
+      return local.marker === "cancel" ? true : undefined;
+    },
+    get "data-glow-tour-consumer-disabled"() {
+      return other.disabled === true ? "true" : undefined;
+    },
+    get "data-glow-tour-next-trigger"() {
+      return local.marker === "next" ? true : undefined;
+    },
+    get disabled() {
+      return local.capabilityDisabled || other.disabled === true;
+    },
+    onClick(event: ButtonClickEvent) {
+      if (typeof other.onClick === "function") other.onClick(event);
+    },
+    type: "button" as const,
+  });
 
+  if (local.children) return local.children(buttonProps);
+  return createComponent(
+    Dynamic,
+    mergeProps(buttonProps, {
+      component: "button",
+      get children() {
+        return local.label;
+      },
+    }),
+  );
+}
+
+export function BackTrigger(props: BackTriggerProps): JSX.Element {
+  const context = useTourContext();
+  const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return !snapshot().isFirstStep && !stepProps().hideBackButton;
+      const step = currentStep(snapshot());
+      return !step?.hideBackButton;
     },
     get children() {
-      if (local.children) return local.children(buttonProps);
-      return createComponent(
-        Dynamic,
-        mergeProps(buttonProps, {
-          component: "button",
-          get children() {
-            return label();
+      return Trigger(
+        mergeProps(props, {
+          get capabilityDisabled() {
+            return !snapshot().canPrevious || currentStep(snapshot())?.disableBackButton === true;
           },
+          label: props.backLabel ?? "Back step",
+          marker: "back" as const,
         }),
       );
     },
@@ -277,56 +350,45 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
 }
 
 export function NextTrigger(props: NextTriggerProps): JSX.Element {
-  const [local, other] = splitProps(props, [
-    "aria-controls",
-    "aria-label",
-    "children",
-    "finishLabel",
-    "nextLabel",
-  ]);
-  const snapshot = useTourSnapshot();
-  const stepProps = useCurrentStepProps();
-  const label = () => {
-    const labels = snapshot().startOptions.popover?.buttons;
-    return snapshot().isLastStep
-      ? (local.finishLabel ?? labels?.finishLabel ?? "Finish tour")
-      : (local.nextLabel ?? labels?.nextLabel ?? "Next step");
-  };
-  const buttonProps = mergeProps(
-    {
-      get "aria-controls"() {
-        return local["aria-controls"] ?? POPOVER_ID;
-      },
-      get "aria-label"() {
-        return local["aria-label"] || label();
-      },
-      "data-action": "next",
-      "data-glow-tour-next-trigger": true,
-      get disabled() {
-        return !snapshot().canGoNext || stepProps().disableNextButton;
-      },
-      onClick(event: MouseEvent) {
-        event.preventDefault();
-        void glowTour.state.next();
-      },
-      type: "button" as const,
-    },
-    other,
-  );
-
+  const context = useTourContext();
+  const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return !stepProps().hideNextButton;
+      return !currentStep(snapshot())?.hideNextButton;
     },
     get children() {
-      if (local.children) return local.children(buttonProps);
-      return createComponent(
-        Dynamic,
-        mergeProps(buttonProps, {
-          component: "button",
-          get children() {
-            return label();
+      return Trigger(
+        mergeProps(props, {
+          get capabilityDisabled() {
+            return !snapshot().canAdvance || currentStep(snapshot())?.disableNextButton === true;
           },
+          get label() {
+            return snapshot().isLastStep
+              ? (props.finishLabel ?? "Finish tour")
+              : (props.nextLabel ?? "Next step");
+          },
+          marker: "next" as const,
+        }),
+      );
+    },
+  });
+}
+
+export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
+  const context = useTourContext();
+  const snapshot = useTourSnapshot(context.tour);
+  return Show({
+    get when() {
+      return snapshot().canCancel;
+    },
+    get children() {
+      return Trigger(
+        mergeProps(props, {
+          get capabilityDisabled() {
+            return !snapshot().canCancel;
+          },
+          label: "Cancel tour",
+          marker: "cancel" as const,
         }),
       );
     },
@@ -343,4 +405,5 @@ export const GlowTour = {
   Pointer,
   BackTrigger,
   NextTrigger,
+  CancelTrigger,
 };
