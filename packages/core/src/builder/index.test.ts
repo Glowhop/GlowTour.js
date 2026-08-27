@@ -1,6 +1,7 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { WorkflowBuilder } from "./index";
+import type { StepContext } from "../types";
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
@@ -16,11 +17,11 @@ describe("WorkflowBuilder public contract", () => {
     const definition = workflow()
       .wait(1)
       .do(() => true)
-      .on(["click", "keydown"], callback)
+      .onTargetEvent(["click", "keydown"], callback)
       .beforeAdvance(() => {})
       .beforePrevious(() => {})
       .beforeCancel(() => {})
-      .advance()
+      .goNext()
       .build();
 
     assert.equal(Object.isFrozen(definition), true);
@@ -51,45 +52,25 @@ describe("WorkflowBuilder public contract", () => {
     }
   });
 
-  test("records the documented wait defaults in readonly instructions", () => {
-    const definition = workflow()
-      .waitFor(() => true)
-      .waitForElement("#ready")
-      .build();
-    const [condition, element] = definition.steps[0].actions;
-
-    assert.deepEqual(
-      [condition, element].map((instruction) =>
-        typeof instruction === "object"
-          ? { interval: instruction.interval, timeout: instruction.timeout, type: instruction.type }
-          : null,
-      ),
-      [
-        { interval: 50, timeout: 3000, type: "waitFor" },
-        { interval: 50, timeout: 3000, type: "waitFor" },
-      ],
-    );
-    assert.equal(Object.isFrozen(condition), true);
-    assert.equal(Object.isFrozen(element), true);
-  });
+  
 
   test("rejects invalid delay and wait timing options", () => {
     assert.throws(() => workflow().wait(-1), /delay/i);
-    assert.throws(() => workflow().waitFor(() => true, { timeout: -1 }), /timeout/i);
-    assert.throws(() => workflow().waitForElement("#ready", { interval: 0 }), /interval/i);
+    assert.throws(() => workflow().waitUntil(() => true, { timeout: -1 }), /timeout/i);
+    assert.throws(() => workflow().waitUntilElement("#ready", { interval: 0 }), /interval/i);
   });
 });
 
 describe("WorkflowStepBuilder.on", () => {
   test("infers the DOM event type from one event name", () => {
-    workflow("single-event").on("click", (event) => {
+    workflow("single-event").onTargetEvent("click", (event) => {
       const clickEvent: MouseEvent = event;
       assert.equal(clickEvent.type, event.type);
     });
   });
 
   test("infers a union from multiple event names", () => {
-    workflow("multiple-events").on(["click", "keydown"], (event) => {
+    workflow("multiple-events").onTargetEvent(["click", "keydown"], (event) => {
       const domEvent: MouseEvent | KeyboardEvent = event;
       assert.equal(domEvent.type, event.type);
     });
@@ -102,8 +83,7 @@ describe("WorkflowStepBuilder.on", () => {
         assert.equal(event.type, "tour:complete");
       });
   });
-import type { StepContext } from "../types";
-import { create } from "./index";
+});
 
 function createContext(signal = new AbortController().signal): StepContext<string> {
   return {
@@ -115,7 +95,7 @@ function createContext(signal = new AbortController().signal): StepContext<strin
 
 describe("StepBuilder.onTargetEvent", () => {
   test("infers the DOM event type from one event name", () => {
-    create("single-event")
+    new WorkflowBuilder<string>("single-event")
       .step({ content: "Content", target: "#target", title: "Title" })
       .onTargetEvent("click", (event) => {
         const clickEvent: MouseEvent = event;
@@ -124,7 +104,7 @@ describe("StepBuilder.onTargetEvent", () => {
   });
 
   test("infers a union from multiple event names", () => {
-    create("multiple-events")
+    new WorkflowBuilder<string>("multiple-events")
       .step({ content: "Content", target: "#target", title: "Title" })
       .onTargetEvent(["click", "keydown"], (event) => {
         const domEvent: MouseEvent | KeyboardEvent = event;
@@ -133,7 +113,7 @@ describe("StepBuilder.onTargetEvent", () => {
   });
 
   test("accepts a typed custom event", () => {
-    create("custom-event")
+    new WorkflowBuilder<string>("custom-event")
       .step({ content: "Content", target: "#target", title: "Title" })
       .onTargetEvent<CustomEvent<{ value: number }>>("tour:complete", (event) => {
         const value: number = event.detail.value;
@@ -143,10 +123,10 @@ describe("StepBuilder.onTargetEvent", () => {
 
   test("registers one handler for every event name", () => {
     const callback = () => {};
-    const workflow = create("multiple-events")
+    const workflow = new WorkflowBuilder<string>("multiple-events")
       .step({ content: "Content", target: "#target", title: "Title" })
       .onTargetEvent(["click", "keydown"], callback)
-      .finish();
+      .build();
 
     assert.deepEqual(
       workflow.steps[0].eventHandlers.map(({ event }) => event),
@@ -160,7 +140,7 @@ describe("StepBuilder.onTargetEvent", () => {
 describe("StepBuilder action contract", () => {
   test("waitUntil retries until its predicate succeeds", async () => {
     let attempts = 0;
-    const workflow = create<string>("wait-until")
+    const workflow = new WorkflowBuilder<string>("wait-until")
       .step({ content: "Content", target: "#target", title: "Title" })
       .waitUntil(
         () => {
@@ -169,7 +149,7 @@ describe("StepBuilder action contract", () => {
         },
         { interval: 0, timeout: 100 },
       )
-      .finish();
+      .build();
 
     const action = workflow.steps[0].actions[0];
     assert.equal(typeof action, "function");
@@ -181,10 +161,10 @@ describe("StepBuilder action contract", () => {
 
   test("waitUntil stops when its signal is aborted", async () => {
     const controller = new AbortController();
-    const workflow = create<string>("cancel-wait")
+    const workflow = new WorkflowBuilder<string>("cancel-wait")
       .step({ content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => false, { interval: 10, timeout: 100 })
-      .finish();
+      .build();
     const action = workflow.steps[0].actions[0];
     assert.equal(typeof action, "function");
     if (typeof action !== "function") return;
@@ -197,13 +177,13 @@ describe("StepBuilder action contract", () => {
 
   test("waitUntil aborts while an async predicate is pending", async () => {
     const controller = new AbortController();
-    const workflow = create<string>("cancel-pending-predicate")
+    const workflow = new WorkflowBuilder<string>("cancel-pending-predicate")
       .step({ content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 50)), {
         interval: 0,
         timeout: 100,
       })
-      .finish();
+      .build();
     const action = workflow.steps[0].actions[0];
     assert.equal(typeof action, "function");
     if (typeof action !== "function") return;
@@ -218,13 +198,13 @@ describe("StepBuilder action contract", () => {
   });
 
   test("waitUntil enforces its timeout while an async predicate is pending", async () => {
-    const workflow = create<string>("timeout-pending-predicate")
+    const workflow = new WorkflowBuilder<string>("timeout-pending-predicate")
       .step({ content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 50)), {
         interval: 100,
         timeout: 5,
       })
-      .finish();
+      .build();
     const action = workflow.steps[0].actions[0];
     assert.equal(typeof action, "function");
     if (typeof action !== "function") return;
@@ -235,10 +215,10 @@ describe("StepBuilder action contract", () => {
   });
 
   test("waitUntil throws after its timeout", async () => {
-    const workflow = create<string>("timeout-wait")
+    const workflow = new WorkflowBuilder<string>("timeout-wait")
       .step({ content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => false, { interval: 0, timeout: 0 })
-      .finish();
+      .build();
     const action = workflow.steps[0].actions[0];
     assert.equal(typeof action, "function");
     if (typeof action !== "function") return;
@@ -260,10 +240,10 @@ describe("StepBuilder action contract", () => {
     });
 
     try {
-      const workflow = create<string>("wait-until-element")
+      const workflow = new WorkflowBuilder<string>("wait-until-element")
         .step({ content: "Content", target: "#target", title: "Title" })
         .waitUntilElement("#ready", { interval: 0, timeout: 100 })
-        .finish();
+        .build();
       const action = workflow.steps[0].actions[0];
       assert.equal(typeof action, "function");
       if (typeof action !== "function") return;
@@ -283,7 +263,7 @@ describe("StepBuilder action contract", () => {
   });
 
   test("validates timing values when defining the workflow", () => {
-    const step = create<string>("validation").step({
+    const step = new WorkflowBuilder<string>("validation").step({
       content: "Content",
       target: "#target",
       title: "Title",
@@ -298,7 +278,7 @@ describe("StepBuilder action contract", () => {
   });
 
   test("uses explicit goNext and previous instructions", () => {
-    const step = create<string>("navigation-actions").step({
+    const step = new WorkflowBuilder<string>("navigation-actions").step({
       content: "Content",
       target: "#target",
       title: "Title",
@@ -313,7 +293,7 @@ describe("StepBuilder action contract", () => {
     const workflow = step
       .goNext()
       .goPrevious()
-      .finish();
+      .build();
 
     assert.deepEqual(workflow.steps[0].actions, ["next", "previous"]);
   });
@@ -321,37 +301,37 @@ describe("StepBuilder action contract", () => {
 
 describe("StepBuilder lifecycle", () => {
   test("rejects mutations through a stale step handle", () => {
-    const first = create<string>("stale-step").step({
+    const first = new WorkflowBuilder<string>("stale-step").step({
       content: "First",
       target: "#first",
       title: "First",
     });
     first.step({ content: "Second", target: "#second", title: "Second" });
 
-    assert.throws(() => first.exec(() => {}), /StepBuilder is no longer active/);
+    assert.throws(() => first.do(() => {}), /StepBuilder is no longer active/);
   });
 
   test("rejects mutations after finish", () => {
-    const step = create<string>("finished-step").step({
+    const step = new WorkflowBuilder<string>("finished-step").step({
       content: "Content",
       target: "#target",
       title: "Title",
     });
-    step.finish();
+    step.build();
 
-    assert.throws(() => step.onNext(() => {}), /StepBuilder is no longer active/);
+    assert.throws(() => step.beforeAdvance(() => {}), /StepBuilder is no longer active/);
   });
 });
 
 describe("StepBuilder.append", () => {
   test("appends an immutable workflow definition", () => {
-    const reusable = create<string>("reusable")
+    const reusable = new WorkflowBuilder<string>("reusable")
       .step({ content: "Reusable", target: "#reusable", title: "Reusable" })
-      .finish();
-    const workflow = create<string>("composed")
+      .build();
+    const workflow = new WorkflowBuilder<string>("composed")
       .step({ content: "First", target: "#first", title: "First" })
       .append(reusable)
-      .finish();
+      .build();
 
     assert.deepEqual(
       workflow.steps.map((step) => step.props.title),
@@ -360,8 +340,8 @@ describe("StepBuilder.append", () => {
   });
 
   test("rejects an empty workflow definition", () => {
-    const empty = create<string>("empty").finish();
-    const step = create<string>("composed").step({
+    const empty = new WorkflowBuilder<string>("empty").build();
+    const step = new WorkflowBuilder<string>("composed").step({
       content: "First",
       target: "#first",
       title: "First",

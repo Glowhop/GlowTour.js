@@ -18,7 +18,8 @@ Completed audit tasks are intentionally not duplicated here.
 
 
 [ ] renommer certains principes : goPrevious (canGoPrevious) -> previous , goNext (canGoNext) -> advance
-[ ] exporter useTour
-[ ] cleaner certaines fonctions
+[ ] corriger les tests
+[ ] cleaner le flow de modification d'étape en cours de tuto
+[x] exporter useTour
 
 
