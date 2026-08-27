@@ -1,6 +1,6 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { TourViewDriver } from "../dom/tour-view-driver";
+import type { TourViewCommands, TourViewDriver } from "../dom/tour-view-driver";
 import type { ActiveStep } from "./active-step";
 import { TourController } from "./tour-controller";
 
@@ -59,6 +59,7 @@ function createGlowTour<T>() {
 
 class RecordingDriver implements TourViewDriver<string> {
   clearCalls = 0;
+  commands: TourViewCommands | null = null;
   disposeCalls = 0;
   showCalls = 0;
   showError: Error | null = null;
@@ -75,6 +76,54 @@ class RecordingDriver implements TourViewDriver<string> {
     this.showCalls += 1;
     if (this.showError) throw this.showError;
   }
+
+  setCommands(commands: TourViewCommands) {
+    this.commands = commands;
+  }
+}
+
+class StagedTransitionDriver implements TourViewDriver<string> {
+  private beforeAppear: (() => void | Promise<void>) | undefined;
+  private pendingShow: ReturnType<typeof deferred<void>> | null = null;
+  private pause = false;
+
+  clear() {}
+
+  dispose() {}
+
+  pauseNextShow() {
+    this.pause = true;
+    this.pendingShow = deferred<void>();
+  }
+
+  async commitContent() {
+    assert.ok(this.beforeAppear, "Expected the controller to provide a content commit callback");
+    await this.beforeAppear?.();
+  }
+
+  finishShow() {
+    assert.ok(this.pendingShow, "Expected a pending show");
+    this.pendingShow?.resolve();
+  }
+
+  async show(
+    _step: ActiveStep<string>,
+    _direction?: unknown,
+    _signal?: AbortSignal,
+    onBeforePopoverAppear?: () => void | Promise<void>,
+  ) {
+    if (!this.pause) {
+      await onBeforePopoverAppear?.();
+      return;
+    }
+    this.pause = false;
+    this.beforeAppear = onBeforePopoverAppear;
+    await this.pendingShow?.promise;
+  }
+}
+
+async function flushMicrotasks() {
+  for (let index = 0; index < 5; index += 1) await Promise.resolve();
 }
 
 describe("instance-first TourController", () => {
@@ -83,7 +132,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("readonly", {
         cancellable: true,
-        popover: { keyboardShortcuts: { next: ["Enter"] } },
+        popover: { arrow: { color: "#4c35fd" }, keyboardShortcuts: { next: ["Enter"] } },
       })
       .step({
         content: "content",
@@ -100,6 +149,7 @@ describe("instance-first TourController", () => {
     assert.equal(Object.isFrozen(workflow.steps[0]), true);
     assert.equal(Object.isFrozen(workflow.steps[0].props.data), true);
     assert.equal(Object.isFrozen(workflow.options.popover?.keyboardShortcuts?.next), true);
+    assert.equal(Object.isFrozen(workflow.options.popover?.arrow), true);
     assert.equal(Object.isFrozen(workflow.steps[0].overlay?.animation), true);
     assert.equal("clone" in workflow.steps[0], false);
 
@@ -141,7 +191,7 @@ describe("instance-first TourController", () => {
 
     assert.equal(tour.state.get, originalGet);
     assert.equal(tour.state.subscribe, originalSubscribe);
-    assert.equal(notifications, 4);
+    assert.equal(notifications, 5);
     unsubscribe();
   });
 
@@ -156,13 +206,14 @@ describe("instance-first TourController", () => {
 
     await tour.run(workflow);
     assert.equal(tour.state.get().status, "active");
-    assert.equal(tour.state.get().canAdvance, true);
+    assert.equal(tour.state.get().canGoNext, true);
     assert.equal(tour.state.get().isLastStep, true);
-    await tour.advance();
+    await tour.goNext();
     assert.equal(tour.state.get().status, "finished");
     assert.deepEqual(snapshots, [
       "idle",
       "starting",
+      "transitioning",
       "transitioning",
       "active",
       "transitioning",
@@ -171,15 +222,238 @@ describe("instance-first TourController", () => {
     unsubscribe();
   });
 
-  test("cancels from the first step only when the workflow is cancellable", async () => {
+  for (const scenario of [
+    {
+      destination: 1,
+      navigate: (tour: TourController<string>) => tour.goNext(),
+      name: "next",
+      start: 0,
+    },
+    {
+      destination: 0,
+      navigate: (tour: TourController<string>) => tour.goPrevious(),
+      name: "previous",
+      start: 1,
+    },
+    {
+      destination: 2,
+      navigate: (tour: TourController<string>) => tour.goToStep(2),
+      name: "goToStep",
+      start: 0,
+    },
+  ] as const) {
+    test(`publishes ${scenario.name} content before the popover fade-in`, async () => {
+      const driver = new StagedTransitionDriver();
+      const tour = new TourController<string>(driver);
+      const workflow = tour
+        .create(`staged-${scenario.name}`)
+        .step({ content: "zero", target: targetResolver, title: "zero" })
+        .step({ content: "one", target: targetResolver, title: "one" })
+        .step({ content: "two", target: targetResolver, title: "two" })
+        .build();
+      await tour.run(workflow);
+      if (scenario.start === 1) await tour.goNext();
+
+      const snapshots: string[] = [];
+      const unsubscribe = tour.state.subscribe((state) => {
+        snapshots.push(`${state.status}:${state.currentStep?.currentProps.content ?? "none"}`);
+      });
+      snapshots.length = 0;
+      driver.pauseNextShow();
+
+      const navigation = scenario.navigate(tour);
+      await flushMicrotasks();
+      assert.equal(tour.state.get().status, "transitioning");
+      assert.equal(
+        tour.state.get().currentStep?.currentProps.content,
+        ["zero", "one", "two"][scenario.start],
+      );
+
+      await driver.commitContent();
+      assert.equal(tour.state.get().status, "transitioning");
+      assert.equal(
+        tour.state.get().currentStep?.currentProps.content,
+        ["zero", "one", "two"][scenario.destination],
+      );
+
+      driver.finishShow();
+      await navigation;
+      assert.deepEqual(snapshots, [
+        `transitioning:${["zero", "one", "two"][scenario.start]}`,
+        `transitioning:${["zero", "one", "two"][scenario.start]}`,
+        `transitioning:${["zero", "one", "two"][scenario.destination]}`,
+        `active:${["zero", "one", "two"][scenario.destination]}`,
+      ]);
+      unsubscribe();
+    });
+  }
+
+  test("keeps committed control capabilities stable until the next step commits", async () => {
+    const driver = new StagedTransitionDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("staged-capabilities", { cancellable: true })
+      .step({ content: "zero", target: targetResolver, title: "zero" })
+      .step({
+        content: "one",
+        disableNextButton: true,
+        target: targetResolver,
+        title: "one",
+      })
+      .build();
+    await tour.run(workflow);
+    assert.deepEqual(
+      {
+        canGoNext: tour.state.get().canGoNext,
+        canCancel: tour.state.get().canCancel,
+        canGoPrevious: tour.state.get().canGoPrevious,
+      },
+      { canGoNext: true, canCancel: true, canGoPrevious: false },
+    );
+    driver.pauseNextShow();
+
+    const navigation = tour.goNext();
+    await flushMicrotasks();
+    assert.equal(tour.state.get().status, "transitioning");
+    assert.deepEqual(
+      {
+        canGoNext: tour.state.get().canGoNext,
+        canCancel: tour.state.get().canCancel,
+        canGoPrevious: tour.state.get().canGoPrevious,
+      },
+      { canGoNext: true, canCancel: true, canGoPrevious: false },
+    );
+
+    await driver.commitContent();
+    assert.equal(tour.state.get().status, "transitioning");
+    assert.deepEqual(
+      {
+        canGoNext: tour.state.get().canGoNext,
+        canCancel: tour.state.get().canCancel,
+        canGoPrevious: tour.state.get().canGoPrevious,
+      },
+      { canGoNext: false, canCancel: true, canGoPrevious: true },
+    );
+
+    driver.finishShow();
+    await navigation;
+  });
+
+  test("keeps the active workflow presentation until its replacement commits", async () => {
+    const driver = new StagedTransitionDriver();
+    const tour = new TourController<string>(driver);
+    const active = tour
+      .create("active", { cancellable: true })
+      .step({ content: "active", target: targetResolver, title: "active" })
+      .build();
+    const replacement = tour
+      .create("replacement", { cancellable: false })
+      .step({
+        content: "replacement",
+        disableNextButton: true,
+        target: targetResolver,
+        title: "replacement",
+      })
+      .build();
+    await tour.run(active);
+    driver.pauseNextShow();
+
+    const replacing = tour.run(replacement);
+    await flushMicrotasks();
+    assert.equal(tour.state.get().status, "transitioning");
+    assert.equal(tour.state.get().currentStep?.currentProps.content, "active");
+    assert.deepEqual(
+      {
+        canGoNext: tour.state.get().canGoNext,
+        canCancel: tour.state.get().canCancel,
+        canGoPrevious: tour.state.get().canGoPrevious,
+      },
+      { canGoNext: true, canCancel: true, canGoPrevious: false },
+    );
+
+    await driver.commitContent();
+    assert.equal(tour.state.get().currentStep?.currentProps.content, "replacement");
+    assert.deepEqual(
+      {
+        canGoNext: tour.state.get().canGoNext,
+        canCancel: tour.state.get().canCancel,
+        canGoPrevious: tour.state.get().canGoPrevious,
+      },
+      { canGoNext: false, canCancel: false, canGoPrevious: false },
+    );
+
+    driver.finishShow();
+    await replacing;
+  });
+
+  test("keeps the committed presentation through a reentrant starting replacement", async () => {
+    const driver = new StagedTransitionDriver();
+    const tour = new TourController<string>(driver);
+    const active = tour
+      .create("active")
+      .step({ content: "active", target: targetResolver, title: "active" })
+      .build();
+    const finalWorkflow = tour
+      .create("final")
+      .step({ content: "final", target: targetResolver, title: "final" })
+      .build();
+    let finalRun: Promise<void> | null = null;
+    const replacedDuringStart = tour
+      .create("replaced-during-start", {
+        onStart: () => {
+          finalRun = tour.run(finalWorkflow);
+        },
+      })
+      .step({ content: "stale", target: targetResolver, title: "stale" })
+      .build();
+    await tour.run(active);
+    driver.pauseNextShow();
+
+    const replacedRun = tour.run(replacedDuringStart);
+    await flushMicrotasks();
+    assert.equal(tour.state.get().name, "final");
+    assert.equal(tour.state.get().status, "transitioning");
+    assert.equal(tour.state.get().currentStep?.currentProps.content, "active");
+    assert.equal(tour.state.get().canGoNext, true);
+
+    await driver.commitContent();
+    assert.equal(tour.state.get().currentStep?.currentProps.content, "final");
+    driver.finishShow();
+    await replacedRun;
+    await finalRun;
+  });
+
+  test("does not publish staged content after the transition is cancelled", async () => {
+    const driver = new StagedTransitionDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("cancel-staged-content", { cancellable: true })
+      .step({ content: "old", target: targetResolver, title: "old" })
+      .step({ content: "stale", target: targetResolver, title: "stale" })
+      .build();
+    await tour.run(workflow);
+    driver.pauseNextShow();
+
+    const navigation = tour.goNext();
+    await flushMicrotasks();
+    await tour.cancel();
+
+    await assert.rejects(() => driver.commitContent(), { name: "AbortError" });
+    driver.finishShow();
+    await navigation;
+    assert.equal(tour.state.get().status, "cancelled");
+    assert.equal(tour.state.get().currentStep?.currentProps.content, "old");
+  });
+
+  test("keeps previous blocked on the first step independently from cancellation", async () => {
     const cancellable = createGlowTour<string>();
     const allowed = cancellable
       .create("allowed", { cancellable: true })
       .step({ content: "one", target: targetResolver, title: "one" })
       .build();
     await cancellable.run(allowed);
-    await cancellable.previous();
-    assert.equal(cancellable.state.get().status, "cancelled");
+    await cancellable.goPrevious();
+    assert.equal(cancellable.state.get().status, "active");
 
     const nonCancellable = createGlowTour<string>();
     const denied = nonCancellable
@@ -187,7 +461,7 @@ describe("instance-first TourController", () => {
       .step({ content: "one", target: targetResolver, title: "one" })
       .build();
     await nonCancellable.run(denied);
-    await nonCancellable.previous();
+    await nonCancellable.goPrevious();
     assert.equal(nonCancellable.state.get().status, "active");
   });
 
@@ -202,7 +476,7 @@ describe("instance-first TourController", () => {
       })
       .build();
     await tour.run(workflow);
-    await tour.advance();
+    await tour.goNext();
     assert.equal(calls, 1);
 
     const failingTour = createGlowTour<string>();
@@ -214,12 +488,12 @@ describe("instance-first TourController", () => {
       })
       .build();
     await failingTour.run(failing);
-    await assert.rejects(() => failingTour.advance(), /hook failed/);
+    await assert.rejects(() => failingTour.goNext(), /hook failed/);
     assert.equal(failingTour.state.get().status, "error");
     assert.equal(failingTour.state.get().error?.message, "hook failed");
   });
 
-  test("ignores a second advance while the first transition is pending", async () => {
+  test("ignores a second goNext while the first transition is pending", async () => {
     const gate = deferred<void>();
     const tour = createGlowTour<string>();
     const workflow = tour
@@ -228,8 +502,8 @@ describe("instance-first TourController", () => {
       .beforeAdvance(() => gate.promise)
       .build();
     await tour.run(workflow);
-    const first = tour.advance();
-    const ignored = tour.advance();
+    const first = tour.goNext();
+    const ignored = tour.goNext();
     assert.equal(tour.state.get().status, "transitioning");
     await ignored;
     gate.resolve();
@@ -322,7 +596,7 @@ describe("instance-first TourController", () => {
     disposeGate.resolve(target);
     await pending;
     assert.equal(disposeAborted, true);
-    await assert.rejects(() => disposeTour.advance(), /disposed/);
+    await assert.rejects(() => disposeTour.goNext(), /disposed/);
     disposeTour.dispose();
   });
 
@@ -479,19 +753,19 @@ describe("instance-first TourController", () => {
     assert.equal(tour.state.get().status, "finished");
   });
 
-  test("runs definition actions in order and lets navigation actions advance", async () => {
+  test("runs definition actions in order and lets navigation actions goNext", async () => {
     const calls: string[] = [];
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("actions")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .do(async (_element, state) => {
-        assert.equal(Object.isFrozen(state), true);
-        assert.equal("set" in state, false);
-        calls.push(String(state.get().title));
+      .do(async ({ props }) => {
+        assert.equal(Object.isFrozen(props), true);
+        assert.equal("set" in props, false);
+        calls.push(String(props.get().title));
         return true;
       })
-      .advance()
+      .goNext()
       .step({ content: "two", target: targetResolver, title: "two" })
       .build();
 
@@ -521,6 +795,23 @@ describe("instance-first TourController", () => {
     assert.equal(tour.state.get().status, "error");
   });
 
+  test("turns reported event errors into terminal controller errors", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("event-error")
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .build();
+    await tour.run(workflow);
+
+    assert.ok(driver.commands);
+    await driver.commands?.reportError(new TypeError("event failed"));
+
+    assert.equal(tour.state.get().status, "error");
+    assert.equal(tour.state.get().error?.message, "event failed");
+    assert.equal(driver.clearCalls, 1);
+  });
+
   test("honors disabled navigation props in state and commands", async () => {
     const tour = createGlowTour<string>();
     const workflow = tour
@@ -533,22 +824,22 @@ describe("instance-first TourController", () => {
       })
       .step({
         content: "two",
-        disableBackButton: true,
+        disablePreviousButton: true,
         target: targetResolver,
         title: "two",
       })
       .build();
 
     await tour.run(workflow);
-    assert.equal(tour.state.get().canAdvance, false);
-    await tour.advance();
+    assert.equal(tour.state.get().canGoNext, false);
+    await tour.goNext();
     assert.equal(tour.state.get().currentStepIndex, 0);
 
     tour.updateCurrentStep((props) => ({ ...props, disableNextButton: false }));
-    await tour.advance();
+    await tour.goNext();
     assert.equal(tour.state.get().currentStepIndex, 1);
-    assert.equal(tour.state.get().canPrevious, false);
-    await tour.previous();
+    assert.equal(tour.state.get().canGoPrevious, false);
+    await tour.goPrevious();
     assert.equal(tour.state.get().currentStepIndex, 1);
   });
 
@@ -615,8 +906,8 @@ describe("instance-first TourController", () => {
     assert.equal(driver.disposeCalls, 1);
     assert.equal(notifications, notificationsBeforeDispose);
     await assert.rejects(() => tour.run(workflow), /disposed/);
-    await assert.rejects(() => tour.advance(), /disposed/);
-    await assert.rejects(() => tour.previous(), /disposed/);
+    await assert.rejects(() => tour.goNext(), /disposed/);
+    await assert.rejects(() => tour.goPrevious(), /disposed/);
     await assert.rejects(() => tour.goToStep(0), /disposed/);
     await assert.rejects(() => tour.cancel(), /disposed/);
   });
@@ -637,7 +928,7 @@ describe("instance-first TourController", () => {
 
     await tour.run(workflow);
     await tour.goToStep(2);
-    await tour.previous();
+    await tour.goPrevious();
 
     assert.equal(tour.state.get().currentStepIndex, 0);
     assert.equal(tour.state.get().direction, "previous");
@@ -671,7 +962,7 @@ describe("instance-first TourController", () => {
       .build();
     await tour.run(workflow);
 
-    const transition = tour.advance();
+    const transition = tour.goNext();
     await tour.cancel();
     hook.resolve();
     await transition;
@@ -722,7 +1013,7 @@ describe("instance-first TourController", () => {
       if (state.status === "transitioning") tour.dispose();
     });
 
-    await tour.advance();
+    await tour.goNext();
 
     assert.equal(oldHookCalls, 0);
     assert.equal(driver.disposeCalls, 1);
@@ -750,7 +1041,7 @@ describe("instance-first TourController", () => {
       }
     });
 
-    await tour.advance();
+    await tour.goNext();
     await newRun;
 
     assert.equal(oldHookCalls, 0);
@@ -774,23 +1065,23 @@ describe("instance-first TourController", () => {
       if (state.status === "transitioning") cancellation = tour.cancel();
     });
 
-    await tour.advance();
+    await tour.goNext();
     await cancellation;
 
     assert.equal(oldHookCalls, 0);
     assert.equal(tour.state.get().status, "cancelled");
   });
 
-  test("exposes previous on the first step only when it can cancel", async () => {
+  test("exposes previous only after the first step", async () => {
     const cancellableTour = createGlowTour<string>();
     const cancellable = cancellableTour
       .create("cancellable", { cancellable: true })
       .step({ content: "one", target: targetResolver, title: "one" })
       .build();
     await cancellableTour.run(cancellable);
-    assert.equal(cancellableTour.state.get().canPrevious, true);
-    cancellableTour.updateCurrentStep((props) => ({ ...props, disableBackButton: true }));
-    assert.equal(cancellableTour.state.get().canPrevious, false);
+    assert.equal(cancellableTour.state.get().canGoPrevious, false);
+    cancellableTour.updateCurrentStep((props) => ({ ...props, disablePreviousButton: true }));
+    assert.equal(cancellableTour.state.get().canGoPrevious, false);
 
     const fixedTour = createGlowTour<string>();
     const fixed = fixedTour
@@ -798,7 +1089,7 @@ describe("instance-first TourController", () => {
       .step({ content: "one", target: targetResolver, title: "one" })
       .build();
     await fixedTour.run(fixed);
-    assert.equal(fixedTour.state.get().canPrevious, false);
+    assert.equal(fixedTour.state.get().canGoPrevious, false);
   });
 
   test("removes the retry timer abort listener after resolving", async () => {
@@ -841,7 +1132,7 @@ describe("instance-first TourController", () => {
         },
         title: "one",
       })
-      .delay(0)
+      .wait(0)
       .build();
 
     await tour.run(workflow);
@@ -856,9 +1147,9 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("wait-condition")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .waitFor(
-        (_element, state) => {
-          assert.equal(state.get().title, "one");
+      .waitUntil(
+        ({ props }) => {
+          assert.equal(props.get().title, "one");
           attempts += 1;
           return attempts === 3;
         },
@@ -883,7 +1174,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("wait-element")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .waitForElement("#ready", { interval: 1, timeout: 100 })
+      .waitUntilElement("#ready", { interval: 1, timeout: 100 })
       .build();
 
     try {
@@ -906,7 +1197,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("wait-timeout")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .waitFor(() => false, { interval: 1, timeout: 0 })
+      .waitUntil(() => false, { interval: 1, timeout: 0 })
       .build();
 
     await assert.rejects(() => tour.run(workflow), /timed out waiting for condition after 0ms/i);
@@ -928,7 +1219,7 @@ describe("instance-first TourController", () => {
       const workflow = tour
         .create("async-wait-timeout")
         .step({ content: "one", target: targetResolver, title: "one" })
-        .waitFor(predicate, { interval: 1, timeout: 1 })
+        .waitUntil(predicate, { interval: 1, timeout: 1 })
         .build();
 
       await assert.rejects(() => tour.run(workflow), /timed out waiting for condition after 1ms/i);
@@ -945,7 +1236,7 @@ describe("instance-first TourController", () => {
       tour
         .create("waiting")
         .step({ content: "one", target: targetResolver, title: "one" })
-        .waitFor(
+        .waitUntil(
           () => {
             attempts += 1;
             entered.resolve();
@@ -974,7 +1265,7 @@ describe("instance-first TourController", () => {
       cancellable
         .create("cancel-wait", { cancellable: true })
         .step({ content: "one", target: targetResolver, title: "one" })
-        .waitFor(
+        .waitUntil(
           () => {
             cancelAttempts += 1;
             cancelEntered.resolve();
@@ -1000,7 +1291,7 @@ describe("instance-first TourController", () => {
       disposable
         .create("dispose-wait")
         .step({ content: "one", target: targetResolver, title: "one" })
-        .waitFor(
+        .waitUntil(
           () => {
             disposeAttempts += 1;
             disposeEntered.resolve();
@@ -1015,7 +1306,7 @@ describe("instance-first TourController", () => {
     await disposeRun;
     assert.equal(disposeAttempts, 1);
     assert.equal(driver.disposeCalls, 1);
-    await assert.rejects(() => disposable.advance(), /disposed/i);
+    await assert.rejects(() => disposable.goNext(), /disposed/i);
   });
 
   for (const failureSource of ["action", "hook", "view"] as const) {
@@ -1054,7 +1345,7 @@ describe("instance-first TourController", () => {
       });
 
       if (failureSource === "hook") await tour.run(failingWorkflow);
-      const failingCommand = failureSource === "hook" ? tour.advance() : tour.run(failingWorkflow);
+      const failingCommand = failureSource === "hook" ? tour.goNext() : tour.run(failingWorkflow);
 
       await assert.rejects(failingCommand, (error) => error === boom);
       await replacementRun;
@@ -1118,7 +1409,7 @@ describe("instance-first TourController", () => {
     });
 
     await tour.run(oldWorkflow);
-    await tour.advance();
+    await tour.goNext();
     await replacementRun;
 
     assert.deepEqual(secondNotifications, ["replacement-publication:starting"]);

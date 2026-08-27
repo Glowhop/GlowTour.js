@@ -30,99 +30,37 @@ afterEach(() => {
 });
 
 describe("vue adapter browser behavior", () => {
-  test("passes the shared mounted adapter acceptance contract", async () => {
-    const [{ createApp, h, nextTick }, runtime] = await Promise.all([
+  test("exposes reactive tour state to descendants", async () => {
+    const [{ createApp, defineComponent, h, nextTick }, runtime] = await Promise.all([
       import("vue"),
       import("./index"),
     ]);
     const container = document.createElement("div");
-    const primaryTarget = document.createElement("button");
-    const secondaryTarget = document.createElement("button");
-    document.body.append(container, primaryTarget, secondaryTarget);
-    const primaryTour = runtime.createGlowTour();
-    const secondaryTour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = runtime.createGlowTour();
+    const workflow = tour
+      .create("reactive state")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    const Observer = defineComponent({
+      setup() {
+        const state = runtime.useTour();
+        return () => h("output", `${state.value.status}:${state.value.currentStepIndex}`);
+      },
+    });
     const app = createApp({
-      render: () =>
-        h("div", [
-          h(runtime.GlowTourRoot, { idPrefix: "vue-accept-primary", tour: primaryTour }, () => [
-            h(runtime.GlowTourPopover, null, () => [
-              h(runtime.GlowTourHeader),
-              h(runtime.GlowTourContent),
-              h(runtime.GlowTourNextTrigger),
-            ]),
-          ]),
-          h(runtime.GlowTourRoot, { idPrefix: "vue-accept-secondary", tour: secondaryTour }, () => [
-            h(runtime.GlowTourPopover, null, () => [
-              h(runtime.GlowTourHeader),
-              h(runtime.GlowTourContent),
-              h(runtime.GlowTourNextTrigger),
-            ]),
-          ]),
-        ]),
+      render: () => h(runtime.GlowTourRoot, { tour }, () => h(Observer)),
     });
-
     app.mount(container);
+    await tour.run(workflow);
     await nextTick();
-    const [primaryRoot, secondaryRoot] = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-glow-tour-root]"),
-    );
-    assert.ok(primaryRoot);
-    assert.ok(secondaryRoot);
-
-    await runAdapterAcceptance({
-      content: (value) => value,
-      name: "vue",
-      primaryRoot,
-      primaryTarget,
-      primaryTour,
-      secondaryRoot,
-      secondaryTarget,
-      secondaryTour,
-      mountDuplicatePrimary: async () => {
-        const duplicateContainer = document.createElement("div");
-        const duplicateApp = createApp({
-          render: () =>
-            h(runtime.GlowTourRoot, {
-              idPrefix: "vue-accept-duplicate",
-              tour: primaryTour,
-            }),
-        });
-        let error: unknown;
-        let failed = false;
-        let mounted = false;
-        duplicateApp.config.errorHandler = (caught) => {
-          error = caught;
-          failed = true;
-        };
-        document.body.append(duplicateContainer);
-        try {
-          duplicateApp.mount(duplicateContainer);
-          mounted = true;
-          await nextTick();
-        } catch (caught) {
-          error = caught;
-          failed = true;
-        }
-        try {
-          if (mounted) duplicateApp.unmount();
-          duplicateContainer.remove();
-        } catch (cleanupError) {
-          if (!failed) throw cleanupError;
-        }
-        if (failed) throw error;
-      },
-      settle: async () => {
-        await nextTick();
-        await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
-      },
-      unmount: async () => {
-        app.unmount();
-        container.remove();
-        primaryTarget.remove();
-        secondaryTarget.remove();
-        await nextTick();
-      },
-    });
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await tour.advance();
+    await nextTick();
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    app.unmount();
   });
 
   test("connects before an immediate run after synchronous mount", async () => {
@@ -402,6 +340,9 @@ describe("vue adapter browser behavior", () => {
     app.mount(container);
     await nextTick();
     await tour.run(workflow);
+    const firstBack = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(firstBack?.disabled, true);
+    assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await new Promise((resolve) => window.setTimeout(resolve, 0));

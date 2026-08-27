@@ -11,8 +11,23 @@ export const FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
+export const TOUR_TRIGGER_SELECTOR = [
+  "[data-glow-tour-previous-trigger]",
+  "[data-glow-tour-cancel-trigger]",
+  "[data-glow-tour-next-trigger]",
+].join(",");
+
 export function focusableElements(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(isFocusable);
+}
+
+export function focusableTourControls(root: HTMLElement) {
+  const ownerRoot = root.closest<HTMLElement>("[data-glow-tour-root]");
+  return focusableElements(root).filter(
+    (element) =>
+      element.matches(TOUR_TRIGGER_SELECTOR) &&
+      element.closest<HTMLElement>("[data-glow-tour-root]") === ownerRoot,
+  );
 }
 
 export function isFocusable(element: HTMLElement) {

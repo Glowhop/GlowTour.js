@@ -21,7 +21,7 @@ export interface WorkflowStepDraft<T> {
   actions: StepActionInstruction<T>[];
   eventHandlers: EventHandler<T>[];
   nextAction: StepTransitionAction<T> | null;
-  backAction: StepTransitionAction<T> | null;
+  previousAction: StepTransitionAction<T> | null;
   cancelAction: StepTransitionAction<T> | null;
 }
 
@@ -49,11 +49,14 @@ function freezePopover(options: StepParameters<unknown>["popover"]) {
     freezeRecord({
       ...options,
       animation: freezeAnimation(options.animation),
+      arrow: options.arrow && freezeRecord({ ...options.arrow }),
       buttons: options.buttons && freezeRecord({ ...options.buttons }),
       keyboardShortcuts:
         options.keyboardShortcuts &&
         freezeRecord({
-          back: options.keyboardShortcuts.back && freezeRecord([...options.keyboardShortcuts.back]),
+          previous:
+            options.keyboardShortcuts.previous &&
+            freezeRecord([...options.keyboardShortcuts.previous]),
           next: options.keyboardShortcuts.next && freezeRecord([...options.keyboardShortcuts.next]),
           cancel:
             options.keyboardShortcuts.cancel && freezeRecord([...options.keyboardShortcuts.cancel]),
@@ -84,13 +87,12 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
     scroll: draft.scroll && freezeRecord({ ...draft.scroll }),
     behavior: draft.behavior && freezeRecord({ ...draft.behavior }),
     actions: freezeRecord(
-      draft.actions.map((action) =>
-        typeof action === "object" ? freezeRecord({ ...action }) : action,
+      draft.actions.map((action) =>action,
       ),
     ),
     eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
     nextAction: draft.nextAction,
-    backAction: draft.backAction,
+    previousAction: draft.previousAction,
     cancelAction: draft.cancelAction,
   });
 }
@@ -112,8 +114,7 @@ export function cloneWorkflowStepDraft<T>(
   return {
     ...definition,
     props: cloneStepProps(definition.props),
-    actions: definition.actions.map((action) =>
-      typeof action === "object" ? { ...action } : action,
+    actions: definition.actions.map((action) => action,
     ),
     eventHandlers: [...definition.eventHandlers],
   };

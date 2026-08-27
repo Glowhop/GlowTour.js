@@ -19,7 +19,9 @@ beforeEach(() => {
     requestAnimationFrame: window.requestAnimationFrame.bind(window),
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
     document: window.document,
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     window,
   });
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
@@ -30,6 +32,38 @@ afterEach(() => {
 });
 
 describe("react adapter browser behavior", () => {
+  test("exposes reactive tour state to descendants", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour, useTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("reactive state")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    function Observer() {
+      const state = useTour();
+      return React.createElement("output", null, `${state.status}:${state.currentStepIndex}`);
+    }
+    const root = createRoot(container);
+    await React.act(async () => {
+      root.render(React.createElement(GlowTour.Root, { tour }, React.createElement(Observer)));
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await React.act(async () => tour.advance());
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    await React.act(async () => root.unmount());
+  });
+
   test("keeps nested tour controls isolated from the outer root", async () => {
     const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
       import("react"),
@@ -221,6 +255,9 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       await tour.run(workflow);
     });
+    const firstBack = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(firstBack?.disabled, true);
+    assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     assert.equal(cancel?.disabled, false);
     await React.act(async () => {

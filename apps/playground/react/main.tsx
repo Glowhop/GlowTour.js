@@ -1,113 +1,36 @@
 import { createGlowTour, GlowTour } from "@glowhop/react-tour";
 import "@glowhop/styles-tour/default.css";
+import { createElement, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
+import { type LabContentFactory, mountLab } from "../lab";
+import "../lab/lab.css";
 import "../src/styles.css";
 
+const root = document.querySelector<HTMLElement>("#react-root");
+if (!root) throw new Error("Missing #react-root");
+
 const tour = createGlowTour();
+const content: LabContentFactory<ReactNode> = {
+  paragraph: (text) => createElement("p", null, text),
+  title: (method) =>
+    createElement("span", null, "API Builder ", createElement("code", null, method)),
+};
+const lab = mountLab({ content, framework: "React", root, tour });
 
-const workflow = tour
-  .create("react-playground", {
-    overlay: { color: "#101820", opacity: 0.58, padding: 10, radius: 8 },
-    popover: {
-      buttons: {
-        finishLabel: "Finish tour",
-        nextLabel: "Next step",
-        backLabel: "Previous step",
-      },
-    },
-    indicator: {
-      animated: false,
-    },
-  })
-  .step({
-    target: "#react-tour-id-1",
-    title: <strong>React native node</strong>,
-    content: "This step targets a real React-rendered element.",
-  })
-  .step({
-    target: "#react-tour-id-2",
-    title: "React step",
-    content: "This step targets a real React-rendered element.",
-    overlay: {
-      color: "red",
-    },
-  })
-  .beforePrevious(() => {
-    console.log("Back button clicked");
-  })
-  .beforeAdvance(() => {
-    console.log("Next button clicked");
-  })
-  .step({
-    target: "#react-tour-id-3",
-    title: "React step",
-    content: "This step targets a real React-rendered element.",
-    behavior: {
-      allowInteraction: true,
-    },
-  })
-  .on("click", (event) => {
-    console.log("Click event on step 3", event);
-    void tour.advance();
-  })
-  .step({
-    target: "#react-tour-id-2",
-    title: "React step",
-    content: "This step targets a real React-rendered element.",
-    overlay: {
-      color: "",
-    },
-    behavior: {
-      allowInteraction: true,
-    },
-    indicator: {
-      animated: true,
-    },
-  })
-  .build();
-
-function ReactPlayground() {
-  return (
-    <main className="app-screen bg-lime-50/40">
-      <a className="back-link inline-flex items-center gap-2 text-emerald-700" href="/">
-        Playground
-      </a>
-      <section className="app-panel shadow-sm ring-1 ring-black/5">
-        <h1 className="text-3xl font-semibold tracking-tight">React app</h1>
-        <button type="button" className="w-fit" onClick={() => void tour.run(workflow)}>
-          Start tour
-        </button>
-        <span id="react-tour-id-1" className="target-pill">
-          Step 1
-        </span>
-        <span id="react-tour-id-2" className="target-pill">
-          Step 2
-        </span>
-        <button type="button" id="react-tour-id-3" className="target-button target-shrink">
-          Step 3
-        </button>
-
-        <GlowTour.Root tour={tour}>
-          <GlowTour.Overlay />
-          <GlowTour.Pointer>☝️</GlowTour.Pointer>
-          <GlowTour.Popover>
-            <GlowTour.Header />
-            <GlowTour.Content />
-            <GlowTour.Footer>
-              <GlowTour.BackTrigger />
-              <GlowTour.NextTrigger />
-              <GlowTour.CancelTrigger />
-            </GlowTour.Footer>
-          </GlowTour.Popover>
-        </GlowTour.Root>
-      </section>
-    </main>
-  );
-}
-
-const root = document.querySelector("#react-root");
-if (!root) {
-  throw new Error("Missing #react-root");
-}
-
-createRoot(root).render(<ReactPlayground />);
+const reactRoot = createRoot(lab.rendererRoot);
+reactRoot.render(
+  <GlowTour.Root tour={tour}>
+    <GlowTour.Overlay />
+    <GlowTour.Pointer>☝️</GlowTour.Pointer>
+    <GlowTour.Popover>
+      <GlowTour.Header />
+      <GlowTour.Content />
+      <GlowTour.Footer>
+        <GlowTour.BackTrigger />
+        <GlowTour.NextTrigger />
+        <GlowTour.CancelTrigger />
+      </GlowTour.Footer>
+    </GlowTour.Popover>
+  </GlowTour.Root>,
+);
+lab.addCleanup(() => reactRoot.unmount());

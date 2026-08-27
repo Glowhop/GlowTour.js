@@ -1,5 +1,6 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
 import {
+  type Accessor,
   createComponent,
   createContext,
   createEffect,
@@ -65,6 +66,10 @@ function useTourSnapshot(tour: () => Tour) {
     onCleanup(unsubscribe);
   });
   return snapshot;
+}
+
+export function useTour(): Accessor<TourState<SolidTourContent>> {
+  return useTourSnapshot(useTourContext().tour);
 }
 
 function useBoundElement<T extends Element>(
@@ -328,7 +333,7 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
   return Show({
     get when() {
       const step = currentStep(snapshot());
-      return !snapshot().isFirstStep && !step?.hideBackButton;
+      return !step?.hideBackButton;
     },
     get children() {
       return Trigger(

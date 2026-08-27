@@ -1,37 +1,48 @@
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, type GlowTourRootElement } from "@glowhop/vanilla-tour";
+import {
+  createGlowTour,
+  type GlowTourRootElement,
+  type VanillaTourContent,
+} from "@glowhop/vanilla-tour";
+import { type LabContentFactory, mountLab } from "../lab";
+import "../lab/lab.css";
 import "../src/styles.css";
 
-const nativeTitle = document.createElement("strong");
-nativeTitle.textContent = "Vanilla native Node";
+const root = document.querySelector<HTMLElement>("#vanilla-root");
+if (!root) throw new Error("Missing #vanilla-root");
 
 const tour = createGlowTour();
-const workflow = tour
-  .create("vanilla-playground", {
-    overlay: { color: "#101820", opacity: 0.58, padding: 10, radius: 8 },
-  })
-  .step({
-    target: "#vanilla-tour-id-1",
-    title: nativeTitle,
-    content: "This step targets a vanilla DOM element.",
-  })
-  .step({
-    target: "#vanilla-tour-id-2",
-    title: "Vanilla overlay override",
-    content: "This step uses a red overlay.",
-    overlay: { color: "red" },
-  })
-  .step({
-    target: "#vanilla-tour-id-3",
-    title: "Vanilla interactive target",
-    content: "The target remains interactive and receives the pointer.",
-    behavior: { allowInteraction: true },
-  })
-  .build();
+const content: LabContentFactory<VanillaTourContent> = {
+  paragraph: (text) => element("p", text),
+  title: (method) => {
+    const title = element("span", "API Builder ");
+    title.append(element("code", method));
+    return title;
+  },
+};
+const lab = mountLab({ content, framework: "Vanilla", root, tour });
+lab.rendererRoot.innerHTML = `
+  <glow-tour-root>
+    <glow-tour-overlay></glow-tour-overlay>
+    <glow-tour-pointer>☝️</glow-tour-pointer>
+    <glow-tour-popover>
+      <glow-tour-header></glow-tour-header>
+      <glow-tour-content></glow-tour-content>
+      <glow-tour-footer>
+        <glow-tour-back-trigger></glow-tour-back-trigger>
+        <glow-tour-next-trigger></glow-tour-next-trigger>
+        <glow-tour-cancel-trigger></glow-tour-cancel-trigger>
+      </glow-tour-footer>
+    </glow-tour-popover>
+  </glow-tour-root>
+`;
 
-document.querySelector("[data-start-tour]")?.addEventListener("click", () => {
-  void tour.run(workflow);
-});
+const tourRoot = lab.rendererRoot.querySelector<GlowTourRootElement>("glow-tour-root");
+if (!tourRoot) throw new Error("Missing glow-tour-root");
+tourRoot.tour = tour;
 
-const tourRoot = document.querySelector<GlowTourRootElement>("glow-tour-root");
-if (tourRoot) tourRoot.tour = tour;
+function element(tagName: string, text: string): HTMLElement {
+  const node = document.createElement(tagName);
+  node.textContent = text;
+  return node;
+}

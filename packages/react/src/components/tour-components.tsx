@@ -51,21 +51,24 @@ function useBoundElement<T extends Element>(
   const { binding } = useTourContext();
   const [element, setElement] = React.useState<T | null>(null);
 
+  const binder = React.useEffectEvent(bind);
+
   React.useEffect(() => {
     if (!binding || !element) return;
-    return bind(binding, element);
-  }, [bind, binding, element]);
+    return binder(binding, element);
+  }, [binding, element]);
 
   return setElement;
 }
 
 function useStep(snapshot: TourState<ReactTourContent>) {
-  return snapshot.currentStep?.currentProps ?? null;
+  return snapshot.currentStep?.currentProps;
 }
 
 export function Root({ children, idPrefix, tour, ...props }: RootProps) {
   const mounted = React.useRef<{ binding: RootBinding; element: HTMLDivElement } | null>(null);
   const [binding, setBinding] = React.useState<RootBinding | null>(null);
+
   const release = React.useCallback(() => {
     const current = mounted.current;
     if (!current) return;
@@ -73,6 +76,7 @@ export function Root({ children, idPrefix, tour, ...props }: RootProps) {
     current.binding.release();
     setBinding((active) => (active === current.binding ? null : active));
   }, []);
+
   const connect = React.useCallback(
     (element: HTMLDivElement | null) => {
       release();
@@ -230,13 +234,14 @@ function Trigger({
 export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
+
   const step = useStep(snapshot);
-  if (snapshot.isFirstStep || step?.hideBackButton) return null;
+  if (step?.hideBackButton) return null;
   const label = backLabel ?? "Back step";
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canPrevious || step?.disableBackButton === true}
+      capabilityDisabled={!snapshot.canGoPrevious || step?.disableBackButton === true}
       label={label}
       marker="back"
     />
@@ -271,6 +276,11 @@ export function CancelTrigger(props: CancelTriggerProps) {
       marker="cancel"
     />
   );
+}
+
+export function useTour(): TourState<ReactTourContent> {
+  const { tour } = useTourContext();
+  return useTourSnapshot(tour);
 }
 
 export const GlowTour = {

@@ -9,19 +9,94 @@ import type {
   EventHandler,
   StartOptions,
   StepAction,
+  StepContext,
   StepParameters,
   StepTransitionAction,
   StepWaitPredicate,
   WaitOptions,
+  WaitUntilOptions,
 } from "../types";
+
+const DEFAULT_WAIT_INTERVAL = 16;
+const DEFAULT_WAIT_TIMEOUT = 3000;
+const INACTIVE_STEP_ERROR = "WorkflowStepBuilder is no longer active";
+const STEP_BUILDER_INTERNAL = Symbol("WorkflowStepBuilder.internal");
 
 export type EventName = keyof HTMLElementEventMap;
 
 type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
+type WaitUntilPredicate<T> = (context: StepContext<T>) => Promise<boolean> | boolean;
 
-const DEFAULT_WAIT_TIMEOUT = 3000;
-const DEFAULT_WAIT_INTERVAL = 50;
+function abortError(): DOMException {
+  return new DOMException("The operation was aborted", "AbortError");
+}
 
+function assertTimingValue(name: string, value: number): void {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new TypeError(`${name} must be a finite non-negative number`);
+  }
+}
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw abortError();
+}
+
+function waitTimeoutError(timeout: number): Error {
+  return new Error(`waitUntil timed out after ${timeout}ms`);
+}
+
+function waitForDelay(delay: number, signal: AbortSignal): Promise<void> {
+  throwIfAborted(signal);
+  return new Promise((resolve, reject) => {
+    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      cleanup();
+      reject(abortError());
+    };
+    const timeoutId = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, delay);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function waitForPredicate(
+  predicate: () => Promise<boolean> | boolean,
+  remainingTime: number,
+  timeout: number,
+  signal: AbortSignal,
+): Promise<boolean> {
+  throwIfAborted(signal);
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      signal.removeEventListener("abort", onAbort);
+    };
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback();
+    };
+    const onAbort = () => settle(() => reject(abortError()));
+    const timeoutId = setTimeout(
+      () => settle(() => reject(waitTimeoutError(timeout))),
+      remainingTime,
+    );
+    signal.addEventListener("abort", onAbort, { once: true });
+    void Promise.resolve()
+      .then(predicate)
+      .then(
+        (result) => settle(() => resolve(result)),
+        (error) => settle(() => reject(error)),
+      );
+  });
+}
+
+//! à utiliser
 function waitOptions(options: WaitOptions = {}) {
   const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
@@ -37,6 +112,7 @@ function waitOptions(options: WaitOptions = {}) {
 export class WorkflowBuilder<T> {
   private readonly steps: WorkflowStepDraft<T>[] = [];
   private currentStep: WorkflowStepBuilder<T> | null = null;
+  private definition: WorkflowDefinition<T> | null = null;
 
   constructor(
     public readonly name: string,
@@ -44,17 +120,16 @@ export class WorkflowBuilder<T> {
   ) {}
 
   step(options: StepParameters<T>) {
-    if (this.currentStep) {
-      this.steps.push(this.currentStep.toDraft());
-    }
+    this.assertBuilding();
+    this.commitCurrentStep();
     this.currentStep = new WorkflowStepBuilder(this, {
       target: options.target,
       props: {
         title: options.title,
         content: options.content,
         hideFooter: options.hideFooter,
-        disableBackButton: options.disableBackButton,
-        hideBackButton: options.hideBackButton,
+        disablePreviousButton: options.disablePreviousButton,
+        hidePreviousButton: options.hidePreviousButton,
         disableNextButton: options.disableNextButton,
         hideNextButton: options.hideNextButton,
         disableAutoScroll: options.disableAutoScroll,
@@ -69,151 +144,201 @@ export class WorkflowBuilder<T> {
       actions: [],
       eventHandlers: [],
       nextAction: null,
-      backAction: null,
+      previousAction: null,
       cancelAction: null,
     });
     return this.currentStep;
   }
 
-  concat(builder: WorkflowStepBuilder<T>) {
-    const definition = builder.builder.build();
-    const drafts = definition.steps.map(cloneWorkflowStepDraft);
+  append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T> {
+    this.assertBuilding();
+    const drafts = workflow.steps.map(cloneWorkflowStepDraft);
     const lastStep = drafts.at(-1);
-    if (!lastStep) {
-      throw new Error("Cannot concat a builder without steps");
-    }
-    if (this.currentStep) {
-      this.steps.push(this.currentStep.toDraft());
-    }
+    if (!lastStep) throw new Error("Cannot append a workflow without steps");
+
+    this.commitCurrentStep();
     this.steps.push(...drafts.slice(0, -1));
     this.currentStep = new WorkflowStepBuilder(this, lastStep);
     return this.currentStep;
   }
 
+
   build(): WorkflowDefinition<T> {
-    const drafts = this.currentStep ? [...this.steps, this.currentStep.toDraft()] : this.steps;
-    return createWorkflowDefinition(this.name, this.options, drafts);
+    if (this.definition) return this.definition;
+    this.commitCurrentStep();
+    this.definition = createWorkflowDefinition(this.name, this.options, this.steps);
+    return this.definition;
+  }
+
+  private assertBuilding(): void {
+    if (this.definition) throw new Error("WorkflowBuilder is already finished");
+  }
+
+  private commitCurrentStep(): void {
+    if (!this.currentStep) return;
+    this.steps.push(this.currentStep[STEP_BUILDER_INTERNAL]());
+    this.currentStep = null;
   }
 }
 
+
 export class WorkflowStepBuilder<T> {
+  private active = true;
+
   constructor(
-    public readonly builder: WorkflowBuilder<T>,
+    private readonly owner: WorkflowBuilder<T>,
     private readonly draft: WorkflowStepDraft<T>,
   ) {}
 
-  step(options: StepParameters<T>) {
-    return this.builder.step(options);
+  step(options: StepParameters<T>): WorkflowStepBuilder<T> {
+    this.assertActive();
+    return this.owner.step(options);
   }
 
-  build() {
-    return this.builder.build();
+  append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T> {
+    this.assertActive();
+    return this.owner.append(workflow);
   }
 
-  concat(builder: WorkflowStepBuilder<T>) {
-    return this.builder.concat(builder);
+  build(): WorkflowDefinition<T> {
+    this.assertActive();
+    return this.owner.build();
   }
 
-  clickTarget() {
-    this.draft.actions.push(async (nextTarget) => {
-      nextTarget?.click();
+  clickTarget(): this {
+    return this.do(({target}) => {
+      target?.click();
       return true;
     });
-    return this;
   }
 
-  focusTarget() {
-    this.draft.actions.push(async (nextTarget) => {
-      nextTarget?.focus();
+  focusTarget(): this {
+    return this.do(({target}) => {
+      target?.focus();
       return true;
     });
-    return this;
   }
 
-  delay(timeMs: number) {
-    if (!Number.isFinite(timeMs) || timeMs < 0) {
-      throw new TypeError("delay must be a finite non-negative number");
-    }
+  wait(timeMs: number) {
+    this.assertActive();
+    assertTimingValue("timeMs", timeMs);
     this.draft.actions.push(timeMs);
     return this;
   }
 
-  waitFor(predicate: StepWaitPredicate<T>, options?: WaitOptions) {
-    this.draft.actions.push({
-      description: "condition",
-      predicate,
-      type: "waitFor",
-      ...waitOptions(options),
+
+  waitUntil(predicate: WaitUntilPredicate<T>, options: WaitUntilOptions = {}): this {
+    this.assertActive();
+    const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
+    const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
+    assertTimingValue("interval", interval);
+    assertTimingValue("timeout", timeout);
+
+    this.draft.actions.push(async (context) => {
+      const startedAt = Date.now();
+      let attempted = false;
+      while (true) {
+        throwIfAborted(context.signal);
+        const elapsed = Date.now() - startedAt;
+        if (attempted && elapsed >= timeout) throw waitTimeoutError(timeout);
+        attempted = true;
+        if (
+          await waitForPredicate(
+            () => predicate(context),
+            Math.max(0, timeout - elapsed),
+            timeout,
+            context.signal,
+          )
+        )
+          return true;
+        const remainingTime = timeout - (Date.now() - startedAt);
+        if (remainingTime <= 0) throw waitTimeoutError(timeout);
+        await waitForDelay(Math.min(interval, remainingTime), context.signal);
+      }
     });
     return this;
   }
 
-  waitForElement(target: string, options?: WaitOptions) {
-    this.draft.actions.push({
-      description: `element ${target}`,
-      predicate: () => typeof document !== "undefined" && document.querySelector(target) !== null,
-      type: "waitFor",
-      ...waitOptions(options),
-    });
+  waitUntilElement(selector: string, options?: WaitUntilOptions): this {
+    if (selector.length === 0) throw new TypeError("selector must not be empty");
+    return this.waitUntil(
+      () => typeof document !== "undefined" && document.querySelector(selector) !== null,
+      options,
+    );
+  }
+
+  goNext(): this {
+    this.assertActive();
+    this.draft.actions.push("next");
     return this;
   }
 
-  advance() {
-    this.draft.actions.push("advance");
-    return this;
-  }
-
-  previous() {
+  goPrevious(): this {
+    this.assertActive();
     this.draft.actions.push("previous");
     return this;
   }
 
   do(callback: StepAction<T>) {
+    this.assertActive();
     this.draft.actions.push(callback);
     return this;
   }
 
   beforeAdvance(callback: StepTransitionAction<T>) {
+    this.assertActive();
     this.draft.nextAction = callback;
     return this;
   }
 
   beforePrevious(callback: StepTransitionAction<T>) {
-    this.draft.backAction = callback;
+    this.assertActive();
+    this.draft.previousAction = callback;
     return this;
   }
 
   beforeCancel(callback: StepTransitionAction<T>) {
+    this.assertActive();
     this.draft.cancelAction = callback;
     return this;
   }
 
-  on<const TEventName extends EventName>(
+  onTargetEvent<const TEventName extends EventName>(
     event: TEventName,
     callback: EventHandler<T, EventForName<TEventName>>["callback"],
   ): this;
-  on<const TEventNames extends readonly EventName[]>(
+  onTargetEvent<const TEventNames extends readonly EventName[]>(
     events: TEventNames,
     callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
   ): this;
-  on(
-    eventOrEvents: EventName | readonly EventName[],
-    callback: EventHandler<T, never>["callback"],
-  ) {
-    return this.addEventHandlers(eventOrEvents, callback);
+  onTargetEvent<TEvent extends Event>(
+    event: string,
+    callback: EventHandler<T, TEvent>["callback"],
+  ): this;
+  onTargetEvent(
+    eventOrEvents: string | readonly string[],
+    callback: EventHandler<T, Event>["callback"],
+  ): this {
+    this.assertActive();
+    const events = typeof eventOrEvents === "string" ? [eventOrEvents] : eventOrEvents;
+    if (events.length === 0) throw new TypeError("events must not be empty");
+    for (const event of events) {
+      if (event.length === 0) throw new TypeError("event name must not be empty");
+      this.draft.eventHandlers.push({
+        event,
+        callback: callback as EventHandler<T>["callback"],
+      });
+    }
+    return this;
   }
 
-  toDraft(): WorkflowStepDraft<T> {
+
+  [STEP_BUILDER_INTERNAL](): WorkflowStepDraft<T> {
+    this.active = false;
     return cloneWorkflowStepDraft(this.draft);
   }
 
-  private addEventHandlers(
-    eventOrEvents: EventName | readonly EventName[],
-    callback: EventHandler<T, never>["callback"],
-  ) {
-    for (const event of typeof eventOrEvents === "string" ? [eventOrEvents] : eventOrEvents) {
-      this.draft.eventHandlers.push({ event, callback: callback as EventHandler<T>["callback"] });
-    }
-    return this;
+  private assertActive(): void {
+    if (!this.active) throw new Error(INACTIVE_STEP_ERROR);
   }
 }
