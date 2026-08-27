@@ -78,12 +78,12 @@ describe("angular adapter browser behavior", () => {
       .create("reactive state")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     await tour.run(workflow);
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
-    await tour.advance();
+    await tour.goNext();
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");
