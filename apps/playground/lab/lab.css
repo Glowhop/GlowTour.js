@@ -1,4 +1,4 @@
-.shell {
+.lab-shell {
   display: grid;
   gap: 28px;
   margin: 0 auto;
@@ -6,28 +6,28 @@
   padding: 32px;
 }
 
-.header {
+.lab-header {
   align-items: end;
   display: flex;
   gap: 32px;
   justify-content: space-between;
 }
 
-.header h1 {
+.lab-header h1 {
   font-size: clamp(32px, 5vw, 56px);
   letter-spacing: -0.045em;
   line-height: 1;
   margin-top: 10px;
 }
 
-.header p {
+.lab-header p {
   color: #665f79;
   font-size: 16px;
   margin-top: 12px;
   max-width: 620px;
 }
 
-.backLink {
+.lab-back-link {
   color: #4c35fd;
   display: inline-flex;
   font-size: 14px;
@@ -36,8 +36,8 @@
   text-decoration: none;
 }
 
-.eyebrow,
-.panelKicker {
+.lab-eyebrow,
+.lab-panel-kicker {
   color: #4c35fd;
   font-size: 11px;
   font-weight: 800;
@@ -45,7 +45,7 @@
   text-transform: uppercase;
 }
 
-.headerActions {
+.lab-header-actions {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
@@ -53,8 +53,8 @@
   justify-content: flex-end;
 }
 
-.primaryButton,
-.secondaryButton {
+.lab-primary-button,
+.lab-secondary-button {
   border-radius: 999px;
   font-size: 13px;
   font-weight: 750;
@@ -62,26 +62,26 @@
   padding: 0 16px;
 }
 
-.primaryButton {
+.lab-primary-button {
   background: #4c35fd;
   border-color: #4c35fd;
   color: #fff;
 }
 
-.primaryButton:hover {
+.lab-primary-button:hover {
   background: #3720e8;
   border-color: #3720e8;
 }
 
-.secondaryButton {
+.lab-secondary-button {
   background: #fff;
   border-color: #ded9ee;
   color: #332c46;
 }
 
-.statusBadge,
-.countBadge,
-.cardState {
+.lab-status-badge,
+.lab-count-badge,
+.lab-card-state {
   align-items: center;
   background: #eeeaff;
   border-radius: 999px;
@@ -94,66 +94,66 @@
   text-transform: uppercase;
 }
 
-.statusBadge[data-status="active"] {
+.lab-status-badge[data-status="active"] {
   background: #dcfce8;
   color: #14733b;
 }
 
-.statusBadge[data-status="error"] {
+.lab-status-badge[data-status="error"] {
   background: #fee2e2;
   color: #b42318;
 }
 
-.workspace {
+.lab-workspace {
   align-items: start;
   display: grid;
   gap: 22px;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
 }
 
-.targetsSection,
-.panel {
+.lab-targets-section,
+.lab-panel {
   background: #fff;
   border: 1px solid #e5e1ef;
   border-radius: 18px;
   box-shadow: 0 14px 44px rgba(39, 28, 75, 0.06);
 }
 
-.targetsSection {
+.lab-targets-section {
   padding: 22px;
 }
 
-.sectionHeading,
-.panelHeading {
+.lab-section-heading,
+.lab-panel-heading {
   align-items: center;
   display: flex;
   gap: 18px;
   justify-content: space-between;
 }
 
-.sectionHeading {
+.lab-section-heading {
   margin-bottom: 20px;
 }
 
-.sectionHeading h2,
-.panelHeading h2 {
+.lab-section-heading h2,
+.lab-panel-heading h2 {
   color: #241f31;
   font-size: 18px;
   margin-top: 4px;
 }
 
-.sectionHeading > span {
+.lab-section-heading > span {
   color: #766e88;
   font-size: 12px;
 }
 
-.targetGrid {
+.lab-target-grid {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.targetCard {
+.lab-target-card {
   align-content: center;
   background: #f8f7fc;
   border: 1px solid #e8e4f1;
@@ -165,15 +165,15 @@
   position: relative;
 }
 
-.targetCard > span:not(.cardNumber),
-.targetCard > label {
+.lab-target-card > span:not(.lab-card-number),
+.lab-target-card > label {
   color: #332c46;
   font-size: 14px;
   font-weight: 750;
 }
 
-.targetCard button,
-.targetCard input {
+.lab-target-card button,
+.lab-target-card input {
   border: 1px solid #d8d2e6;
   border-radius: 9px;
   font-size: 12px;
@@ -181,27 +181,27 @@
   width: 100%;
 }
 
-.targetCard button {
+.lab-target-card button {
   background: #fff;
   color: #4c35fd;
   font-weight: 750;
 }
 
-.targetCard input {
+.lab-target-card input {
   background: #fff;
   color: #241f31;
   padding: 0 11px;
 }
 
-.targetCard button:hover,
-.targetCard button:focus-visible,
-.targetCard input:focus {
+.lab-target-card button:hover,
+.lab-target-card button:focus-visible,
+.lab-target-card input:focus {
   border-color: #4c35fd;
   outline: 2px solid rgba(76, 53, 253, 0.18);
   outline-offset: 2px;
 }
 
-.cardNumber {
+.lab-card-number {
   color: #948ba9;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
@@ -211,75 +211,75 @@
   top: 12px;
 }
 
-.cardState {
+.lab-card-state {
   justify-self: start;
 }
 
-.revealedTarget {
+.lab-revealed-target {
   color: #14733b;
   font-size: 12px;
 }
 
-.finalCard {
+.lab-final-card {
   background: #eeeaff;
   border-color: #cfc6ff;
   grid-column: span 2;
 }
 
-.finalCard button {
+.lab-final-card button {
   background: #4c35fd;
   border-color: #4c35fd;
   color: #fff;
 }
 
-.sidebar {
+.lab-sidebar {
   display: grid;
   gap: 16px;
   position: sticky;
   top: 20px;
 }
 
-.panel {
+.lab-panel {
   padding: 18px;
 }
 
-.inspectorList {
+.lab-inspector-list {
   display: grid;
   gap: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 16px;
 }
 
-.inspectorList > div {
+.lab-inspector-list > div {
   border-top: 1px solid #eeeaf5;
   gap: 6px;
   padding: 12px 0;
 }
 
-.inspectorList > div:nth-child(odd) {
+.lab-inspector-list > div:nth-child(odd) {
   padding-right: 12px;
 }
 
-.inspectorList dt {
+.lab-inspector-list dt {
   color: #8b829e;
   font-size: 10px;
 }
 
-.inspectorList dd {
+.lab-inspector-list dd {
   color: #332c46;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   font-weight: 700;
 }
 
-.emptyLog {
+.lab-empty-log {
   color: #847c95;
   font-size: 13px;
   line-height: 1.5;
   margin-top: 18px;
 }
 
-.logList {
+.lab-log-list {
   display: grid;
   gap: 0;
   list-style: none;
@@ -289,68 +289,82 @@
   padding: 0 4px;
 }
 
-.logList li {
+.lab-log-list:empty {
+  display: none;
+}
+
+.lab-log-list li {
   border-top: 1px solid #eeeaf5;
   display: grid;
   gap: 4px;
   padding: 11px 0;
 }
 
-.logList time {
+.lab-log-list time {
   color: #948ba9;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
 }
 
-.logList span {
+.lab-log-list span {
   color: #443c56;
   font-size: 12px;
   line-height: 1.45;
 }
 
+.lab-sr-only {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 @media (max-width: 1080px) {
-  .targetGrid {
+  .lab-target-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 820px) {
-  .shell {
+  .lab-shell {
     padding: 20px;
   }
 
-  .header {
+  .lab-header {
     align-items: start;
     flex-direction: column;
   }
 
-  .headerActions {
+  .lab-header-actions {
     justify-content: flex-start;
   }
 
-  .workspace {
+  .lab-workspace {
     grid-template-columns: 1fr;
   }
 
-  .sidebar {
+  .lab-sidebar {
     position: static;
   }
 }
 
 @media (max-width: 540px) {
-  .shell {
+  .lab-shell {
     padding: 16px;
   }
 
-  .headerActions > button {
+  .lab-header-actions > button {
     flex: 1 1 calc(50% - 8px);
   }
 
-  .targetGrid {
+  .lab-target-grid {
     grid-template-columns: 1fr;
   }
 
-  .finalCard {
+  .lab-final-card {
     grid-column: auto;
   }
 }

@@ -1,11 +1,6 @@
-export interface ApiLabSession {
-  armAutomaticReturn(): void;
-  beginPreviousDemo(): boolean;
-  consumeAutomaticReturn(): boolean;
-  reset(): void;
-}
+import type { LabSession } from "./lab-types";
 
-export function createApiLabSession(): ApiLabSession {
+export function createLabSession(): LabSession {
   let automaticReturnArmed = false;
   let previousDemoStarted = false;
 

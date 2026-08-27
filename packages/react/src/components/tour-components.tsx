@@ -62,7 +62,7 @@ function useBoundElement<T extends Element>(
 }
 
 function useStep(snapshot: TourState<ReactTourContent>) {
-  return snapshot.currentStep?.currentProps ?? null;
+  return snapshot.currentStep?.currentProps
 }
 
 export function Root({ children, idPrefix, tour, ...props }: RootProps) {
@@ -234,6 +234,7 @@ function Trigger({
 export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
+
   const step = useStep(snapshot);
   if (step?.hideBackButton) return null;
   const label = backLabel ?? "Back step";
