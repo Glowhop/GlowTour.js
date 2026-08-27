@@ -151,7 +151,14 @@ import { GlowTourRoot as AngularGlowTourRoot } from "@glowhop/angular-tour";
 import { GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
 import { createGlowTour } from "@glowhop/vanilla-tour";
 
-void createCoreGlowTour<string>();
+const workflow = createCoreGlowTour<string>()
+  .create("tarball-consumer")
+  .step({ content: "Content", target: "#target", title: "Title" })
+  .delay(0)
+  .do(() => true)
+  .beforeAdvance(() => {})
+  .build();
+void workflow;
 void ReactGlowTour;
 void VueGlowTourRoot;
 void AngularGlowTourRoot;

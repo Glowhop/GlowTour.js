@@ -6,7 +6,7 @@ import {
   type ReadonlyStepProps,
   type WorkflowStepDefinition,
 } from "../definition";
-import type { DynamicStepProps } from "../types";
+import type { DynamicStepProps, ReadonlyStepState } from "../types";
 import {
   mergeIndicatorOptions,
   mergeOverlayOptions,
@@ -19,6 +19,7 @@ import { resolveTargetElement } from "../utils/utils";
 export class ActiveStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
   readonly props: Observable<DynamicStepProps<T>>;
+  readonly state: ReadonlyStepState<T>;
   readonly overlay;
   readonly popover;
   readonly indicator;
@@ -33,6 +34,11 @@ export class ActiveStep<T> {
   ) {
     this.initialProps = freezeStepProps(definition.props);
     this.props = new Observable(cloneStepProps(this.initialProps));
+    this.state = Object.freeze({
+      get: () => freezeStepProps(this.props.get()),
+      subscribe: (listener: (props: ReadonlyStepProps<T>) => void) =>
+        this.props.subscribe((props) => listener(freezeStepProps(props))),
+    });
     this.overlay = mergeOverlayOptions(defaults.overlay, definition.overlay);
     this.popover = mergePopoverOptions(defaults.popover, definition.popover);
     this.indicator = mergeIndicatorOptions(defaults.indicator, definition.indicator);

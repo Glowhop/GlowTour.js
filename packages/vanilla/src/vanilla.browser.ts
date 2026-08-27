@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { createGlowTour as createCoreGlowTour } from "@glowhop/core-tour";
 import { Window } from "happy-dom";
+import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
 
 type VanillaRuntime = typeof import("./index");
 
@@ -59,10 +60,63 @@ function workflow(
     .create(name)
     .step({ content: `${name} one`, target, title: `${name} one` })
     .step({ content: `${name} two`, target, title: `${name} two` })
-    .finish();
+    .build();
 }
 
 describe("vanilla adapter browser behavior", () => {
+  test("passes the shared mounted adapter acceptance contract", async () => {
+    const primaryTour = runtime.createGlowTour();
+    const secondaryTour = runtime.createGlowTour();
+    const primaryTarget = document.createElement("button");
+    const secondaryTarget = document.createElement("button");
+    const primaryRoot = root(primaryTour, "vanilla-accept-primary");
+    const secondaryRoot = root(secondaryTour, "vanilla-accept-secondary");
+    primaryRoot.innerHTML =
+      "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content><glow-tour-next-trigger></glow-tour-next-trigger></glow-tour-popover>";
+    secondaryRoot.innerHTML =
+      "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content><glow-tour-next-trigger></glow-tour-next-trigger></glow-tour-popover>";
+    document.body.append(primaryTarget, secondaryTarget, primaryRoot, secondaryRoot);
+    await settle();
+
+    await runAdapterAcceptance({
+      content: (value) => value,
+      name: "vanilla",
+      primaryRoot,
+      primaryTarget,
+      primaryTour,
+      secondaryRoot,
+      secondaryTarget,
+      secondaryTour,
+      mountDuplicatePrimary: async () => {
+        const duplicateRoot = root(primaryTour, "vanilla-accept-duplicate");
+        let error: unknown;
+        let failed = false;
+        try {
+          document.body.append(duplicateRoot);
+          await settle();
+        } catch (caught) {
+          error = caught;
+          failed = true;
+        }
+        try {
+          duplicateRoot.remove();
+          await settle();
+        } catch (cleanupError) {
+          if (!failed) throw cleanupError;
+        }
+        if (failed) throw error;
+      },
+      settle,
+      unmount: async () => {
+        primaryRoot.remove();
+        secondaryRoot.remove();
+        primaryTarget.remove();
+        secondaryTarget.remove();
+        await settle();
+      },
+    });
+  });
+
   test("replays pre-upgrade tour and idPrefix properties before connecting", async () => {
     document.body.append(preUpgradeRoot);
     await settle();
@@ -70,11 +124,11 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(root.id, "pre-upgrade-root");
     assert.equal(root.idPrefix, "pre-upgrade");
     assert.equal(root.tour, preUpgradeTour);
-    await assert.doesNotReject(() => preUpgradeTour.run(preUpgradeTour.create("upgrade").finish()));
+    await assert.doesNotReject(() => preUpgradeTour.run(preUpgradeTour.create("upgrade").build()));
     root.tour = null;
     await settle();
     await assert.rejects(
-      () => preUpgradeTour.run(preUpgradeTour.create("upgrade released").finish()),
+      () => preUpgradeTour.run(preUpgradeTour.create("upgrade released").build()),
       /connected root/i,
     );
   });
@@ -91,11 +145,11 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(afterConnect.id, "glow-tour-root");
     beforeConnect.tour = null;
     await settle();
-    await assert.rejects(() => first.run(first.create("released").finish()), /connected root/i);
+    await assert.rejects(() => first.run(first.create("released").build()), /connected root/i);
     beforeConnect.tour = first;
-    await assert.doesNotReject(() => first.run(first.create("remounted").finish()));
+    await assert.doesNotReject(() => first.run(first.create("remounted").build()));
     beforeConnect.remove();
-    await assert.rejects(() => first.run(first.create("removed").finish()), /connected root/i);
+    await assert.rejects(() => first.run(first.create("removed").build()), /connected root/i);
   });
 
   test("batches root tour and ID-prefix replacement into one scoped lease", async () => {
@@ -185,9 +239,7 @@ describe("vanilla adapter browser behavior", () => {
       "<glow-tour-overlay></glow-tour-overlay><glow-tour-pointer>Pointer</glow-tour-pointer><glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content><glow-tour-footer></glow-tour-footer></glow-tour-popover>";
     document.body.append(target, element);
     await settle();
-    await tour.run(
-      tour.create("dynamic").step({ content: "One", target, title: "Title" }).finish(),
-    );
+    await tour.run(tour.create("dynamic").step({ content: "One", target, title: "Title" }).build());
     tour.updateCurrentStep((props) => ({
       ...props,
       content: "Two",
@@ -203,7 +255,7 @@ describe("vanilla adapter browser behavior", () => {
     const replacement = runtime.createGlowTour();
     element.tour = replacement;
     await settle();
-    await assert.rejects(() => tour.run(tour.create("stale").finish()), /connected root/i);
+    await assert.rejects(() => tour.run(tour.create("stale").build()), /connected root/i);
     assert.doesNotThrow(() => element.remove());
   });
 
@@ -556,9 +608,7 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(button.textContent, "Authored text");
     element.append(trigger);
     element.append(generatedTrigger);
-    await tour.run(
-      tour.create("reconnect").step({ content: "One", target, title: "One" }).finish(),
-    );
+    await tour.run(tour.create("reconnect").step({ content: "One", target, title: "One" }).build());
     await settle();
     assert.equal(button.getAttribute("aria-label"), "Authored next");
     assert.equal(button.textContent, "Authored text");
@@ -578,7 +628,7 @@ describe("vanilla adapter browser behavior", () => {
       .create("controls", { popover: { keyboardShortcuts: { next: ["N"] } } })
       .step({ content: "One", target, title: "One" })
       .step({ content: "Two", target, title: "Two" })
-      .finish();
+      .build();
     await tour.run(tourWorkflow);
     const firstBack = element.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
     assert.equal(firstBack?.disabled, true);

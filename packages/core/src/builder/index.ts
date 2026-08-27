@@ -12,13 +12,15 @@ import type {
   StepContext,
   StepParameters,
   StepTransitionAction,
+  StepWaitPredicate,
+  WaitOptions,
   WaitUntilOptions,
 } from "../types";
 
 const DEFAULT_WAIT_INTERVAL = 16;
 const DEFAULT_WAIT_TIMEOUT = 3000;
-const INACTIVE_STEP_ERROR = "StepBuilder is no longer active";
-const STEP_BUILDER_INTERNAL = Symbol("StepBuilder.internal");
+const INACTIVE_STEP_ERROR = "WorkflowStepBuilder is no longer active";
+const STEP_BUILDER_INTERNAL = Symbol("WorkflowStepBuilder.internal");
 
 export type EventName = keyof HTMLElementEventMap;
 
@@ -94,9 +96,22 @@ function waitForPredicate(
   });
 }
 
-export class Builder<T> {
+//! à utiliser
+function waitOptions(options: WaitOptions = {}) {
+  const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
+  const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
+  if (!Number.isFinite(timeout) || timeout < 0) {
+    throw new TypeError("wait timeout must be a finite non-negative number");
+  }
+  if (!Number.isFinite(interval) || interval <= 0) {
+    throw new TypeError("wait interval must be a finite positive number");
+  }
+  return { interval, timeout };
+}
+
+export class WorkflowBuilder<T> {
   private readonly steps: WorkflowStepDraft<T>[] = [];
-  private currentStep: StepBuilder<T> | null = null;
+  private currentStep: WorkflowStepBuilder<T> | null = null;
   private definition: WorkflowDefinition<T> | null = null;
 
   constructor(
@@ -104,10 +119,10 @@ export class Builder<T> {
     private readonly options: StartOptions = {},
   ) {}
 
-  step(options: StepParameters<T>): StepBuilder<T> {
+  step(options: StepParameters<T>) {
     this.assertBuilding();
     this.commitCurrentStep();
-    this.currentStep = new StepBuilder(this, {
+    this.currentStep = new WorkflowStepBuilder(this, {
       target: options.target,
       props: {
         title: options.title,
@@ -135,7 +150,7 @@ export class Builder<T> {
     return this.currentStep;
   }
 
-  append(workflow: WorkflowDefinition<T>): StepBuilder<T> {
+  append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T> {
     this.assertBuilding();
     const drafts = workflow.steps.map(cloneWorkflowStepDraft);
     const lastStep = drafts.at(-1);
@@ -143,11 +158,12 @@ export class Builder<T> {
 
     this.commitCurrentStep();
     this.steps.push(...drafts.slice(0, -1));
-    this.currentStep = new StepBuilder(this, lastStep);
+    this.currentStep = new WorkflowStepBuilder(this, lastStep);
     return this.currentStep;
   }
 
-  finish(): WorkflowDefinition<T> {
+
+  build(): WorkflowDefinition<T> {
     if (this.definition) return this.definition;
     this.commitCurrentStep();
     this.definition = createWorkflowDefinition(this.name, this.options, this.steps);
@@ -155,7 +171,7 @@ export class Builder<T> {
   }
 
   private assertBuilding(): void {
-    if (this.definition) throw new Error("Builder is already finished");
+    if (this.definition) throw new Error("WorkflowBuilder is already finished");
   }
 
   private commitCurrentStep(): void {
@@ -165,49 +181,51 @@ export class Builder<T> {
   }
 }
 
-export class StepBuilder<T> {
+
+export class WorkflowStepBuilder<T> {
   private active = true;
 
   constructor(
-    private readonly owner: Builder<T>,
+    private readonly owner: WorkflowBuilder<T>,
     private readonly draft: WorkflowStepDraft<T>,
   ) {}
 
-  step(options: StepParameters<T>): StepBuilder<T> {
+  step(options: StepParameters<T>): WorkflowStepBuilder<T> {
     this.assertActive();
     return this.owner.step(options);
   }
 
-  append(workflow: WorkflowDefinition<T>): StepBuilder<T> {
+  append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T> {
     this.assertActive();
     return this.owner.append(workflow);
   }
 
-  finish(): WorkflowDefinition<T> {
+  build(): WorkflowDefinition<T> {
     this.assertActive();
-    return this.owner.finish();
+    return this.owner.build();
   }
 
   clickTarget(): this {
-    return this.action(({ target }) => {
-      target.click();
+    return this.do(({target}) => {
+      target?.click();
       return true;
     });
   }
 
   focusTarget(): this {
-    return this.action(({ target }) => {
-      target.focus();
+    return this.do(({target}) => {
+      target?.focus();
       return true;
     });
   }
 
-  wait(timeMs: number): this {
+  wait(timeMs: number) {
     this.assertActive();
     assertTimingValue("timeMs", timeMs);
     this.draft.actions.push(timeMs);
     return this;
   }
+
 
   waitUntil(predicate: WaitUntilPredicate<T>, options: WaitUntilOptions = {}): this {
     this.assertActive();
@@ -261,32 +279,25 @@ export class StepBuilder<T> {
     return this;
   }
 
-  exec(callback: (context: StepContext<T>) => Promise<void> | void): this {
-    return this.action(async (context) => {
-      await callback(context);
-      return true;
-    });
-  }
-
-  action(callback: StepAction<T>): this {
+  do(callback: StepAction<T>) {
     this.assertActive();
     this.draft.actions.push(callback);
     return this;
   }
 
-  onNext(callback: StepTransitionAction<T>): this {
+  beforeAdvance(callback: StepTransitionAction<T>) {
     this.assertActive();
     this.draft.nextAction = callback;
     return this;
   }
 
-  onPrevious(callback: StepTransitionAction<T>): this {
+  beforePrevious(callback: StepTransitionAction<T>) {
     this.assertActive();
     this.draft.previousAction = callback;
     return this;
   }
 
-  onCancel(callback: StepTransitionAction<T>): this {
+  beforeCancel(callback: StepTransitionAction<T>) {
     this.assertActive();
     this.draft.cancelAction = callback;
     return this;
@@ -321,6 +332,7 @@ export class StepBuilder<T> {
     return this;
   }
 
+
   [STEP_BUILDER_INTERNAL](): WorkflowStepDraft<T> {
     this.active = false;
     return cloneWorkflowStepDraft(this.draft);
@@ -329,8 +341,4 @@ export class StepBuilder<T> {
   private assertActive(): void {
     if (!this.active) throw new Error(INACTIVE_STEP_ERROR);
   }
-}
-
-export function create<T>(name: string, options: StartOptions = {}): Builder<T> {
-  return new Builder<T>(name, options);
 }

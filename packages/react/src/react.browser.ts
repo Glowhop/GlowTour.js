@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
+import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
 
 let window: Window;
 
@@ -14,6 +15,8 @@ beforeEach(() => {
     MouseEvent: window.MouseEvent,
     MutationObserver: window.MutationObserver,
     Node: window.Node,
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
     cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
@@ -78,7 +81,7 @@ describe("react adapter browser behavior", () => {
         .create(name)
         .step({ content: "First", target, title: "First" })
         .step({ content: "Second", target, title: "Second" })
-        .finish();
+        .build();
     const root = createRoot(container);
     await React.act(async () => {
       root.render(
@@ -130,7 +133,7 @@ describe("react adapter browser behavior", () => {
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
       .step({ content: "Third", target, title: "Third" })
-      .finish();
+      .build();
     let setDisabledFirst!: (value: boolean) => void;
     function Harness() {
       const [disabledFirst, updateDisabledFirst] = React.useState(true);
@@ -193,7 +196,7 @@ describe("react adapter browser behavior", () => {
         title: "First",
       })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let show!: () => void;
     function Harness() {
       const [visible, setVisible] = React.useState(false);
@@ -230,7 +233,7 @@ describe("react adapter browser behavior", () => {
       .create("dynamic controls")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let setShowNext!: (show: boolean) => void;
 
     function Harness() {
@@ -305,7 +308,7 @@ describe("react adapter browser behavior", () => {
       .create("composed handlers")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let childClicks = 0;
     let wrapperClicks = 0;
     const root = createRoot(container);
@@ -352,7 +355,7 @@ describe("react adapter browser behavior", () => {
       .create("prevented")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -389,11 +392,11 @@ describe("react adapter browser behavior", () => {
     const workflow = tour
       .create("nonpreventing")
       .step({ content: "First", target, title: "First" })
-      .onNext(() => {
+      .beforeAdvance(() => {
         advances += 1;
       })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -429,12 +432,12 @@ describe("react adapter browser behavior", () => {
       .create("first")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const replacement = tour
       .create("replacement")
       .step({ content: "Replacement", target, title: "Replacement" })
       .step({ content: "Replacement next", target, title: "Replacement next" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -474,7 +477,7 @@ describe("react adapter browser behavior", () => {
       .create("toggle disabled")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let setDisabled!: (disabled: boolean) => void;
 
     function Harness() {
@@ -526,7 +529,7 @@ describe("react adapter browser behavior", () => {
       .create("child disabled")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -574,7 +577,7 @@ describe("react adapter browser behavior", () => {
       .create("consumer disabled")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const root = createRoot(container);
 
     await React.act(async () => {
@@ -646,11 +649,11 @@ describe("react adapter browser behavior", () => {
     const firstWorkflow = first
       .create("first")
       .step({ content: "First tour", target, title: "First" })
-      .finish();
+      .build();
     const secondWorkflow = second
       .create("second")
       .step({ content: "Second tour", target, title: "Second" })
-      .finish();
+      .build();
     let replaceTour!: (tour: typeof second) => void;
 
     function Harness() {
@@ -682,6 +685,131 @@ describe("react adapter browser behavior", () => {
 
     await React.act(async () => {
       root.unmount();
+    });
+  });
+
+  test("passes the shared adapter acceptance contract with sibling roots", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const primaryTarget = document.createElement("button");
+    const secondaryTarget = document.createElement("button");
+    document.body.append(container, primaryTarget, secondaryTarget);
+    const primaryTour = createGlowTour();
+    const secondaryTour = createGlowTour();
+    const root = createRoot(container);
+    const actTour = (tour: typeof primaryTour) => ({
+      async advance() {
+        await React.act(() => tour.advance());
+      },
+      async cancel() {
+        await React.act(() => tour.cancel());
+      },
+      create: tour.create.bind(tour),
+      dispose() {
+        React.act(() => tour.dispose());
+      },
+      async goToStep(index: number) {
+        await React.act(() => tour.goToStep(index));
+      },
+      async previous() {
+        await React.act(() => tour.previous());
+      },
+      async run(workflow: Parameters<typeof tour.run>[0]) {
+        await React.act(() => tour.run(workflow));
+      },
+      state: tour.state,
+      updateCurrentStep(update: Parameters<typeof tour.updateCurrentStep>[0]) {
+        React.act(() => tour.updateCurrentStep(update));
+      },
+    });
+
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(
+            GlowTour.Root,
+            { idPrefix: "react-primary", tour: primaryTour },
+            React.createElement(GlowTour.Popover),
+            React.createElement(GlowTour.Header),
+            React.createElement(GlowTour.Content),
+            React.createElement(GlowTour.NextTrigger),
+          ),
+          React.createElement(
+            GlowTour.Root,
+            { idPrefix: "react-secondary", tour: secondaryTour },
+            React.createElement(GlowTour.Popover),
+            React.createElement(GlowTour.Header),
+            React.createElement(GlowTour.Content),
+            React.createElement(GlowTour.NextTrigger),
+          ),
+        ),
+      );
+    });
+    const [primaryRoot, secondaryRoot] = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-glow-tour-root]"),
+    );
+    assert.ok(primaryRoot);
+    assert.ok(secondaryRoot);
+
+    await runAdapterAcceptance({
+      content(value) {
+        return value;
+      },
+      name: "react",
+      async mountDuplicatePrimary() {
+        const duplicateContainer = document.createElement("div");
+        document.body.append(duplicateContainer);
+        const duplicateRoot = createRoot(duplicateContainer);
+        let mountError: unknown;
+        try {
+          await React.act(async () => {
+            duplicateRoot.render(
+              React.createElement(
+                GlowTour.Root,
+                { idPrefix: "react-duplicate", tour: primaryTour },
+                React.createElement(GlowTour.Popover),
+                React.createElement(GlowTour.Header),
+                React.createElement(GlowTour.Content),
+                React.createElement(GlowTour.NextTrigger),
+              ),
+            );
+          });
+        } catch (error) {
+          mountError = error;
+        }
+        let cleanupError: unknown;
+        try {
+          await React.act(async () => duplicateRoot.unmount());
+        } catch (error) {
+          cleanupError = error;
+        }
+        duplicateContainer.remove();
+        if (mountError) throw mountError;
+        if (cleanupError) throw cleanupError;
+      },
+      primaryRoot,
+      primaryTarget,
+      primaryTour: actTour(primaryTour),
+      secondaryRoot,
+      secondaryTarget,
+      secondaryTour: actTour(secondaryTour),
+      async settle() {
+        await React.act(async () => {
+          await new Promise((resolve) => window.setTimeout(resolve, 0));
+        });
+      },
+      async unmount() {
+        await React.act(async () => root.unmount());
+        container.remove();
+        primaryTarget.remove();
+        secondaryTarget.remove();
+      },
     });
   });
 });

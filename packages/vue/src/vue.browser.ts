@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
+import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
 
 let window: Window;
 
@@ -70,7 +71,7 @@ describe("vue adapter browser behavior", () => {
     const app = createApp({ render: () => h(runtime.GlowTourRoot, { tour }) });
 
     app.mount(container);
-    await assert.doesNotReject(() => tour.run(tour.create("immediate mount").finish()));
+    await assert.doesNotReject(() => tour.run(tour.create("immediate mount").build()));
     app.unmount();
   });
 
@@ -86,7 +87,7 @@ describe("vue adapter browser behavior", () => {
     const Runner = defineComponent({
       setup() {
         onMounted(() => {
-          mountedRun = tour.run(tour.create("descendant mount").finish());
+          mountedRun = tour.run(tour.create("descendant mount").build());
         });
         return () => h("div");
       },
@@ -223,7 +224,7 @@ describe("vue adapter browser behavior", () => {
     await nextTick();
     await nextTick();
     assert.equal(container.querySelector("[data-glow-tour-root]")?.id, "second-root");
-    await assert.rejects(() => first.run(first.create("first").finish()), /connected root/i);
+    await assert.rejects(() => first.run(first.create("first").build()), /connected root/i);
     app.unmount();
   });
 
@@ -269,7 +270,7 @@ describe("vue adapter browser behavior", () => {
         .create(name)
         .step({ content: "One", target, title: "One" })
         .step({ content: "Two", target, title: "Two" })
-        .finish();
+        .build();
     const app = createApp({
       render: () =>
         h(runtime.GlowTourRoot, { idPrefix: "outer", tour: outer }, () => [
@@ -316,7 +317,7 @@ describe("vue adapter browser behavior", () => {
         title: "One",
       })
       .step({ content: "Two", target, title: "Two" })
-      .finish();
+      .build();
     const showNext = ref(false);
     const blockNext = ref(true);
     const preventNext = ref(true);
@@ -389,7 +390,7 @@ describe("vue adapter browser behavior", () => {
     const workflow = tour
       .create("dynamic step")
       .step({ content: "Original content", target, title: "Original title" })
-      .finish();
+      .build();
     const app = createApp({
       render: () =>
         h(runtime.GlowTourRoot, { tour }, () => [

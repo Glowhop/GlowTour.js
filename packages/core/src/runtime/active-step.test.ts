@@ -1,6 +1,6 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { Builder } from "../builder";
+import { WorkflowBuilder } from "../builder";
 import { ActiveStep } from "./active-step";
 
 function definition(options: {
@@ -10,7 +10,7 @@ function definition(options: {
     gap?: number;
   };
 }) {
-  return new Builder<string>("active-step", {
+  return new WorkflowBuilder<string>("active-step", {
     indicator: { gap: 22 },
     popover: {
       arrow: { color: "var(--workflow-arrow)", disabled: true, edgePadding: 18, size: 12 },
@@ -23,7 +23,7 @@ function definition(options: {
       title: "title",
       ...options,
     })
-    .finish();
+    .build();
 }
 
 describe("ActiveStep presentation options", () => {

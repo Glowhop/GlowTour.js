@@ -1,5 +1,5 @@
 import type { Observable } from "@glowhop/observables";
-import type { Builder } from "../builder";
+import type { WorkflowBuilder } from "../builder";
 import type { ReadonlyStepProps, WorkflowDefinition } from "../definition";
 
 export type {
@@ -14,21 +14,16 @@ export type PrimitiveValue = string | number | boolean | null;
 export type TargetResolver =
   | string
   | HTMLElement
-  | ((context: TargetResolutionContext) => HTMLElement | null | Promise<HTMLElement | null>);
+  | ((context: TargetResolverContext) => HTMLElement | null | Promise<HTMLElement | null>);
 
-export interface TargetResolutionContext {
+export interface TargetResolverContext {
   signal: AbortSignal;
 }
 
-export type WorkflowStatus =
-  | "not-started"
-  | "idle"
-  | "starting"
-  | "running"
-  | "paused"
-  | "finished"
-  | "cancelled"
-  | "error";
+export interface WaitOptions {
+  timeout?: number;
+  interval?: number;
+}
 
 export type WorkflowDirection = "next" | "previous";
 export type GlowTourElementName =
@@ -42,6 +37,16 @@ export type GlowTourElementName =
   | "previous-trigger"
   | "next-trigger"
   | "overlay";
+
+  export type WorkflowStatus =
+  | "not-started"
+  | "idle"
+  | "starting"
+  | "running"
+  | "paused"
+  | "finished"
+  | "cancelled"
+  | "error";
 
 export interface ViewportDimensions {
   width: number;
@@ -166,6 +171,10 @@ export interface StartOptions {
   onFinish?: () => void | Promise<void>;
 }
 
+export interface ReadonlyStepState<T> {
+  get(): ReadonlyStepProps<T>;
+  subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
+}
 export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
 export interface StepContext<T> {
   readonly target: HTMLElement;
@@ -189,10 +198,37 @@ export interface WaitUntilOptions {
 // biome-ignore lint/suspicious/noConfusingVoidType: `void` preserves the optional action result contract.
 export type StepActionResult = boolean | void;
 
-export type StepAction<T> = (
-  context: StepContext<T>,
+export type StepAction<T> = (context: StepContext<T>,
 ) => Promise<StepActionResult> | StepActionResult;
-export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
+
+export type StepWaitPredicate<T> = (
+  element: HTMLElement | null,
+  stepState: ReadonlyStepState<T>,
+) => Promise<boolean> | boolean;
+
+export type StepActionInstruction<T> =
+  | StepAction<T>
+  | number
+  | "next"
+  | "previous";
+  
+// export type StepTransitionAction<T> = (
+//   element: HTMLElement | null,
+//   stepState: ReadonlyStepState<T>,
+// ) => void | Promise<void>;
+
+// export interface EventHandler<TStepProps, TEvent extends Event = Event> {
+//   event: string;
+//   callback: (
+//     event: TEvent,
+//     stepState: ReadonlyStepState<TStepProps>,
+//     next: () => Promise<void>,
+//     back: () => Promise<void>,
+//     cancel: () => Promise<void>,
+//   ) => void | Promise<void>;
+// }
+
+// export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
 export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
@@ -232,8 +268,13 @@ export interface TourState<T> {
   readonly error: Error | null;
 }
 
+export interface ReadonlyTourState<T> {
+  get(): TourState<T>;
+  subscribe(listener: (state: TourState<T>) => void): () => void;
+}
+
 export interface GlowTour<T> {
-  create(name: string, options?: StartOptions): Builder<T>;
+  create(name: string, options?: StartOptions): WorkflowBuilder<T>;
   run(workflow: WorkflowDefinition<T>): Promise<void>;
   goNext(): Promise<void>;
   goPrevious(): Promise<void>;
@@ -241,10 +282,7 @@ export interface GlowTour<T> {
   cancel(): Promise<void>;
   updateCurrentStep(update: (props: ReadonlyStepProps<T>) => DynamicStepProps<T>): void;
   dispose(): void;
-  readonly state: {
-    get(): TourState<T>;
-    subscribe(listener: (state: TourState<T>) => void): () => void;
-  };
+  readonly state: ReadonlyTourState<T>;
 }
 
 export interface WorkflowStepPublicProps<T> {

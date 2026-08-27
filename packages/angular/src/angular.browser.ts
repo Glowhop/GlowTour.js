@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { Component, ErrorHandler, type OnInit } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
 import { Window } from "happy-dom";
+import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
 import * as runtime from "./public-api";
 
 let window: Window;
@@ -77,12 +78,12 @@ describe("angular adapter browser behavior", () => {
       .create("reactive state")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     await tour.run(workflow);
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
-    await tour.advance();
+    await tour.goNext();
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");
@@ -145,7 +146,7 @@ describe("angular adapter browser behavior", () => {
       .create("angular lifecycle")
       .step({ content: "First content", target, title: "First title" })
       .step({ content: "Second content", target, title: "Second title" })
-      .finish();
+      .build();
     await tour.run(workflow);
     await settle();
     app.tick();
@@ -181,7 +182,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 1);
 
     await app.destroy();
-    await assert.rejects(() => tour.run(tour.create("released").finish()), /connected root/i);
+    await assert.rejects(() => tour.run(tour.create("released").build()), /connected root/i);
   });
 
   test("reconnects only the latest Angular input pair and isolates nearest nested roots", async () => {
@@ -225,7 +226,7 @@ describe("angular adapter browser behavior", () => {
     await settle();
     assert.equal(document.querySelector("[data-glow-tour-root]")?.id, "second-root");
     await assert.rejects(
-      () => first.run(first.create("first released").finish()),
+      () => first.run(first.create("first released").build()),
       /connected root/i,
     );
 
@@ -234,7 +235,7 @@ describe("angular adapter browser behavior", () => {
         .create(name)
         .step({ content: "One", target, title: "One" })
         .step({ content: "Two", target, title: "Two" })
-        .finish();
+        .build();
     await second.run(workflow(second, outerTarget, "outer"));
     await inner.run(workflow(inner, innerTarget, "inner"));
     const [outerNext, innerNext] = Array.from(
@@ -286,7 +287,7 @@ describe("angular adapter browser behavior", () => {
         .create(name)
         .step({ content: `${name} one`, target, title: `${name} one` })
         .step({ content: `${name} two`, target, title: `${name} two` })
-        .finish();
+        .build();
     await first.run(workflow(first, firstTarget, "first"));
     await second.run(workflow(second, secondTarget, "second"));
     await settle();
@@ -331,7 +332,7 @@ describe("angular adapter browser behavior", () => {
     @Component({ selector: "angular-descendant-runner", standalone: true, template: "" })
     class DescendantRunner implements OnInit {
       ngOnInit() {
-        started = tour.run(tour.create("descendant initialization").finish());
+        started = tour.run(tour.create("descendant initialization").build());
       }
     }
 
@@ -439,7 +440,7 @@ describe("angular adapter browser behavior", () => {
         title: "One",
       })
       .step({ content: "Two", target, title: "Two" })
-      .finish();
+      .build();
     await tour.run(workflow);
     const harness = app.components[0]?.instance;
     assert.ok(harness instanceof LateTriggerHarness);
@@ -555,7 +556,7 @@ describe("angular adapter browser behavior", () => {
       .create("dynamic trigger inputs")
       .step({ content: "One", target, title: "One" })
       .step({ content: "Two", target, title: "Two" })
-      .finish();
+      .build();
     await tour.run(workflow);
     await settle();
     app.tick();
@@ -686,5 +687,119 @@ describe("angular adapter browser behavior", () => {
     assert.equal(errors.length, 1);
     assert.match(String(errors[0]), /requires a tour input/i);
     await app.destroy();
+  });
+
+  test("passes the shared adapter acceptance contract", async () => {
+    const primaryTour = runtime.createGlowTour();
+    const secondaryTour = runtime.createGlowTour();
+    const primaryTarget = document.createElement("button");
+    const secondaryTarget = document.createElement("button");
+    document.body.append(primaryTarget, secondaryTarget);
+
+    @Component({
+      selector: "angular-adapter-acceptance",
+      standalone: true,
+      imports: [
+        runtime.GlowTourRoot,
+        runtime.GlowTourPopover,
+        runtime.GlowTourHeader,
+        runtime.GlowTourContent,
+        runtime.GlowTourNextTrigger,
+      ],
+      template: `
+        <glow-tour-root [tour]="primaryTour" idPrefix="angular-acceptance-primary">
+          <glow-tour-popover>
+            <glow-tour-header />
+            <glow-tour-content />
+            <glow-tour-next-trigger />
+          </glow-tour-popover>
+        </glow-tour-root>
+        <glow-tour-root [tour]="secondaryTour" idPrefix="angular-acceptance-secondary">
+          <glow-tour-popover>
+            <glow-tour-header />
+            <glow-tour-content />
+            <glow-tour-next-trigger />
+          </glow-tour-popover>
+        </glow-tour-root>
+      `,
+    })
+    class AdapterAcceptanceHarness {
+      readonly primaryTour = primaryTour;
+      readonly secondaryTour = secondaryTour;
+    }
+
+    document.body.append(document.createElement("angular-adapter-acceptance"));
+    const app = await bootstrapApplication(AdapterAcceptanceHarness);
+    await settle();
+    app.tick();
+
+    const roots = Array.from(document.querySelectorAll<HTMLElement>("[data-glow-tour-root]"));
+    assert.equal(roots.length, 2);
+    const [primaryRoot, secondaryRoot] = roots;
+    assert.ok(primaryRoot);
+    assert.ok(secondaryRoot);
+
+    await runAdapterAcceptance({
+      content: (value) => value,
+      name: "angular",
+      primaryRoot,
+      primaryTarget,
+      primaryTour,
+      secondaryRoot,
+      secondaryTarget,
+      secondaryTour,
+      mountDuplicatePrimary: async () => {
+        const errors: unknown[] = [];
+        const host = document.createElement("angular-adapter-duplicate-primary");
+        let duplicateApp: Awaited<ReturnType<typeof bootstrapApplication>> | undefined;
+        let failure: unknown;
+
+        @Component({
+          selector: "angular-adapter-duplicate-primary",
+          standalone: true,
+          imports: [runtime.GlowTourRoot],
+          template:
+            '<glow-tour-root [tour]="tour" idPrefix="angular-acceptance-duplicate-primary" />',
+        })
+        class DuplicatePrimaryHarness {
+          readonly tour = primaryTour;
+        }
+
+        document.body.append(host);
+        try {
+          duplicateApp = await bootstrapApplication(DuplicatePrimaryHarness, {
+            providers: [
+              {
+                provide: ErrorHandler,
+                useValue: { handleError: (error: unknown) => errors.push(error) },
+              },
+            ],
+          });
+          await settle();
+          duplicateApp.tick();
+          failure = errors[0];
+        } catch (error) {
+          failure = error;
+        } finally {
+          try {
+            duplicateApp?.destroy();
+          } catch (error) {
+            if (failure === undefined) failure = error;
+          }
+          host.remove();
+        }
+
+        if (failure !== undefined) throw failure;
+        throw new Error("Duplicate Angular root unexpectedly mounted.");
+      },
+      settle: async () => {
+        await settle();
+        app.tick();
+        await settle();
+      },
+      unmount: async () => {
+        app.destroy();
+      },
+    });
   });
 });

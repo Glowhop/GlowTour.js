@@ -1,5 +1,5 @@
 import { Observable } from "@glowhop/observables";
-import { Builder } from "../builder";
+import { WorkflowBuilder } from "../builder";
 import {
   cloneStepProps,
   freezeStepProps,
@@ -125,7 +125,7 @@ export class TourController<T> {
   }
 
   create(name: string, options: StartOptions = {}) {
-    return new Builder<T>(name, options);
+    return new WorkflowBuilder<T>(name, options);
   }
 
   async run(workflow: WorkflowDefinition<T>) {
@@ -336,6 +336,7 @@ export class TourController<T> {
       if (shouldContinue === false) return;
     }
   }
+
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
     const signal = this.signalFor(operation);

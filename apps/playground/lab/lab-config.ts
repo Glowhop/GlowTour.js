@@ -30,12 +30,12 @@ export const LAB_CONFIG = {
         hideProgressIndicator: false,
         gap: 14,
         buttons: {
-          backLabel: "Précédent",
+          previousLabel: "Précédent",
           nextLabel: "Continuer",
           finishLabel: "Terminer le lab",
         },
         keyboardShortcuts: {
-          back: ["ArrowLeft"],
+          previous: ["ArrowLeft"],
           next: ["Enter", "ArrowRight"],
           cancel: ["Escape"],
         },

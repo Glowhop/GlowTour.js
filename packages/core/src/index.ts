@@ -1,4 +1,4 @@
-export type { Builder, EventName, StepBuilder } from "./builder";
+export type { EventName, WorkflowBuilder, WorkflowStepBuilder } from "./builder";
 export type {
   ReadonlyStartOptions,
   ReadonlyStepProps,
@@ -20,6 +20,8 @@ export type {
   PopoverArrowOptions,
   PopoverOptions,
   PrimitiveValue,
+  ReadonlyStepState,
+  ReadonlyTourState,
   ResolvedPlacement,
   ScrollOptions,
   StartOptions,
@@ -31,10 +33,9 @@ export type {
   StepContext,
   StepEventContext,
   StepParameters,
-  StepPropsStore,
   StepTransitionAction,
-  TargetResolutionContext,
   TargetResolver,
+  TargetResolverContext,
   TourCurrentStep,
   TourDirection,
   TourState,

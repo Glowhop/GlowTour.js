@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
+import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
 
 let window: Window;
 const ADAPTER_BRIDGE_SYMBOL = Symbol.for("@glowhop/core-tour/adapter-bridge/v1");
@@ -49,6 +50,8 @@ beforeEach(() => {
     MouseEvent: window.MouseEvent,
     MutationObserver: window.MutationObserver,
     Node: window.Node,
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
     cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
@@ -117,7 +120,7 @@ describe("solid adapter browser behavior", () => {
         .create(name)
         .step({ content: "First", target, title: "First" })
         .step({ content: "Second", target, title: "Second" })
-        .finish();
+        .build();
     const dispose = render(
       () =>
         createComponent(GlowTour.Root, {
@@ -169,7 +172,7 @@ describe("solid adapter browser behavior", () => {
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
       .step({ content: "Third", target, title: "Third" })
-      .finish();
+      .build();
     let setDisabledFirst!: (value: boolean) => void;
     const dispose = render(() => {
       const [disabledFirst, updateDisabledFirst] = createSignal(true);
@@ -212,7 +215,7 @@ describe("solid adapter browser behavior", () => {
       .create("dynamic controls")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let setShowNext!: (show: boolean) => void;
     const dispose = render(() => {
       const [showNext, updateShowNext] = createSignal(false);
@@ -270,7 +273,7 @@ describe("solid adapter browser behavior", () => {
       .create("toggle disabled")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     let setDisabled!: (disabled: boolean) => void;
     const dispose = render(() => {
       const [disabled, updateDisabled] = createSignal(true);
@@ -365,7 +368,7 @@ describe("solid adapter browser behavior", () => {
       .create("trigger updates")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
 
     const dispose = render(
       () =>
@@ -406,11 +409,11 @@ describe("solid adapter browser behavior", () => {
     const firstWorkflow = first.tour
       .create("first")
       .step({ content: "First tour", target, title: "First" })
-      .finish();
+      .build();
     const secondWorkflow = second.tour
       .create("second")
       .step({ content: "Second tour", target, title: "Second" })
-      .finish();
+      .build();
 
     const dispose = render(
       () =>
@@ -462,7 +465,7 @@ describe("solid adapter browser behavior", () => {
       .create("disabled commands")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const dispose = render(
       () =>
         createComponent(GlowTour.Root, {
@@ -497,5 +500,110 @@ describe("solid adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 1);
 
     dispose();
+  });
+
+  test("passes the shared adapter acceptance contract with sibling roots", async () => {
+    const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("solid-js"),
+      import("solid-js/web"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const primaryTarget = document.createElement("button");
+    const secondaryTarget = document.createElement("button");
+    document.body.append(container, primaryTarget, secondaryTarget);
+    const primaryTour = createGlowTour();
+    const secondaryTour = createGlowTour();
+    const dispose = render(
+      () => [
+        createComponent(GlowTour.Root, {
+          idPrefix: "solid-primary",
+          tour: primaryTour,
+          get children() {
+            return [
+              createComponent(GlowTour.Popover, {}),
+              createComponent(GlowTour.Header, {}),
+              createComponent(GlowTour.Content, {}),
+              createComponent(GlowTour.NextTrigger, {}),
+            ];
+          },
+        }),
+        createComponent(GlowTour.Root, {
+          idPrefix: "solid-secondary",
+          tour: secondaryTour,
+          get children() {
+            return [
+              createComponent(GlowTour.Popover, {}),
+              createComponent(GlowTour.Header, {}),
+              createComponent(GlowTour.Content, {}),
+              createComponent(GlowTour.NextTrigger, {}),
+            ];
+          },
+        }),
+      ],
+      container,
+    );
+    const [primaryRoot, secondaryRoot] = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-glow-tour-root]"),
+    );
+    assert.ok(primaryRoot);
+    assert.ok(secondaryRoot);
+
+    await runAdapterAcceptance({
+      content(value) {
+        return value;
+      },
+      name: "solid",
+      async mountDuplicatePrimary() {
+        const duplicateContainer = document.createElement("div");
+        document.body.append(duplicateContainer);
+        let dispose: (() => void) | undefined;
+        let mountError: unknown;
+        try {
+          dispose = render(
+            () =>
+              createComponent(GlowTour.Root, {
+                idPrefix: "solid-duplicate",
+                tour: primaryTour,
+                get children() {
+                  return [
+                    createComponent(GlowTour.Popover, {}),
+                    createComponent(GlowTour.Header, {}),
+                    createComponent(GlowTour.Content, {}),
+                    createComponent(GlowTour.NextTrigger, {}),
+                  ];
+                },
+              }),
+            duplicateContainer,
+          );
+        } catch (error) {
+          mountError = error;
+        }
+        let cleanupError: unknown;
+        try {
+          dispose?.();
+        } catch (error) {
+          cleanupError = error;
+        }
+        duplicateContainer.remove();
+        if (mountError) throw mountError;
+        if (cleanupError) throw cleanupError;
+      },
+      primaryRoot,
+      primaryTarget,
+      primaryTour,
+      secondaryRoot,
+      secondaryTarget,
+      secondaryTour,
+      async settle() {
+        await new Promise((resolve) => window.setTimeout(resolve, 10));
+      },
+      async unmount() {
+        dispose();
+        container.remove();
+        primaryTarget.remove();
+        secondaryTarget.remove();
+      },
+    });
   });
 });

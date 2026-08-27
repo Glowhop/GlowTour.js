@@ -6,9 +6,11 @@ import {
   isFocusable,
 } from "./focusable";
 
+type FocusDirection = "next" | "previous";
+
 export interface FocusGuardScope {
   popover: HTMLElement;
-  direction: WorkflowDirection;
+  direction: FocusDirection;
   allowedTarget?: HTMLElement | null;
   allowTargetInteraction?: boolean;
   autoFocus?: boolean;

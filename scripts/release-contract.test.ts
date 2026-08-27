@@ -95,6 +95,15 @@ test("the private playground stays outside all package build, pack, release, and
   expect(tarballScript).not.toContain("@glowhop/playground");
 });
 
+test("adapter declaration builds exclude browser acceptance sources", () => {
+  for (const packageId of ["react", "vue", "solid", "vanilla"] as const) {
+    const config = JSON.parse(read(`packages/${packageId}/tsconfig.build.json`)) as {
+      exclude?: string[];
+    };
+    expect(config.exclude).toContain("src/**/*.browser.ts");
+  }
+});
+
 test("CI validates pull requests and main with pinned actions and minimal permissions", () => {
   const path = ".github/workflows/ci.yml";
   if (!existsSync(join(root, path))) throw new Error(`${path} is missing`);
