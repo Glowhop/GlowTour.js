@@ -96,7 +96,7 @@ describe("solid adapter browser behavior", () => {
     );
     await tour.run(workflow);
     assert.equal(container.querySelector("output")?.textContent, "active:0");
-    await tour.goNext();
+    await tour.advance();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     dispose();
   });
@@ -194,7 +194,7 @@ describe("solid adapter browser behavior", () => {
     window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 1);
-    await tour.goPrevious();
+    await tour.previous();
     setDisabledFirst(false);
     window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
     await new Promise((resolve) => window.setTimeout(resolve, 10));
@@ -243,7 +243,7 @@ describe("solid adapter browser behavior", () => {
     assert.equal(tour.state.get().status, "cancelled");
 
     await tour.run(workflow);
-    await tour.goNext();
+    await tour.advance();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(back?.disabled, false);
@@ -492,7 +492,7 @@ describe("solid adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 0);
     assert.equal(tour.state.get().status, "active");
 
-    await tour.goNext();
+    await tour.advance();
     const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(back?.disabled, true);
     back?.click();

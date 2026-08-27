@@ -57,7 +57,7 @@ describe("react adapter browser behavior", () => {
       await tour.run(workflow);
     });
     assert.equal(container.querySelector("output")?.textContent, "active:0");
-    await React.act(async () => tour.goNext());
+    await React.act(async () => tour.advance());
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     await React.act(async () => root.unmount());
   });
@@ -164,7 +164,7 @@ describe("react adapter browser behavior", () => {
     });
     assert.equal(tour.state.get().currentStepIndex, 1);
     await React.act(async () => {
-      await tour.goPrevious();
+      await tour.previous();
       setDisabledFirst(false);
     });
     await React.act(async () => {
@@ -268,7 +268,7 @@ describe("react adapter browser behavior", () => {
 
     await React.act(async () => {
       await tour.run(workflow);
-      await tour.goNext();
+      await tour.advance();
     });
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
@@ -624,7 +624,7 @@ describe("react adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 0);
     await React.act(async () => {
-      await tour.goNext();
+      await tour.advance();
     });
     assert.equal(next?.textContent, "Complete");
 
@@ -702,8 +702,8 @@ describe("react adapter browser behavior", () => {
     const secondaryTour = createGlowTour();
     const root = createRoot(container);
     const actTour = (tour: typeof primaryTour) => ({
-      async goNext() {
-        await React.act(() => tour.goNext());
+      async advance() {
+        await React.act(() => tour.advance());
       },
       async cancel() {
         await React.act(() => tour.cancel());
@@ -715,8 +715,8 @@ describe("react adapter browser behavior", () => {
       async goToStep(index: number) {
         await React.act(() => tour.goToStep(index));
       },
-      async goPrevious() {
-        await React.act(() => tour.goPrevious());
+      async previous() {
+        await React.act(() => tour.previous());
       },
       async run(workflow: Parameters<typeof tour.run>[0]) {
         await React.act(() => tour.run(workflow));

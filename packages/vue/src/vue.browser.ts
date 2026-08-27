@@ -58,7 +58,7 @@ describe("vue adapter browser behavior", () => {
     await tour.run(workflow);
     await nextTick();
     assert.equal(container.querySelector("output")?.textContent, "active:0");
-    await tour.goNext();
+    await tour.advance();
     await nextTick();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     app.unmount();

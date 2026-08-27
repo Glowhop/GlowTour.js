@@ -324,7 +324,7 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
-      !this.snapshot()?.canGoPrevious ||
+      !this.snapshot()?.canPrevious ||
       this.step()?.disablePreviousButton === true,
   );
   readonly label = computed(() => this.backLabelValue() ?? "Back step");
@@ -367,7 +367,7 @@ export class GlowTourNextTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
-      !this.snapshot()?.canGoNext ||
+      !this.snapshot()?.canAdvance ||
       this.step()?.disableNextButton === true,
   );
   readonly label = computed(() => {

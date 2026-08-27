@@ -51,9 +51,9 @@ interface TourControllerOptions {
 
 type TourPresentation<T> = Pick<
   TourState<T>,
-  | "canGoNext"
+  | "canAdvance"
   | "canCancel"
-  | "canGoPrevious"
+  | "canPrevious"
   | "currentStep"
   | "currentStepIndex"
   | "isFirstStep"
@@ -96,15 +96,15 @@ export class TourController<T> {
   ) {
     this.snapshot = new Observable<TourState<T>>(this.createSnapshot());
     this.driver.setCommands?.({
-      goNext: () => this.goNext(),
-      canGoNext: () => this.canNavigate("next"),
+      advance: () => this.advance(),
+      canAdvance: () => this.canNavigate("next"),
       canCancel: () => this.status === "active" && this.isCancelAvailable(),
-      canGoPrevious: () => this.canNavigate("previous"),
+      canPrevious: () => this.canNavigate("previous"),
       cancel: () => this.cancel(),
       isNextDisabled: () => !this.isPresentedNextAvailable(),
       isCancelDisabled: () => !this.isPresentedCancelAvailable(),
       isPreviousDisabled: () => !this.isPresentedPreviousAvailable(),
-      goPrevious: () => this.goPrevious(),
+      previous: () => this.previous(),
       reportError: async (error) => {
         if (this.disposed || this.status === "idle") return;
         const operation = this.beginOperation();
@@ -157,7 +157,7 @@ export class TourController<T> {
     }
   }
 
-  async goNext() {
+  async advance() {
     this.assertNotDisposed();
     if (!this.canNavigate("next")) return;
     const operation = this.beginOperation();
@@ -168,7 +168,7 @@ export class TourController<T> {
     }
   }
 
-  async goPrevious() {
+  async previous() {
     this.assertNotDisposed();
     if (!this.canNavigate("previous")) return;
     const operation = this.beginOperation();
@@ -317,17 +317,14 @@ export class TourController<T> {
         this.assertCurrent(operation);
         continue;
       }
-      if (action === "next") {
-        await this.navigate("next", operation);
-        return;
-      }
-      if (action === "previous") {
-        await this.navigate("previous", operation);
-        return;
-      }
-      const shouldContinue = await action(this.createStepContext(step, operation));
+      let controlInvoked = false;
+      const shouldContinue = await action(
+        this.createStepContext(step, operation, () => {
+          controlInvoked = true;
+        }),
+      );
       this.assertCurrent(operation);
-      if (shouldContinue === false) return;
+      if (controlInvoked || shouldContinue === false) return;
     }
   }
 
@@ -395,9 +392,28 @@ export class TourController<T> {
     return this.operationToken;
   }
 
-  private createStepContext(step: ActiveStep<T>, operation: number): StepContext<T> {
+  private createStepContext(
+    step: ActiveStep<T>,
+    operation: number,
+    onControl?: () => void,
+  ): StepContext<T> {
     if (!step.target) throw new Error("Cannot create a step context without a target");
     return Object.freeze({
+      cancel: async () => {
+        onControl?.();
+        this.assertCurrent(operation);
+        if (this.canCancel()) await this.cancelCurrent(operation);
+      },
+      next: async () => {
+        onControl?.();
+        this.assertCurrent(operation);
+        await this.navigate("next", operation);
+      },
+      previous: async () => {
+        onControl?.();
+        this.assertCurrent(operation);
+        await this.navigate("previous", operation);
+      },
       props: step.props,
       signal: this.signalFor(operation),
       target: step.target,
@@ -463,13 +479,13 @@ export class TourController<T> {
   private isPresentedNextAvailable() {
     return this.currentStep()
       ? this.isNextAvailable()
-      : (this.retainedPresentation?.canGoNext ?? false);
+      : (this.retainedPresentation?.canAdvance ?? false);
   }
 
   private isPresentedPreviousAvailable() {
     return this.currentStep()
       ? this.isPreviousAvailable()
-      : (this.retainedPresentation?.canGoPrevious ?? false);
+      : (this.retainedPresentation?.canPrevious ?? false);
   }
 
   private isPresentedCancelAvailable() {
@@ -517,8 +533,8 @@ export class TourController<T> {
       currentStepIndex,
       currentStep: currentStep?.snapshot() ?? retained?.currentStep ?? null,
       direction: this.direction,
-      canGoNext: this.isPresentedNextAvailable(),
-      canGoPrevious: this.isPresentedPreviousAvailable(),
+      canAdvance: this.isPresentedNextAvailable(),
+      canPrevious: this.isPresentedPreviousAvailable(),
       canCancel: this.isPresentedCancelAvailable(),
       isFirstStep,
       isLastStep,
@@ -533,9 +549,9 @@ export class TourController<T> {
     const state = this.createSnapshot();
     if (!state.currentStep) return null;
     return {
-      canGoNext: state.canGoNext,
+      canAdvance: state.canAdvance,
       canCancel: state.canCancel,
-      canGoPrevious: state.canGoPrevious,
+      canPrevious: state.canPrevious,
       currentStep: state.currentStep,
       currentStepIndex: state.currentStepIndex,
       isFirstStep: state.isFirstStep,
@@ -555,12 +571,12 @@ export function createGlowTour<T>(): GlowTour<T> {
   });
 
   const tour: GlowTour<T> = {
-    goNext: () => controller.goNext(),
+    advance: () => controller.advance(),
     cancel: () => controller.cancel(),
     create: (name, options) => controller.create(name, options),
     dispose: () => controller.dispose(),
     goToStep: (index) => controller.goToStep(index),
-    goPrevious: () => controller.goPrevious(),
+    previous: () => controller.previous(),
     run: (workflow) => controller.run(workflow),
     state: controller.state,
   };

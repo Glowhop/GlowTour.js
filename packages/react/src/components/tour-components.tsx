@@ -241,7 +241,7 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canGoPrevious || step?.disablePreviousButton === true}
+      capabilityDisabled={!snapshot.canPrevious || step?.disablePreviousButton === true}
       label={label}
       marker="previous"
     />
@@ -257,7 +257,7 @@ export function NextTrigger({ finishLabel, nextLabel, ...props }: NextTriggerPro
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canGoNext || step?.disableNextButton === true}
+      capabilityDisabled={!snapshot.canAdvance || step?.disableNextButton === true}
       label={label}
       marker="next"
     />

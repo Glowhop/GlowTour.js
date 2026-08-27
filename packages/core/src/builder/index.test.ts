@@ -21,7 +21,7 @@ describe("WorkflowBuilder public contract", () => {
       .beforeAdvance(() => {})
       .beforePrevious(() => {})
       .beforeCancel(() => {})
-      .goNext()
+      .do(({ next }) => next())
       .build();
 
     assert.equal(Object.isFrozen(definition), true);
@@ -41,6 +41,8 @@ describe("WorkflowBuilder public contract", () => {
       "back",
       "exec",
       "finish",
+      "goNext",
+      "goPrevious",
       "next",
       "onBack",
       "onCancel",
@@ -61,6 +63,9 @@ describe("WorkflowBuilder public contract", () => {
 
 function createContext(signal = new AbortController().signal): StepContext<string> {
   return {
+    cancel: async () => {},
+    next: async () => {},
+    previous: async () => {},
     props: {} as StepContext<string>["props"],
     signal,
     target: {} as HTMLElement,
@@ -251,22 +256,41 @@ describe("StepBuilder action contract", () => {
     assert.throws(() => step.onTargetEvent([], () => {}), /events must not be empty/);
   });
 
-  test("uses explicit goNext and previous instructions", () => {
+  test("exposes navigation through the action context", async () => {
+    const calls: string[] = [];
     const step = new WorkflowBuilder<string>("navigation-actions").step({
       content: "Content",
       target: "#target",
       title: "Title",
     });
 
-    assert.equal(typeof step.goNext, "function");
-    assert.equal(typeof step.goPrevious, "function");
+    assert.equal("goNext" in step, false);
+    assert.equal("goPrevious" in step, false);
     assert.equal("advance" in step, false);
     assert.equal("previous" in step, false);
     assert.equal("onBack" in step, false);
 
-    const workflow = step.goNext().goPrevious().build();
+    const workflow = step
+      .do(({ next }) => next())
+      .do(({ previous }) => previous())
+      .do(({ cancel }) => cancel())
+      .build();
 
-    assert.deepEqual(workflow.steps[0].actions, ["next", "previous"]);
+    const context = createContext();
+    context.next = async () => {
+      calls.push("next");
+    };
+    context.previous = async () => {
+      calls.push("previous");
+    };
+    context.cancel = async () => {
+      calls.push("cancel");
+    };
+    for (const action of workflow.steps[0].actions) {
+      if (typeof action === "function") await action(context);
+    }
+
+    assert.deepEqual(calls, ["next", "previous", "cancel"]);
   });
 });
 

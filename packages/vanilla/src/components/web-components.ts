@@ -756,7 +756,7 @@ export function registerGlowTourElements() {
       props: DynamicStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canGoPrevious || props.disablePreviousButton === true,
+        disabled: !state.canPrevious || props.disablePreviousButton === true,
         hidden: props.hidePreviousButton === true,
         label: this.getAttribute("back-label") ?? "Back step",
       };
@@ -771,7 +771,7 @@ export function registerGlowTourElements() {
       props: DynamicStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canGoNext || props.disableNextButton === true,
+        disabled: !state.canAdvance || props.disableNextButton === true,
         hidden: props.hideNextButton === true,
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")

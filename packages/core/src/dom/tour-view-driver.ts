@@ -17,14 +17,14 @@ const DEFAULT_SHORTCUTS = {
 type TourViewCommand = "next" | "previous" | "cancel";
 
 export interface TourViewCommands {
-  goNext(): Promise<void>;
-  canGoNext(): boolean;
+  advance(): Promise<void>;
+  canAdvance(): boolean;
   canCancel(): boolean;
-  canGoPrevious(): boolean;
+  canPrevious(): boolean;
   isNextDisabled(): boolean;
   isCancelDisabled(): boolean;
   isPreviousDisabled(): boolean;
-  goPrevious(): Promise<void>;
+  previous(): Promise<void>;
   cancel(): Promise<void>;
   reportError(error: unknown): Promise<void>;
   subscribeCapabilities?(listener: (active: boolean) => void): () => void;
@@ -309,17 +309,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     for (const handler of step.definition.eventHandlers) {
       const listener = (event: Event) => {
         if (!this.isCurrentGeneration(generation)) return;
-        // void handler.callback(
-        //   event,
-        //   step.state,
-        //   () => this.commandForGeneration("next", generation),
-        //   () => this.commandForGeneration("previous", generation),
-        //   () => this.commandForGeneration("cancel", generation),
-        // );
         const context = Object.freeze({
-          goNext: () => this.commandForStep("next", step, signal),
           cancel: () => this.commandForStep("cancel", step, signal),
-          goPrevious: () => this.commandForStep("previous", step, signal),
+          next: () => this.commandForStep("next", step, signal),
+          previous: () => this.commandForStep("previous", step, signal),
           props: step.props,
           signal,
           target,
@@ -618,8 +611,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private async command(command: TourViewCommand) {
     if (this.disposed) return;
-    if (command === "next") await this.commands?.goNext();
-    else if (command === "previous") await this.commands?.goPrevious();
+    if (command === "next") await this.commands?.advance();
+    else if (command === "previous") await this.commands?.previous();
     else await this.commands?.cancel();
   }
 
@@ -638,12 +631,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   ) {
     if (this.isConsumerDisabled(trigger ?? null)) return false;
     if (command === "next") {
-      return (this.commands?.canGoNext?.() ?? true) && step.props.get().disableNextButton !== true;
+      return (this.commands?.canAdvance?.() ?? true) && step.props.get().disableNextButton !== true;
     }
     if (command === "previous") {
       return (
-        (this.commands?.canGoPrevious?.() ?? true) &&
-        step.props.get().disablePreviousButton !== true
+        (this.commands?.canPrevious?.() ?? true) && step.props.get().disablePreviousButton !== true
       );
     }
     return this.commands?.canCancel?.() ?? true;

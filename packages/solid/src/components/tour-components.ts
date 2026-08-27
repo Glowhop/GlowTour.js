@@ -340,7 +340,7 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
         mergeProps(props, {
           get capabilityDisabled() {
             return (
-              !snapshot().canGoPrevious || currentStep(snapshot())?.disablePreviousButton === true
+              !snapshot().canPrevious || currentStep(snapshot())?.disablePreviousButton === true
             );
           },
           label: props.backLabel ?? "Back step",
@@ -362,7 +362,7 @@ export function NextTrigger(props: NextTriggerProps): JSX.Element {
       return Trigger(
         mergeProps(props, {
           get capabilityDisabled() {
-            return !snapshot().canGoNext || currentStep(snapshot())?.disableNextButton === true;
+            return !snapshot().canAdvance || currentStep(snapshot())?.disableNextButton === true;
           },
           get label() {
             return snapshot().isLastStep

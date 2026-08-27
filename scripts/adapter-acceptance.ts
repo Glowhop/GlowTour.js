@@ -132,7 +132,7 @@ export async function runAdapterAcceptance<TContent>(
   assert.equal(secondaryTour.state.get().currentStepIndex, 0, `${name}: secondary isolated`);
   assert.equal(popover(primaryRoot).hasAttribute("aria-modal"), false, `${name}: nonmodal step`);
 
-  await primaryTour.goNext();
+  await primaryTour.advance();
   assert.equal(primaryTour.state.get().status, "finished", `${name}: primary finished`);
 
   await unmount();

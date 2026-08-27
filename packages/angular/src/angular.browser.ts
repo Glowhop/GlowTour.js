@@ -85,7 +85,7 @@ describe("angular adapter browser behavior", () => {
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
-    await tour.goNext();
+    await tour.advance();
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");

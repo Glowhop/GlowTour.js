@@ -299,7 +299,7 @@ export const GlowTourBackTrigger = defineComponent({
     const step = useStep();
     const renderTrigger = trigger(
       "previous",
-      () => !snapshot.value.canGoPrevious || step()?.disablePreviousButton === true,
+      () => !snapshot.value.canPrevious || step()?.disablePreviousButton === true,
       () => props.backLabel ?? "Back step",
       () => props.ariaLabel,
       attrs,
@@ -323,7 +323,7 @@ export const GlowTourNextTrigger = defineComponent({
     const step = useStep();
     const renderTrigger = trigger(
       "next",
-      () => !snapshot.value.canGoNext || step()?.disableNextButton === true,
+      () => !snapshot.value.canAdvance || step()?.disableNextButton === true,
       () => {
         return snapshot.value.isLastStep
           ? (props.finishLabel ?? "Finish tour")

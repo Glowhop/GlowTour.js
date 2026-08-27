@@ -211,7 +211,7 @@ function renderState<TContent>(view: LabView, state: TourState<TContent>): void 
   view.cancelButton.disabled = !state.canCancel;
   view.currentStep.textContent = `${state.currentStepIndex >= 0 ? state.currentStepIndex + 1 : 0} / ${state.totalSteps}`;
   view.direction.textContent = state.direction;
-  view.navigation.textContent = `${state.canGoPrevious ? "←" : "·"} ${state.canGoNext ? "→" : "·"} ${state.canCancel ? "×" : "·"}`;
+  view.navigation.textContent = `${state.canPrevious ? "←" : "·"} ${state.canAdvance ? "→" : "·"} ${state.canCancel ? "×" : "·"}`;
 
   const inspectorStatus = view.statusBadge
     .closest(".lab-shell")

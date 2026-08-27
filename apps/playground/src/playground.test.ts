@@ -47,7 +47,8 @@ describe("multi-framework playground", () => {
     );
     assert.match(workflow, /\.waitUntilElement\(/);
     assert.match(workflow, /\.waitUntil\(/);
-    assert.match(workflow, /\.goPrevious\(\)/);
+    assert.match(workflow, /\.do\(\(\{ next \}\) => next\(\)\)/);
+    assert.match(workflow, /\.do\(\(\{ previous \}\) => previous\(\)\)/);
     assert.match(workflow, /\.append\(appendedWorkflow\)/);
   });
 

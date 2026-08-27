@@ -259,18 +259,6 @@ export class WorkflowStepBuilder<T> {
     );
   }
 
-  goNext(): this {
-    this.assertActive();
-    this.draft.actions.push("next");
-    return this;
-  }
-
-  goPrevious(): this {
-    this.assertActive();
-    this.draft.actions.push("previous");
-    return this;
-  }
-
   do(callback: StepAction<T>) {
     this.assertActive();
     this.draft.actions.push(callback);

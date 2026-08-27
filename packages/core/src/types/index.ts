@@ -146,16 +146,15 @@ export interface ReadonlyStepState<T> {
 }
 export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
 export interface StepContext<T> {
+  cancel(): Promise<void>;
+  next(): Promise<void>;
+  previous(): Promise<void>;
   readonly target: HTMLElement;
   readonly props: StepPropsStore<T>;
   readonly signal: AbortSignal;
 }
 
-export interface StepEventContext<T> extends StepContext<T> {
-  goNext(): Promise<void>;
-  goPrevious(): Promise<void>;
-  cancel(): Promise<void>;
-}
+export type StepEventContext<T> = StepContext<T>;
 
 export interface WaitUntilOptions {
   /** @default 16 */
@@ -176,7 +175,7 @@ export type StepWaitPredicate<T> = (
   stepState: ReadonlyStepState<T>,
 ) => Promise<boolean> | boolean;
 
-export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
+export type StepActionInstruction<T> = StepAction<T> | number;
 
 // export type StepTransitionAction<T> = (
 //   element: HTMLElement | null,
@@ -194,7 +193,6 @@ export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previo
 //   ) => void | Promise<void>;
 // }
 
-// export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
 export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
@@ -225,8 +223,8 @@ export interface TourState<T> {
   readonly currentStepIndex: number;
   readonly currentStep: TourCurrentStep<T> | null;
   readonly direction: TourDirection;
-  readonly canGoNext: boolean;
-  readonly canGoPrevious: boolean;
+  readonly canAdvance: boolean;
+  readonly canPrevious: boolean;
   readonly canCancel: boolean;
   readonly isFirstStep: boolean;
   readonly isLastStep: boolean;
@@ -242,8 +240,8 @@ export interface ReadonlyTourState<T> {
 export interface GlowTour<T> {
   create(name: string, options?: StartOptions): WorkflowBuilder<T>;
   run(workflow: WorkflowDefinition<T>): Promise<void>;
-  goNext(): Promise<void>;
-  goPrevious(): Promise<void>;
+  advance(): Promise<void>;
+  previous(): Promise<void>;
   goToStep(index: number): Promise<void>;
   cancel(): Promise<void>;
   dispose(): void;
@@ -262,8 +260,8 @@ export interface WorkflowState<T> {
   currentStepIndex: number;
   currentStep: WorkflowStepPublicProps<T> | null;
   direction: WorkflowDirection;
-  canGoNext: boolean;
-  canGoPrevious: boolean;
+  canAdvance: boolean;
+  canPrevious: boolean;
   canCancel: boolean;
   isFirstStep: boolean;
   isLastStep: boolean;
@@ -274,8 +272,8 @@ export interface WorkflowState<T> {
 
 export interface WorkflowControls<T> {
   start: (workflow?: WorkflowDefinition<T>) => Promise<void>;
-  goNext: () => Promise<void>;
-  goPrevious: () => Promise<void>;
+  advance: () => Promise<void>;
+  previous: () => Promise<void>;
   cancel: () => Promise<void>;
   goTo: (index: number) => Promise<void>;
 }

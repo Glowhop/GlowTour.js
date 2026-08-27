@@ -338,15 +338,15 @@ function createCommands(): { commands: TourViewCommands; calls: string[] } {
   return {
     calls,
     commands: {
-      goNext: async () => void calls.push("next"),
-      canGoNext: () => true,
+      advance: async () => void calls.push("next"),
+      canAdvance: () => true,
       canCancel: () => true,
-      canGoPrevious: () => true,
+      canPrevious: () => true,
       cancel: async () => void calls.push("cancel"),
       isNextDisabled: () => false,
       isCancelDisabled: () => false,
       isPreviousDisabled: () => false,
-      goPrevious: async () => void calls.push("previous"),
+      previous: async () => void calls.push("previous"),
       reportError: async (error) =>
         void calls.push(`error:${error instanceof Error ? error.message : String(error)}`),
     },
@@ -360,15 +360,15 @@ function createToggleableCommands() {
   return {
     calls,
     commands: {
-      goNext: async () => void calls.push("next"),
-      canGoNext: () => active,
+      advance: async () => void calls.push("next"),
+      canAdvance: () => active,
       canCancel: () => active,
-      canGoPrevious: () => active,
+      canPrevious: () => active,
       cancel: async () => void calls.push("cancel"),
       isNextDisabled: () => nextDisabled,
       isCancelDisabled: () => false,
       isPreviousDisabled: () => false,
-      goPrevious: async () => void calls.push("previous"),
+      previous: async () => void calls.push("previous"),
       reportError: async (error) =>
         void calls.push(`error:${error instanceof Error ? error.message : String(error)}`),
       subscribeCapabilities: (listener: (active: boolean) => void) => {
@@ -1176,9 +1176,9 @@ describe("DomTourViewDriver", () => {
 
     await tour.run(workflow);
     assert.equal(document.activeElement, elements.next);
-    await tour.goNext();
+    await tour.advance();
     assert.equal(document.activeElement, elements.next);
-    await tour.goPrevious();
+    await tour.previous();
     assert.equal(document.activeElement, elements.next);
   });
   test("never restores external focus while replacing an active step", async () => {
@@ -1410,7 +1410,7 @@ describe("DomTourViewDriver", () => {
       targetB = createTarget(),
       workflowA = new WorkflowBuilder<string>("focus-reentrant")
         .step({ content: "a", target: "#a", title: "a" })
-        .onTargetEvent("click", (_event, { goNext }) => goNext())
+        .onTargetEvent("click", (_event, { next }) => next())
         .build(),
       definitionA = workflowA.steps[0],
       stepB = createStep();
@@ -1482,9 +1482,9 @@ describe("DomTourViewDriver", () => {
       targetB = createTarget(),
       workflowA = new WorkflowBuilder<string>("event-generation")
         .step({ content: "a", target: "#a", title: "a" })
-        .onTargetEvent("click", async (_event, { goNext }) => {
+        .onTargetEvent("click", async (_event, { next }) => {
           await handlerGate;
-          await goNext();
+          await next();
         })
         .build(),
       definitionA = workflowA.steps[0],
@@ -1626,9 +1626,9 @@ describe("DomTourViewDriver", () => {
     const target = createTarget();
     const workflow = new WorkflowBuilder<string>("remounted-event-command")
       .step({ content: "a", target: "#a", title: "a" })
-      .onTargetEvent("click", async (_event, { goNext }) => {
+      .onTargetEvent("click", async (_event, { next }) => {
         await handlerGate;
-        await goNext();
+        await next();
       })
       .build();
     const definition = workflow.steps[0];

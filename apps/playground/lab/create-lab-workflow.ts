@@ -22,7 +22,7 @@ export function createLabWorkflow<TContent>(
     })
     .onTargetEvent<CustomEvent<{ source: string }>>(event.completion, (targetEvent, context) => {
       actions.log(`onTargetEvent<T> — source: ${targetEvent.detail.source}`);
-      void context.goNext();
+      void context.next();
     })
     .beforePrevious(() => actions.log("onBack — sortie de la section ajoutée"))
     .beforeCancel(() => actions.log("onCancel — étape ajoutée"))
@@ -108,7 +108,7 @@ export function createLabWorkflow<TContent>(
     })
     .do(() => actions.log("waitUntil — condition satisfaite"))
     .wait(timing.conditionAdvanceWait)
-    .goNext()
+    .do(({ next }) => next())
     .beforeCancel(() => actions.cancelPending())
     .step({
       target: selectors.actions,
@@ -148,7 +148,7 @@ export function createLabWorkflow<TContent>(
     })
     .onTargetEvent("click", (_targetEvent, context) => {
       actions.log("onTargetEvent('click') — avance via le contexte");
-      void context.goNext();
+      void context.next();
     })
     .step({
       target: selectors.return,
@@ -157,7 +157,7 @@ export function createLabWorkflow<TContent>(
       data: { api: "advance", guard: true },
     })
     .do(() => session.consumeAutomaticReturn())
-    .goNext()
+    .do(({ next }) => next())
     .step({
       target: selectors.previous,
       title: content.title("previous()"),
@@ -175,7 +175,7 @@ export function createLabWorkflow<TContent>(
       return true;
     })
     .wait(timing.previousWait)
-    .goPrevious()
+    .do(({ previous }) => previous())
     .beforeAdvance(() => actions.log("onNext — sortie de la démonstration previous"))
     .step({
       target: selectors.autoAdvance,
@@ -186,7 +186,7 @@ export function createLabWorkflow<TContent>(
     })
     .do(() => actions.log("advance — transition automatique imminente"))
     .wait(timing.autoAdvanceWait)
-    .goNext()
+    .do(({ next }) => next())
     .append(appendedWorkflow)
     .build();
 }
