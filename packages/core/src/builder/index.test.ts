@@ -195,14 +195,25 @@ describe("StepBuilder action contract", () => {
     assert.throws(() => step.onTargetEvent([], () => {}), /events must not be empty/);
   });
 
-  test("uses explicit advance and previous instructions", () => {
-    const workflow = create<string>("navigation-actions")
-      .step({ content: "Content", target: "#target", title: "Title" })
-      .advance()
-      .previous()
+  test("uses explicit goNext and previous instructions", () => {
+    const step = create<string>("navigation-actions").step({
+      content: "Content",
+      target: "#target",
+      title: "Title",
+    });
+
+    assert.equal(typeof step.goNext, "function");
+    assert.equal(typeof step.goPrevious, "function");
+    assert.equal("advance" in step, false);
+    assert.equal("previous" in step, false);
+    assert.equal("onBack" in step, false);
+
+    const workflow = step
+      .goNext()
+      .goPrevious()
       .finish();
 
-    assert.deepEqual(workflow.steps[0].actions, ["advance", "previous"]);
+    assert.deepEqual(workflow.steps[0].actions, ["next", "previous"]);
   });
 });
 

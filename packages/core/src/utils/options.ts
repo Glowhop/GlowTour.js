@@ -78,14 +78,16 @@ export function mergePopoverOptions(
     placementTryOrder: cloneArray(placementTryOrder),
     buttons: hasButtons
       ? {
-          backLabel: overrides?.buttons?.backLabel ?? defaults?.buttons?.backLabel,
+          previousLabel: overrides?.buttons?.previousLabel ?? defaults?.buttons?.previousLabel,
           nextLabel: overrides?.buttons?.nextLabel ?? defaults?.buttons?.nextLabel,
           finishLabel: overrides?.buttons?.finishLabel ?? defaults?.buttons?.finishLabel,
         }
       : undefined,
     keyboardShortcuts: hasKeyboardShortcuts
       ? {
-          back: cloneArray(overrides?.keyboardShortcuts?.back ?? defaults?.keyboardShortcuts?.back),
+          previous: cloneArray(
+            overrides?.keyboardShortcuts?.previous ?? defaults?.keyboardShortcuts?.previous,
+          ),
           next: cloneArray(overrides?.keyboardShortcuts?.next ?? defaults?.keyboardShortcuts?.next),
           cancel: cloneArray(
             overrides?.keyboardShortcuts?.cancel ?? defaults?.keyboardShortcuts?.cancel,

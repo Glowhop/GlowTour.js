@@ -62,7 +62,7 @@ function useBoundElement<T extends Element>(
 }
 
 function useStep(snapshot: TourState<ReactTourContent>) {
-  return snapshot.currentStep?.currentProps
+  return snapshot.currentStep?.currentProps;
 }
 
 export function Root({ children, idPrefix, tour, ...props }: RootProps) {
@@ -241,7 +241,7 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canPrevious || step?.disableBackButton === true}
+      capabilityDisabled={!snapshot.canGoPrevious || step?.disableBackButton === true}
       label={label}
       marker="back"
     />
@@ -276,6 +276,11 @@ export function CancelTrigger(props: CancelTriggerProps) {
       marker="cancel"
     />
   );
+}
+
+export function useTour(): TourState<ReactTourContent> {
+  const { tour } = useTourContext();
+  return useTourSnapshot(tour);
 }
 
 export const GlowTour = {

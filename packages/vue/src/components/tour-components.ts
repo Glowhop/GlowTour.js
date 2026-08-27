@@ -10,6 +10,7 @@ import {
   type PropType,
   provide,
   type Ref,
+  type ShallowRef,
   shallowRef,
   watch,
 } from "vue";
@@ -48,6 +49,11 @@ function useTourSnapshot(tour: Ref<Tour>) {
     { immediate: true },
   );
   return snapshot;
+}
+
+export function useTour(): ShallowRef<TourState<VueTourContent>> {
+  const { tour } = useTourContext();
+  return useTourSnapshot(tour);
 }
 
 function useStep() {

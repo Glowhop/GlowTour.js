@@ -15,6 +15,7 @@ import {
   type OnChanges,
   type OnDestroy,
   type OnInit,
+  type Signal,
   signal,
   TemplateRef,
   ViewChild,
@@ -36,6 +37,23 @@ interface ActiveRootBinding {
 class GlowTourScope {
   readonly binding = signal<RootBinding | null>(null);
   readonly tour = signal<Tour | null>(null);
+  private readonly snapshot = signal<TourState<AngularTourContent> | null>(null);
+  readonly state = this.snapshot.asReadonly();
+
+  constructor() {
+    effect(
+      (onCleanup) => {
+        const tour = this.tour();
+        if (!tour) {
+          this.snapshot.set(null);
+          return;
+        }
+        this.snapshot.set(tour.state.get());
+        onCleanup(tour.state.subscribe((state) => this.snapshot.set(state)));
+      },
+      { allowSignalWrites: true },
+    );
+  }
 }
 
 const GLOW_TOUR_SCOPE = new InjectionToken<GlowTourScope>("GlowTourScope");
@@ -48,26 +66,15 @@ function useTourScope() {
   return scope;
 }
 
+export function injectGlowTour(): Signal<TourState<AngularTourContent> | null> {
+  return useTourScope().state;
+}
+
 @Directive()
 abstract class GlowTourReactiveComponent {
   protected readonly scope = useTourScope();
-  protected readonly snapshot = signal<TourState<AngularTourContent> | null>(null);
+  protected readonly snapshot = this.scope.state;
   protected readonly step = computed(() => this.snapshot()?.currentStep?.currentProps ?? null);
-
-  constructor() {
-    effect(
-      (onCleanup) => {
-        const tour = this.scope.tour();
-        if (!tour) {
-          this.snapshot.set(null);
-          return;
-        }
-        this.snapshot.set(tour.state.get());
-        onCleanup(tour.state.subscribe((state) => this.snapshot.set(state)));
-      },
-      { allowSignalWrites: true },
-    );
-  }
 }
 
 @Component({

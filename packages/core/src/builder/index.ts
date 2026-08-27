@@ -113,8 +113,8 @@ export class Builder<T> {
         title: options.title,
         content: options.content,
         hideFooter: options.hideFooter,
-        disableBackButton: options.disableBackButton,
-        hideBackButton: options.hideBackButton,
+        disablePreviousButton: options.disablePreviousButton,
+        hidePreviousButton: options.hidePreviousButton,
         disableNextButton: options.disableNextButton,
         hideNextButton: options.hideNextButton,
         disableAutoScroll: options.disableAutoScroll,
@@ -129,7 +129,7 @@ export class Builder<T> {
       actions: [],
       eventHandlers: [],
       nextAction: null,
-      backAction: null,
+      previousAction: null,
       cancelAction: null,
     });
     return this.currentStep;
@@ -249,13 +249,13 @@ export class StepBuilder<T> {
     );
   }
 
-  advance(): this {
+  goNext(): this {
     this.assertActive();
-    this.draft.actions.push("advance");
+    this.draft.actions.push("next");
     return this;
   }
 
-  previous(): this {
+  goPrevious(): this {
     this.assertActive();
     this.draft.actions.push("previous");
     return this;
@@ -280,9 +280,9 @@ export class StepBuilder<T> {
     return this;
   }
 
-  onBack(callback: StepTransitionAction<T>): this {
+  onPrevious(callback: StepTransitionAction<T>): this {
     this.assertActive();
-    this.draft.backAction = callback;
+    this.draft.previousAction = callback;
     return this;
   }
 

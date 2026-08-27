@@ -30,7 +30,7 @@ export type WorkflowStatus =
   | "cancelled"
   | "error";
 
-export type WorkflowDirection = "next" | "back";
+export type WorkflowDirection = "next" | "previous";
 export type GlowTourElementName =
   | "root"
   | "header"
@@ -39,7 +39,7 @@ export type GlowTourElementName =
   | "footer"
   | "popover"
   | "pointer"
-  | "back-trigger"
+  | "previous-trigger"
   | "next-trigger"
   | "overlay";
 
@@ -105,7 +105,7 @@ export interface PopoverOptions extends BaseOptions {
   hideProgressIndicator?: boolean;
   gap?: number;
   buttons?: {
-    backLabel?: string;
+    previousLabel?: string;
     nextLabel?: string;
     finishLabel?: string;
   };
@@ -113,7 +113,7 @@ export interface PopoverOptions extends BaseOptions {
     /**
      * @default ["ArrowLeft", "Backspace"]
      */
-    back?: readonly string[];
+    previous?: readonly string[];
     /**
      * @default ["Enter", "ArrowRight"]
      */
@@ -129,8 +129,8 @@ export interface DynamicStepProps<T> {
   title: T;
   content: T;
   hideFooter?: boolean;
-  disableBackButton?: boolean;
-  hideBackButton?: boolean;
+  disablePreviousButton?: boolean;
+  hidePreviousButton?: boolean;
   disableNextButton?: boolean;
   hideNextButton?: boolean;
   disableAutoScroll?: boolean;
@@ -174,8 +174,8 @@ export interface StepContext<T> {
 }
 
 export interface StepEventContext<T> extends StepContext<T> {
-  advance(): Promise<void>;
-  previous(): Promise<void>;
+  goNext(): Promise<void>;
+  goPrevious(): Promise<void>;
   cancel(): Promise<void>;
 }
 
@@ -192,7 +192,7 @@ export type StepActionResult = boolean | void;
 export type StepAction<T> = (
   context: StepContext<T>,
 ) => Promise<StepActionResult> | StepActionResult;
-export type StepActionInstruction<T> = StepAction<T> | number | "advance" | "previous";
+export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
 export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
@@ -209,7 +209,7 @@ export type TourStatus =
   | "cancelled"
   | "error";
 
-export type TourDirection = "advance" | "previous";
+export type TourDirection = "next" | "previous";
 
 export interface TourCurrentStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
@@ -223,8 +223,8 @@ export interface TourState<T> {
   readonly currentStepIndex: number;
   readonly currentStep: TourCurrentStep<T> | null;
   readonly direction: TourDirection;
-  readonly canAdvance: boolean;
-  readonly canPrevious: boolean;
+  readonly canGoNext: boolean;
+  readonly canGoPrevious: boolean;
   readonly canCancel: boolean;
   readonly isFirstStep: boolean;
   readonly isLastStep: boolean;
@@ -235,8 +235,8 @@ export interface TourState<T> {
 export interface GlowTour<T> {
   create(name: string, options?: StartOptions): Builder<T>;
   run(workflow: WorkflowDefinition<T>): Promise<void>;
-  advance(): Promise<void>;
-  previous(): Promise<void>;
+  goNext(): Promise<void>;
+  goPrevious(): Promise<void>;
   goToStep(index: number): Promise<void>;
   cancel(): Promise<void>;
   updateCurrentStep(update: (props: ReadonlyStepProps<T>) => DynamicStepProps<T>): void;
@@ -260,7 +260,7 @@ export interface WorkflowState<T> {
   currentStep: WorkflowStepPublicProps<T> | null;
   direction: WorkflowDirection;
   canGoNext: boolean;
-  canGoBack: boolean;
+  canGoPrevious: boolean;
   canCancel: boolean;
   isFirstStep: boolean;
   isLastStep: boolean;
@@ -271,8 +271,8 @@ export interface WorkflowState<T> {
 
 export interface WorkflowControls<T> {
   start: (workflow?: WorkflowDefinition<T>) => Promise<void>;
-  next: () => Promise<void>;
-  back: () => Promise<void>;
+  goNext: () => Promise<void>;
+  goPrevious: () => Promise<void>;
   cancel: () => Promise<void>;
   goTo: (index: number) => Promise<void>;
 }

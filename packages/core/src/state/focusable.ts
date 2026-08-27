@@ -12,7 +12,7 @@ export const FOCUSABLE_SELECTOR = [
 ].join(",");
 
 export const TOUR_TRIGGER_SELECTOR = [
-  "[data-glow-tour-back-trigger]",
+  "[data-glow-tour-previous-trigger]",
   "[data-glow-tour-cancel-trigger]",
   "[data-glow-tour-next-trigger]",
 ].join(",");

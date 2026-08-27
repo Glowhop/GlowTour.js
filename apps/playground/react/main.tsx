@@ -17,8 +17,6 @@ const content: LabContentFactory<ReactNode> = {
 };
 const lab = mountLab({ content, framework: "React", root, tour });
 
-tour.updateCurrentStep
-
 const reactRoot = createRoot(lab.rendererRoot);
 reactRoot.render(
   <GlowTour.Root tour={tour}>

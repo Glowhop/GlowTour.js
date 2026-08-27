@@ -166,8 +166,8 @@ export class FocusGuard {
     const candidates = focusableTourControls(root);
     const orderedSelectors =
       direction === "next"
-        ? ["[data-glow-tour-next-trigger]", "[data-glow-tour-back-trigger]"]
-        : ["[data-glow-tour-back-trigger]", "[data-glow-tour-next-trigger]"];
+        ? ["[data-glow-tour-next-trigger]", "[data-glow-tour-previous-trigger]"]
+        : ["[data-glow-tour-previous-trigger]", "[data-glow-tour-next-trigger]"];
 
     for (const selector of orderedSelectors) {
       for (const candidate of candidates) {

@@ -29,6 +29,38 @@ afterEach(() => {
 });
 
 describe("react adapter browser behavior", () => {
+  test("exposes reactive tour state to descendants", async () => {
+    const [React, { createRoot }, { createGlowTour, GlowTour, useTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("reactive state")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    function Observer() {
+      const state = useTour();
+      return React.createElement("output", null, `${state.status}:${state.currentStepIndex}`);
+    }
+    const root = createRoot(container);
+    await React.act(async () => {
+      root.render(React.createElement(GlowTour.Root, { tour }, React.createElement(Observer)));
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await React.act(async () => tour.advance());
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    await React.act(async () => root.unmount());
+  });
+
   test("keeps nested tour controls isolated from the outer root", async () => {
     const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
       import("react"),

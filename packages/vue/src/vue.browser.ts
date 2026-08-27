@@ -29,6 +29,39 @@ afterEach(() => {
 });
 
 describe("vue adapter browser behavior", () => {
+  test("exposes reactive tour state to descendants", async () => {
+    const [{ createApp, defineComponent, h, nextTick }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = runtime.createGlowTour();
+    const workflow = tour
+      .create("reactive state")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    const Observer = defineComponent({
+      setup() {
+        const state = runtime.useTour();
+        return () => h("output", `${state.value.status}:${state.value.currentStepIndex}`);
+      },
+    });
+    const app = createApp({
+      render: () => h(runtime.GlowTourRoot, { tour }, () => h(Observer)),
+    });
+    app.mount(container);
+    await tour.run(workflow);
+    await nextTick();
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await tour.advance();
+    await nextTick();
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    app.unmount();
+  });
+
   test("connects before an immediate run after synchronous mount", async () => {
     const [{ createApp, h }, runtime] = await Promise.all([import("vue"), import("./index")]);
     const container = document.createElement("div");

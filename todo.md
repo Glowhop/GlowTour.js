@@ -1,2 +1,4 @@
 
-[ ] renommer cancel -> skip
+[ ] renommer certains principes
+[ ] exporter useTour
+[ ] cleaner certaines fonctions

@@ -233,16 +233,18 @@ describe("private root bridge", () => {
     const tour = createGlowTour<string>();
 
     assert.deepEqual(Object.keys(tour).sort(), [
-      "advance",
       "cancel",
       "create",
       "dispose",
+      "goNext",
+      "goPrevious",
       "goToStep",
-      "previous",
       "run",
       "state",
       "updateCurrentStep",
     ]);
+    assert.equal("advance" in tour, false);
+    assert.equal("previous" in tour, false);
     assert.equal(Object.getOwnPropertyDescriptor(tour, BRIDGE_SYMBOL)?.enumerable, false);
     assert.equal(rootBridge(tour).version, 1);
   });
@@ -588,7 +590,7 @@ describe("private root bridge", () => {
       .onNext(() => hookBinding.release())
       .finish();
     await hookTour.run(hookDefinition);
-    await hookTour.advance();
+    await hookTour.goNext();
     assert.equal(hookTour.state.get().status, "idle");
   });
 

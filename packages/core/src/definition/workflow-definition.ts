@@ -21,7 +21,7 @@ export interface WorkflowStepDraft<T> {
   actions: StepActionInstruction<T>[];
   eventHandlers: EventHandler<T>[];
   nextAction: StepTransitionAction<T> | null;
-  backAction: StepTransitionAction<T> | null;
+  previousAction: StepTransitionAction<T> | null;
   cancelAction: StepTransitionAction<T> | null;
 }
 
@@ -54,7 +54,9 @@ function freezePopover(options: StepParameters<unknown>["popover"]) {
       keyboardShortcuts:
         options.keyboardShortcuts &&
         freezeRecord({
-          back: options.keyboardShortcuts.back && freezeRecord([...options.keyboardShortcuts.back]),
+          previous:
+            options.keyboardShortcuts.previous &&
+            freezeRecord([...options.keyboardShortcuts.previous]),
           next: options.keyboardShortcuts.next && freezeRecord([...options.keyboardShortcuts.next]),
           cancel:
             options.keyboardShortcuts.cancel && freezeRecord([...options.keyboardShortcuts.cancel]),
@@ -87,7 +89,7 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
     actions: freezeRecord([...draft.actions]),
     eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
     nextAction: draft.nextAction,
-    backAction: draft.backAction,
+    previousAction: draft.previousAction,
     cancelAction: draft.cancelAction,
   });
 }

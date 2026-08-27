@@ -57,7 +57,7 @@ class MockElement extends MockNode {
 
   matches(selector: string) {
     const triggerAttributes = [
-      "data-glow-tour-back-trigger",
+      "data-glow-tour-previous-trigger",
       "data-glow-tour-cancel-trigger",
       "data-glow-tour-next-trigger",
     ];
@@ -141,7 +141,7 @@ function createScope() {
   const popover = new MockElement("popover");
   const backHost = new MockElement("back-host");
   const back = new MockElement("back");
-  back.attributes.set("data-glow-tour-back-trigger", "");
+  back.attributes.set("data-glow-tour-previous-trigger", "");
   backHost.append(back);
   const nextHost = new MockElement("next-host");
   const next = new MockElement("next");
@@ -162,11 +162,11 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, next);
   });
 
-  test("focuses back when entering a step in the back direction", () => {
+  test("focuses the previous trigger when entering in the previous direction", () => {
     const guard = new FocusGuard();
     const { back, popover } = createScope();
 
-    guard.activate({ direction: "back", popover: popover as unknown as HTMLElement });
+    guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
 
     assert.equal(mockDocument.activeElement, back);
   });
@@ -198,12 +198,12 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, back);
   });
 
-  test("falls back from an unavailable back trigger to next", () => {
+  test("falls back from an unavailable previous trigger to next", () => {
     const guard = new FocusGuard();
     const { backHost, next, popover } = createScope();
     backHost.attributes.set("hidden", "");
 
-    guard.activate({ direction: "back", popover: popover as unknown as HTMLElement });
+    guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
 
     assert.equal(mockDocument.activeElement, next);
   });
