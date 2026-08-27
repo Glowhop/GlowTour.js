@@ -6,6 +6,7 @@ describe("react adapter contract", () => {
   test("exports an instance factory and component namespace without legacy runtime values", () => {
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.GlowTour, "object");
+    assert.equal(typeof runtime.useTour, "function");
 
     for (const legacy of [
       "Builder",

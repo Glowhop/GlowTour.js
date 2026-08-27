@@ -6,6 +6,7 @@ import * as runtime from "./public-api";
 describe("angular adapter contract", () => {
   test("exports an instance factory and standalone native components without legacy runtime values", () => {
     assert.equal(typeof runtime.createGlowTour, "function");
+    assert.equal(typeof runtime.injectGlowTour, "function");
 
     for (const component of [
       runtime.GlowTourRoot,

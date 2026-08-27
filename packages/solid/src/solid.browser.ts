@@ -54,6 +54,8 @@ beforeEach(() => {
     requestAnimationFrame: window.requestAnimationFrame.bind(window),
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     window,
   });
 });
@@ -63,6 +65,44 @@ afterEach(() => {
 });
 
 describe("solid adapter browser behavior", () => {
+  test("exposes reactive tour state to descendants", async () => {
+    const [{ createComponent }, { Dynamic, render }, { createGlowTour, GlowTour, useTour }] =
+      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("reactive state")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    function Observer() {
+      const state = useTour();
+      return createComponent(Dynamic, {
+        component: "output",
+        get children() {
+          return `${state().status}:${state().currentStepIndex}`;
+        },
+      });
+    }
+    const dispose = render(
+      () =>
+        createComponent(GlowTour.Root, {
+          tour,
+          get children() {
+            return createComponent(Observer, {});
+          },
+        }),
+      container,
+    );
+    await tour.run(workflow);
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await tour.advance();
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    dispose();
+  });
+
   test("keeps nested tour controls isolated from the outer root", async () => {
     const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
       import("solid-js"),
@@ -193,6 +233,9 @@ describe("solid adapter browser behavior", () => {
     }, container);
 
     await tour.run(workflow);
+    const firstBack = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(firstBack?.disabled, true);
+    assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     assert.equal(cancel?.disabled, false);
     cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));

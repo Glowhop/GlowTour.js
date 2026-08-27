@@ -7,6 +7,7 @@ import * as runtime from "./index";
 describe("vue adapter contract", () => {
   test("exports an instance factory and named native components without legacy runtime values", () => {
     assert.equal(typeof runtime.createGlowTour, "function");
+    assert.equal(typeof runtime.useTour, "function");
 
     for (const component of [
       runtime.GlowTourRoot,

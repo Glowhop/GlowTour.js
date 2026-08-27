@@ -630,6 +630,9 @@ describe("vanilla adapter browser behavior", () => {
       .step({ content: "Two", target, title: "Two" })
       .build();
     await tour.run(tourWorkflow);
+    const firstBack = element.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(firstBack?.disabled, true);
+    assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = element.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();

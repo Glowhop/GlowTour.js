@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const examples = [
   new URL("../react/main.tsx", import.meta.url),
   new URL("../vue/main.ts", import.meta.url),
+  new URL("../solid/main.tsx", import.meta.url),
   new URL("../angular/main.ts", import.meta.url),
   new URL("../vanilla/main.ts", import.meta.url),
 ];
@@ -19,6 +20,10 @@ const frameworkExamples = [
     view: new URL("../vue/main.ts", import.meta.url),
   },
   {
+    entry: new URL("../solid/main.tsx", import.meta.url),
+    view: new URL("../solid/main.tsx", import.meta.url),
+  },
+  {
     entry: new URL("../angular/main.ts", import.meta.url),
     view: new URL("../angular/main.ts", import.meta.url),
   },
@@ -29,18 +34,28 @@ const frameworkExamples = [
 ];
 
 describe("multi-framework playground", () => {
-  test("demonstrates the same three-step scenario in every framework", () => {
+  test("mounts the shared API lab in every framework", () => {
     for (const example of examples) {
       const source = readFileSync(example, "utf8");
-      assert.match(source, /-tour-id-1/);
-      assert.match(source, /-tour-id-2/);
-      assert.match(source, /-tour-id-3/);
-      assert.match(source, /allowInteraction: true/);
+      assert.match(source, /mountLab/);
+      assert.match(source, /framework:/);
     }
+
+    const workflow = readFileSync(
+      new URL("../lab/create-lab-workflow.ts", import.meta.url),
+      "utf8",
+    );
+    assert.match(workflow, /\.waitUntilElement\(/);
+    assert.match(workflow, /\.waitUntil\(/);
+    assert.match(workflow, /\.previous\(\)/);
+    assert.match(workflow, /\.append\(appendedWorkflow\)/);
   });
 
   test("does not use the removed previous API", () => {
-    const source = examples.map((example) => readFileSync(example, "utf8")).join("\n");
+    const source = [
+      ...examples.map((example) => readFileSync(example, "utf8")),
+      readFileSync(new URL("../lab/create-lab-workflow.ts", import.meta.url), "utf8"),
+    ].join("\n");
     assert.equal(source.includes("PreviousTrigger"), false);
     assert.equal(source.includes("previousLabel"), false);
   });

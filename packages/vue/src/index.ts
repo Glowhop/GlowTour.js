@@ -15,6 +15,7 @@ export {
   GlowTourPointer,
   GlowTourPopover,
   GlowTourRoot,
+  useTour,
 } from "./components/tour-components";
 export type { VueTourContent } from "./glow-tour";
 export { createGlowTour } from "./glow-tour";

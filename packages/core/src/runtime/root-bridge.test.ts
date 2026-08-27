@@ -89,6 +89,10 @@ class MockElement {
     return this.attributes.get(name) ?? null;
   }
 
+  hasAttribute(name: string) {
+    return this.attributes.has(name);
+  }
+
   getBoundingClientRect() {
     return {
       bottom: 20,
@@ -159,7 +163,6 @@ class MockDocument {
 
 const globals = [
   "HTMLElement",
-  "ResizeObserver",
   "cancelAnimationFrame",
   "document",
   "requestAnimationFrame",
@@ -169,27 +172,22 @@ const originalGlobals = new Map(
   globals.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
 );
 let document: MockDocument;
-let resizeObserverDisconnections = 0;
+let animationFrameCancellations = 0;
 
 beforeEach(() => {
   document = new MockDocument();
-  resizeObserverDisconnections = 0;
+  animationFrameCancellations = 0;
   const window = {
     addEventListener() {},
     innerHeight: 800,
     innerWidth: 1200,
     removeEventListener() {},
   };
-  class ResizeObserver {
-    disconnect() {
-      resizeObserverDisconnections += 1;
-    }
-    observe() {}
-  }
   const replacements = {
     HTMLElement: MockElement,
-    ResizeObserver,
-    cancelAnimationFrame() {},
+    cancelAnimationFrame() {
+      animationFrameCancellations += 1;
+    },
     document,
     requestAnimationFrame() {
       return 1;
@@ -241,16 +239,18 @@ describe("private root bridge", () => {
 
     assert.equal(acceptReadonlyTourState(tour.state), tour.state);
     assert.deepEqual(Object.keys(tour).sort(), [
-      "advance",
       "cancel",
       "create",
       "dispose",
+      "goNext",
+      "goPrevious",
       "goToStep",
-      "previous",
       "run",
       "state",
       "updateCurrentStep",
     ]);
+    assert.equal("advance" in tour, false);
+    assert.equal("previous" in tour, false);
     assert.equal(Object.getOwnPropertyDescriptor(tour, BRIDGE_SYMBOL)?.enumerable, false);
     assert.equal(rootBridge(tour).version, 1);
   });
@@ -429,7 +429,7 @@ describe("private root bridge", () => {
     binding.bindPopover(second);
     releaseFirst();
 
-    assert.equal((second as unknown as MockElement).style.values.get("opacity"), undefined);
+    assert.equal((second as unknown as MockElement).style.values.get("opacity"), "0");
   });
 
   test("rejects elements outside the claimed root", () => {
@@ -542,7 +542,7 @@ describe("private root bridge", () => {
 
     await tour.run(definition);
     binding.release();
-    assert.equal(resizeObserverDisconnections, 1);
+    assert.equal(animationFrameCancellations, 1);
     assert.equal(tour.state.get().status, "idle");
     await assert.rejects(() => tour.run(definition), /connected root/i);
     rootBridge(tour).connectRoot({ adapter: {}, root: root() });
@@ -596,7 +596,7 @@ describe("private root bridge", () => {
       .beforeAdvance(() => hookBinding.release())
       .build();
     await hookTour.run(hookDefinition);
-    await hookTour.advance();
+    await hookTour.goNext();
     assert.equal(hookTour.state.get().status, "idle");
   });
 

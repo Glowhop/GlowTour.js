@@ -63,19 +63,21 @@ export default class PointerElement<T> extends GlowTourElement<T> {
   ) {
     this.popoverPlacement = popoverPlacement;
     const currentPlacement = this.element.getAttribute("data-glow-tour-placement");
-    const styles = this._getNextStyles(nextPosition, step);
-
-    for (const [property, value] of Object.entries(styles)) {
-      if (value != null) this.element.style.setProperty(property, String(value));
+    const nextPositionState = this._resolvePosition(nextPosition, step);
+    const nextPlacement = nextPositionState.placement;
+    const left = `${roundByDPR(nextPositionState.x)}px`;
+    const top = `${roundByDPR(nextPositionState.y)}px`;
+    if (this.element.style.getPropertyValue("left") !== left) {
+      this.element.style.setProperty("left", left);
     }
-
-    const nextPlacement = this.element.getAttribute("data-glow-tour-placement");
-    if (
-      nextPlacement &&
-      nextPlacement !== currentPlacement &&
-      this.element.getAttribute("aria-hidden") !== "true"
-    ) {
-      this._startAnimation(nextPlacement as TryOrderOptions);
+    if (this.element.style.getPropertyValue("top") !== top) {
+      this.element.style.setProperty("top", top);
+    }
+    if (currentPlacement !== nextPlacement) {
+      this.element.setAttribute("data-glow-tour-placement", nextPlacement);
+    }
+    if (nextPlacement !== currentPlacement && this.element.getAttribute("aria-hidden") !== "true") {
+      this._startAnimation(nextPlacement);
     }
   }
 

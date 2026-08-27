@@ -757,7 +757,7 @@ export function registerGlowTourElements() {
     ) {
       return {
         disabled: !state.canPrevious || props.disableBackButton === true,
-        hidden: state.isFirstStep || props.hideBackButton === true,
+        hidden: props.hideBackButton === true,
         label: this.getAttribute("back-label") ?? "Back step",
       };
     }

@@ -54,26 +54,40 @@ export function mergePopoverOptions(
   }
 
   const placementTryOrder = overrides?.placementTryOrder ?? defaults?.placementTryOrder;
+  const hasArrow = !!defaults?.arrow || !!overrides?.arrow;
   const hasButtons = !!defaults?.buttons || !!overrides?.buttons;
   const hasKeyboardShortcuts = !!defaults?.keyboardShortcuts || !!overrides?.keyboardShortcuts;
 
   return {
     ...mergeBaseOptions(defaults, overrides),
-    disableArrow: overrides?.disableArrow ?? defaults?.disableArrow,
+    arrow: hasArrow
+      ? {
+          disabled: overrides?.arrow?.disabled ?? defaults?.arrow?.disabled,
+          color: overrides?.arrow?.color ?? defaults?.arrow?.color,
+          size: normalizeGap(overrides?.arrow?.size ?? defaults?.arrow?.size),
+          borderWidth: normalizeGap(overrides?.arrow?.borderWidth ?? defaults?.arrow?.borderWidth),
+          borderRadius: normalizeGap(
+            overrides?.arrow?.borderRadius ?? defaults?.arrow?.borderRadius,
+          ),
+          edgePadding: normalizeGap(overrides?.arrow?.edgePadding ?? defaults?.arrow?.edgePadding),
+        }
+      : undefined,
     disableAutoFocus: overrides?.disableAutoFocus ?? defaults?.disableAutoFocus,
     hideProgressIndicator: overrides?.hideProgressIndicator ?? defaults?.hideProgressIndicator,
     gap: overrides?.gap ?? defaults?.gap,
     placementTryOrder: cloneArray(placementTryOrder),
     buttons: hasButtons
       ? {
-          backLabel: overrides?.buttons?.backLabel ?? defaults?.buttons?.backLabel,
+          previousLabel: overrides?.buttons?.previousLabel ?? defaults?.buttons?.previousLabel,
           nextLabel: overrides?.buttons?.nextLabel ?? defaults?.buttons?.nextLabel,
           finishLabel: overrides?.buttons?.finishLabel ?? defaults?.buttons?.finishLabel,
         }
       : undefined,
     keyboardShortcuts: hasKeyboardShortcuts
       ? {
-          back: cloneArray(overrides?.keyboardShortcuts?.back ?? defaults?.keyboardShortcuts?.back),
+          previous: cloneArray(
+            overrides?.keyboardShortcuts?.previous ?? defaults?.keyboardShortcuts?.previous,
+          ),
           next: cloneArray(overrides?.keyboardShortcuts?.next ?? defaults?.keyboardShortcuts?.next),
           cancel: cloneArray(
             overrides?.keyboardShortcuts?.cancel ?? defaults?.keyboardShortcuts?.cancel,
@@ -129,7 +143,6 @@ export function mergeStepBehavior(
   }
   return {
     allowInteraction: overrides?.allowInteraction ?? defaults?.allowInteraction,
-    targetTracking: overrides?.targetTracking ?? defaults?.targetTracking,
     missingTargetStrategy: overrides?.missingTargetStrategy ?? defaults?.missingTargetStrategy,
     targetTimeout: overrides?.targetTimeout ?? defaults?.targetTimeout,
   };

@@ -44,6 +44,52 @@ async function settle() {
 }
 
 describe("angular adapter browser behavior", () => {
+  test("exposes reactive tour state to descendants", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    document.body.append(target);
+
+    @Component({
+      selector: "angular-tour-state-observer",
+      standalone: true,
+      template: `<output>{{ state()?.status }}:{{ state()?.currentStepIndex }}</output>`,
+    })
+    class TourStateObserver {
+      readonly state = runtime.injectGlowTour();
+    }
+
+    @Component({
+      selector: "angular-tour-state-harness",
+      standalone: true,
+      imports: [runtime.GlowTourRoot, TourStateObserver],
+      template: `
+        <glow-tour-root [tour]="tour">
+          <angular-tour-state-observer />
+        </glow-tour-root>
+      `,
+    })
+    class TourStateHarness {
+      readonly tour = tour;
+    }
+
+    document.body.append(document.createElement("angular-tour-state-harness"));
+    const app = await bootstrapApplication(TourStateHarness);
+    const workflow = tour
+      .create("reactive state")
+      .step({ content: "First", target, title: "First" })
+      .step({ content: "Second", target, title: "Second" })
+      .finish();
+    await tour.run(workflow);
+    await settle();
+    app.tick();
+    assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
+    await tour.advance();
+    await settle();
+    app.tick();
+    assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");
+    await app.destroy();
+  });
+
   test("connects a root during Angular initialization and releases it on destruction", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");
@@ -106,6 +152,9 @@ describe("angular adapter browser behavior", () => {
     app.tick();
     assert.match(document.body.textContent ?? "", /First title/);
     assert.match(document.body.textContent ?? "", /First content/);
+    const firstBack = document.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    assert.equal(firstBack?.disabled, true);
+    assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
 
     tour.updateCurrentStep((props) => ({
       ...props,
@@ -308,7 +357,7 @@ describe("angular adapter browser behavior", () => {
     const bridgeSymbol = Symbol.for("@glowhop/core-tour/adapter-bridge/v1");
     const calls: string[] = [];
     const fakeTour = (name: string) => {
-      const tour = {};
+      const tour = { state: runtime.createGlowTour().state };
       Object.defineProperty(tour, bridgeSymbol, {
         value: {
           connectRoot: ({ idPrefix }: { idPrefix?: string }) => {
@@ -409,7 +458,7 @@ describe("angular adapter browser behavior", () => {
   test("cleans a removed popover binding before registering its replacement", async () => {
     const bridgeSymbol = Symbol.for("@glowhop/core-tour/adapter-bridge/v1");
     const calls: string[] = [];
-    const tour = {};
+    const tour = { state: runtime.createGlowTour().state };
     Object.defineProperty(tour, bridgeSymbol, {
       value: {
         connectRoot: () => ({
