@@ -77,6 +77,47 @@ test("source manifests contain the repository metadata required for trusted publ
   }
 });
 
+test("source manifests contain complete public npm metadata and preserve required side effects", () => {
+  const expectedSideEffects: Record<string, unknown> = {
+    core: undefined,
+    styles: ["*.css"],
+    react: undefined,
+    vue: undefined,
+    angular: undefined,
+    solid: undefined,
+    vanilla: true,
+  };
+
+  for (const packageId of packageIds) {
+    const manifest = JSON.parse(read(`packages/${packageId}/package.json`)) as Record<string, unknown>;
+    expect(manifest.description).toBeString();
+    expect(manifest.license).toBe("MIT");
+    expect(manifest.homepage).toBe("https://github.com/Glowhop/glow-tour#readme");
+    expect(manifest.bugs).toEqual({ url: "https://github.com/Glowhop/glow-tour/issues" });
+    expect(manifest.keywords).toBeArray();
+    expect(manifest.engines).toEqual({ node: ">=18.19.1" });
+    expect(manifest.files).toEqual(["dist/**/*"]);
+    expect(manifest.publishConfig).toEqual({ access: "public" });
+    expect(manifest.sideEffects).toEqual(expectedSideEffects[packageId]);
+  }
+});
+
+test("package builds copy shared documents and prefer package changelogs", () => {
+  const buildScript = read("scripts/build-packages.ts");
+  expect(buildScript).toContain('"README.md"');
+  expect(buildScript).toContain('"LICENSE"');
+  expect(buildScript).toContain('join(packageDirectory, "CHANGELOG.md")');
+  expect(buildScript).toContain('join(root, "CHANGELOG.md")');
+});
+
+test("the published README links only to packaged files or absolute repository URLs", () => {
+  const readme = read("README.md");
+  const relativeLinks = [...readme.matchAll(/\[[^\]]+\]\((?!https?:\/\/|#)([^)]+)\)/g)].map(
+    (match) => match[1],
+  );
+  expect(relativeLinks).toEqual([]);
+});
+
 test("the private playground stays outside all package build, pack, release, and tarball sets", () => {
   const playground = JSON.parse(read("apps/playground/package.json")) as { private?: boolean };
   const buildScript = read("scripts/build-packages.ts");
@@ -101,6 +142,22 @@ test("adapter declaration builds exclude browser acceptance sources", () => {
       exclude?: string[];
     };
     expect(config.exclude).toContain("src/**/*.browser.ts");
+  }
+});
+
+test("Core keeps obsolete animation and highlight contracts out of its public surface", () => {
+  expect(existsSync(join(root, "packages/core/src/utils/animations.ts"))).toBe(false);
+  const publicSurface = `${read("packages/core/src/index.ts")}\n${read(
+    "packages/core/src/types/index.ts",
+  )}`;
+  for (const obsoleteName of [
+    "GlowTourElementName",
+    "HighlightOptions",
+    "HighlightStepOverrides",
+    "ViewportDimensions",
+    "WorkflowHighlightOptions",
+  ]) {
+    expect(publicSurface).not.toContain(obsoleteName);
   }
 });
 

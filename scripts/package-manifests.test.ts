@@ -39,3 +39,41 @@ test("rejects a workspace dependency whose target manifest is unavailable", () =
     ),
   ).toThrow("missing workspace version for @glowhop/missing-tour");
 });
+
+test("preserves publish metadata and package-specific side effects", () => {
+  const source = {
+    description: "A package",
+    license: "MIT",
+    homepage: "https://github.com/Glowhop/glow-tour#readme",
+    bugs: { url: "https://github.com/Glowhop/glow-tour/issues" },
+    keywords: ["glow-tour"],
+    engines: { node: ">=18.19.1" },
+    files: ["dist/**/*"],
+    publishConfig: { access: "public" },
+    sideEffects: ["*.css"],
+    name: "@glowhop/styles-tour",
+    version: "0.2.0",
+  };
+
+  expect(buildPublishedManifest(source, {})).toMatchObject({
+    description: source.description,
+    license: source.license,
+    homepage: source.homepage,
+    bugs: source.bugs,
+    keywords: source.keywords,
+    engines: source.engines,
+    files: ["**/*"],
+    publishConfig: source.publishConfig,
+    sideEffects: source.sideEffects,
+  });
+
+  expect(
+    buildPublishedManifest({ name: "@glowhop/core-tour", version: "0.2.0" }, {}).sideEffects,
+  ).toBe(false);
+  expect(
+    buildPublishedManifest(
+      { name: "@glowhop/vanilla-tour", sideEffects: true, version: "0.2.0" },
+      {},
+    ).sideEffects,
+  ).toBe(true);
+});

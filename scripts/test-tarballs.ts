@@ -1,5 +1,13 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -53,20 +61,57 @@ function assertPackedArtifact(packageName: PackageName) {
   const tarball = tarballFor(packageName);
   const contents = run("tar", ["-tzf", tarball]);
   const manifest = readPackedManifest(tarball);
+  const packageId = packageName.replace("@glowhop/", "").replace("-tour", "");
+  const packageChangelog = join(root, "packages", packageId, "CHANGELOG.md");
+  const expectedChangelog = readFileSync(
+    existsSync(packageChangelog) ? packageChangelog : join(root, "CHANGELOG.md"),
+    "utf8",
+  );
 
   assert.equal(manifest.name, packageName);
   assert.equal(manifest.type, "module");
   assert.deepEqual(manifest.files, ["**/*"]);
+  assert.ok(
+    typeof manifest.description === "string" && manifest.description.length > 0,
+    `${packageName} must keep its description`,
+  );
+  assert.equal(manifest.license, "MIT");
+  assert.equal(manifest.homepage, "https://github.com/Glowhop/glow-tour#readme");
+  assert.deepEqual(manifest.bugs, { url: "https://github.com/Glowhop/glow-tour/issues" });
+  assert.ok(
+    Array.isArray(manifest.keywords) &&
+      manifest.keywords.length > 0 &&
+      manifest.keywords.every((keyword) => typeof keyword === "string"),
+    `${packageName} must keep its keywords`,
+  );
+  assert.deepEqual(manifest.engines, { node: ">=18.19.1" });
+  assert.deepEqual(manifest.publishConfig, { access: "public" });
+  assert.deepEqual(
+    manifest.sideEffects,
+    packageName === "@glowhop/styles-tour"
+      ? ["*.css"]
+      : packageName === "@glowhop/vanilla-tour",
+  );
   assert.deepEqual(manifest.repository, {
     directory: `packages/${packageName.replace("@glowhop/", "").replace("-tour", "")}`,
     type: "git",
     url: "git+https://github.com/Glowhop/glow-tour.git",
   });
   assert.match(JSON.stringify(manifest), /"exports"/);
+  assert.equal("devDependencies" in manifest, false);
+  assert.equal("scripts" in manifest, false);
   assert.doesNotMatch(JSON.stringify(manifest), /workspace:\*/);
   assert.doesNotMatch(JSON.stringify(manifest), /["']\.\/src\//);
   assert.doesNotMatch(contents, /package\/src\//);
   assert.doesNotMatch(contents, /(?<!\.d)\.ts$/m);
+  assert.match(contents, /package\/README\.md$/m);
+  assert.match(contents, /package\/LICENSE$/m);
+  assert.match(contents, /package\/CHANGELOG\.md$/m);
+  assert.equal(
+    run("tar", ["-xOzf", tarball, "package/CHANGELOG.md"]),
+    expectedChangelog,
+    `${packageName} must publish its package changelog, falling back to the root bootstrap changelog`,
+  );
   if (packageName === "@glowhop/styles-tour") {
     assert.match(contents, /package\/default\.css$/m);
     assert.match(contents, /package\/default\.css\.d\.ts$/m);
