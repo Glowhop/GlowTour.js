@@ -98,12 +98,12 @@ class StagedTransitionDriver implements TourViewDriver<string> {
 
   async commitContent() {
     assert.ok(this.beforeAppear, "Expected the controller to provide a content commit callback");
-    await this.beforeAppear();
+    await this.beforeAppear?.();
   }
 
   finishShow() {
     assert.ok(this.pendingShow, "Expected a pending show");
-    this.pendingShow.resolve();
+    this.pendingShow?.resolve();
   }
 
   async show(
@@ -250,7 +250,7 @@ describe("instance-first TourController", () => {
         .step({ content: "zero", target: targetResolver, title: "zero" })
         .step({ content: "one", target: targetResolver, title: "one" })
         .step({ content: "two", target: targetResolver, title: "two" })
-        .finish();
+        .build();
       await tour.run(workflow);
       if (scenario.start === 1) await tour.goNext();
 
@@ -300,7 +300,7 @@ describe("instance-first TourController", () => {
         target: targetResolver,
         title: "one",
       })
-      .finish();
+      .build();
     await tour.run(workflow);
     assert.deepEqual(
       {
@@ -345,7 +345,7 @@ describe("instance-first TourController", () => {
     const active = tour
       .create("active", { cancellable: true })
       .step({ content: "active", target: targetResolver, title: "active" })
-      .finish();
+      .build();
     const replacement = tour
       .create("replacement", { cancellable: false })
       .step({
@@ -354,7 +354,7 @@ describe("instance-first TourController", () => {
         target: targetResolver,
         title: "replacement",
       })
-      .finish();
+      .build();
     await tour.run(active);
     driver.pauseNextShow();
 
@@ -392,11 +392,11 @@ describe("instance-first TourController", () => {
     const active = tour
       .create("active")
       .step({ content: "active", target: targetResolver, title: "active" })
-      .finish();
+      .build();
     const finalWorkflow = tour
       .create("final")
       .step({ content: "final", target: targetResolver, title: "final" })
-      .finish();
+      .build();
     let finalRun: Promise<void> | null = null;
     const replacedDuringStart = tour
       .create("replaced-during-start", {
@@ -405,7 +405,7 @@ describe("instance-first TourController", () => {
         },
       })
       .step({ content: "stale", target: targetResolver, title: "stale" })
-      .finish();
+      .build();
     await tour.run(active);
     driver.pauseNextShow();
 
@@ -430,7 +430,7 @@ describe("instance-first TourController", () => {
       .create("cancel-staged-content", { cancellable: true })
       .step({ content: "old", target: targetResolver, title: "old" })
       .step({ content: "stale", target: targetResolver, title: "stale" })
-      .finish();
+      .build();
     await tour.run(workflow);
     driver.pauseNextShow();
 
@@ -759,13 +759,13 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("actions")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .do(async (_element, state) => {
-        assert.equal(Object.isFrozen(state), true);
-        assert.equal("set" in state, false);
-        calls.push(String(state.get().title));
+      .do(async ({ props }) => {
+        assert.equal(Object.isFrozen(props), true);
+        assert.equal("set" in props, false);
+        calls.push(String(props.get().title));
         return true;
       })
-      .advance()
+      .goNext()
       .step({ content: "two", target: targetResolver, title: "two" })
       .build();
 
@@ -801,11 +801,11 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("event-error")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .finish();
+      .build();
     await tour.run(workflow);
 
     assert.ok(driver.commands);
-    await driver.commands.reportError(new TypeError("event failed"));
+    await driver.commands?.reportError(new TypeError("event failed"));
 
     assert.equal(tour.state.get().status, "error");
     assert.equal(tour.state.get().error?.message, "event failed");
@@ -1147,9 +1147,9 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("wait-condition")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .waitFor(
-        (_element, state) => {
-          assert.equal(state.get().title, "one");
+      .waitUntil(
+        ({ props }) => {
+          assert.equal(props.get().title, "one");
           attempts += 1;
           return attempts === 3;
         },
@@ -1174,7 +1174,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("wait-element")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .waitForElement("#ready", { interval: 1, timeout: 100 })
+      .waitUntilElement("#ready", { interval: 1, timeout: 100 })
       .build();
 
     try {
@@ -1197,7 +1197,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("wait-timeout")
       .step({ content: "one", target: targetResolver, title: "one" })
-      .waitFor(() => false, { interval: 1, timeout: 0 })
+      .waitUntil(() => false, { interval: 1, timeout: 0 })
       .build();
 
     await assert.rejects(() => tour.run(workflow), /timed out waiting for condition after 0ms/i);
@@ -1219,7 +1219,7 @@ describe("instance-first TourController", () => {
       const workflow = tour
         .create("async-wait-timeout")
         .step({ content: "one", target: targetResolver, title: "one" })
-        .waitFor(predicate, { interval: 1, timeout: 1 })
+        .waitUntil(predicate, { interval: 1, timeout: 1 })
         .build();
 
       await assert.rejects(() => tour.run(workflow), /timed out waiting for condition after 1ms/i);
@@ -1236,7 +1236,7 @@ describe("instance-first TourController", () => {
       tour
         .create("waiting")
         .step({ content: "one", target: targetResolver, title: "one" })
-        .waitFor(
+        .waitUntil(
           () => {
             attempts += 1;
             entered.resolve();
@@ -1265,7 +1265,7 @@ describe("instance-first TourController", () => {
       cancellable
         .create("cancel-wait", { cancellable: true })
         .step({ content: "one", target: targetResolver, title: "one" })
-        .waitFor(
+        .waitUntil(
           () => {
             cancelAttempts += 1;
             cancelEntered.resolve();
@@ -1291,7 +1291,7 @@ describe("instance-first TourController", () => {
       disposable
         .create("dispose-wait")
         .step({ content: "one", target: targetResolver, title: "one" })
-        .waitFor(
+        .waitUntil(
           () => {
             disposeAttempts += 1;
             disposeEntered.resolve();
@@ -1306,7 +1306,7 @@ describe("instance-first TourController", () => {
     await disposeRun;
     assert.equal(disposeAttempts, 1);
     assert.equal(driver.disposeCalls, 1);
-    await assert.rejects(() => disposable.advance(), /disposed/i);
+    await assert.rejects(() => disposable.goNext(), /disposed/i);
   });
 
   for (const failureSource of ["action", "hook", "view"] as const) {
