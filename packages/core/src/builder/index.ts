@@ -208,14 +208,14 @@ export class WorkflowStepBuilder<T> {
   }
 
   clickTarget(): this {
-    return this.do((target) => {
+    return this.do(({target}) => {
       target?.click();
       return true;
     });
   }
 
   focusTarget(): this {
-    return this.do((target) => {
+    return this.do(({target}) => {
       target?.focus();
       return true;
     });
