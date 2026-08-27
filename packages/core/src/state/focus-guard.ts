@@ -6,7 +6,7 @@ import {
   isFocusable,
 } from "./focusable";
 
-type FocusDirection = "next" | "back";
+type FocusDirection = "next" | "previous";
 
 export interface FocusGuardScope {
   popover: HTMLElement;

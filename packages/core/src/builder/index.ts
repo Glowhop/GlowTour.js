@@ -96,9 +96,7 @@ function waitForPredicate(
   });
 }
 
-const DEFAULT_WAIT_TIMEOUT = 3000;
-const DEFAULT_WAIT_INTERVAL = 50;
-
+//! à utiliser
 function waitOptions(options: WaitOptions = {}) {
   const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
@@ -221,12 +219,13 @@ export class WorkflowStepBuilder<T> {
     });
   }
 
-  delay(timeMs: number) {
+  wait(timeMs: number) {
     this.assertActive();
     assertTimingValue("timeMs", timeMs);
     this.draft.actions.push(timeMs);
     return this;
   }
+
 
   waitUntil(predicate: WaitUntilPredicate<T>, options: WaitUntilOptions = {}): this {
     this.assertActive();
@@ -270,7 +269,7 @@ export class WorkflowStepBuilder<T> {
 
   goNext(): this {
     this.assertActive();
-    this.draft.actions.push("advance");
+    this.draft.actions.push("next");
     return this;
   }
 
@@ -333,9 +332,6 @@ export class WorkflowStepBuilder<T> {
     return this;
   }
 
-  toDraft(): WorkflowStepDraft<T> {
-    return cloneWorkflowStepDraft(this.draft);
-  }
 
   [STEP_BUILDER_INTERNAL](): WorkflowStepDraft<T> {
     this.active = false;

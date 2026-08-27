@@ -1132,7 +1132,7 @@ describe("instance-first TourController", () => {
         },
         title: "one",
       })
-      .delay(0)
+      .wait(0)
       .build();
 
     await tour.run(workflow);

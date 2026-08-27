@@ -17,6 +17,8 @@ The authoritative implementation status and exact recovery action live in
 Completed audit tasks are intentionally not duplicated here.
 
 
-[ ] renommer certains principes
+[ ] renommer certains principes : goPrevious (canGoPrevious) -> previous , goNext (canGoNext) -> advance
 [ ] exporter useTour
 [ ] cleaner certaines fonctions
+
+

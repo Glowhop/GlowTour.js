@@ -15,7 +15,6 @@ import type {
   DynamicStepProps,
   GlowTour,
   StartOptions,
-  StepWaitInstruction,
   StepContext,
   TourDirection,
   TourState,
@@ -338,75 +337,6 @@ export class TourController<T> {
     }
   }
 
-  private async waitForAction(
-    action: StepWaitInstruction<T>,
-    step: ActiveStep<T>,
-    operation: number,
-  ) {
-    const startedAt = Date.now();
-    while (true) {
-      this.assertCurrent(operation);
-      const elapsedBeforePredicate = Date.now() - startedAt;
-      if (
-        await this.evaluateWaitPredicate(
-          action,
-          step,
-          operation,
-          Math.max(0, action.timeout - elapsedBeforePredicate),
-        )
-      ) {
-        return;
-      }
-      this.assertCurrent(operation);
-      const elapsed = Date.now() - startedAt;
-      if (elapsed >= action.timeout) {
-        throw new Error(`Timed out waiting for ${action.description} after ${action.timeout}ms`);
-      }
-      await waitForTimer(
-        Math.min(action.interval, action.timeout - elapsed),
-        this.signalFor(operation),
-      );
-    }
-  }
-
-  private evaluateWaitPredicate(
-    action: StepWaitInstruction<T>,
-    step: ActiveStep<T>,
-    operation: number,
-    remaining: number,
-  ) {
-    const signal = this.signalFor(operation);
-    return new Promise<boolean>((resolve, reject) => {
-      let settled = false;
-      const cleanup = () => {
-        clearTimeout(timeout);
-        signal.removeEventListener("abort", onAbort);
-      };
-      const settle = (callback: () => void) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        callback();
-      };
-      const onAbort = () => settle(() => reject(abortError()));
-      const timeout = setTimeout(
-        () =>
-          settle(() =>
-            reject(
-              new Error(`Timed out waiting for ${action.description} after ${action.timeout}ms`),
-            ),
-          ),
-        remaining,
-      );
-      signal.addEventListener("abort", onAbort, { once: true });
-      Promise.resolve()
-        .then(() => action.predicate(step.target, step.state))
-        .then(
-          (ready) => settle(() => resolve(ready)),
-          (error) => settle(() => reject(error)),
-        );
-    });
-  }
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
     const signal = this.signalFor(operation);

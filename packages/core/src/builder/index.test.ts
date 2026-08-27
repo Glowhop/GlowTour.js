@@ -14,7 +14,7 @@ describe("WorkflowBuilder public contract", () => {
   test("builds a frozen definition through the canonical fluent methods", () => {
     const callback = () => {};
     const definition = workflow()
-      .delay(1)
+      .wait(1)
       .do(() => true)
       .on(["click", "keydown"], callback)
       .beforeAdvance(() => {})
@@ -74,7 +74,7 @@ describe("WorkflowBuilder public contract", () => {
   });
 
   test("rejects invalid delay and wait timing options", () => {
-    assert.throws(() => workflow().delay(-1), /delay/i);
+    assert.throws(() => workflow().wait(-1), /delay/i);
     assert.throws(() => workflow().waitFor(() => true, { timeout: -1 }), /timeout/i);
     assert.throws(() => workflow().waitForElement("#ready", { interval: 0 }), /interval/i);
   });

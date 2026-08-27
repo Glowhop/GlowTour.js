@@ -13,7 +13,9 @@ const DEFAULT_SHORTCUTS = {
   cancel: ["Escape"],
   next: ["Enter", "ArrowRight"],
 } as const;
+
 type TourViewCommand = "next" | "previous" | "cancel";
+
 export interface TourViewCommands {
   goNext(): Promise<void>;
   canGoNext(): boolean;
@@ -307,13 +309,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     for (const handler of step.definition.eventHandlers) {
       const listener = (event: Event) => {
         if (!this.isCurrentGeneration(generation)) return;
-        void handler.callback(
-          event,
-          step.state,
-          () => this.commandForGeneration("advance", generation),
-          () => this.commandForGeneration("previous", generation),
-          () => this.commandForGeneration("cancel", generation),
-        );
+        // void handler.callback(
+        //   event,
+        //   step.state,
+        //   () => this.commandForGeneration("next", generation),
+        //   () => this.commandForGeneration("previous", generation),
+        //   () => this.commandForGeneration("cancel", generation),
+        // );
         const context = Object.freeze({
           goNext: () => this.commandForStep("next", step, signal),
           cancel: () => this.commandForStep("cancel", step, signal),
@@ -556,7 +558,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private deferTriggerCommand(
-    command: "next" | "previous" | "cancel",
+    command: TourViewCommand,
     event: Event,
     step: ActiveStep<T>,
     generation: number,
@@ -599,7 +601,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
-  private findTriggers(direction: "next" | "previous" | "cancel") {
+  private findTriggers(direction: TourViewCommand) {
     const scope = this.root ?? this.popover?.getElement();
     if (!(scope instanceof HTMLElement) || typeof scope.querySelectorAll !== "function") return [];
     return Array.from(
@@ -613,19 +615,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     return trigger.closest("[data-glow-tour-root]") === owner;
   }
 
-  private async command(command: "next" | "previous" | "cancel") {
+  private async command(command: TourViewCommand) {
     if (this.disposed) return;
     if (command === "next") await this.commands?.goNext();
     else if (command === "previous") await this.commands?.goPrevious();
     else await this.commands?.cancel();
   }
 
-  private commandForGeneration(command: "next" | "previous" | "cancel", generation: number) {
+  private commandForGeneration(command: TourViewCommand, generation: number) {
     return this.isCurrentGeneration(generation) ? this.command(command) : Promise.resolve();
   }
 
   private commandForStep(
-    command: "next" | "previous" | "cancel",
+    command: TourViewCommand,
     step: ActiveStep<T>,
     signal: AbortSignal,
   ) {
@@ -633,7 +635,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private canCommand(
-    command: "next" | "previous" | "cancel",
+    command: TourViewCommand,
     step: ActiveStep<T>,
     trigger?: HTMLButtonElement | null,
   ) {

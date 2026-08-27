@@ -38,6 +38,16 @@ export type GlowTourElementName =
   | "next-trigger"
   | "overlay";
 
+  export type WorkflowStatus =
+  | "not-started"
+  | "idle"
+  | "starting"
+  | "running"
+  | "paused"
+  | "finished"
+  | "cancelled"
+  | "error";
+
 export interface ViewportDimensions {
   width: number;
   height: number;
@@ -195,37 +205,30 @@ export type StepWaitPredicate<T> = (
   element: HTMLElement | null,
   stepState: ReadonlyStepState<T>,
 ) => Promise<boolean> | boolean;
-export interface StepWaitInstruction<T> {
-  readonly type: "waitFor";
-  readonly predicate: StepWaitPredicate<T>;
-  readonly timeout: number;
-  readonly interval: number;
-  readonly description: string;
-}
+
 export type StepActionInstruction<T> =
   | StepAction<T>
-  | StepWaitInstruction<T>
   | number
-  | "advance"
+  | "next"
   | "previous";
   
-export type StepTransitionAction<T> = (
-  element: HTMLElement | null,
-  stepState: ReadonlyStepState<T>,
-) => void | Promise<void>;
+// export type StepTransitionAction<T> = (
+//   element: HTMLElement | null,
+//   stepState: ReadonlyStepState<T>,
+// ) => void | Promise<void>;
 
-export interface EventHandler<TStepProps, TEvent extends Event = Event> {
-  event: string;
-  callback: (
-    event: TEvent,
-    stepState: ReadonlyStepState<TStepProps>,
-    next: () => Promise<void>,
-    back: () => Promise<void>,
-    cancel: () => Promise<void>,
-  ) => void | Promise<void>;
-}
+// export interface EventHandler<TStepProps, TEvent extends Event = Event> {
+//   event: string;
+//   callback: (
+//     event: TEvent,
+//     stepState: ReadonlyStepState<TStepProps>,
+//     next: () => Promise<void>,
+//     back: () => Promise<void>,
+//     cancel: () => Promise<void>,
+//   ) => void | Promise<void>;
+// }
 
-export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
+// export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
 export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {

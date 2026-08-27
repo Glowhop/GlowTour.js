@@ -87,8 +87,7 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
     scroll: draft.scroll && freezeRecord({ ...draft.scroll }),
     behavior: draft.behavior && freezeRecord({ ...draft.behavior }),
     actions: freezeRecord(
-      draft.actions.map((action) =>
-        typeof action === "object" ? freezeRecord({ ...action }) : action,
+      draft.actions.map((action) =>action,
       ),
     ),
     eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
@@ -115,8 +114,7 @@ export function cloneWorkflowStepDraft<T>(
   return {
     ...definition,
     props: cloneStepProps(definition.props),
-    actions: definition.actions.map((action) =>
-      typeof action === "object" ? { ...action } : action,
+    actions: definition.actions.map((action) => action,
     ),
     eventHandlers: [...definition.eventHandlers],
   };
