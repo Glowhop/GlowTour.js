@@ -59,7 +59,7 @@ Last updated: 2026-08-22
 - Corrected synchronous subscriber reentrancy so a notification-triggered run, cancel, or dispose invalidates the old operation before any later hook, callback, or mutation.
 - Added a driver-backed `createGlowTour<T>()` facade with no controller or driver fields exposed to consumers. Its only internal integration point is a non-enumerable, versioned `Symbol.for("@glowhop/core-tour/adapter-bridge/v1")` bridge.
 - Added exclusive root leases across duplicate Core copies, root-scoped collision-free IDs, descendant-only element binding, idempotent identity-safe cleanup tokens, release/remount lifecycle handling, and disposal-triggered root release. Root release cancels DOM driver resources without disposing the controller.
-- Aligned `canPrevious` with `previous()` on the first step: it is available only when back navigation is enabled and cancellation is allowed.
+- Aligned `canGoPrevious` with `previous()` on the first step: it is available only when back navigation is enabled and cancellation is allowed.
 - Unified abortable timers and removed their abort listeners on normal resolution and abort rejection.
 - Moved readonly definition types, step-prop cloning/freezing, and workflow-definition creation into focused `packages/core/src/definition/` modules shared by the builder and active runtime.
 - Preserved original action/hook/view rejections when an `error` subscriber synchronously replaces the workflow, while preventing the stale operation from clearing the replacement view.

@@ -26,19 +26,7 @@ export interface WaitOptions {
 }
 
 export type WorkflowDirection = "next" | "previous";
-export type GlowTourElementName =
-  | "root"
-  | "header"
-  | "progress"
-  | "content"
-  | "footer"
-  | "popover"
-  | "pointer"
-  | "previous-trigger"
-  | "next-trigger"
-  | "overlay";
-
-  export type WorkflowStatus =
+export type WorkflowStatus =
   | "not-started"
   | "idle"
   | "starting"
@@ -47,25 +35,6 @@ export type GlowTourElementName =
   | "finished"
   | "cancelled"
   | "error";
-
-export interface ViewportDimensions {
-  width: number;
-  height: number;
-}
-
-export interface HighlightOptions {
-  padding: number;
-  radius: number;
-  overlayColor: string;
-  overlayOpacity: number;
-  animate: boolean;
-}
-
-export interface HighlightStepOverrides extends Partial<HighlightOptions> {}
-
-export interface WorkflowHighlightOptions extends Partial<HighlightOptions> {
-  mountRoot?: HTMLElement | null;
-}
 
 export interface StepBehavior {
   allowInteraction?: boolean;
@@ -198,7 +167,8 @@ export interface WaitUntilOptions {
 // biome-ignore lint/suspicious/noConfusingVoidType: `void` preserves the optional action result contract.
 export type StepActionResult = boolean | void;
 
-export type StepAction<T> = (context: StepContext<T>,
+export type StepAction<T> = (
+  context: StepContext<T>,
 ) => Promise<StepActionResult> | StepActionResult;
 
 export type StepWaitPredicate<T> = (
@@ -206,12 +176,8 @@ export type StepWaitPredicate<T> = (
   stepState: ReadonlyStepState<T>,
 ) => Promise<boolean> | boolean;
 
-export type StepActionInstruction<T> =
-  | StepAction<T>
-  | number
-  | "next"
-  | "previous";
-  
+export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
+
 // export type StepTransitionAction<T> = (
 //   element: HTMLElement | null,
 //   stepState: ReadonlyStepState<T>,
@@ -280,7 +246,6 @@ export interface GlowTour<T> {
   goPrevious(): Promise<void>;
   goToStep(index: number): Promise<void>;
   cancel(): Promise<void>;
-  updateCurrentStep(update: (props: ReadonlyStepProps<T>) => DynamicStepProps<T>): void;
   dispose(): void;
   readonly state: ReadonlyTourState<T>;
 }

@@ -19,9 +19,7 @@ beforeEach(() => {
     requestAnimationFrame: window.requestAnimationFrame.bind(window),
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
-    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
     document: window.document,
-    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     window,
   });
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
@@ -46,7 +44,7 @@ describe("react adapter browser behavior", () => {
       .create("reactive state")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     function Observer() {
       const state = useTour();
       return React.createElement("output", null, `${state.status}:${state.currentStepIndex}`);
@@ -59,7 +57,7 @@ describe("react adapter browser behavior", () => {
       await tour.run(workflow);
     });
     assert.equal(container.querySelector("output")?.textContent, "active:0");
-    await React.act(async () => tour.advance());
+    await React.act(async () => tour.goNext());
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     await React.act(async () => root.unmount());
   });
@@ -166,7 +164,7 @@ describe("react adapter browser behavior", () => {
     });
     assert.equal(tour.state.get().currentStepIndex, 1);
     await React.act(async () => {
-      await tour.previous();
+      await tour.goPrevious();
       setDisabledFirst(false);
     });
     await React.act(async () => {
@@ -255,7 +253,9 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       await tour.run(workflow);
     });
-    const firstBack = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const firstBack = container.querySelector<HTMLButtonElement>(
+      "[data-glow-tour-previous-trigger]",
+    );
     assert.equal(firstBack?.disabled, true);
     assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
@@ -268,10 +268,10 @@ describe("react adapter browser behavior", () => {
 
     await React.act(async () => {
       await tour.run(workflow);
-      await tour.advance();
+      await tour.goNext();
     });
     await new Promise((resolve) => window.setTimeout(resolve, 0));
-    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(back?.disabled, false);
     assert.equal(back?.getAttribute("aria-keyshortcuts"), "ArrowLeft Backspace");
     await React.act(async () => {
@@ -624,7 +624,7 @@ describe("react adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 0);
     await React.act(async () => {
-      await tour.advance();
+      await tour.goNext();
     });
     assert.equal(next?.textContent, "Complete");
 
@@ -702,8 +702,8 @@ describe("react adapter browser behavior", () => {
     const secondaryTour = createGlowTour();
     const root = createRoot(container);
     const actTour = (tour: typeof primaryTour) => ({
-      async advance() {
-        await React.act(() => tour.advance());
+      async goNext() {
+        await React.act(() => tour.goNext());
       },
       async cancel() {
         await React.act(() => tour.cancel());
@@ -715,16 +715,13 @@ describe("react adapter browser behavior", () => {
       async goToStep(index: number) {
         await React.act(() => tour.goToStep(index));
       },
-      async previous() {
-        await React.act(() => tour.previous());
+      async goPrevious() {
+        await React.act(() => tour.goPrevious());
       },
       async run(workflow: Parameters<typeof tour.run>[0]) {
         await React.act(() => tour.run(workflow));
       },
       state: tour.state,
-      updateCurrentStep(update: Parameters<typeof tour.updateCurrentStep>[0]) {
-        React.act(() => tour.updateCurrentStep(update));
-      },
     });
 
     await React.act(async () => {
@@ -792,6 +789,9 @@ describe("react adapter browser behavior", () => {
         duplicateContainer.remove();
         if (mountError) throw mountError;
         if (cleanupError) throw cleanupError;
+      },
+      async mutate(update) {
+        await React.act(async () => update());
       },
       primaryRoot,
       primaryTarget,

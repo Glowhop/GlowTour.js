@@ -1,6 +1,7 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import type { TourViewCommands, TourViewDriver } from "../dom/tour-view-driver";
+import type { StepContext } from "../types";
 import type { ActiveStep } from "./active-step";
 import { TourController } from "./tour-controller";
 
@@ -127,8 +128,15 @@ async function flushMicrotasks() {
 }
 
 describe("instance-first TourController", () => {
+  test("does not expose the removed updateCurrentStep command", () => {
+    const tour = new TourController<string>();
+
+    assert.equal("updateCurrentStep" in tour, false);
+  });
+
   test("builds frozen plain definitions and isolates mutable step data per run", async () => {
     const tour = createGlowTour<string>();
+    let activeProps!: StepContext<string>["props"];
     const workflow = tour
       .create("readonly", {
         cancellable: true,
@@ -140,6 +148,9 @@ describe("instance-first TourController", () => {
         overlay: { animation: { duration: 100, easing: "linear" } },
         target: targetResolver,
         title: "title",
+      })
+      .do(({ props }) => {
+        activeProps = props;
       })
       .build();
 
@@ -156,7 +167,7 @@ describe("instance-first TourController", () => {
     await tour.run(workflow);
     assert.equal(Object.isFrozen(tour.state.get().currentStep), true);
     assert.equal(Object.isFrozen(tour.state.get().currentStep?.currentProps.data), true);
-    tour.updateCurrentStep((props) => ({ ...props, data: { count: 2 } }));
+    activeProps.set((props) => ({ ...props, data: { count: 2 } }));
     assert.deepEqual(tour.state.get().currentStep?.currentProps.data, { count: 2 });
     assert.deepEqual(workflow.steps[0].props.data, { count: 1 });
 
@@ -723,12 +734,16 @@ describe("instance-first TourController", () => {
 
   test("updates active snapshots without mutating definitions", async () => {
     const tour = createGlowTour<string>();
+    let activeProps!: StepContext<string>["props"];
     const workflow = tour
       .create("update")
       .step({ content: "one", data: { value: 1 }, target: targetResolver, title: "one" })
+      .do(({ props }) => {
+        activeProps = props;
+      })
       .build();
     await tour.run(workflow);
-    tour.updateCurrentStep((props) => ({ ...props, data: { value: 2 }, title: "two" }));
+    activeProps.set((props) => ({ ...props, data: { value: 2 }, title: "two" }));
     assert.equal(tour.state.get().currentStep?.currentProps.title, "two");
     assert.deepEqual(workflow.steps[0].props.data, { value: 1 });
   });
@@ -755,14 +770,19 @@ describe("instance-first TourController", () => {
 
   test("runs definition actions in order and lets navigation actions goNext", async () => {
     const calls: string[] = [];
+    const titles: string[] = [];
     const tour = createGlowTour<string>();
+    tour.state.subscribe((state) => {
+      const title = state.currentStep?.currentProps.title;
+      if (title) titles.push(title);
+    });
     const workflow = tour
       .create("actions")
       .step({ content: "one", target: targetResolver, title: "one" })
       .do(async ({ props }) => {
-        assert.equal(Object.isFrozen(props), true);
-        assert.equal("set" in props, false);
+        assert.equal(typeof props.set, "function");
         calls.push(String(props.get().title));
+        props.set((current) => ({ ...current, title: "updated" }));
         return true;
       })
       .goNext()
@@ -772,7 +792,9 @@ describe("instance-first TourController", () => {
     await tour.run(workflow);
 
     assert.deepEqual(calls, ["one"]);
+    assert.equal(titles.includes("updated"), true);
     assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(workflow.steps[0].props.title, "one");
     assert.equal(tour.state.get().status, "active");
   });
 
@@ -814,6 +836,7 @@ describe("instance-first TourController", () => {
 
   test("honors disabled navigation props in state and commands", async () => {
     const tour = createGlowTour<string>();
+    let firstStepProps!: StepContext<string>["props"];
     const workflow = tour
       .create("disabled-navigation")
       .step({
@@ -821,6 +844,9 @@ describe("instance-first TourController", () => {
         disableNextButton: true,
         target: targetResolver,
         title: "one",
+      })
+      .do(({ props }) => {
+        firstStepProps = props;
       })
       .step({
         content: "two",
@@ -835,7 +861,7 @@ describe("instance-first TourController", () => {
     await tour.goNext();
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    tour.updateCurrentStep((props) => ({ ...props, disableNextButton: false }));
+    firstStepProps.set((props) => ({ ...props, disableNextButton: false }));
     await tour.goNext();
     assert.equal(tour.state.get().currentStepIndex, 1);
     assert.equal(tour.state.get().canGoPrevious, false);
@@ -899,9 +925,6 @@ describe("instance-first TourController", () => {
 
     tour.dispose();
     tour.dispose();
-    tour.updateCurrentStep(() => {
-      throw new Error("must not run");
-    });
 
     assert.equal(driver.disposeCalls, 1);
     assert.equal(notifications, notificationsBeforeDispose);
@@ -1080,8 +1103,6 @@ describe("instance-first TourController", () => {
       .build();
     await cancellableTour.run(cancellable);
     assert.equal(cancellableTour.state.get().canGoPrevious, false);
-    cancellableTour.updateCurrentStep((props) => ({ ...props, disablePreviousButton: true }));
-    assert.equal(cancellableTour.state.get().canGoPrevious, false);
 
     const fixedTour = createGlowTour<string>();
     const fixed = fixedTour
@@ -1200,7 +1221,7 @@ describe("instance-first TourController", () => {
       .waitUntil(() => false, { interval: 1, timeout: 0 })
       .build();
 
-    await assert.rejects(() => tour.run(workflow), /timed out waiting for condition after 0ms/i);
+    await assert.rejects(() => tour.run(workflow), /waitUntil timed out after 0ms/i);
 
     assert.equal(tour.state.get().status, "error");
     assert.equal(driver.clearCalls, 1);
@@ -1222,7 +1243,7 @@ describe("instance-first TourController", () => {
         .waitUntil(predicate, { interval: 1, timeout: 1 })
         .build();
 
-      await assert.rejects(() => tour.run(workflow), /timed out waiting for condition after 1ms/i);
+      await assert.rejects(() => tour.run(workflow), /waitUntil timed out after 1ms/i);
       assert.equal(tour.state.get().status, "error");
       assert.equal(driver.clearCalls, 1);
     }
@@ -1426,7 +1447,6 @@ describe("instance-first TourController", () => {
       tour.dispose();
     });
 
-    tour.updateCurrentStep((props) => ({ ...props, title: "ignored" }));
     tour.dispose();
     let disposedSubscriptionCalls = 0;
     tour.state.subscribe(() => {

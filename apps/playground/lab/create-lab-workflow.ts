@@ -58,8 +58,7 @@ export function createLabWorkflow<TContent>(
     .focusTarget()
     .do(({ props, target }) => {
       actions.log("exec — contenu courant mis à jour");
-      const current = props.get();
-      tour.updateCurrentStep(() => ({ ...current, content: content.paragraph(copy.focused) }));
+      props.set((prev) => ({ ...prev, content: content.paragraph(copy.focused) }));
       target.focus();
     })
     .wait(timing.focusWait)
@@ -119,8 +118,8 @@ export function createLabWorkflow<TContent>(
       disableNextButton: true,
       data: { api: "action", result: false },
     })
-    .do(() => {
-      tour.updateCurrentStep((current) => ({ ...current, disableNextButton: false }));
+    .do(({ props }) => {
+      props.set((current) => ({ ...current, disableNextButton: false }));
       actions.log("action(true) — chaîne poursuivie");
       return true;
     })

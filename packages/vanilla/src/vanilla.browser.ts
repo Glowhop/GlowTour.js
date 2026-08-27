@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { createGlowTour as createCoreGlowTour } from "@glowhop/core-tour";
+import { createGlowTour as createCoreGlowTour, type StepContext } from "@glowhop/core-tour";
 import { Window } from "happy-dom";
 import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
+import type { VanillaTourContent } from "./glow-tour";
 
 type VanillaRuntime = typeof import("./index");
 
@@ -55,10 +56,12 @@ function workflow(
   tour: ReturnType<VanillaRuntime["createGlowTour"]>,
   target: HTMLElement,
   name: string,
+  captureProps?: (props: StepContext<VanillaTourContent>["props"]) => void,
 ) {
   return tour
     .create(name)
     .step({ content: `${name} one`, target, title: `${name} one` })
+    .do(({ props }) => captureProps?.(props))
     .step({ content: `${name} two`, target, title: `${name} two` })
     .build();
 }
@@ -239,8 +242,17 @@ describe("vanilla adapter browser behavior", () => {
       "<glow-tour-overlay></glow-tour-overlay><glow-tour-pointer>Pointer</glow-tour-pointer><glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content><glow-tour-footer></glow-tour-footer></glow-tour-popover>";
     document.body.append(target, element);
     await settle();
-    await tour.run(tour.create("dynamic").step({ content: "One", target, title: "Title" }).build());
-    tour.updateCurrentStep((props) => ({
+    let activeProps!: StepContext<VanillaTourContent>["props"];
+    await tour.run(
+      tour
+        .create("dynamic")
+        .step({ content: "One", target, title: "Title" })
+        .do(({ props }) => {
+          activeProps = props;
+        })
+        .build(),
+    );
+    activeProps.set((props) => ({
       ...props,
       content: "Two",
       hideFooter: true,
@@ -304,7 +316,12 @@ describe("vanilla adapter browser behavior", () => {
     rootElement.innerHTML =
       "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content></glow-tour-popover><glow-tour-next-trigger><button></button></glow-tour-next-trigger>";
     document.body.append(target, rootElement);
-    await tour.run(workflow(tour, target, "consumer attrs"));
+    let activeProps!: StepContext<VanillaTourContent>["props"];
+    await tour.run(
+      workflow(tour, target, "consumer attrs", (props) => {
+        activeProps = props;
+      }),
+    );
     await settle();
     const header = rootElement.querySelector<HTMLElement>("glow-tour-header");
     const popover = rootElement.querySelector<HTMLElement>("glow-tour-popover");
@@ -316,7 +333,7 @@ describe("vanilla adapter browser behavior", () => {
     popover.setAttribute("aria-labelledby", "consumer-label");
     next.setAttribute("aria-controls", "consumer-popover");
     next.setAttribute("aria-label", "Consumer next");
-    tour.updateCurrentStep((props) => ({ ...props, title: "Updated" }));
+    activeProps.set((props) => ({ ...props, title: "Updated" }));
     await settle();
     assert.equal(header.id, "consumer-title");
     assert.equal(popover.getAttribute("aria-labelledby"), "consumer-label");
@@ -630,7 +647,7 @@ describe("vanilla adapter browser behavior", () => {
       .step({ content: "Two", target, title: "Two" })
       .build();
     await tour.run(tourWorkflow);
-    const firstBack = element.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const firstBack = element.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(firstBack?.disabled, true);
     assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = element.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
@@ -661,7 +678,7 @@ describe("vanilla adapter browser behavior", () => {
     nextButton.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "N" }));
     await settle();
     assert.equal(tour.state.get().currentStepIndex, 1);
-    const back = element.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const back = element.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     back?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
     assert.equal(tour.state.get().currentStepIndex, 0);

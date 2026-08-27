@@ -194,7 +194,7 @@ Le traitement ne vérifie pas non plus :
 - `event.isComposing` ;
 - Ctrl, Meta ou Alt ;
 - les inputs, textareas et éléments `contenteditable` ;
-- les flags `disableNextButton` et `disableBackButton`.
+- les flags `disableNextButton` et `disablePreviousButton`.
 
 #### Recommandations
 
@@ -281,7 +281,7 @@ Cette valeur est techniquement cohérente avec `next()` qui termine le tour, mai
 #### Proposition
 
 - `next()` devient `advance()` ;
-- `canGoNext` devient `canAdvance` ;
+- `canGoNext` devient `canGoNext` ;
 - la dernière avance termine le tour.
 
 ### P2.3 — Naming proposé pour le controller/store

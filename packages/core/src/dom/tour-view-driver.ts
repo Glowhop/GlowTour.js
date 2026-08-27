@@ -593,7 +593,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     for (const previous of this.findTriggers("previous")) {
       this.syncControl(
         previous,
-        this.commands?.isPreviousDisabled() === true || step.props.get().disablePreviousButton === true,
+        this.commands?.isPreviousDisabled() === true ||
+          step.props.get().disablePreviousButton === true,
       );
     }
     for (const cancel of this.findTriggers("cancel")) {
@@ -626,11 +627,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     return this.isCurrentGeneration(generation) ? this.command(command) : Promise.resolve();
   }
 
-  private commandForStep(
-    command: TourViewCommand,
-    step: ActiveStep<T>,
-    signal: AbortSignal,
-  ) {
+  private commandForStep(command: TourViewCommand, step: ActiveStep<T>, signal: AbortSignal) {
     return !signal.aborted && this.currentStep === step ? this.command(command) : Promise.resolve();
   }
 
@@ -645,7 +642,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
     if (command === "previous") {
       return (
-        (this.commands?.canGoPrevious?.() ?? true) && step.props.get().disablePreviousButton !== true
+        (this.commands?.canGoPrevious?.() ?? true) &&
+        step.props.get().disablePreviousButton !== true
       );
     }
     return this.commands?.canCancel?.() ?? true;

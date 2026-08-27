@@ -295,9 +295,9 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   selector: "glow-tour-back-trigger",
   standalone: true,
   template: `
-    @if (!step()?.hideBackButton) {
+    @if (!step()?.hidePreviousButton) {
       <button
-        data-glow-tour-back-trigger
+        data-glow-tour-previous-trigger
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
         [attr.aria-label]="ariaLabelText() ?? label()"
@@ -324,8 +324,8 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
-      !this.snapshot()?.canPrevious ||
-      this.step()?.disableBackButton === true,
+      !this.snapshot()?.canGoPrevious ||
+      this.step()?.disablePreviousButton === true,
   );
   readonly label = computed(() => this.backLabelValue() ?? "Back step");
 }
@@ -367,7 +367,7 @@ export class GlowTourNextTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
-      !this.snapshot()?.canAdvance ||
+      !this.snapshot()?.canGoNext ||
       this.step()?.disableNextButton === true,
   );
   readonly label = computed(() => {

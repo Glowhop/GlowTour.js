@@ -1,4 +1,4 @@
-import type { GlowTour } from "@glowhop/core-tour";
+import type { GlowTour, StepContext } from "@glowhop/core-tour";
 import assert from "node:assert/strict";
 
 export interface AdapterAcceptanceFixture<TContent> {
@@ -11,6 +11,7 @@ export interface AdapterAcceptanceFixture<TContent> {
   readonly secondaryTour: GlowTour<TContent>;
   content(value: string): TContent;
   mountDuplicatePrimary(): Promise<void>;
+  mutate?(update: () => void): Promise<void>;
   settle(): Promise<void>;
   unmount(): Promise<void>;
 }
@@ -61,6 +62,7 @@ export async function runAdapterAcceptance<TContent>(
   const {
     content,
     mountDuplicatePrimary,
+    mutate,
     name,
     primaryRoot,
     primaryTarget,
@@ -71,10 +73,16 @@ export async function runAdapterAcceptance<TContent>(
     settle,
     unmount,
   } = fixture;
-  const workflow = (tour: GlowTour<TContent>, target: HTMLElement, workflowName: string) =>
+  const workflow = (
+    tour: GlowTour<TContent>,
+    target: HTMLElement,
+    workflowName: string,
+    captureProps?: (props: StepContext<TContent>["props"]) => void,
+  ) =>
     tour
       .create(workflowName)
       .step({ content: content("First content"), target, title: content("First title") })
+      .do(({ props }) => captureProps?.(props))
       .step({
         behavior: { allowInteraction: true },
         content: content("Second content"),
@@ -91,7 +99,12 @@ export async function runAdapterAcceptance<TContent>(
     /already connected|another root|two roots|live root lease/i,
   );
 
-  await primaryTour.run(workflow(primaryTour, primaryTarget, `${name}-primary`));
+  let primaryProps!: StepContext<TContent>["props"];
+  await primaryTour.run(
+    workflow(primaryTour, primaryTarget, `${name}-primary`, (props) => {
+      primaryProps = props;
+    }),
+  );
   await secondaryTour.run(workflow(secondaryTour, secondaryTarget, `${name}-secondary`));
   await settle();
 
@@ -99,11 +112,14 @@ export async function runAdapterAcceptance<TContent>(
   assert.equal(secondaryTour.state.get().status, "active", `${name}: secondary active`);
   assert.equal(popover(primaryRoot).getAttribute("aria-modal"), "true", `${name}: modal step`);
 
-  primaryTour.updateCurrentStep((props) => ({
-    ...props,
-    content: content("Updated content"),
-    title: content("Updated title"),
-  }));
+  const updatePrimaryProps = () =>
+    primaryProps.set((props) => ({
+      ...props,
+      content: content("Updated content"),
+      title: content("Updated title"),
+    }));
+  if (mutate) await mutate(updatePrimaryProps);
+  else updatePrimaryProps();
   await settle();
   assert.match(primaryRoot.textContent ?? "", /Updated title/, `${name}: dynamic title`);
   assert.match(primaryRoot.textContent ?? "", /Updated content/, `${name}: dynamic content`);
@@ -116,7 +132,7 @@ export async function runAdapterAcceptance<TContent>(
   assert.equal(secondaryTour.state.get().currentStepIndex, 0, `${name}: secondary isolated`);
   assert.equal(popover(primaryRoot).hasAttribute("aria-modal"), false, `${name}: nonmodal step`);
 
-  await primaryTour.advance();
+  await primaryTour.goNext();
   assert.equal(primaryTour.state.get().status, "finished", `${name}: primary finished`);
 
   await unmount();

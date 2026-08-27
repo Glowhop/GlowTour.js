@@ -4,8 +4,10 @@ import { afterAll, beforeAll, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { Component, ErrorHandler, type OnInit } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
+import type { StepContext } from "@glowhop/core-tour";
 import { Window } from "happy-dom";
 import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
+import type { AngularTourContent } from "./lib/glow-tour";
 import * as runtime from "./public-api";
 
 let window: Window;
@@ -142,9 +144,13 @@ describe("angular adapter browser behavior", () => {
     assert.equal(popover?.getAttribute("aria-labelledby"), "angular-title");
     assert.equal(popover?.getAttribute("aria-describedby"), "angular-description");
 
+    let activeProps!: StepContext<AngularTourContent>["props"];
     const workflow = tour
       .create("angular lifecycle")
       .step({ content: "First content", target, title: "First title" })
+      .do(({ props }) => {
+        activeProps = props;
+      })
       .step({ content: "Second content", target, title: "Second title" })
       .build();
     await tour.run(workflow);
@@ -152,11 +158,13 @@ describe("angular adapter browser behavior", () => {
     app.tick();
     assert.match(document.body.textContent ?? "", /First title/);
     assert.match(document.body.textContent ?? "", /First content/);
-    const firstBack = document.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const firstBack = document.querySelector<HTMLButtonElement>(
+      "[data-glow-tour-previous-trigger]",
+    );
     assert.equal(firstBack?.disabled, true);
     assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
 
-    tour.updateCurrentStep((props) => ({
+    activeProps.set((props) => ({
       ...props,
       content: "Updated content",
       hideFooter: true,
@@ -170,7 +178,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(document.querySelector("[data-glow-tour-footer]"), null);
     assert.equal(document.querySelector("[data-glow-tour-next-trigger]"), null);
 
-    tour.updateCurrentStep((props) => ({ ...props, hideFooter: false, hideNextButton: false }));
+    activeProps.set((props) => ({ ...props, hideFooter: false, hideNextButton: false }));
     await settle();
     app.tick();
 
@@ -610,7 +618,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 1);
 
     app.tick();
-    const back = document.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const back = document.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(back?.textContent, "Back two");
     assert.equal(back?.disabled, false);
     assert.equal(next?.textContent, "Finish one");

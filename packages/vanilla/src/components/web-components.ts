@@ -528,7 +528,7 @@ export function registerGlowTourElements() {
   }
 
   abstract class GlowTourTrigger extends ReactiveElement {
-    protected abstract readonly action: "back" | "cancel" | "next";
+    protected abstract readonly action: "cancel" | "next" | "previous";
     private button?: HTMLButtonElement;
     private labelOwned = false;
     private labelSnapshot?: string;
@@ -749,15 +749,15 @@ export function registerGlowTourElements() {
   }
 
   class GlowTourBackTrigger extends GlowTourTrigger {
-    protected readonly action = "back" as const;
+    protected readonly action = "previous" as const;
 
     protected details(
       state: TourState<VanillaTourContent>,
       props: DynamicStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canPrevious || props.disableBackButton === true,
-        hidden: props.hideBackButton === true,
+        disabled: !state.canGoPrevious || props.disablePreviousButton === true,
+        hidden: props.hidePreviousButton === true,
         label: this.getAttribute("back-label") ?? "Back step",
       };
     }
@@ -771,7 +771,7 @@ export function registerGlowTourElements() {
       props: DynamicStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canAdvance || props.disableNextButton === true,
+        disabled: !state.canGoNext || props.disableNextButton === true,
         hidden: props.hideNextButton === true,
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")

@@ -86,10 +86,7 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
     indicator: freezeIndicator(draft.indicator),
     scroll: draft.scroll && freezeRecord({ ...draft.scroll }),
     behavior: draft.behavior && freezeRecord({ ...draft.behavior }),
-    actions: freezeRecord(
-      draft.actions.map((action) =>action,
-      ),
-    ),
+    actions: freezeRecord(draft.actions.map((action) => action)),
     eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
     nextAction: draft.nextAction,
     previousAction: draft.previousAction,
@@ -114,8 +111,7 @@ export function cloneWorkflowStepDraft<T>(
   return {
     ...definition,
     props: cloneStepProps(definition.props),
-    actions: definition.actions.map((action) => action,
-    ),
+    actions: definition.actions.map((action) => action),
     eventHandlers: [...definition.eventHandlers],
   };
 }

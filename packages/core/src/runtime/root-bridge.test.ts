@@ -247,10 +247,10 @@ describe("private root bridge", () => {
       "goToStep",
       "run",
       "state",
-      "updateCurrentStep",
     ]);
     assert.equal("advance" in tour, false);
     assert.equal("previous" in tour, false);
+    assert.equal("updateCurrentStep" in tour, false);
     assert.equal(Object.getOwnPropertyDescriptor(tour, BRIDGE_SYMBOL)?.enumerable, false);
     assert.equal(rootBridge(tour).version, 1);
   });

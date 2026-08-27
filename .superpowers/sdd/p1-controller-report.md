@@ -54,7 +54,7 @@ Reviewed commit: `f6764e9`.
 ### Findings reproduced in RED
 
 - Synchronous state subscribers could call `run`, `cancel`, or `dispose` during `finished`/`transitioning`, but the invalidated operation still invoked a callback or transition hook afterward.
-- First-step `canPrevious` was always false although `previous()` cancels a cancellable workflow.
+- First-step `canGoPrevious` was always false although `previous()` cancels a cancellable workflow.
 - Retry and action-delay timers retained their abort listener after normal resolution.
 - Definition types and freezing lived in the builder while `ActiveStep` duplicated step-prop cloning/freezing.
 

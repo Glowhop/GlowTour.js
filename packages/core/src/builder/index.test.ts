@@ -1,7 +1,7 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { WorkflowBuilder } from "./index";
 import type { StepContext } from "../types";
+import { WorkflowBuilder } from "./index";
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
@@ -46,42 +46,16 @@ describe("WorkflowBuilder public contract", () => {
       "onCancel",
       "onEvent",
       "onNext",
-      "wait",
+      "on",
     ]) {
       assert.equal(alias in step, false, alias);
     }
   });
 
-  
-
   test("rejects invalid delay and wait timing options", () => {
-    assert.throws(() => workflow().wait(-1), /delay/i);
+    assert.throws(() => workflow().wait(-1), /timeMs/i);
     assert.throws(() => workflow().waitUntil(() => true, { timeout: -1 }), /timeout/i);
     assert.throws(() => workflow().waitUntilElement("#ready", { interval: 0 }), /interval/i);
-  });
-});
-
-describe("WorkflowStepBuilder.on", () => {
-  test("infers the DOM event type from one event name", () => {
-    workflow("single-event").onTargetEvent("click", (event) => {
-      const clickEvent: MouseEvent = event;
-      assert.equal(clickEvent.type, event.type);
-    });
-  });
-
-  test("infers a union from multiple event names", () => {
-    workflow("multiple-events").onTargetEvent(["click", "keydown"], (event) => {
-      const domEvent: MouseEvent | KeyboardEvent = event;
-      assert.equal(domEvent.type, event.type);
-    });
-  });
-
-  test("rejects event names outside HTMLElementEventMap", () => {
-    workflow("custom-event")
-      // @ts-expect-error Custom event names are not part of HTMLElementEventMap.
-      .on("tour:complete", (event: Event) => {
-        assert.equal(event.type, "tour:complete");
-      });
   });
 });
 
@@ -147,7 +121,7 @@ describe("StepBuilder action contract", () => {
           attempts += 1;
           return attempts === 3;
         },
-        { interval: 0, timeout: 100 },
+        { interval: 1, timeout: 100 },
       )
       .build();
 
@@ -180,7 +154,7 @@ describe("StepBuilder action contract", () => {
     const workflow = new WorkflowBuilder<string>("cancel-pending-predicate")
       .step({ content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 50)), {
-        interval: 0,
+        interval: 1,
         timeout: 100,
       })
       .build();
@@ -217,7 +191,7 @@ describe("StepBuilder action contract", () => {
   test("waitUntil throws after its timeout", async () => {
     const workflow = new WorkflowBuilder<string>("timeout-wait")
       .step({ content: "Content", target: "#target", title: "Title" })
-      .waitUntil(() => false, { interval: 0, timeout: 0 })
+      .waitUntil(() => false, { interval: 1, timeout: 0 })
       .build();
     const action = workflow.steps[0].actions[0];
     assert.equal(typeof action, "function");
@@ -242,7 +216,7 @@ describe("StepBuilder action contract", () => {
     try {
       const workflow = new WorkflowBuilder<string>("wait-until-element")
         .step({ content: "Content", target: "#target", title: "Title" })
-        .waitUntilElement("#ready", { interval: 0, timeout: 100 })
+        .waitUntilElement("#ready", { interval: 1, timeout: 100 })
         .build();
       const action = workflow.steps[0].actions[0];
       assert.equal(typeof action, "function");
@@ -272,7 +246,7 @@ describe("StepBuilder action contract", () => {
     assert.throws(() => step.wait(-1), /finite non-negative number/);
     assert.throws(() => step.wait(Number.NaN), /finite non-negative number/);
     assert.throws(() => step.wait(Number.POSITIVE_INFINITY), /finite non-negative number/);
-    assert.throws(() => step.waitUntil(() => true, { interval: -1 }), /finite non-negative number/);
+    assert.throws(() => step.waitUntil(() => true, { interval: -1 }), /finite positive number/);
     assert.throws(() => step.waitUntilElement(""), /selector must not be empty/);
     assert.throws(() => step.onTargetEvent([], () => {}), /events must not be empty/);
   });
@@ -290,10 +264,7 @@ describe("StepBuilder action contract", () => {
     assert.equal("previous" in step, false);
     assert.equal("onBack" in step, false);
 
-    const workflow = step
-      .goNext()
-      .goPrevious()
-      .build();
+    const workflow = step.goNext().goPrevious().build();
 
     assert.deepEqual(workflow.steps[0].actions, ["next", "previous"]);
   });

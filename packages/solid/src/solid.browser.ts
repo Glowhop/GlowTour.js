@@ -54,8 +54,6 @@ beforeEach(() => {
     requestAnimationFrame: window.requestAnimationFrame.bind(window),
     ResizeObserver: window.ResizeObserver,
     SVGSVGElement: window.SVGSVGElement,
-    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
-    requestAnimationFrame: window.requestAnimationFrame.bind(window),
     window,
   });
 });
@@ -76,7 +74,7 @@ describe("solid adapter browser behavior", () => {
       .create("reactive state")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     function Observer() {
       const state = useTour();
       return createComponent(Dynamic, {
@@ -98,7 +96,7 @@ describe("solid adapter browser behavior", () => {
     );
     await tour.run(workflow);
     assert.equal(container.querySelector("output")?.textContent, "active:0");
-    await tour.advance();
+    await tour.goNext();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     dispose();
   });
@@ -196,7 +194,7 @@ describe("solid adapter browser behavior", () => {
     window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 1);
-    await tour.previous();
+    await tour.goPrevious();
     setDisabledFirst(false);
     window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
     await new Promise((resolve) => window.setTimeout(resolve, 10));
@@ -233,7 +231,9 @@ describe("solid adapter browser behavior", () => {
     }, container);
 
     await tour.run(workflow);
-    const firstBack = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const firstBack = container.querySelector<HTMLButtonElement>(
+      "[data-glow-tour-previous-trigger]",
+    );
     assert.equal(firstBack?.disabled, true);
     assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
@@ -243,9 +243,9 @@ describe("solid adapter browser behavior", () => {
     assert.equal(tour.state.get().status, "cancelled");
 
     await tour.run(workflow);
-    await tour.advance();
+    await tour.goNext();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
-    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(back?.disabled, false);
     assert.equal(back?.getAttribute("aria-keyshortcuts"), "ArrowLeft Backspace");
     back?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
@@ -492,8 +492,8 @@ describe("solid adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 0);
     assert.equal(tour.state.get().status, "active");
 
-    await tour.advance();
-    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    await tour.goNext();
+    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(back?.disabled, true);
     back?.click();
     await new Promise((resolve) => window.setTimeout(resolve, 10));

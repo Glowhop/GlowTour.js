@@ -1,18 +1,12 @@
 import { Observable } from "@glowhop/observables";
 import { WorkflowBuilder } from "../builder";
-import {
-  cloneStepProps,
-  freezeStepProps,
-  type ReadonlyStepProps,
-  type WorkflowDefinition,
-} from "../definition";
+import type { WorkflowDefinition } from "../definition";
 import {
   DomTourViewDriver,
   NoopTourViewDriver,
   type TourViewDriver,
 } from "../dom/tour-view-driver";
 import type {
-  DynamicStepProps,
   GlowTour,
   StartOptions,
   StepContext,
@@ -81,6 +75,7 @@ export class TourController<T> {
   private disposed = false;
   private retainedPresentation: TourPresentation<T> | null = null;
   private readonly stateListeners = new Set<(state: TourState<T>) => void>();
+  private readonly stepPropsSubscriptions: Array<() => void> = [];
 
   readonly state = Object.freeze({
     get: () => this.snapshot.get(),
@@ -134,7 +129,15 @@ export class TourController<T> {
     const retainedPresentation = this.capturePresentation();
     const operation = this.beginOperation();
     this.workflow = workflow;
+    this.releaseStepPropsSubscriptions();
     this.steps = workflow.steps.map((step) => new ActiveStep(step, workflow.options));
+    for (const step of this.steps) {
+      this.stepPropsSubscriptions.push(
+        step.props.subscribe(() => {
+          if (!this.disposed && this.currentStep() === step) this.publish();
+        }),
+      );
+    }
     this.index = -1;
     this.error = null;
     this.retainedPresentation = retainedPresentation;
@@ -204,21 +207,11 @@ export class TourController<T> {
     }
   }
 
-  updateCurrentStep(update: (props: ReadonlyStepProps<T>) => DynamicStepProps<T>) {
-    if (this.disposed || this.status !== "active") return;
-    const step = this.currentStep();
-    if (!step) return;
-    step.props.set((props) => {
-      const next = update(freezeStepProps(props));
-      return cloneStepProps(next);
-    });
-    this.publish();
-  }
-
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
     this.invalidateOperation();
+    this.releaseStepPropsSubscriptions();
     this.steps = [];
     this.workflow = null;
     this.index = -1;
@@ -237,6 +230,7 @@ export class TourController<T> {
     if (this.disposed) return;
     this.invalidateOperation();
     this.workflow = null;
+    this.releaseStepPropsSubscriptions();
     this.steps = [];
     this.index = -1;
     this.direction = "next";
@@ -336,7 +330,6 @@ export class TourController<T> {
       if (shouldContinue === false) return;
     }
   }
-
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
     const signal = this.signalFor(operation);
@@ -442,6 +435,10 @@ export class TourController<T> {
 
   private currentStep() {
     return this.index >= 0 ? (this.steps[this.index] ?? null) : null;
+  }
+
+  private releaseStepPropsSubscriptions() {
+    for (const unsubscribe of this.stepPropsSubscriptions.splice(0)) unsubscribe();
   }
 
   private canNavigate(direction: TourDirection) {
@@ -551,10 +548,12 @@ export class TourController<T> {
 export function createGlowTour<T>(): GlowTour<T> {
   const driver = new DomTourViewDriver<T>();
   let bridge!: ReturnType<typeof attachRootBridge<T>>;
+
   const controller = new TourController<T>(driver, {
     assertCanRun: () => bridge.assertConnected(),
     onDispose: () => bridge.release(),
   });
+
   const tour: GlowTour<T> = {
     goNext: () => controller.goNext(),
     cancel: () => controller.cancel(),
@@ -564,7 +563,6 @@ export function createGlowTour<T>(): GlowTour<T> {
     goPrevious: () => controller.goPrevious(),
     run: (workflow) => controller.run(workflow),
     state: controller.state,
-    updateCurrentStep: (update) => controller.updateCurrentStep(update),
   };
   bridge = attachRootBridge(
     tour,

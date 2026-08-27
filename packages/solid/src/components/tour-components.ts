@@ -279,7 +279,7 @@ function Trigger(
   props: ButtonProps & {
     capabilityDisabled: boolean;
     label: string;
-    marker: "back" | "cancel" | "next";
+    marker: "cancel" | "next" | "previous";
   },
 ): JSX.Element {
   const context = useTourContext();
@@ -294,9 +294,6 @@ function Trigger(
     get "aria-disabled"() {
       return local.capabilityDisabled || other.disabled === true;
     },
-    get "data-glow-tour-back-trigger"() {
-      return local.marker === "back" ? true : undefined;
-    },
     get "data-glow-tour-cancel-trigger"() {
       return local.marker === "cancel" ? true : undefined;
     },
@@ -305,6 +302,9 @@ function Trigger(
     },
     get "data-glow-tour-next-trigger"() {
       return local.marker === "next" ? true : undefined;
+    },
+    get "data-glow-tour-previous-trigger"() {
+      return local.marker === "previous" ? true : undefined;
     },
     get disabled() {
       return local.capabilityDisabled || other.disabled === true;
@@ -333,16 +333,18 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
   return Show({
     get when() {
       const step = currentStep(snapshot());
-      return !step?.hideBackButton;
+      return !step?.hidePreviousButton;
     },
     get children() {
       return Trigger(
         mergeProps(props, {
           get capabilityDisabled() {
-            return !snapshot().canPrevious || currentStep(snapshot())?.disableBackButton === true;
+            return (
+              !snapshot().canGoPrevious || currentStep(snapshot())?.disablePreviousButton === true
+            );
           },
           label: props.backLabel ?? "Back step",
-          marker: "back" as const,
+          marker: "previous" as const,
         }),
       );
     },
@@ -360,7 +362,7 @@ export function NextTrigger(props: NextTriggerProps): JSX.Element {
       return Trigger(
         mergeProps(props, {
           get capabilityDisabled() {
-            return !snapshot().canAdvance || currentStep(snapshot())?.disableNextButton === true;
+            return !snapshot().canGoNext || currentStep(snapshot())?.disableNextButton === true;
           },
           get label() {
             return snapshot().isLastStep

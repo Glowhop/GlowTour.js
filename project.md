@@ -63,7 +63,7 @@ An instance exposes:
 - `state.get()` and `state.subscribe(listener)`
 
 The public statuses are `idle`, `starting`, `transitioning`, `active`, `finished`, `cancelled`, and
-`error`. State snapshots also expose `canAdvance`, `canPrevious`, `canCancel`, `isFirstStep`, and
+`error`. State snapshots also expose `canGoNext`, `canGoPrevious`, `canCancel`, `isFirstStep`, and
 `isLastStep`.
 
 State and active-step callback facades are readonly. Dynamic step props are changed only through
