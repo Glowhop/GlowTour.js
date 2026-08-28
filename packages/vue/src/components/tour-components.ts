@@ -1,4 +1,5 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import { connectGlowTourRoot, type AdapterRootBinding } from "@glowhop/core-tour/adapter";
 import type { VNodeChild } from "vue";
 import {
   defineComponent,
@@ -14,13 +15,12 @@ import {
   shallowRef,
   watch,
 } from "vue";
-import { getAdapterBridge, type RootBinding, vueAdapter } from "../adapter-bridge";
 import type { VueTourContent } from "../glow-tour";
 
 type Tour = CoreGlowTour<VueTourContent>;
 
 interface TourContextValue {
-  readonly binding: Ref<RootBinding | null>;
+  readonly binding: Ref<AdapterRootBinding | null>;
   readonly tour: Ref<Tour>;
 }
 
@@ -63,7 +63,7 @@ function useStep() {
 }
 
 function useBoundElement<T extends Element>(
-  bind: (binding: RootBinding, element: T) => () => void,
+  bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
   const context = useTourContext();
   const element = shallowRef<T | null>(null);
@@ -90,13 +90,13 @@ export const GlowTourRoot = defineComponent({
     tour: { required: true, type: Object as PropType<Tour> },
   },
   setup(props, { attrs, slots }) {
-    const binding = shallowRef<RootBinding | null>(null);
+    const binding = shallowRef<AdapterRootBinding | null>(null);
     const tour = shallowRef(props.tour);
     provide(TOUR_CONTEXT, { binding, tour });
 
     let element: HTMLElement | null = null;
     let active:
-      | { binding: RootBinding; idPrefix: string | undefined; root: HTMLElement; tour: Tour }
+      | { binding: AdapterRootBinding; idPrefix: string | undefined; root: HTMLElement; tour: Tour }
       | undefined;
 
     const release = () => {
@@ -116,8 +116,7 @@ export const GlowTourRoot = defineComponent({
       }
       release();
       if (!element) return;
-      const nextBinding = getAdapterBridge(activeTour).connectRoot({
-        adapter: vueAdapter,
+      const nextBinding = connectGlowTourRoot(activeTour, {
         idPrefix,
         root: element,
       });

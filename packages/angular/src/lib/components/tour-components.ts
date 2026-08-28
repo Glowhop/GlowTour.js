@@ -21,13 +21,13 @@ import {
   ViewChild,
 } from "@angular/core";
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { angularAdapter, getAdapterBridge, type RootBinding } from "../adapter-bridge";
+import { connectGlowTourRoot, type AdapterRootBinding } from "@glowhop/core-tour/adapter";
 import type { AngularTourContent } from "../glow-tour";
 
 type Tour = CoreGlowTour<AngularTourContent>;
 
 interface ActiveRootBinding {
-  readonly binding: RootBinding;
+  readonly binding: AdapterRootBinding;
   readonly idPrefix: string | undefined;
   readonly root: HTMLElement;
   readonly tour: Tour;
@@ -35,7 +35,7 @@ interface ActiveRootBinding {
 
 @Injectable()
 class GlowTourScope {
-  readonly binding = signal<RootBinding | null>(null);
+  readonly binding = signal<AdapterRootBinding | null>(null);
   readonly tour = signal<Tour | null>(null);
   private readonly snapshot = signal<TourState<AngularTourContent> | null>(null);
   readonly state = this.snapshot.asReadonly();
@@ -125,8 +125,7 @@ export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
       return;
     }
     this.release();
-    const binding = getAdapterBridge(tour).connectRoot({
-      adapter: angularAdapter,
+    const binding = connectGlowTourRoot(tour, {
       idPrefix,
       root,
     });
@@ -207,7 +206,10 @@ abstract class GlowTourBoundElement<T extends Element> {
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
-  protected bind(element: T, bindElement: (binding: RootBinding, element: T) => () => void) {
+  protected bind(
+    element: T,
+    bindElement: (binding: AdapterRootBinding, element: T) => () => void,
+  ) {
     const cleanup = effect(
       (onCleanup) => {
         const binding = this.scope.binding();
