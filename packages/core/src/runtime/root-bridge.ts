@@ -1,28 +1,17 @@
 import type { DomTourViewDriver } from "../dom/tour-view-driver";
+import {
+  ADAPTER_BRIDGE_SYMBOL,
+  ADAPTER_BRIDGE_VERSION,
+  type AdapterRootBinding,
+  type AdapterRootIds,
+} from "./adapter-contract";
 
-const ADAPTER_BRIDGE_SYMBOL = Symbol.for("@glowhop/core-tour/adapter-bridge/v1");
 const ROOT_OWNER_SYMBOL = Symbol.for("@glowhop/core-tour/root-owner/v1");
 const DOCUMENT_PREFIX_RESERVATIONS_SYMBOL = Symbol.for(
   "@glowhop/core-tour/id-prefix-reservations/v1",
 );
-const BRIDGE_VERSION = 1 as const;
 const DEFAULT_ID_PREFIX = "glow-tour";
 const ID_PREFIX_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
-
-interface RootIds {
-  readonly description: string;
-  readonly popover: string;
-  readonly root: string;
-  readonly title: string;
-}
-
-interface RootBinding {
-  readonly ids: RootIds;
-  bindOverlay(element: SVGSVGElement): () => void;
-  bindPointer(element: HTMLElement): () => void;
-  bindPopover(element: HTMLElement): () => void;
-  release(): void;
-}
 
 interface RootLease {
   release(): void;
@@ -34,7 +23,7 @@ interface AttributeClaim {
   readonly value: string;
 }
 
-class TourRootBinding<T> implements RootBinding {
+class TourRootBinding<T> implements AdapterRootBinding {
   private released = false;
   private overlay: SVGSVGElement | null = null;
   private pointer: HTMLElement | null = null;
@@ -43,7 +32,7 @@ class TourRootBinding<T> implements RootBinding {
   constructor(
     private readonly driver: DomTourViewDriver<T>,
     private readonly root: HTMLElement,
-    readonly ids: RootIds,
+    readonly ids: AdapterRootIds,
     private readonly reservation: object,
     private readonly attributes: readonly AttributeClaim[],
     private readonly onMountReleaseStart: () => void,
@@ -127,9 +116,11 @@ export function attachRootBridge<T>(
   let binding: TourRootBinding<T> | null = null;
   let pending: RootLease | null = null;
   const bridge = Object.freeze({
-    version: BRIDGE_VERSION,
-    connectRoot(options: { adapter: unknown; idPrefix?: string; root: HTMLElement }): RootBinding {
-      void options.adapter;
+    version: ADAPTER_BRIDGE_VERSION,
+    connectRoot(options: {
+      readonly idPrefix?: string;
+      readonly root: HTMLElement;
+    }): AdapterRootBinding {
       if (isDisposed()) throw new Error("Cannot connect a root to a disposed glow tour");
       if (binding || pending) throw new Error("Glow tour already has a live root lease");
       const root = options.root;
@@ -140,7 +131,7 @@ export function attachRootBridge<T>(
       const reservation = {};
       const attributes: AttributeClaim[] = [];
       let prefix: string | null = null;
-      let ids: RootIds | null = null;
+      let ids: AdapterRootIds | null = null;
       let ownsPrefix = false;
       let ownsRoot = false;
       let registeredRoot = false;
@@ -295,7 +286,7 @@ function releaseRootOwner(root: HTMLElement, reservation: object) {
   }
 }
 
-function idsFor(prefix: string): RootIds {
+function idsFor(prefix: string): AdapterRootIds {
   return Object.freeze({
     description: `${prefix}-description`,
     popover: `${prefix}-popover`,

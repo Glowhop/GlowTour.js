@@ -6,18 +6,18 @@ type PackageId = "core" | "react" | "vue" | "solid" | "vanilla";
 
 type PackageBuild = {
   id: PackageId;
-  entrypoint: string;
+  entrypoints: readonly string[];
 };
 
 const root = resolve(import.meta.dir, "..");
 const packageRoot = join(root, "packages");
 const sharedReleaseDocuments = ["README.md", "LICENSE"] as const;
 const packageBuilds: readonly PackageBuild[] = [
-  { id: "core", entrypoint: "src/index.ts" },
-  { id: "react", entrypoint: "src/index.ts" },
-  { id: "vue", entrypoint: "src/index.ts" },
-  { id: "solid", entrypoint: "src/index.ts" },
-  { id: "vanilla", entrypoint: "src/index.ts" },
+  { id: "core", entrypoints: ["src/index.ts", "src/adapter.ts"] },
+  { id: "react", entrypoints: ["src/index.ts"] },
+  { id: "vue", entrypoints: ["src/index.ts"] },
+  { id: "solid", entrypoints: ["src/index.ts"] },
+  { id: "vanilla", entrypoints: ["src/index.ts"] },
 ];
 const externalPackages = [
   "@angular/common",
@@ -74,7 +74,7 @@ async function buildPackage(build: PackageBuild) {
   mkdirSync(distDirectory, { recursive: true });
 
   const result = await Bun.build({
-    entrypoints: [join(directory, build.entrypoint)],
+    entrypoints: build.entrypoints.map((entrypoint) => join(directory, entrypoint)),
     external: externalPackages,
     format: "esm",
     outdir: distDirectory,
