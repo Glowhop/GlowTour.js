@@ -21,7 +21,7 @@ describe("WorkflowBuilder public contract", () => {
       .beforeAdvance(() => {})
       .beforePrevious(() => {})
       .beforeCancel(() => {})
-      .do(({ next }) => next())
+      .do(({ advance }) => advance())
       .build();
 
     assert.equal(Object.isFrozen(definition), true);
@@ -41,13 +41,13 @@ describe("WorkflowBuilder public contract", () => {
       "back",
       "exec",
       "finish",
-      "goNext",
+      "goAdvance",
       "goPrevious",
-      "next",
+      "advance",
       "onBack",
       "onCancel",
       "onEvent",
-      "onNext",
+      "onAdvance",
       "on",
     ]) {
       assert.equal(alias in step, false, alias);
@@ -63,8 +63,8 @@ describe("WorkflowBuilder public contract", () => {
 
 function createContext(signal = new AbortController().signal): StepContext<string> {
   return {
+    advance: async () => {},
     cancel: async () => {},
-    next: async () => {},
     previous: async () => {},
     props: {} as StepContext<string>["props"],
     signal,
@@ -264,21 +264,21 @@ describe("StepBuilder action contract", () => {
       title: "Title",
     });
 
-    assert.equal("goNext" in step, false);
+    assert.equal("goAdvance" in step, false);
     assert.equal("goPrevious" in step, false);
     assert.equal("advance" in step, false);
     assert.equal("previous" in step, false);
     assert.equal("onBack" in step, false);
 
     const workflow = step
-      .do(({ next }) => next())
+      .do(({ advance }) => advance())
       .do(({ previous }) => previous())
       .do(({ cancel }) => cancel())
       .build();
 
     const context = createContext();
-    context.next = async () => {
-      calls.push("next");
+    context.advance = async () => {
+      calls.push("advance");
     };
     context.previous = async () => {
       calls.push("previous");
@@ -290,7 +290,7 @@ describe("StepBuilder action contract", () => {
       if (typeof action === "function") await action(context);
     }
 
-    assert.deepEqual(calls, ["next", "previous", "cancel"]);
+    assert.deepEqual(calls, ["advance", "previous", "cancel"]);
   });
 });
 

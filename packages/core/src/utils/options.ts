@@ -79,7 +79,7 @@ export function mergePopoverOptions(
     buttons: hasButtons
       ? {
           previousLabel: overrides?.buttons?.previousLabel ?? defaults?.buttons?.previousLabel,
-          nextLabel: overrides?.buttons?.nextLabel ?? defaults?.buttons?.nextLabel,
+          advanceLabel: overrides?.buttons?.advanceLabel ?? defaults?.buttons?.advanceLabel,
           finishLabel: overrides?.buttons?.finishLabel ?? defaults?.buttons?.finishLabel,
         }
       : undefined,
@@ -88,7 +88,9 @@ export function mergePopoverOptions(
           previous: cloneArray(
             overrides?.keyboardShortcuts?.previous ?? defaults?.keyboardShortcuts?.previous,
           ),
-          next: cloneArray(overrides?.keyboardShortcuts?.next ?? defaults?.keyboardShortcuts?.next),
+          advance: cloneArray(
+            overrides?.keyboardShortcuts?.advance ?? defaults?.keyboardShortcuts?.advance,
+          ),
           cancel: cloneArray(
             overrides?.keyboardShortcuts?.cancel ?? defaults?.keyboardShortcuts?.cancel,
           ),

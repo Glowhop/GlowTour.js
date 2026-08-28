@@ -126,14 +126,14 @@ describe("solid adapter browser behavior", () => {
           tour: outer,
           get children() {
             return [
-              createComponent(GlowTour.NextTrigger, {}),
+              createComponent(GlowTour.AdvanceTrigger, {}),
               createComponent(GlowTour.Root, {
                 idPrefix: "inner",
                 tour: inner,
                 get children() {
                   return [
                     createComponent(GlowTour.Popover, {}),
-                    createComponent(GlowTour.NextTrigger, {}),
+                    createComponent(GlowTour.AdvanceTrigger, {}),
                   ];
                 },
               }),
@@ -144,21 +144,21 @@ describe("solid adapter browser behavior", () => {
     );
     await outer.run(workflow(outer, outerTarget, "outer"));
     await inner.run(workflow(inner, innerTarget, "inner"));
-    const [outerNext, innerNext] = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-next-trigger]"),
+    const [outerAdvance, innerAdvance] = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
-    const outerDisabled = outerNext?.disabled;
-    const outerAriaDisabled = outerNext?.getAttribute("aria-disabled");
-    innerNext?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    const outerDisabled = outerAdvance?.disabled;
+    const outerAriaDisabled = outerAdvance?.getAttribute("aria-disabled");
+    innerAdvance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(inner.state.get().currentStepIndex, 1);
     assert.equal(outer.state.get().currentStepIndex, 0);
-    assert.equal(outerNext?.disabled, outerDisabled);
-    assert.equal(outerNext?.getAttribute("aria-disabled"), outerAriaDisabled);
+    assert.equal(outerAdvance?.disabled, outerDisabled);
+    assert.equal(outerAdvance?.getAttribute("aria-disabled"), outerAriaDisabled);
     dispose();
   });
 
-  test("uses controller keyboard permission despite consumer-disabled next trigger order", async () => {
+  test("uses controller keyboard permission despite consumer-disabled advance trigger order", async () => {
     const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
       await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
@@ -178,8 +178,8 @@ describe("solid adapter browser behavior", () => {
       return createComponent(GlowTour.Root, {
         tour,
         get children() {
-          const disabled = createComponent(GlowTour.NextTrigger, { disabled: true });
-          const enabled = createComponent(GlowTour.NextTrigger, {});
+          const disabled = createComponent(GlowTour.AdvanceTrigger, { disabled: true });
+          const enabled = createComponent(GlowTour.AdvanceTrigger, {});
           return disabledFirst() ? [disabled, enabled] : [enabled, disabled];
         },
       });
@@ -214,17 +214,17 @@ describe("solid adapter browser behavior", () => {
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
       .build();
-    let setShowNext!: (show: boolean) => void;
+    let setShowAdvance!: (show: boolean) => void;
     const dispose = render(() => {
-      const [showNext, updateShowNext] = createSignal(false);
-      setShowNext = updateShowNext;
+      const [showAdvance, updateShowAdvance] = createSignal(false);
+      setShowAdvance = updateShowAdvance;
       return createComponent(GlowTour.Root, {
         tour,
         get children() {
           return [
             createComponent(GlowTour.CancelTrigger, {}),
             createComponent(GlowTour.BackTrigger, {}),
-            showNext() ? createComponent(GlowTour.NextTrigger, {}) : null,
+            showAdvance() ? createComponent(GlowTour.AdvanceTrigger, {}) : null,
           ];
         },
       });
@@ -252,10 +252,10 @@ describe("solid adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    setShowNext(true);
-    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
-    assert.equal(next?.disabled, false);
-    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    setShowAdvance(true);
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(advance?.disabled, false);
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 1);
 
@@ -281,7 +281,7 @@ describe("solid adapter browser behavior", () => {
       return createComponent(GlowTour.Root, {
         tour,
         get children() {
-          return createComponent(GlowTour.NextTrigger, {
+          return createComponent(GlowTour.AdvanceTrigger, {
             get disabled() {
               return disabled();
             },
@@ -291,17 +291,17 @@ describe("solid adapter browser behavior", () => {
     }, container);
 
     await tour.run(workflow);
-    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
-    assert.equal(next?.disabled, true);
-    assert.equal(next?.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    assert.equal(next?.getAttribute("aria-disabled"), "true");
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(advance?.disabled, true);
+    assert.equal(advance?.getAttribute("data-glow-tour-consumer-disabled"), "true");
+    assert.equal(advance?.getAttribute("aria-disabled"), "true");
 
     setDisabled(false);
     await Promise.resolve();
-    assert.equal(next?.disabled, false);
-    assert.equal(next?.hasAttribute("data-glow-tour-consumer-disabled"), false);
-    assert.equal(next?.getAttribute("aria-disabled"), "false");
-    next?.click();
+    assert.equal(advance?.disabled, false);
+    assert.equal(advance?.hasAttribute("data-glow-tour-consumer-disabled"), false);
+    assert.equal(advance?.getAttribute("aria-disabled"), "false");
+    advance?.click();
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     assert.equal(tour.state.get().currentStepIndex, 1);
 
@@ -327,7 +327,7 @@ describe("solid adapter browser behavior", () => {
               createComponent(GlowTour.Popover, { children: "Popover" }),
               createComponent(GlowTour.Header, {}),
               createComponent(GlowTour.Content, {}),
-              createComponent(GlowTour.NextTrigger, {}),
+              createComponent(GlowTour.AdvanceTrigger, {}),
             ];
           },
         }),
@@ -339,7 +339,7 @@ describe("solid adapter browser behavior", () => {
     const popover = container.querySelector<HTMLElement>("[data-glow-tour-popover]");
     const title = container.querySelector<HTMLElement>("[data-glow-tour-header]");
     const description = container.querySelector<HTMLElement>("[data-glow-tour-content]");
-    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
 
     assert.equal(root?.id, "glow-tour-root");
     assert.equal(popover?.id, "glow-tour-popover");
@@ -347,7 +347,7 @@ describe("solid adapter browser behavior", () => {
     assert.equal(description?.id, "glow-tour-description");
     assert.equal(popover?.getAttribute("aria-labelledby"), title?.id);
     assert.equal(popover?.getAttribute("aria-describedby"), description?.id);
-    assert.equal(next?.getAttribute("aria-controls"), popover?.id);
+    assert.equal(advance?.getAttribute("aria-controls"), popover?.id);
 
     dispose();
     assert.equal(root?.id, "");
@@ -375,23 +375,23 @@ describe("solid adapter browser behavior", () => {
         createComponent(GlowTour.Root, {
           tour,
           get children() {
-            return createComponent(GlowTour.NextTrigger, {
+            return createComponent(GlowTour.AdvanceTrigger, {
               finishLabel: "Complete",
-              nextLabel: "Continue",
+              advanceLabel: "Continue",
             });
           },
         }),
       container,
     );
-    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
 
-    assert.equal(next?.disabled, true);
+    assert.equal(advance?.disabled, true);
     await tour.run(workflow);
-    assert.equal(next?.disabled, false);
-    assert.equal(next?.textContent, "Continue");
-    next?.click();
+    assert.equal(advance?.disabled, false);
+    assert.equal(advance?.textContent, "Continue");
+    advance?.click();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
-    assert.equal(next?.textContent, "Complete");
+    assert.equal(advance?.textContent, "Complete");
 
     dispose();
   });
@@ -424,7 +424,7 @@ describe("solid adapter browser behavior", () => {
           get children() {
             return [
               createComponent(GlowTour.Content, {}),
-              createComponent(GlowTour.NextTrigger, {}),
+              createComponent(GlowTour.AdvanceTrigger, {}),
             ];
           },
         }),
@@ -442,7 +442,7 @@ describe("solid adapter browser behavior", () => {
 
     await second.tour.run(secondWorkflow);
     assert.equal(container.textContent, "Second tourFinish tour");
-    container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]")?.click();
+    container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]")?.click();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(second.tour.state.get().status, "finished");
 
@@ -473,7 +473,7 @@ describe("solid adapter browser behavior", () => {
           get children() {
             return [
               createComponent(GlowTour.BackTrigger, { disabled: true }),
-              createComponent(GlowTour.NextTrigger, { disabled: true }),
+              createComponent(GlowTour.AdvanceTrigger, { disabled: true }),
               createComponent(GlowTour.CancelTrigger, { disabled: true }),
             ];
           },
@@ -482,11 +482,11 @@ describe("solid adapter browser behavior", () => {
     );
 
     await tour.run(workflow);
-    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
-    assert.equal(next?.disabled, true);
+    assert.equal(advance?.disabled, true);
     assert.equal(cancel?.disabled, true);
-    next?.click();
+    advance?.click();
     cancel?.click();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 0);
@@ -524,7 +524,7 @@ describe("solid adapter browser behavior", () => {
               createComponent(GlowTour.Popover, {}),
               createComponent(GlowTour.Header, {}),
               createComponent(GlowTour.Content, {}),
-              createComponent(GlowTour.NextTrigger, {}),
+              createComponent(GlowTour.AdvanceTrigger, {}),
             ];
           },
         }),
@@ -536,7 +536,7 @@ describe("solid adapter browser behavior", () => {
               createComponent(GlowTour.Popover, {}),
               createComponent(GlowTour.Header, {}),
               createComponent(GlowTour.Content, {}),
-              createComponent(GlowTour.NextTrigger, {}),
+              createComponent(GlowTour.AdvanceTrigger, {}),
             ];
           },
         }),
@@ -570,7 +570,7 @@ describe("solid adapter browser behavior", () => {
                     createComponent(GlowTour.Popover, {}),
                     createComponent(GlowTour.Header, {}),
                     createComponent(GlowTour.Content, {}),
-                    createComponent(GlowTour.NextTrigger, {}),
+                    createComponent(GlowTour.AdvanceTrigger, {}),
                   ];
                 },
               }),

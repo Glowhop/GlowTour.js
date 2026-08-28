@@ -92,7 +92,7 @@ class StagedTransitionDriver implements TourViewDriver<string> {
 
   dispose() {}
 
-  pauseNextShow() {
+  pauseAdvanceShow() {
     this.pause = true;
     this.pendingShow = deferred<void>();
   }
@@ -140,7 +140,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("readonly", {
         cancellable: true,
-        popover: { arrow: { color: "#4c35fd" }, keyboardShortcuts: { next: ["Enter"] } },
+        popover: { arrow: { color: "#4c35fd" }, keyboardShortcuts: { advance: ["Enter"] } },
       })
       .step({
         content: "content",
@@ -159,7 +159,7 @@ describe("instance-first TourController", () => {
     assert.equal(Object.isFrozen(workflow.steps), true);
     assert.equal(Object.isFrozen(workflow.steps[0]), true);
     assert.equal(Object.isFrozen(workflow.steps[0].props.data), true);
-    assert.equal(Object.isFrozen(workflow.options.popover?.keyboardShortcuts?.next), true);
+    assert.equal(Object.isFrozen(workflow.options.popover?.keyboardShortcuts?.advance), true);
     assert.equal(Object.isFrozen(workflow.options.popover?.arrow), true);
     assert.equal(Object.isFrozen(workflow.steps[0].overlay?.animation), true);
     assert.equal("clone" in workflow.steps[0], false);
@@ -237,7 +237,7 @@ describe("instance-first TourController", () => {
     {
       destination: 1,
       navigate: (tour: TourController<string>) => tour.advance(),
-      name: "next",
+      name: "advance",
       start: 0,
     },
     {
@@ -270,7 +270,7 @@ describe("instance-first TourController", () => {
         snapshots.push(`${state.status}:${state.currentStep?.currentProps.content ?? "none"}`);
       });
       snapshots.length = 0;
-      driver.pauseNextShow();
+      driver.pauseAdvanceShow();
 
       const navigation = scenario.navigate(tour);
       await flushMicrotasks();
@@ -299,7 +299,7 @@ describe("instance-first TourController", () => {
     });
   }
 
-  test("keeps committed control capabilities stable until the next step commits", async () => {
+  test("keeps committed control capabilities stable until the advance step commits", async () => {
     const driver = new StagedTransitionDriver();
     const tour = new TourController<string>(driver);
     const workflow = tour
@@ -307,7 +307,7 @@ describe("instance-first TourController", () => {
       .step({ content: "zero", target: targetResolver, title: "zero" })
       .step({
         content: "one",
-        disableNextButton: true,
+        disableAdvanceButton: true,
         target: targetResolver,
         title: "one",
       })
@@ -321,7 +321,7 @@ describe("instance-first TourController", () => {
       },
       { canAdvance: true, canCancel: true, canPrevious: false },
     );
-    driver.pauseNextShow();
+    driver.pauseAdvanceShow();
 
     const navigation = tour.advance();
     await flushMicrotasks();
@@ -361,13 +361,13 @@ describe("instance-first TourController", () => {
       .create("replacement", { cancellable: false })
       .step({
         content: "replacement",
-        disableNextButton: true,
+        disableAdvanceButton: true,
         target: targetResolver,
         title: "replacement",
       })
       .build();
     await tour.run(active);
-    driver.pauseNextShow();
+    driver.pauseAdvanceShow();
 
     const replacing = tour.run(replacement);
     await flushMicrotasks();
@@ -418,7 +418,7 @@ describe("instance-first TourController", () => {
       .step({ content: "stale", target: targetResolver, title: "stale" })
       .build();
     await tour.run(active);
-    driver.pauseNextShow();
+    driver.pauseAdvanceShow();
 
     const replacedRun = tour.run(replacedDuringStart);
     await flushMicrotasks();
@@ -443,7 +443,7 @@ describe("instance-first TourController", () => {
       .step({ content: "stale", target: targetResolver, title: "stale" })
       .build();
     await tour.run(workflow);
-    driver.pauseNextShow();
+    driver.pauseAdvanceShow();
 
     const navigation = tour.advance();
     await flushMicrotasks();
@@ -785,7 +785,7 @@ describe("instance-first TourController", () => {
         props.set((current) => ({ ...current, title: "updated" }));
         return true;
       })
-      .do(({ next }) => next())
+      .do(({ advance }) => advance())
       .step({ content: "two", target: targetResolver, title: "two" })
       .build();
 
@@ -799,7 +799,7 @@ describe("instance-first TourController", () => {
   });
 
   test("stops the current action chain after a context command", async () => {
-    for (const command of ["next", "previous", "cancel"] as const) {
+    for (const command of ["advance", "previous", "cancel"] as const) {
       const calls: string[] = [];
       const tour = createGlowTour<string>();
       let actionStep = tour
@@ -871,7 +871,7 @@ describe("instance-first TourController", () => {
       .create("disabled-navigation")
       .step({
         content: "one",
-        disableNextButton: true,
+        disableAdvanceButton: true,
         target: targetResolver,
         title: "one",
       })
@@ -891,7 +891,7 @@ describe("instance-first TourController", () => {
     await tour.advance();
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    firstStepProps.set((props) => ({ ...props, disableNextButton: false }));
+    firstStepProps.set((props) => ({ ...props, disableAdvanceButton: false }));
     await tour.advance();
     assert.equal(tour.state.get().currentStepIndex, 1);
     assert.equal(tour.state.get().canPrevious, false);

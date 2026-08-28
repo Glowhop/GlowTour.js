@@ -5,12 +5,12 @@ import { bootstrapApplication } from "@angular/platform-browser";
 import {
   type AngularTourContent,
   createGlowTour,
+  GlowTourAdvanceTrigger,
   GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
   GlowTourHeader,
-  GlowTourNextTrigger,
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
@@ -44,7 +44,7 @@ lab.rendererRoot.append(document.createElement("angular-tour-renderer"));
     GlowTourContent,
     GlowTourFooter,
     GlowTourBackTrigger,
-    GlowTourNextTrigger,
+    GlowTourAdvanceTrigger,
     GlowTourCancelTrigger,
   ],
   template: `
@@ -56,7 +56,7 @@ lab.rendererRoot.append(document.createElement("angular-tour-renderer"));
         <glow-tour-content></glow-tour-content>
         <glow-tour-footer>
           <glow-tour-back-trigger></glow-tour-back-trigger>
-          <glow-tour-next-trigger></glow-tour-next-trigger>
+          <glow-tour-advance-trigger></glow-tour-advance-trigger>
           <glow-tour-cancel-trigger></glow-tour-cancel-trigger>
         </glow-tour-footer>
       </glow-tour-popover>

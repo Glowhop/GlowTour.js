@@ -25,7 +25,7 @@ export interface WaitOptions {
   interval?: number;
 }
 
-export type WorkflowDirection = "next" | "previous";
+export type WorkflowDirection = "advance" | "previous";
 export type WorkflowStatus =
   | "not-started"
   | "idle"
@@ -80,7 +80,7 @@ export interface PopoverOptions extends BaseOptions {
   gap?: number;
   buttons?: {
     previousLabel?: string;
-    nextLabel?: string;
+    advanceLabel?: string;
     finishLabel?: string;
   };
   keyboardShortcuts?: {
@@ -91,7 +91,7 @@ export interface PopoverOptions extends BaseOptions {
     /**
      * @default ["Enter", "ArrowRight"]
      */
-    next?: readonly string[];
+    advance?: readonly string[];
     /**
      * @default ["Escape"]
      */
@@ -105,8 +105,8 @@ export interface DynamicStepProps<T> {
   hideFooter?: boolean;
   disablePreviousButton?: boolean;
   hidePreviousButton?: boolean;
-  disableNextButton?: boolean;
-  hideNextButton?: boolean;
+  disableAdvanceButton?: boolean;
+  hideAdvanceButton?: boolean;
   disableAutoScroll?: boolean;
   /**
    * @default true
@@ -146,8 +146,8 @@ export interface ReadonlyStepState<T> {
 }
 export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
 export interface StepContext<T> {
+  advance(): Promise<void>;
   cancel(): Promise<void>;
-  next(): Promise<void>;
   previous(): Promise<void>;
   readonly target: HTMLElement;
   readonly props: StepPropsStore<T>;
@@ -177,22 +177,6 @@ export type StepWaitPredicate<T> = (
 
 export type StepActionInstruction<T> = StepAction<T> | number;
 
-// export type StepTransitionAction<T> = (
-//   element: HTMLElement | null,
-//   stepState: ReadonlyStepState<T>,
-// ) => void | Promise<void>;
-
-// export interface EventHandler<TStepProps, TEvent extends Event = Event> {
-//   event: string;
-//   callback: (
-//     event: TEvent,
-//     stepState: ReadonlyStepState<TStepProps>,
-//     next: () => Promise<void>,
-//     back: () => Promise<void>,
-//     cancel: () => Promise<void>,
-//   ) => void | Promise<void>;
-// }
-
 export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
@@ -209,7 +193,7 @@ export type TourStatus =
   | "cancelled"
   | "error";
 
-export type TourDirection = "next" | "previous";
+export type TourDirection = "advance" | "previous";
 
 export interface TourCurrentStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;

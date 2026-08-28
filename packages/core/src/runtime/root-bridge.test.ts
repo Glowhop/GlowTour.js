@@ -248,7 +248,7 @@ describe("private root bridge", () => {
       "run",
       "state",
     ]);
-    assert.equal("goNext" in tour, false);
+    assert.equal("goAdvance" in tour, false);
     assert.equal("goPrevious" in tour, false);
     assert.equal("updateCurrentStep" in tour, false);
     assert.equal(Object.getOwnPropertyDescriptor(tour, BRIDGE_SYMBOL)?.enumerable, false);

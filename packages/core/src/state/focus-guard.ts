@@ -6,7 +6,7 @@ import {
   isFocusable,
 } from "./focusable";
 
-type FocusDirection = "next" | "previous";
+type FocusDirection = "advance" | "previous";
 
 export interface FocusGuardScope {
   popover: HTMLElement;
@@ -24,7 +24,7 @@ export class FocusGuard {
   private allowTargetInteraction = false;
   private fallback: HTMLElement | null = null;
   private fallbackTabIndex: string | null = null;
-  private direction: WorkflowDirection = "next";
+  private direction: WorkflowDirection = "advance";
   private active = false;
   private redirecting = false;
 
@@ -167,9 +167,9 @@ export class FocusGuard {
   private findFocusable(root: HTMLElement, direction: WorkflowDirection) {
     const candidates = focusableTourControls(root);
     const orderedSelectors =
-      direction === "next"
-        ? ["[data-glow-tour-next-trigger]", "[data-glow-tour-previous-trigger]"]
-        : ["[data-glow-tour-previous-trigger]", "[data-glow-tour-next-trigger]"];
+      direction === "advance"
+        ? ["[data-glow-tour-advance-trigger]", "[data-glow-tour-previous-trigger]"]
+        : ["[data-glow-tour-previous-trigger]", "[data-glow-tour-advance-trigger]"];
 
     for (const selector of orderedSelectors) {
       for (const candidate of candidates) {

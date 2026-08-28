@@ -11,17 +11,17 @@ const DEFAULT_SCROLL_END_TIMEOUT = 1000;
 const DEFAULT_SHORTCUTS = {
   previous: ["ArrowLeft", "Backspace"],
   cancel: ["Escape"],
-  next: ["Enter", "ArrowRight"],
+  advance: ["Enter", "ArrowRight"],
 } as const;
 
-type TourViewCommand = "next" | "previous" | "cancel";
+type TourViewCommand = "advance" | "previous" | "cancel";
 
 export interface TourViewCommands {
   advance(): Promise<void>;
   canAdvance(): boolean;
   canCancel(): boolean;
   canPrevious(): boolean;
-  isNextDisabled(): boolean;
+  isAdvanceDisabled(): boolean;
   isCancelDisabled(): boolean;
   isPreviousDisabled(): boolean;
   previous(): Promise<void>;
@@ -64,7 +64,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private readonly focusGuard = new FocusGuard();
   private readonly stepCleanups: Array<() => void> = [];
   private commands: TourViewCommands | null;
-  private direction: TourDirection = "next";
+  private direction: TourDirection = "advance";
   private currentStep: ActiveStep<T> | null = null;
   private currentSignal: AbortSignal | null = null;
   private disposed = false;
@@ -310,8 +310,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       const listener = (event: Event) => {
         if (!this.isCurrentGeneration(generation)) return;
         const context = Object.freeze({
+          advance: () => this.commandForStep("advance", step, signal),
           cancel: () => this.commandForStep("cancel", step, signal),
-          next: () => this.commandForStep("next", step, signal),
           previous: () => this.commandForStep("previous", step, signal),
           props: step.props,
           signal,
@@ -394,11 +394,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
     if (isEditable(event.target)) return;
     if (
-      (shortcuts?.next ?? DEFAULT_SHORTCUTS.next).includes(event.key) &&
-      this.canCommand("next", step)
+      (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
+      this.canCommand("advance", step)
     ) {
       event.preventDefault();
-      void this.command("next");
+      void this.command("advance");
     } else if (
       (shortcuts?.previous ?? DEFAULT_SHORTCUTS.previous).includes(event.key) &&
       this.canCommand("previous", step)
@@ -423,10 +423,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if ((shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key)) command = "cancel";
     else if (!isEditable(event.target)) {
       if (
-        (shortcuts?.next ?? DEFAULT_SHORTCUTS.next).includes(event.key) &&
-        step.props.get().disableNextButton !== true
+        (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
+        step.props.get().disableAdvanceButton !== true
       )
-        command = "next";
+        command = "advance";
       else if (
         (shortcuts?.previous ?? DEFAULT_SHORTCUTS.previous).includes(event.key) &&
         step.props.get().disablePreviousButton !== true
@@ -495,8 +495,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private syncShortcutLabels(step: ActiveStep<T>) {
-    for (const next of this.findTriggers("next")) {
-      syncKeyShortcuts(next, step.popover?.keyboardShortcuts?.next ?? DEFAULT_SHORTCUTS.next);
+    for (const advance of this.findTriggers("advance")) {
+      syncKeyShortcuts(
+        advance,
+        step.popover?.keyboardShortcuts?.advance ?? DEFAULT_SHORTCUTS.advance,
+      );
     }
     for (const previous of this.findTriggers("previous")) {
       syncKeyShortcuts(
@@ -520,7 +523,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private findClickedTrigger(target: Element, scope: HTMLElement) {
     for (const [command, direction] of [
-      ["next", "next"],
+      ["advance", "advance"],
       ["previous", "previous"],
       ["cancel", "cancel"],
     ] as const) {
@@ -577,10 +580,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private syncControlState(step: ActiveStep<T>) {
-    for (const next of this.findTriggers("next")) {
+    for (const advance of this.findTriggers("advance")) {
       this.syncControl(
-        next,
-        this.commands?.isNextDisabled() === true || step.props.get().disableNextButton === true,
+        advance,
+        this.commands?.isAdvanceDisabled() === true ||
+          step.props.get().disableAdvanceButton === true,
       );
     }
     for (const previous of this.findTriggers("previous")) {
@@ -611,7 +615,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private async command(command: TourViewCommand) {
     if (this.disposed) return;
-    if (command === "next") await this.commands?.advance();
+    if (command === "advance") await this.commands?.advance();
     else if (command === "previous") await this.commands?.previous();
     else await this.commands?.cancel();
   }
@@ -630,8 +634,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     trigger?: HTMLButtonElement | null,
   ) {
     if (this.isConsumerDisabled(trigger ?? null)) return false;
-    if (command === "next") {
-      return (this.commands?.canAdvance?.() ?? true) && step.props.get().disableNextButton !== true;
+    if (command === "advance") {
+      return (
+        (this.commands?.canAdvance?.() ?? true) && step.props.get().disableAdvanceButton !== true
+      );
     }
     if (command === "previous") {
       return (

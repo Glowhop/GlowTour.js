@@ -14,7 +14,7 @@ export const FOCUSABLE_SELECTOR = [
 export const TOUR_TRIGGER_SELECTOR = [
   "[data-glow-tour-previous-trigger]",
   "[data-glow-tour-cancel-trigger]",
-  "[data-glow-tour-next-trigger]",
+  "[data-glow-tour-advance-trigger]",
 ].join(",");
 
 export function focusableElements(root: HTMLElement) {

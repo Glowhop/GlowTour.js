@@ -128,8 +128,8 @@ export class WorkflowBuilder<T> {
         hideFooter: options.hideFooter,
         disablePreviousButton: options.disablePreviousButton,
         hidePreviousButton: options.hidePreviousButton,
-        disableNextButton: options.disableNextButton,
-        hideNextButton: options.hideNextButton,
+        disableAdvanceButton: options.disableAdvanceButton,
+        hideAdvanceButton: options.hideAdvanceButton,
         disableAutoScroll: options.disableAutoScroll,
         resetPropsOnEnter: options.resetPropsOnEnter,
         data: cloneStepProps(options).data,
@@ -141,7 +141,7 @@ export class WorkflowBuilder<T> {
       behavior: options.behavior,
       actions: [],
       eventHandlers: [],
-      nextAction: null,
+      advanceAction: null,
       previousAction: null,
       cancelAction: null,
     });
@@ -267,7 +267,7 @@ export class WorkflowStepBuilder<T> {
 
   beforeAdvance(callback: StepTransitionAction<T>) {
     this.assertActive();
-    this.draft.nextAction = callback;
+    this.draft.advanceAction = callback;
     return this;
   }
 

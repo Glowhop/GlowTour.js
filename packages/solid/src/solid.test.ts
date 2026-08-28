@@ -49,7 +49,7 @@ describe("solid adapter contract", () => {
       runtime.GlowTour.Overlay,
       runtime.GlowTour.Pointer,
       runtime.GlowTour.BackTrigger,
-      runtime.GlowTour.NextTrigger,
+      runtime.GlowTour.AdvanceTrigger,
       runtime.GlowTour.CancelTrigger,
     ]) {
       assert.equal(typeof component, "function");

@@ -5,12 +5,12 @@ export type {
   WorkflowDefinition,
 } from "@glowhop/core-tour";
 export {
+  GlowTourAdvanceTrigger,
   GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
   GlowTourHeader,
-  GlowTourNextTrigger,
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,

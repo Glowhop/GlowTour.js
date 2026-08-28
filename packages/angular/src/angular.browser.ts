@@ -107,7 +107,7 @@ describe("angular adapter browser behavior", () => {
         runtime.GlowTourContent,
         runtime.GlowTourFooter,
         runtime.GlowTourBackTrigger,
-        runtime.GlowTourNextTrigger,
+        runtime.GlowTourAdvanceTrigger,
         runtime.GlowTourCancelTrigger,
         runtime.GlowTourOverlay,
         runtime.GlowTourPointer,
@@ -121,7 +121,7 @@ describe("angular adapter browser behavior", () => {
             <glow-tour-content />
             <glow-tour-footer>
               <glow-tour-back-trigger />
-              <glow-tour-next-trigger />
+              <glow-tour-advance-trigger />
               <glow-tour-cancel-trigger />
             </glow-tour-footer>
           </glow-tour-popover>
@@ -168,7 +168,7 @@ describe("angular adapter browser behavior", () => {
       ...props,
       content: "Updated content",
       hideFooter: true,
-      hideNextButton: true,
+      hideAdvanceButton: true,
       title: "Updated title",
     }));
     await settle();
@@ -176,16 +176,16 @@ describe("angular adapter browser behavior", () => {
     assert.match(document.body.textContent ?? "", /Updated title/);
     assert.match(document.body.textContent ?? "", /Updated content/);
     assert.equal(document.querySelector("[data-glow-tour-footer]"), null);
-    assert.equal(document.querySelector("[data-glow-tour-next-trigger]"), null);
+    assert.equal(document.querySelector("[data-glow-tour-advance-trigger]"), null);
 
-    activeProps.set((props) => ({ ...props, hideFooter: false, hideNextButton: false }));
+    activeProps.set((props) => ({ ...props, hideFooter: false, hideAdvanceButton: false }));
     await settle();
     app.tick();
 
-    const next = document.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
-    assert.equal(next?.getAttribute("aria-controls"), "angular-popover");
-    assert.equal(next?.disabled, false);
-    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    const advance = document.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(advance?.getAttribute("aria-controls"), "angular-popover");
+    assert.equal(advance?.disabled, false);
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
     assert.equal(tour.state.get().currentStepIndex, 1);
 
@@ -204,12 +204,12 @@ describe("angular adapter browser behavior", () => {
     @Component({
       selector: "angular-root-replacement",
       standalone: true,
-      imports: [runtime.GlowTourRoot, runtime.GlowTourNextTrigger],
+      imports: [runtime.GlowTourRoot, runtime.GlowTourAdvanceTrigger],
       template: `
         <glow-tour-root [tour]="tour" [idPrefix]="idPrefix">
-          <glow-tour-next-trigger />
+          <glow-tour-advance-trigger />
           <glow-tour-root [tour]="inner" idPrefix="inner">
-            <glow-tour-next-trigger />
+            <glow-tour-advance-trigger />
           </glow-tour-root>
         </glow-tour-root>
       `,
@@ -246,17 +246,17 @@ describe("angular adapter browser behavior", () => {
         .build();
     await second.run(workflow(second, outerTarget, "outer"));
     await inner.run(workflow(inner, innerTarget, "inner"));
-    const [outerNext, innerNext] = Array.from(
-      document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-next-trigger]"),
+    const [outerAdvance, innerAdvance] = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
-    assert.equal(innerNext?.disabled, false);
-    innerNext?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    assert.equal(innerAdvance?.disabled, false);
+    innerAdvance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
     assert.equal(inner.state.get().currentStepIndex, 1);
     assert.equal(second.state.get().currentStepIndex, 0);
     assert.notEqual(
-      outerNext?.getAttribute("aria-controls"),
-      innerNext?.getAttribute("aria-controls"),
+      outerAdvance?.getAttribute("aria-controls"),
+      innerAdvance?.getAttribute("aria-controls"),
     );
     await app.destroy();
   });
@@ -271,15 +271,15 @@ describe("angular adapter browser behavior", () => {
     @Component({
       selector: "angular-sibling-roots",
       standalone: true,
-      imports: [runtime.GlowTourRoot, runtime.GlowTourPopover, runtime.GlowTourNextTrigger],
+      imports: [runtime.GlowTourRoot, runtime.GlowTourPopover, runtime.GlowTourAdvanceTrigger],
       template: `
         <glow-tour-root [tour]="first" idPrefix="first-sibling">
           <glow-tour-popover />
-          <glow-tour-next-trigger />
+          <glow-tour-advance-trigger />
         </glow-tour-root>
         <glow-tour-root [tour]="second" idPrefix="second-sibling">
           <glow-tour-popover />
-          <glow-tour-next-trigger />
+          <glow-tour-advance-trigger />
         </glow-tour-root>
       `,
     })
@@ -303,8 +303,8 @@ describe("angular adapter browser behavior", () => {
 
     const roots = Array.from(document.querySelectorAll<HTMLElement>("[data-glow-tour-root]"));
     const popovers = Array.from(document.querySelectorAll<HTMLElement>("[data-glow-tour-popover]"));
-    const [firstNext, secondNext] = Array.from(
-      document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-next-trigger]"),
+    const [firstAdvance, secondAdvance] = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
     assert.deepEqual(
       roots.map((root) => root.id),
@@ -314,22 +314,22 @@ describe("angular adapter browser behavior", () => {
       popovers.map((popover) => popover.id),
       ["first-sibling-popover", "second-sibling-popover"],
     );
-    assert.equal(firstNext?.getAttribute("aria-controls"), "first-sibling-popover");
-    assert.equal(secondNext?.getAttribute("aria-controls"), "second-sibling-popover");
+    assert.equal(firstAdvance?.getAttribute("aria-controls"), "first-sibling-popover");
+    assert.equal(secondAdvance?.getAttribute("aria-controls"), "second-sibling-popover");
 
-    const secondControl = secondNext;
+    const secondControl = secondAdvance;
     const secondRootId = roots[1]?.id;
     const secondPopoverId = popovers[1]?.id;
-    firstNext?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    firstAdvance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
 
     assert.equal(first.state.get().currentStepIndex, 1);
     assert.equal(second.state.get().currentStepIndex, 0);
-    assert.equal(secondNext, secondControl);
-    assert.equal(secondNext?.isConnected, true);
+    assert.equal(secondAdvance, secondControl);
+    assert.equal(secondAdvance?.isConnected, true);
     assert.equal(roots[1]?.id, secondRootId);
     assert.equal(popovers[1]?.id, secondPopoverId);
-    assert.equal(secondNext?.getAttribute("aria-controls"), "second-sibling-popover");
+    assert.equal(secondAdvance?.getAttribute("aria-controls"), "second-sibling-popover");
     await app.destroy();
   });
 
@@ -425,16 +425,16 @@ describe("angular adapter browser behavior", () => {
     @Component({
       selector: "angular-late-trigger",
       standalone: true,
-      imports: [runtime.GlowTourRoot, runtime.GlowTourNextTrigger],
+      imports: [runtime.GlowTourRoot, runtime.GlowTourAdvanceTrigger],
       template: `
         <glow-tour-root [tour]="tour">
-          @if (showNext) { <glow-tour-next-trigger /> }
+          @if (showAdvance) { <glow-tour-advance-trigger /> }
         </glow-tour-root>
       `,
     })
     class LateTriggerHarness {
       readonly tour = tour;
-      showNext = false;
+      showAdvance = false;
     }
 
     document.body.append(document.createElement("angular-late-trigger"));
@@ -443,7 +443,7 @@ describe("angular adapter browser behavior", () => {
       .create("late trigger")
       .step({
         content: "One",
-        popover: { keyboardShortcuts: { next: ["N"] } },
+        popover: { keyboardShortcuts: { advance: ["N"] } },
         target,
         title: "One",
       })
@@ -452,11 +452,11 @@ describe("angular adapter browser behavior", () => {
     await tour.run(workflow);
     const harness = app.components[0]?.instance;
     assert.ok(harness instanceof LateTriggerHarness);
-    harness.showNext = true;
+    harness.showAdvance = true;
     app.tick();
     await settle();
-    const next = document.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
-    assert.equal(next?.getAttribute("aria-keyshortcuts"), "N");
+    const advance = document.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(advance?.getAttribute("aria-keyshortcuts"), "N");
     window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "N" }));
     await settle();
     assert.equal(tour.state.get().currentStepIndex, 1);
@@ -532,13 +532,13 @@ describe("angular adapter browser behavior", () => {
       imports: [
         runtime.GlowTourRoot,
         runtime.GlowTourBackTrigger,
-        runtime.GlowTourNextTrigger,
+        runtime.GlowTourAdvanceTrigger,
         runtime.GlowTourCancelTrigger,
       ],
       template: `
         <glow-tour-root [tour]="tour">
           <glow-tour-back-trigger [backLabel]="backLabel" [disabled]="disabled" />
-          <glow-tour-next-trigger [finishLabel]="finishLabel" [nextLabel]="nextLabel" [disabled]="disabled" (click)="onNextClick($event)" />
+          <glow-tour-advance-trigger [finishLabel]="finishLabel" [advanceLabel]="advanceLabel" [disabled]="disabled" (click)="onAdvanceClick($event)" />
           <glow-tour-cancel-trigger [ariaLabel]="cancelAria" [disabled]="disabled" />
           <glow-tour-cancel-trigger ariaLabel="Static cancel" data-static-cancel disabled />
         </glow-tour-root>
@@ -550,11 +550,11 @@ describe("angular adapter browser behavior", () => {
       cancelAria = "Cancel one";
       disabled = true;
       finishLabel = "Finish one";
-      nextLabel = "Next one";
-      preventNext = false;
+      advanceLabel = "Advance one";
+      preventAdvance = false;
 
-      onNextClick(event: Event) {
-        if (this.preventNext) event.preventDefault();
+      onAdvanceClick(event: Event) {
+        if (this.preventAdvance) event.preventDefault();
       }
     }
 
@@ -569,22 +569,22 @@ describe("angular adapter browser behavior", () => {
     await settle();
     app.tick();
 
-    const next = document.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
+    const advance = document.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     const cancel = document.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     const staticCancel = document.querySelector<HTMLButtonElement>(
       "[data-static-cancel] [data-glow-tour-cancel-trigger]",
     );
-    assert.equal(next?.textContent, "Next one");
-    assert.equal(next?.disabled, true);
-    assert.equal(next?.getAttribute("aria-disabled"), "true");
-    assert.equal(next?.getAttribute("data-glow-tour-consumer-disabled"), "true");
+    assert.equal(advance?.textContent, "Advance one");
+    assert.equal(advance?.disabled, true);
+    assert.equal(advance?.getAttribute("aria-disabled"), "true");
+    assert.equal(advance?.getAttribute("data-glow-tour-consumer-disabled"), "true");
     assert.equal(cancel?.textContent, "Cancel tour");
     assert.equal(cancel?.getAttribute("aria-label"), "Cancel one");
     assert.equal(staticCancel?.disabled, true);
     assert.equal(staticCancel?.getAttribute("aria-disabled"), "true");
     assert.equal(staticCancel?.getAttribute("data-glow-tour-consumer-disabled"), "true");
 
-    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
     assert.equal(tour.state.get().currentStepIndex, 0);
@@ -595,25 +595,25 @@ describe("angular adapter browser behavior", () => {
     harness.backLabel = "Back two";
     harness.cancelAria = "Cancel two";
     harness.disabled = false;
-    harness.nextLabel = "Next two";
+    harness.advanceLabel = "Advance two";
     app.tick();
     await settle();
 
-    assert.equal(next?.textContent, "Next two");
-    assert.equal(next?.disabled, false);
-    assert.equal(next?.getAttribute("aria-disabled"), "false");
-    assert.equal(next?.hasAttribute("data-glow-tour-consumer-disabled"), false);
+    assert.equal(advance?.textContent, "Advance two");
+    assert.equal(advance?.disabled, false);
+    assert.equal(advance?.getAttribute("aria-disabled"), "false");
+    assert.equal(advance?.hasAttribute("data-glow-tour-consumer-disabled"), false);
     assert.equal(cancel?.getAttribute("aria-label"), "Cancel two");
 
-    harness.preventNext = true;
+    harness.preventAdvance = true;
     app.tick();
-    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    harness.preventNext = false;
+    harness.preventAdvance = false;
     app.tick();
-    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
     assert.equal(tour.state.get().currentStepIndex, 1);
 
@@ -621,12 +621,12 @@ describe("angular adapter browser behavior", () => {
     const back = document.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(back?.textContent, "Back two");
     assert.equal(back?.disabled, false);
-    assert.equal(next?.textContent, "Finish one");
+    assert.equal(advance?.textContent, "Finish one");
     harness.finishLabel = "Finish two";
     harness.disabled = true;
     app.tick();
     await settle();
-    assert.equal(next?.textContent, "Finish two");
+    assert.equal(advance?.textContent, "Finish two");
     assert.equal(back?.disabled, true);
     assert.equal(cancel?.disabled, true);
 
@@ -653,8 +653,8 @@ describe("angular adapter browser behavior", () => {
     @Component({
       selector: "angular-outside-root",
       standalone: true,
-      imports: [runtime.GlowTourNextTrigger],
-      template: "<glow-tour-next-trigger />",
+      imports: [runtime.GlowTourAdvanceTrigger],
+      template: "<glow-tour-advance-trigger />",
     })
     class OutsideRootHarness {}
 
@@ -712,21 +712,21 @@ describe("angular adapter browser behavior", () => {
         runtime.GlowTourPopover,
         runtime.GlowTourHeader,
         runtime.GlowTourContent,
-        runtime.GlowTourNextTrigger,
+        runtime.GlowTourAdvanceTrigger,
       ],
       template: `
         <glow-tour-root [tour]="primaryTour" idPrefix="angular-acceptance-primary">
           <glow-tour-popover>
             <glow-tour-header />
             <glow-tour-content />
-            <glow-tour-next-trigger />
+            <glow-tour-advance-trigger />
           </glow-tour-popover>
         </glow-tour-root>
         <glow-tour-root [tour]="secondaryTour" idPrefix="angular-acceptance-secondary">
           <glow-tour-popover>
             <glow-tour-header />
             <glow-tour-content />
-            <glow-tour-next-trigger />
+            <glow-tour-advance-trigger />
           </glow-tour-popover>
         </glow-tour-root>
       `,
