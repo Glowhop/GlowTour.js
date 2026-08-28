@@ -12,7 +12,9 @@ interface MockAnimation {
   cancelled: boolean;
   committed: boolean;
   finished: Promise<void>;
+  keyframes: Keyframe[] | PropertyIndexedKeyframes;
   resolve(): void;
+  target: MockElement;
 }
 
 class MockEvent {
@@ -184,7 +186,7 @@ class MockElement extends MockNode {
     else this.setAttribute(name, "");
     return force ?? true;
   }
-  animate() {
+  animate(keyframes: Keyframe[] | PropertyIndexedKeyframes) {
     let resolve = () => {};
     const animation: MockAnimation = {
       cancelled: false,
@@ -195,7 +197,9 @@ class MockElement extends MockNode {
               resolve = nextResolve;
             })
           : Promise.resolve(),
+      keyframes,
       resolve: () => resolve(),
+      target: this,
     };
     createdAnimations.push(animation);
     return {
@@ -451,6 +455,25 @@ function createTarget() {
 }
 
 describe("DomTourViewDriver", () => {
+  test("fades in the initial overlay without animating from an empty path", async () => {
+    animationMode = "controlled";
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    const path = elements.overlay.querySelector("path");
+    const overlayAnimation = createdAnimations.find((animation) => animation.target === path);
+    assert.ok(overlayAnimation);
+    assert.deepEqual(overlayAnimation.keyframes, [{ opacity: "0" }, { opacity: "0.7" }]);
+    assert.match(path?.style.getPropertyValue("d") ?? "", /^path\(/);
+
+    resolveAnimations(0);
+    await showing;
+  });
+
   test("tracks geometry continuously with exactly one animation frame", async () => {
     const { driver } = installDriver(),
       step = createStep();

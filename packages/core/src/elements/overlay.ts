@@ -19,6 +19,26 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       return;
     }
 
+    if (!path.style.getPropertyValue("d")) {
+      for (const [property, value] of Object.entries(keyframe)) {
+        if (property !== "opacity" && value != null) {
+          path.style.setProperty(property, String(value));
+        }
+      }
+
+      const opacity = keyframe.opacity == null ? "0.7" : String(keyframe.opacity);
+      path.style.setProperty("opacity", "0");
+      const animation = path.animate([{ opacity: "0" }, { opacity }], {
+        ...this._getAnimationOptions(),
+        fill: "none",
+      });
+
+      if (await this._waitForAnimation(animation)) {
+        path.style.setProperty("opacity", opacity);
+      }
+      return;
+    }
+
     const baseStyle = {
       d: path.style.getPropertyValue("d") ?? "",
       fill: path.style.getPropertyValue("fill") ?? "",
