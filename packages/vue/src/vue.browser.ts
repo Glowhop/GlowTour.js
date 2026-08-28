@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
+import type { StepContext } from "@glowhop/core-tour";
 import { Window } from "happy-dom";
-import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
+import type { VueTourContent } from "./glow-tour";
 
 let window: Window;
 
@@ -43,7 +44,7 @@ describe("vue adapter browser behavior", () => {
       .create("reactive state")
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
-      .finish();
+      .build();
     const Observer = defineComponent({
       setup() {
         const state = runtime.useTour();
@@ -254,7 +255,7 @@ describe("vue adapter browser behavior", () => {
     app.unmount();
   });
 
-  test("keeps nested roots and their delegated next commands isolated", async () => {
+  test("keeps nested roots and their delegated advance commands isolated", async () => {
     const [{ createApp, h, nextTick }, runtime] = await Promise.all([
       import("vue"),
       import("./index"),
@@ -274,9 +275,9 @@ describe("vue adapter browser behavior", () => {
     const app = createApp({
       render: () =>
         h(runtime.GlowTourRoot, { idPrefix: "outer", tour: outer }, () => [
-          h(runtime.GlowTourNextTrigger),
+          h(runtime.GlowTourAdvanceTrigger),
           h(runtime.GlowTourRoot, { idPrefix: "inner", tour: inner }, () => [
-            h(runtime.GlowTourNextTrigger),
+            h(runtime.GlowTourAdvanceTrigger),
           ]),
         ]),
     });
@@ -285,14 +286,14 @@ describe("vue adapter browser behavior", () => {
     await nextTick();
     await outer.run(workflow(outer, outerTarget, "outer"));
     await inner.run(workflow(inner, innerTarget, "inner"));
-    const [outerNext, innerNext] = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-next-trigger]"),
+    const [outerAdvance, innerAdvance] = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
     assert.notEqual(
-      outerNext?.getAttribute("aria-controls"),
-      innerNext?.getAttribute("aria-controls"),
+      outerAdvance?.getAttribute("aria-controls"),
+      innerAdvance?.getAttribute("aria-controls"),
     );
-    innerNext?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    innerAdvance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     assert.equal(inner.state.get().currentStepIndex, 1);
     assert.equal(outer.state.get().currentStepIndex, 0);
@@ -312,24 +313,24 @@ describe("vue adapter browser behavior", () => {
       .create("dynamic controls")
       .step({
         content: "One",
-        popover: { keyboardShortcuts: { next: ["N"] } },
+        popover: { keyboardShortcuts: { advance: ["N"] } },
         target,
         title: "One",
       })
       .step({ content: "Two", target, title: "Two" })
       .build();
-    const showNext = ref(false);
-    const blockNext = ref(true);
-    const preventNext = ref(true);
+    const showAdvance = ref(false);
+    const blockAdvance = ref(true);
+    const preventAdvance = ref(true);
     const app = createApp({
       render: () =>
         h(runtime.GlowTourRoot, { tour }, () => [
           h(runtime.GlowTourCancelTrigger),
           h(runtime.GlowTourBackTrigger),
-          showNext.value
-            ? h(runtime.GlowTourNextTrigger, {
-                disabled: blockNext.value,
-                onClick: preventNext.value
+          showAdvance.value
+            ? h(runtime.GlowTourAdvanceTrigger, {
+                disabled: blockAdvance.value,
+                onClick: preventAdvance.value
                   ? (event: MouseEvent) => event.preventDefault()
                   : undefined,
               })
@@ -340,7 +341,9 @@ describe("vue adapter browser behavior", () => {
     app.mount(container);
     await nextTick();
     await tour.run(workflow);
-    const firstBack = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const firstBack = container.querySelector<HTMLButtonElement>(
+      "[data-glow-tour-previous-trigger]",
+    );
     assert.equal(firstBack?.disabled, true);
     assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
@@ -349,28 +352,28 @@ describe("vue adapter browser behavior", () => {
     assert.equal(tour.state.get().status, "cancelled");
 
     await tour.run(workflow);
-    showNext.value = true;
+    showAdvance.value = true;
     await nextTick();
     await new Promise((resolve) => window.setTimeout(resolve, 0));
-    const next = container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]");
-    assert.equal(next?.disabled, true);
-    assert.equal(next?.getAttribute("aria-keyshortcuts"), "N");
-    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(advance?.disabled, true);
+    assert.equal(advance?.getAttribute("aria-keyshortcuts"), "N");
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    blockNext.value = false;
+    blockAdvance.value = false;
     await nextTick();
-    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await Promise.resolve();
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    preventNext.value = false;
+    preventAdvance.value = false;
     await nextTick();
-    next?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     assert.equal(tour.state.get().currentStepIndex, 1);
-    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-back-trigger]");
+    const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     back?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     assert.equal(tour.state.get().currentStepIndex, 0);
@@ -387,9 +390,13 @@ describe("vue adapter browser behavior", () => {
     const target = document.createElement("button");
     document.body.append(container, target);
     const tour = runtime.createGlowTour();
+    let activeProps!: StepContext<VueTourContent>["props"];
     const workflow = tour
       .create("dynamic step")
       .step({ content: "Original content", target, title: "Original title" })
+      .do(({ props }) => {
+        activeProps = props;
+      })
       .build();
     const app = createApp({
       render: () =>
@@ -397,7 +404,7 @@ describe("vue adapter browser behavior", () => {
           h(runtime.GlowTourPopover, null, () => [
             h(runtime.GlowTourHeader),
             h(runtime.GlowTourContent),
-            h(runtime.GlowTourFooter, null, () => h(runtime.GlowTourNextTrigger)),
+            h(runtime.GlowTourFooter, null, () => h(runtime.GlowTourAdvanceTrigger)),
           ]),
         ]),
     });
@@ -405,11 +412,11 @@ describe("vue adapter browser behavior", () => {
     app.mount(container);
     await nextTick();
     await tour.run(workflow);
-    tour.updateCurrentStep((props) => ({
+    activeProps.set((props) => ({
       ...props,
       content: "Updated content",
       hideFooter: true,
-      hideNextButton: true,
+      hideAdvanceButton: true,
       title: "Updated title",
     }));
     await nextTick();
@@ -420,10 +427,10 @@ describe("vue adapter browser behavior", () => {
     );
     assert.equal(container.querySelector("[data-glow-tour-footer]"), null);
 
-    tour.updateCurrentStep((props) => ({ ...props, hideFooter: false, hideNextButton: false }));
+    activeProps.set((props) => ({ ...props, hideFooter: false, hideAdvanceButton: false }));
     await nextTick();
     assert.equal(
-      container.querySelector<HTMLButtonElement>("[data-glow-tour-next-trigger]")?.disabled,
+      container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]")?.disabled,
       false,
     );
     app.unmount();

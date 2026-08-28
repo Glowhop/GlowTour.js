@@ -17,7 +17,7 @@ describe("vanilla adapter public contract", () => {
       "glow-tour-popover",
       "glow-tour-pointer",
       "glow-tour-back-trigger",
-      "glow-tour-next-trigger",
+      "glow-tour-advance-trigger",
       "glow-tour-cancel-trigger",
       "glow-tour-overlay",
     ]);

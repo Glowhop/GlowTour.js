@@ -295,9 +295,9 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   selector: "glow-tour-back-trigger",
   standalone: true,
   template: `
-    @if (!step()?.hideBackButton) {
+    @if (!step()?.hidePreviousButton) {
       <button
-        data-glow-tour-back-trigger
+        data-glow-tour-previous-trigger
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
         [attr.aria-label]="ariaLabelText() ?? label()"
@@ -325,18 +325,18 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
     () =>
       this.consumerDisabled() ||
       !this.snapshot()?.canPrevious ||
-      this.step()?.disableBackButton === true,
+      this.step()?.disablePreviousButton === true,
   );
   readonly label = computed(() => this.backLabelValue() ?? "Back step");
 }
 
 @Component({
-  selector: "glow-tour-next-trigger",
+  selector: "glow-tour-advance-trigger",
   standalone: true,
   template: `
-    @if (!step()?.hideNextButton) {
+    @if (!step()?.hideAdvanceButton) {
       <button
-        data-glow-tour-next-trigger
+        data-glow-tour-advance-trigger
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
         [attr.aria-label]="ariaLabelText() ?? label()"
@@ -347,9 +347,9 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
     }
   `,
 })
-export class GlowTourNextTrigger extends GlowTourTrigger {
+export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   private readonly finishLabelValue = signal<string | undefined>(undefined);
-  private readonly nextLabelValue = signal<string | undefined>(undefined);
+  private readonly advanceLabelValue = signal<string | undefined>(undefined);
 
   @Input() set ariaLabel(value: string | undefined) {
     this.setAriaLabel(value);
@@ -360,20 +360,20 @@ export class GlowTourNextTrigger extends GlowTourTrigger {
   @Input() set finishLabel(value: string | undefined) {
     this.finishLabelValue.set(value);
   }
-  @Input() set nextLabel(value: string | undefined) {
-    this.nextLabelValue.set(value);
+  @Input() set advanceLabel(value: string | undefined) {
+    this.advanceLabelValue.set(value);
   }
 
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
       !this.snapshot()?.canAdvance ||
-      this.step()?.disableNextButton === true,
+      this.step()?.disableAdvanceButton === true,
   );
   readonly label = computed(() => {
     return this.snapshot()?.isLastStep
       ? (this.finishLabelValue() ?? "Finish tour")
-      : (this.nextLabelValue() ?? "Next step");
+      : (this.advanceLabelValue() ?? "Advance step");
   });
 }
 

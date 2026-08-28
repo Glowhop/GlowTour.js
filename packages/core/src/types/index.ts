@@ -25,20 +25,8 @@ export interface WaitOptions {
   interval?: number;
 }
 
-export type WorkflowDirection = "next" | "previous";
-export type GlowTourElementName =
-  | "root"
-  | "header"
-  | "progress"
-  | "content"
-  | "footer"
-  | "popover"
-  | "pointer"
-  | "previous-trigger"
-  | "next-trigger"
-  | "overlay";
-
-  export type WorkflowStatus =
+export type WorkflowDirection = "advance" | "previous";
+export type WorkflowStatus =
   | "not-started"
   | "idle"
   | "starting"
@@ -47,25 +35,6 @@ export type GlowTourElementName =
   | "finished"
   | "cancelled"
   | "error";
-
-export interface ViewportDimensions {
-  width: number;
-  height: number;
-}
-
-export interface HighlightOptions {
-  padding: number;
-  radius: number;
-  overlayColor: string;
-  overlayOpacity: number;
-  animate: boolean;
-}
-
-export interface HighlightStepOverrides extends Partial<HighlightOptions> {}
-
-export interface WorkflowHighlightOptions extends Partial<HighlightOptions> {
-  mountRoot?: HTMLElement | null;
-}
 
 export interface StepBehavior {
   allowInteraction?: boolean;
@@ -111,7 +80,7 @@ export interface PopoverOptions extends BaseOptions {
   gap?: number;
   buttons?: {
     previousLabel?: string;
-    nextLabel?: string;
+    advanceLabel?: string;
     finishLabel?: string;
   };
   keyboardShortcuts?: {
@@ -122,7 +91,7 @@ export interface PopoverOptions extends BaseOptions {
     /**
      * @default ["Enter", "ArrowRight"]
      */
-    next?: readonly string[];
+    advance?: readonly string[];
     /**
      * @default ["Escape"]
      */
@@ -136,8 +105,8 @@ export interface DynamicStepProps<T> {
   hideFooter?: boolean;
   disablePreviousButton?: boolean;
   hidePreviousButton?: boolean;
-  disableNextButton?: boolean;
-  hideNextButton?: boolean;
+  disableAdvanceButton?: boolean;
+  hideAdvanceButton?: boolean;
   disableAutoScroll?: boolean;
   /**
    * @default true
@@ -177,16 +146,15 @@ export interface ReadonlyStepState<T> {
 }
 export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
 export interface StepContext<T> {
+  advance(): Promise<void>;
+  cancel(): Promise<void>;
+  previous(): Promise<void>;
   readonly target: HTMLElement;
   readonly props: StepPropsStore<T>;
   readonly signal: AbortSignal;
 }
 
-export interface StepEventContext<T> extends StepContext<T> {
-  goNext(): Promise<void>;
-  goPrevious(): Promise<void>;
-  cancel(): Promise<void>;
-}
+export type StepEventContext<T> = StepContext<T>;
 
 export interface WaitUntilOptions {
   /** @default 16 */
@@ -198,7 +166,8 @@ export interface WaitUntilOptions {
 // biome-ignore lint/suspicious/noConfusingVoidType: `void` preserves the optional action result contract.
 export type StepActionResult = boolean | void;
 
-export type StepAction<T> = (context: StepContext<T>,
+export type StepAction<T> = (
+  context: StepContext<T>,
 ) => Promise<StepActionResult> | StepActionResult;
 
 export type StepWaitPredicate<T> = (
@@ -206,29 +175,8 @@ export type StepWaitPredicate<T> = (
   stepState: ReadonlyStepState<T>,
 ) => Promise<boolean> | boolean;
 
-export type StepActionInstruction<T> =
-  | StepAction<T>
-  | number
-  | "next"
-  | "previous";
-  
-// export type StepTransitionAction<T> = (
-//   element: HTMLElement | null,
-//   stepState: ReadonlyStepState<T>,
-// ) => void | Promise<void>;
+export type StepActionInstruction<T> = StepAction<T> | number;
 
-// export interface EventHandler<TStepProps, TEvent extends Event = Event> {
-//   event: string;
-//   callback: (
-//     event: TEvent,
-//     stepState: ReadonlyStepState<TStepProps>,
-//     next: () => Promise<void>,
-//     back: () => Promise<void>,
-//     cancel: () => Promise<void>,
-//   ) => void | Promise<void>;
-// }
-
-// export type StepActionInstruction<T> = StepAction<T> | number | "next" | "previous";
 export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
@@ -245,7 +193,7 @@ export type TourStatus =
   | "cancelled"
   | "error";
 
-export type TourDirection = "next" | "previous";
+export type TourDirection = "advance" | "previous";
 
 export interface TourCurrentStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
@@ -259,8 +207,8 @@ export interface TourState<T> {
   readonly currentStepIndex: number;
   readonly currentStep: TourCurrentStep<T> | null;
   readonly direction: TourDirection;
-  readonly canGoNext: boolean;
-  readonly canGoPrevious: boolean;
+  readonly canAdvance: boolean;
+  readonly canPrevious: boolean;
   readonly canCancel: boolean;
   readonly isFirstStep: boolean;
   readonly isLastStep: boolean;
@@ -276,11 +224,10 @@ export interface ReadonlyTourState<T> {
 export interface GlowTour<T> {
   create(name: string, options?: StartOptions): WorkflowBuilder<T>;
   run(workflow: WorkflowDefinition<T>): Promise<void>;
-  goNext(): Promise<void>;
-  goPrevious(): Promise<void>;
+  advance(): Promise<void>;
+  previous(): Promise<void>;
   goToStep(index: number): Promise<void>;
   cancel(): Promise<void>;
-  updateCurrentStep(update: (props: ReadonlyStepProps<T>) => DynamicStepProps<T>): void;
   dispose(): void;
   readonly state: ReadonlyTourState<T>;
 }
@@ -297,8 +244,8 @@ export interface WorkflowState<T> {
   currentStepIndex: number;
   currentStep: WorkflowStepPublicProps<T> | null;
   direction: WorkflowDirection;
-  canGoNext: boolean;
-  canGoPrevious: boolean;
+  canAdvance: boolean;
+  canPrevious: boolean;
   canCancel: boolean;
   isFirstStep: boolean;
   isLastStep: boolean;
@@ -309,8 +256,8 @@ export interface WorkflowState<T> {
 
 export interface WorkflowControls<T> {
   start: (workflow?: WorkflowDefinition<T>) => Promise<void>;
-  goNext: () => Promise<void>;
-  goPrevious: () => Promise<void>;
+  advance: () => Promise<void>;
+  previous: () => Promise<void>;
   cancel: () => Promise<void>;
   goTo: (index: number) => Promise<void>;
 }

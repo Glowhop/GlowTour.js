@@ -18,7 +18,7 @@ describe("vue adapter contract", () => {
       runtime.GlowTourOverlay,
       runtime.GlowTourPointer,
       runtime.GlowTourBackTrigger,
-      runtime.GlowTourNextTrigger,
+      runtime.GlowTourAdvanceTrigger,
       runtime.GlowTourCancelTrigger,
     ]) {
       assert.equal(typeof component, "object");
@@ -71,8 +71,8 @@ describe("vue adapter contract", () => {
   test("exposes label overrides without legacy previous props", () => {
     assert.equal("backLabel" in (runtime.GlowTourBackTrigger.props ?? {}), true);
     assert.equal("previousLabel" in (runtime.GlowTourBackTrigger.props ?? {}), false);
-    assert.equal("nextLabel" in (runtime.GlowTourNextTrigger.props ?? {}), true);
-    assert.equal("finishLabel" in (runtime.GlowTourNextTrigger.props ?? {}), true);
+    assert.equal("advanceLabel" in (runtime.GlowTourAdvanceTrigger.props ?? {}), true);
+    assert.equal("finishLabel" in (runtime.GlowTourAdvanceTrigger.props ?? {}), true);
     assert.equal("cancelLabel" in (runtime.GlowTourCancelTrigger.props ?? {}), false);
   });
 });

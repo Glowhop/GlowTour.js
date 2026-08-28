@@ -12,7 +12,6 @@ import type {
   StepContext,
   StepParameters,
   StepTransitionAction,
-  StepWaitPredicate,
   WaitOptions,
   WaitUntilOptions,
 } from "../types";
@@ -96,7 +95,6 @@ function waitForPredicate(
   });
 }
 
-//! à utiliser
 function waitOptions(options: WaitOptions = {}) {
   const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
@@ -130,8 +128,8 @@ export class WorkflowBuilder<T> {
         hideFooter: options.hideFooter,
         disablePreviousButton: options.disablePreviousButton,
         hidePreviousButton: options.hidePreviousButton,
-        disableNextButton: options.disableNextButton,
-        hideNextButton: options.hideNextButton,
+        disableAdvanceButton: options.disableAdvanceButton,
+        hideAdvanceButton: options.hideAdvanceButton,
         disableAutoScroll: options.disableAutoScroll,
         resetPropsOnEnter: options.resetPropsOnEnter,
         data: cloneStepProps(options).data,
@@ -143,7 +141,7 @@ export class WorkflowBuilder<T> {
       behavior: options.behavior,
       actions: [],
       eventHandlers: [],
-      nextAction: null,
+      advanceAction: null,
       previousAction: null,
       cancelAction: null,
     });
@@ -162,7 +160,6 @@ export class WorkflowBuilder<T> {
     return this.currentStep;
   }
 
-
   build(): WorkflowDefinition<T> {
     if (this.definition) return this.definition;
     this.commitCurrentStep();
@@ -180,7 +177,6 @@ export class WorkflowBuilder<T> {
     this.currentStep = null;
   }
 }
-
 
 export class WorkflowStepBuilder<T> {
   private active = true;
@@ -206,14 +202,14 @@ export class WorkflowStepBuilder<T> {
   }
 
   clickTarget(): this {
-    return this.do(({target}) => {
+    return this.do(({ target }) => {
       target?.click();
       return true;
     });
   }
 
   focusTarget(): this {
-    return this.do(({target}) => {
+    return this.do(({ target }) => {
       target?.focus();
       return true;
     });
@@ -226,13 +222,9 @@ export class WorkflowStepBuilder<T> {
     return this;
   }
 
-
   waitUntil(predicate: WaitUntilPredicate<T>, options: WaitUntilOptions = {}): this {
     this.assertActive();
-    const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
-    const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
-    assertTimingValue("interval", interval);
-    assertTimingValue("timeout", timeout);
+    const { interval, timeout } = waitOptions(options);
 
     this.draft.actions.push(async (context) => {
       const startedAt = Date.now();
@@ -267,18 +259,6 @@ export class WorkflowStepBuilder<T> {
     );
   }
 
-  goNext(): this {
-    this.assertActive();
-    this.draft.actions.push("next");
-    return this;
-  }
-
-  goPrevious(): this {
-    this.assertActive();
-    this.draft.actions.push("previous");
-    return this;
-  }
-
   do(callback: StepAction<T>) {
     this.assertActive();
     this.draft.actions.push(callback);
@@ -287,7 +267,7 @@ export class WorkflowStepBuilder<T> {
 
   beforeAdvance(callback: StepTransitionAction<T>) {
     this.assertActive();
-    this.draft.nextAction = callback;
+    this.draft.advanceAction = callback;
     return this;
   }
 
@@ -331,7 +311,6 @@ export class WorkflowStepBuilder<T> {
     }
     return this;
   }
-
 
   [STEP_BUILDER_INTERNAL](): WorkflowStepDraft<T> {
     this.active = false;

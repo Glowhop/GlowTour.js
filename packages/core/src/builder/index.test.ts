@@ -1,7 +1,7 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { WorkflowBuilder } from "./index";
 import type { StepContext } from "../types";
+import { WorkflowBuilder } from "./index";
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
@@ -21,7 +21,7 @@ describe("WorkflowBuilder public contract", () => {
       .beforeAdvance(() => {})
       .beforePrevious(() => {})
       .beforeCancel(() => {})
-      .goNext()
+      .do(({ advance }) => advance())
       .build();
 
     assert.equal(Object.isFrozen(definition), true);
@@ -41,52 +41,31 @@ describe("WorkflowBuilder public contract", () => {
       "back",
       "exec",
       "finish",
-      "next",
+      "goAdvance",
+      "goPrevious",
+      "advance",
       "onBack",
       "onCancel",
       "onEvent",
-      "onNext",
-      "wait",
+      "onAdvance",
+      "on",
     ]) {
       assert.equal(alias in step, false, alias);
     }
   });
 
-  
-
   test("rejects invalid delay and wait timing options", () => {
-    assert.throws(() => workflow().wait(-1), /delay/i);
+    assert.throws(() => workflow().wait(-1), /timeMs/i);
     assert.throws(() => workflow().waitUntil(() => true, { timeout: -1 }), /timeout/i);
     assert.throws(() => workflow().waitUntilElement("#ready", { interval: 0 }), /interval/i);
   });
 });
 
-describe("WorkflowStepBuilder.on", () => {
-  test("infers the DOM event type from one event name", () => {
-    workflow("single-event").onTargetEvent("click", (event) => {
-      const clickEvent: MouseEvent = event;
-      assert.equal(clickEvent.type, event.type);
-    });
-  });
-
-  test("infers a union from multiple event names", () => {
-    workflow("multiple-events").onTargetEvent(["click", "keydown"], (event) => {
-      const domEvent: MouseEvent | KeyboardEvent = event;
-      assert.equal(domEvent.type, event.type);
-    });
-  });
-
-  test("rejects event names outside HTMLElementEventMap", () => {
-    workflow("custom-event")
-      // @ts-expect-error Custom event names are not part of HTMLElementEventMap.
-      .on("tour:complete", (event: Event) => {
-        assert.equal(event.type, "tour:complete");
-      });
-  });
-});
-
 function createContext(signal = new AbortController().signal): StepContext<string> {
   return {
+    advance: async () => {},
+    cancel: async () => {},
+    previous: async () => {},
     props: {} as StepContext<string>["props"],
     signal,
     target: {} as HTMLElement,
@@ -147,7 +126,7 @@ describe("StepBuilder action contract", () => {
           attempts += 1;
           return attempts === 3;
         },
-        { interval: 0, timeout: 100 },
+        { interval: 1, timeout: 100 },
       )
       .build();
 
@@ -180,7 +159,7 @@ describe("StepBuilder action contract", () => {
     const workflow = new WorkflowBuilder<string>("cancel-pending-predicate")
       .step({ content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 50)), {
-        interval: 0,
+        interval: 1,
         timeout: 100,
       })
       .build();
@@ -217,7 +196,7 @@ describe("StepBuilder action contract", () => {
   test("waitUntil throws after its timeout", async () => {
     const workflow = new WorkflowBuilder<string>("timeout-wait")
       .step({ content: "Content", target: "#target", title: "Title" })
-      .waitUntil(() => false, { interval: 0, timeout: 0 })
+      .waitUntil(() => false, { interval: 1, timeout: 0 })
       .build();
     const action = workflow.steps[0].actions[0];
     assert.equal(typeof action, "function");
@@ -242,7 +221,7 @@ describe("StepBuilder action contract", () => {
     try {
       const workflow = new WorkflowBuilder<string>("wait-until-element")
         .step({ content: "Content", target: "#target", title: "Title" })
-        .waitUntilElement("#ready", { interval: 0, timeout: 100 })
+        .waitUntilElement("#ready", { interval: 1, timeout: 100 })
         .build();
       const action = workflow.steps[0].actions[0];
       assert.equal(typeof action, "function");
@@ -272,30 +251,46 @@ describe("StepBuilder action contract", () => {
     assert.throws(() => step.wait(-1), /finite non-negative number/);
     assert.throws(() => step.wait(Number.NaN), /finite non-negative number/);
     assert.throws(() => step.wait(Number.POSITIVE_INFINITY), /finite non-negative number/);
-    assert.throws(() => step.waitUntil(() => true, { interval: -1 }), /finite non-negative number/);
+    assert.throws(() => step.waitUntil(() => true, { interval: -1 }), /finite positive number/);
     assert.throws(() => step.waitUntilElement(""), /selector must not be empty/);
     assert.throws(() => step.onTargetEvent([], () => {}), /events must not be empty/);
   });
 
-  test("uses explicit goNext and previous instructions", () => {
+  test("exposes navigation through the action context", async () => {
+    const calls: string[] = [];
     const step = new WorkflowBuilder<string>("navigation-actions").step({
       content: "Content",
       target: "#target",
       title: "Title",
     });
 
-    assert.equal(typeof step.goNext, "function");
-    assert.equal(typeof step.goPrevious, "function");
+    assert.equal("goAdvance" in step, false);
+    assert.equal("goPrevious" in step, false);
     assert.equal("advance" in step, false);
     assert.equal("previous" in step, false);
     assert.equal("onBack" in step, false);
 
     const workflow = step
-      .goNext()
-      .goPrevious()
+      .do(({ advance }) => advance())
+      .do(({ previous }) => previous())
+      .do(({ cancel }) => cancel())
       .build();
 
-    assert.deepEqual(workflow.steps[0].actions, ["next", "previous"]);
+    const context = createContext();
+    context.advance = async () => {
+      calls.push("advance");
+    };
+    context.previous = async () => {
+      calls.push("previous");
+    };
+    context.cancel = async () => {
+      calls.push("cancel");
+    };
+    for (const action of workflow.steps[0].actions) {
+      if (typeof action === "function") await action(context);
+    }
+
+    assert.deepEqual(calls, ["advance", "previous", "cancel"]);
   });
 });
 

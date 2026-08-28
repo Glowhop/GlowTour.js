@@ -19,8 +19,8 @@ describe("default tour theme", () => {
     assert.match(stylesheet, /\[data-glow-tour-header\]/);
     assert.match(stylesheet, /\[data-glow-tour-content\]/);
     assert.match(stylesheet, /\[data-glow-tour-footer\]/);
-    assert.match(stylesheet, /\[data-glow-tour-back-trigger\]/);
-    assert.match(stylesheet, /\[data-glow-tour-next-trigger\]/);
+    assert.match(stylesheet, /\[data-glow-tour-previous-trigger\]/);
+    assert.match(stylesheet, /\[data-glow-tour-advance-trigger\]/);
     assert.match(stylesheet, /\[data-glow-tour-pointer-content\]/);
   });
 

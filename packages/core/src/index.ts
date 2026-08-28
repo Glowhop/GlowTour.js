@@ -39,7 +39,5 @@ export type {
   TourStatus,
   TryOrderOptions,
   WaitOptions,
-  ViewportDimensions,
   WaitUntilOptions,
-  WorkflowHighlightOptions,
 } from "./types";

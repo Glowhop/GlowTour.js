@@ -23,7 +23,7 @@ type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children
     | ((props: React.ButtonHTMLAttributes<HTMLButtonElement>) => React.ReactElement);
 };
 type BackTriggerProps = ButtonProps & { backLabel?: string };
-type NextTriggerProps = ButtonProps & { finishLabel?: string; nextLabel?: string };
+type AdvanceTriggerProps = ButtonProps & { finishLabel?: string; advanceLabel?: string };
 type CancelTriggerProps = ButtonProps;
 
 interface TourContextValue {
@@ -196,7 +196,7 @@ function Trigger({
 }: ButtonProps & {
   capabilityDisabled: boolean;
   label: string;
-  marker: "back" | "cancel" | "next";
+  marker: "cancel" | "advance" | "previous";
 }) {
   const { binding } = useTourContext();
   const child = typeof children === "function" ? null : children;
@@ -205,19 +205,19 @@ function Trigger({
   const disabled = capabilityDisabled || consumerDisabled;
 
   const buttonProps: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    "data-glow-tour-back-trigger": true | undefined;
     "data-glow-tour-cancel-trigger": true | undefined;
     "data-glow-tour-consumer-disabled": "true" | undefined;
-    "data-glow-tour-next-trigger": true | undefined;
+    "data-glow-tour-advance-trigger": true | undefined;
+    "data-glow-tour-previous-trigger": true | undefined;
   } = {
     ...props,
     "aria-controls": binding?.ids.popover,
     "aria-label": props["aria-label"] || label,
     "aria-disabled": disabled ? "true" : "false",
-    "data-glow-tour-back-trigger": marker === "back" || undefined,
     "data-glow-tour-cancel-trigger": marker === "cancel" || undefined,
     "data-glow-tour-consumer-disabled": consumerDisabled ? "true" : undefined,
-    "data-glow-tour-next-trigger": marker === "next" || undefined,
+    "data-glow-tour-advance-trigger": marker === "advance" || undefined,
+    "data-glow-tour-previous-trigger": marker === "previous" || undefined,
     disabled,
     onClick: (event) => {
       childProps.onClick?.(event);
@@ -236,30 +236,32 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   const snapshot = useTourSnapshot(tour);
 
   const step = useStep(snapshot);
-  if (step?.hideBackButton) return null;
+  if (step?.hidePreviousButton) return null;
   const label = backLabel ?? "Back step";
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canGoPrevious || step?.disableBackButton === true}
+      capabilityDisabled={!snapshot.canPrevious || step?.disablePreviousButton === true}
       label={label}
-      marker="back"
+      marker="previous"
     />
   );
 }
 
-export function NextTrigger({ finishLabel, nextLabel, ...props }: NextTriggerProps) {
+export function AdvanceTrigger({ finishLabel, advanceLabel, ...props }: AdvanceTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
   const step = useStep(snapshot);
-  if (step?.hideNextButton) return null;
-  const label = snapshot.isLastStep ? (finishLabel ?? "Finish tour") : (nextLabel ?? "Next step");
+  if (step?.hideAdvanceButton) return null;
+  const label = snapshot.isLastStep
+    ? (finishLabel ?? "Finish tour")
+    : (advanceLabel ?? "Advance step");
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canAdvance || step?.disableNextButton === true}
+      capabilityDisabled={!snapshot.canAdvance || step?.disableAdvanceButton === true}
       label={label}
-      marker="next"
+      marker="advance"
     />
   );
 }
@@ -292,6 +294,6 @@ export const GlowTour = {
   Overlay,
   Pointer,
   BackTrigger,
-  NextTrigger,
+  AdvanceTrigger,
   CancelTrigger,
 };

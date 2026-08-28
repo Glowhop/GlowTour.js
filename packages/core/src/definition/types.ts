@@ -37,7 +37,7 @@ export interface WorkflowStepDefinition<T> {
   readonly props: ReadonlyStepProps<T>;
   readonly actions: readonly StepActionInstruction<T>[];
   readonly eventHandlers: readonly EventHandler<T>[];
-  readonly nextAction: StepTransitionAction<T> | null;
+  readonly advanceAction: StepTransitionAction<T> | null;
   readonly previousAction: StepTransitionAction<T> | null;
   readonly cancelAction: StepTransitionAction<T> | null;
 }

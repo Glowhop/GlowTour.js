@@ -16,13 +16,13 @@ export function createLabWorkflow<TContent>(
       target: selectors.customEvent,
       title: content.title("append() + onTargetEvent<T>()"),
       content: content.paragraph(copy.appended),
-      hideNextButton: true,
+      hideAdvanceButton: true,
       behavior: { allowInteraction: true },
       data: { api: "append", appended: true },
     })
     .onTargetEvent<CustomEvent<{ source: string }>>(event.completion, (targetEvent, context) => {
       actions.log(`onTargetEvent<T> — source: ${targetEvent.detail.source}`);
-      void context.goNext();
+      void context.advance();
     })
     .beforePrevious(() => actions.log("onBack — sortie de la section ajoutée"))
     .beforeCancel(() => actions.log("onCancel — étape ajoutée"))
@@ -42,7 +42,7 @@ export function createLabWorkflow<TContent>(
       hidePreviousButton: true,
       data: { api: "create", targetType: "selector" },
     })
-    .beforeAdvance(({ props }) => actions.log(`onNext — ${String(props.get().data?.api)}`))
+    .beforeAdvance(({ props }) => actions.log(`onAdvance — ${String(props.get().data?.api)}`))
     .beforeCancel(() => actions.log("onCancel — étape d’introduction"))
     .step({
       target: elements.focusInput,
@@ -58,8 +58,7 @@ export function createLabWorkflow<TContent>(
     .focusTarget()
     .do(({ props, target }) => {
       actions.log("exec — contenu courant mis à jour");
-      const current = props.get();
-      tour.updateCurrentStep(() => ({ ...current, content: content.paragraph(copy.focused) }));
+      props.set((prev) => ({ ...prev, content: content.paragraph(copy.focused) }));
       target.focus();
     })
     .wait(timing.focusWait)
@@ -109,18 +108,18 @@ export function createLabWorkflow<TContent>(
     })
     .do(() => actions.log("waitUntil — condition satisfaite"))
     .wait(timing.conditionAdvanceWait)
-    .goNext()
+    .do(({ advance }) => advance())
     .beforeCancel(() => actions.cancelPending())
     .step({
       target: selectors.actions,
       title: content.title("action(): true | false"),
       content: content.paragraph(copy.actions),
       disablePreviousButton: true,
-      disableNextButton: true,
+      disableAdvanceButton: true,
       data: { api: "action", result: false },
     })
-    .do(() => {
-      tour.updateCurrentStep((current) => ({ ...current, disableNextButton: false }));
+    .do(({ props }) => {
+      props.set((current) => ({ ...current, disableAdvanceButton: false }));
       actions.log("action(true) — chaîne poursuivie");
       return true;
     })
@@ -143,13 +142,13 @@ export function createLabWorkflow<TContent>(
       target: selectors.clickAdvance,
       title: content.title("onTargetEvent('click')"),
       content: content.paragraph(copy.clickAdvance),
-      hideNextButton: true,
+      hideAdvanceButton: true,
       behavior: { allowInteraction: true },
       data: { api: "onTargetEvent", overload: "single" },
     })
     .onTargetEvent("click", (_targetEvent, context) => {
       actions.log("onTargetEvent('click') — avance via le contexte");
-      void context.goNext();
+      void context.advance();
     })
     .step({
       target: selectors.return,
@@ -158,7 +157,7 @@ export function createLabWorkflow<TContent>(
       data: { api: "advance", guard: true },
     })
     .do(() => session.consumeAutomaticReturn())
-    .goNext()
+    .do(({ advance }) => advance())
     .step({
       target: selectors.previous,
       title: content.title("previous()"),
@@ -176,8 +175,8 @@ export function createLabWorkflow<TContent>(
       return true;
     })
     .wait(timing.previousWait)
-    .goPrevious()
-    .beforeAdvance(() => actions.log("onNext — sortie de la démonstration previous"))
+    .do(({ previous }) => previous())
+    .beforeAdvance(() => actions.log("onAdvance — sortie de la démonstration previous"))
     .step({
       target: selectors.autoAdvance,
       title: content.title("wait() + advance()"),
@@ -187,7 +186,7 @@ export function createLabWorkflow<TContent>(
     })
     .do(() => actions.log("advance — transition automatique imminente"))
     .wait(timing.autoAdvanceWait)
-    .goNext()
+    .do(({ advance }) => advance())
     .append(appendedWorkflow)
     .build();
 }

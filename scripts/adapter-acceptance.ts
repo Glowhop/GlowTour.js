@@ -1,4 +1,4 @@
-import type { GlowTour } from "@glowhop/core-tour";
+import type { GlowTour, StepContext } from "@glowhop/core-tour";
 import assert from "node:assert/strict";
 
 export interface AdapterAcceptanceFixture<TContent> {
@@ -11,6 +11,7 @@ export interface AdapterAcceptanceFixture<TContent> {
   readonly secondaryTour: GlowTour<TContent>;
   content(value: string): TContent;
   mountDuplicatePrimary(): Promise<void>;
+  mutate?(update: () => void): Promise<void>;
   settle(): Promise<void>;
   unmount(): Promise<void>;
 }
@@ -21,9 +22,9 @@ function popover(root: HTMLElement) {
   return element;
 }
 
-function nextTrigger(root: HTMLElement) {
-  const element = root.querySelector<HTMLElement>("[data-glow-tour-next-trigger]");
-  assert.ok(element, "acceptance fixture must render a next trigger inside each root");
+function advanceTrigger(root: HTMLElement) {
+  const element = root.querySelector<HTMLElement>("[data-glow-tour-advance-trigger]");
+  assert.ok(element, "acceptance fixture must render an advance trigger inside each root");
   return element;
 }
 
@@ -32,7 +33,7 @@ function assertIdFamily(root: HTMLElement, otherRoot: HTMLElement, name: string)
   const otherPopover = popover(otherRoot);
   const title = root.querySelector<HTMLElement>("[data-glow-tour-header]");
   const description = root.querySelector<HTMLElement>("[data-glow-tour-content]");
-  const next = nextTrigger(root);
+  const advance = advanceTrigger(root);
   assert.ok(title, `${name}: root must render a title`);
   assert.ok(description, `${name}: root must render a description`);
   assert.notEqual(rootPopover.id, otherPopover.id, `${name}: popover IDs must be isolated`);
@@ -52,7 +53,7 @@ function assertIdFamily(root: HTMLElement, otherRoot: HTMLElement, name: string)
     description.id,
     `${name}: description relation`,
   );
-  assert.equal(next.getAttribute("aria-controls"), rootPopover.id, `${name}: control relation`);
+  assert.equal(advance.getAttribute("aria-controls"), rootPopover.id, `${name}: control relation`);
 }
 
 export async function runAdapterAcceptance<TContent>(
@@ -61,6 +62,7 @@ export async function runAdapterAcceptance<TContent>(
   const {
     content,
     mountDuplicatePrimary,
+    mutate,
     name,
     primaryRoot,
     primaryTarget,
@@ -71,10 +73,16 @@ export async function runAdapterAcceptance<TContent>(
     settle,
     unmount,
   } = fixture;
-  const workflow = (tour: GlowTour<TContent>, target: HTMLElement, workflowName: string) =>
+  const workflow = (
+    tour: GlowTour<TContent>,
+    target: HTMLElement,
+    workflowName: string,
+    captureProps?: (props: StepContext<TContent>["props"]) => void,
+  ) =>
     tour
       .create(workflowName)
       .step({ content: content("First content"), target, title: content("First title") })
+      .do(({ props }) => captureProps?.(props))
       .step({
         behavior: { allowInteraction: true },
         content: content("Second content"),
@@ -91,7 +99,12 @@ export async function runAdapterAcceptance<TContent>(
     /already connected|another root|two roots|live root lease/i,
   );
 
-  await primaryTour.run(workflow(primaryTour, primaryTarget, `${name}-primary`));
+  let primaryProps!: StepContext<TContent>["props"];
+  await primaryTour.run(
+    workflow(primaryTour, primaryTarget, `${name}-primary`, (props) => {
+      primaryProps = props;
+    }),
+  );
   await secondaryTour.run(workflow(secondaryTour, secondaryTarget, `${name}-secondary`));
   await settle();
 
@@ -99,16 +112,19 @@ export async function runAdapterAcceptance<TContent>(
   assert.equal(secondaryTour.state.get().status, "active", `${name}: secondary active`);
   assert.equal(popover(primaryRoot).getAttribute("aria-modal"), "true", `${name}: modal step`);
 
-  primaryTour.updateCurrentStep((props) => ({
-    ...props,
-    content: content("Updated content"),
-    title: content("Updated title"),
-  }));
+  const updatePrimaryProps = () =>
+    primaryProps.set((props) => ({
+      ...props,
+      content: content("Updated content"),
+      title: content("Updated title"),
+    }));
+  if (mutate) await mutate(updatePrimaryProps);
+  else updatePrimaryProps();
   await settle();
   assert.match(primaryRoot.textContent ?? "", /Updated title/, `${name}: dynamic title`);
   assert.match(primaryRoot.textContent ?? "", /Updated content/, `${name}: dynamic content`);
 
-  nextTrigger(primaryRoot).dispatchEvent(
+  advanceTrigger(primaryRoot).dispatchEvent(
     new MouseEvent("click", { bubbles: true, cancelable: true }),
   );
   await settle();

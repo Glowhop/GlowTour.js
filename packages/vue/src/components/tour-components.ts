@@ -263,7 +263,7 @@ export const GlowTourOverlay = defineComponent({
 });
 
 function trigger(
-  marker: "back" | "cancel" | "next",
+  marker: "cancel" | "advance" | "previous",
   capabilityDisabled: () => boolean,
   label: () => string,
   ariaLabel: () => string | undefined,
@@ -278,10 +278,10 @@ function trigger(
       "aria-controls": context.binding.value?.ids.popover,
       "aria-disabled": disabled ? "true" : "false",
       "aria-label": attrs["aria-label"] ?? ariaLabel() ?? label(),
-      "data-glow-tour-back-trigger": marker === "back" ? "" : undefined,
       "data-glow-tour-cancel-trigger": marker === "cancel" ? "" : undefined,
       "data-glow-tour-consumer-disabled": consumerDisabled ? "true" : undefined,
-      "data-glow-tour-next-trigger": marker === "next" ? "" : undefined,
+      "data-glow-tour-advance-trigger": marker === "advance" ? "" : undefined,
+      "data-glow-tour-previous-trigger": marker === "previous" ? "" : undefined,
       disabled,
       type: "button",
     };
@@ -298,42 +298,42 @@ export const GlowTourBackTrigger = defineComponent({
     const snapshot = useTourSnapshot(context.tour);
     const step = useStep();
     const renderTrigger = trigger(
-      "back",
-      () => !snapshot.value.canPrevious || step()?.disableBackButton === true,
+      "previous",
+      () => !snapshot.value.canPrevious || step()?.disablePreviousButton === true,
       () => props.backLabel ?? "Back step",
       () => props.ariaLabel,
       attrs,
       slots,
     );
-    return () => (step()?.hideBackButton ? null : renderTrigger());
+    return () => (step()?.hidePreviousButton ? null : renderTrigger());
   },
 });
 
-export const GlowTourNextTrigger = defineComponent({
-  name: componentName("NextTrigger"),
+export const GlowTourAdvanceTrigger = defineComponent({
+  name: componentName("AdvanceTrigger"),
   inheritAttrs: false,
   props: {
     ariaLabel: { type: String },
     finishLabel: { type: String },
-    nextLabel: { type: String },
+    advanceLabel: { type: String },
   },
   setup(props, { attrs, slots }) {
     const context = useTourContext();
     const snapshot = useTourSnapshot(context.tour);
     const step = useStep();
     const renderTrigger = trigger(
-      "next",
-      () => !snapshot.value.canAdvance || step()?.disableNextButton === true,
+      "advance",
+      () => !snapshot.value.canAdvance || step()?.disableAdvanceButton === true,
       () => {
         return snapshot.value.isLastStep
           ? (props.finishLabel ?? "Finish tour")
-          : (props.nextLabel ?? "Next step");
+          : (props.advanceLabel ?? "Advance step");
       },
       () => props.ariaLabel,
       attrs,
       slots,
     );
-    return () => (step()?.hideNextButton ? null : renderTrigger());
+    return () => (step()?.hideAdvanceButton ? null : renderTrigger());
   },
 });
 

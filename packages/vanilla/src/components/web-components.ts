@@ -10,7 +10,7 @@ export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-popover",
   "glow-tour-pointer",
   "glow-tour-back-trigger",
-  "glow-tour-next-trigger",
+  "glow-tour-advance-trigger",
   "glow-tour-cancel-trigger",
   "glow-tour-overlay",
 ] as const;
@@ -528,7 +528,7 @@ export function registerGlowTourElements() {
   }
 
   abstract class GlowTourTrigger extends ReactiveElement {
-    protected abstract readonly action: "back" | "cancel" | "next";
+    protected abstract readonly action: "cancel" | "advance" | "previous";
     private button?: HTMLButtonElement;
     private labelOwned = false;
     private labelSnapshot?: string;
@@ -749,33 +749,33 @@ export function registerGlowTourElements() {
   }
 
   class GlowTourBackTrigger extends GlowTourTrigger {
-    protected readonly action = "back" as const;
+    protected readonly action = "previous" as const;
 
     protected details(
       state: TourState<VanillaTourContent>,
       props: DynamicStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canPrevious || props.disableBackButton === true,
-        hidden: props.hideBackButton === true,
+        disabled: !state.canPrevious || props.disablePreviousButton === true,
+        hidden: props.hidePreviousButton === true,
         label: this.getAttribute("back-label") ?? "Back step",
       };
     }
   }
 
-  class GlowTourNextTrigger extends GlowTourTrigger {
-    protected readonly action = "next" as const;
+  class GlowTourAdvanceTrigger extends GlowTourTrigger {
+    protected readonly action = "advance" as const;
 
     protected details(
       state: TourState<VanillaTourContent>,
       props: DynamicStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canAdvance || props.disableNextButton === true,
-        hidden: props.hideNextButton === true,
+        disabled: !state.canAdvance || props.disableAdvanceButton === true,
+        hidden: props.hideAdvanceButton === true,
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")
-          : (this.getAttribute("next-label") ?? "Next step"),
+          : (this.getAttribute("advance-label") ?? "Advance step"),
       };
     }
   }
@@ -803,7 +803,7 @@ export function registerGlowTourElements() {
     "glow-tour-popover": GlowTourPopover,
     "glow-tour-pointer": GlowTourPointer,
     "glow-tour-back-trigger": GlowTourBackTrigger,
-    "glow-tour-next-trigger": GlowTourNextTrigger,
+    "glow-tour-advance-trigger": GlowTourAdvanceTrigger,
     "glow-tour-cancel-trigger": GlowTourCancelTrigger,
     "glow-tour-overlay": GlowTourOverlay,
   };

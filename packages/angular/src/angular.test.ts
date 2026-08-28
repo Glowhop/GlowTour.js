@@ -17,7 +17,7 @@ describe("angular adapter contract", () => {
       runtime.GlowTourOverlay,
       runtime.GlowTourPointer,
       runtime.GlowTourBackTrigger,
-      runtime.GlowTourNextTrigger,
+      runtime.GlowTourAdvanceTrigger,
       runtime.GlowTourCancelTrigger,
     ]) {
       assert.equal(typeof component, "function");

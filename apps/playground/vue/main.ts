@@ -1,11 +1,11 @@
 import {
   createGlowTour,
+  GlowTourAdvanceTrigger,
   GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
   GlowTourHeader,
-  GlowTourNextTrigger,
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
@@ -38,7 +38,7 @@ const app = createApp({
         h(GlowTourContent),
         h(GlowTourFooter, null, () => [
           h(GlowTourBackTrigger),
-          h(GlowTourNextTrigger),
+          h(GlowTourAdvanceTrigger),
           h(GlowTourCancelTrigger),
         ]),
       ]),

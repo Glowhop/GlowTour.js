@@ -38,7 +38,7 @@ type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" 
   disabled?: boolean;
 };
 type BackTriggerProps = ButtonProps & { backLabel?: string };
-type NextTriggerProps = ButtonProps & { finishLabel?: string; nextLabel?: string };
+type AdvanceTriggerProps = ButtonProps & { finishLabel?: string; advanceLabel?: string };
 type CancelTriggerProps = ButtonProps;
 type ButtonClickEvent = MouseEvent & { currentTarget: HTMLButtonElement; target: Element };
 
@@ -279,7 +279,7 @@ function Trigger(
   props: ButtonProps & {
     capabilityDisabled: boolean;
     label: string;
-    marker: "back" | "cancel" | "next";
+    marker: "cancel" | "advance" | "previous";
   },
 ): JSX.Element {
   const context = useTourContext();
@@ -294,17 +294,17 @@ function Trigger(
     get "aria-disabled"() {
       return local.capabilityDisabled || other.disabled === true;
     },
-    get "data-glow-tour-back-trigger"() {
-      return local.marker === "back" ? true : undefined;
-    },
     get "data-glow-tour-cancel-trigger"() {
       return local.marker === "cancel" ? true : undefined;
     },
     get "data-glow-tour-consumer-disabled"() {
       return other.disabled === true ? "true" : undefined;
     },
-    get "data-glow-tour-next-trigger"() {
-      return local.marker === "next" ? true : undefined;
+    get "data-glow-tour-advance-trigger"() {
+      return local.marker === "advance" ? true : undefined;
+    },
+    get "data-glow-tour-previous-trigger"() {
+      return local.marker === "previous" ? true : undefined;
     },
     get disabled() {
       return local.capabilityDisabled || other.disabled === true;
@@ -333,41 +333,43 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
   return Show({
     get when() {
       const step = currentStep(snapshot());
-      return !step?.hideBackButton;
+      return !step?.hidePreviousButton;
     },
     get children() {
       return Trigger(
         mergeProps(props, {
           get capabilityDisabled() {
-            return !snapshot().canPrevious || currentStep(snapshot())?.disableBackButton === true;
+            return (
+              !snapshot().canPrevious || currentStep(snapshot())?.disablePreviousButton === true
+            );
           },
           label: props.backLabel ?? "Back step",
-          marker: "back" as const,
+          marker: "previous" as const,
         }),
       );
     },
   });
 }
 
-export function NextTrigger(props: NextTriggerProps): JSX.Element {
+export function AdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
   const context = useTourContext();
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return !currentStep(snapshot())?.hideNextButton;
+      return !currentStep(snapshot())?.hideAdvanceButton;
     },
     get children() {
       return Trigger(
         mergeProps(props, {
           get capabilityDisabled() {
-            return !snapshot().canAdvance || currentStep(snapshot())?.disableNextButton === true;
+            return !snapshot().canAdvance || currentStep(snapshot())?.disableAdvanceButton === true;
           },
           get label() {
             return snapshot().isLastStep
               ? (props.finishLabel ?? "Finish tour")
-              : (props.nextLabel ?? "Next step");
+              : (props.advanceLabel ?? "Advance step");
           },
-          marker: "next" as const,
+          marker: "advance" as const,
         }),
       );
     },
@@ -404,6 +406,6 @@ export const GlowTour = {
   Overlay,
   Pointer,
   BackTrigger,
-  NextTrigger,
+  AdvanceTrigger,
   CancelTrigger,
 };

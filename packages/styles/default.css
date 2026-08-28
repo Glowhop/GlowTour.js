@@ -67,8 +67,8 @@
   padding-top: 4px;
 }
 
-[data-glow-tour-back-trigger],
-[data-glow-tour-next-trigger] {
+[data-glow-tour-previous-trigger],
+[data-glow-tour-advance-trigger] {
   align-items: center;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -86,36 +86,36 @@
     color var(--glow-tour-transition-duration) var(--glow-tour-transition-easing);
 }
 
-[data-glow-tour-back-trigger] {
+[data-glow-tour-previous-trigger] {
   background: var(--glow-tour-color-surface);
   border-color: var(--glow-tour-color-border);
   color: var(--glow-tour-color-text);
 }
 
-[data-glow-tour-back-trigger]:hover:not(:disabled) {
+[data-glow-tour-previous-trigger]:hover:not(:disabled) {
   background: var(--glow-tour-color-surface-muted);
   border-color: var(--glow-tour-color-text-muted);
 }
 
-[data-glow-tour-next-trigger] {
+[data-glow-tour-advance-trigger] {
   background: var(--glow-tour-color-accent);
   border-color: var(--glow-tour-color-accent);
   color: var(--glow-tour-color-on-accent);
 }
 
-[data-glow-tour-next-trigger]:hover:not(:disabled) {
+[data-glow-tour-advance-trigger]:hover:not(:disabled) {
   background: var(--glow-tour-color-accent-hover);
   border-color: var(--glow-tour-color-accent-hover);
 }
 
-[data-glow-tour-back-trigger]:focus-visible,
-[data-glow-tour-next-trigger]:focus-visible {
+[data-glow-tour-previous-trigger]:focus-visible,
+[data-glow-tour-advance-trigger]:focus-visible {
   outline: 3px solid var(--glow-tour-color-accent);
   outline-offset: 2px;
 }
 
-[data-glow-tour-back-trigger]:disabled,
-[data-glow-tour-next-trigger]:disabled {
+[data-glow-tour-previous-trigger]:disabled,
+[data-glow-tour-advance-trigger]:disabled {
   background: var(--glow-tour-color-surface-muted);
   border-color: var(--glow-tour-color-border);
   box-shadow: none;
@@ -152,8 +152,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-glow-tour-back-trigger],
-  [data-glow-tour-next-trigger] {
+  [data-glow-tour-previous-trigger],
+  [data-glow-tour-advance-trigger] {
     transition-duration: 0.01ms;
   }
 }

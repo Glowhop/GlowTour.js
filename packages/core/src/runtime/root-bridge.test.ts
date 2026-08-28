@@ -239,18 +239,18 @@ describe("private root bridge", () => {
 
     assert.equal(acceptReadonlyTourState(tour.state), tour.state);
     assert.deepEqual(Object.keys(tour).sort(), [
+      "advance",
       "cancel",
       "create",
       "dispose",
-      "goNext",
-      "goPrevious",
       "goToStep",
+      "previous",
       "run",
       "state",
-      "updateCurrentStep",
     ]);
-    assert.equal("advance" in tour, false);
-    assert.equal("previous" in tour, false);
+    assert.equal("goAdvance" in tour, false);
+    assert.equal("goPrevious" in tour, false);
+    assert.equal("updateCurrentStep" in tour, false);
     assert.equal(Object.getOwnPropertyDescriptor(tour, BRIDGE_SYMBOL)?.enumerable, false);
     assert.equal(rootBridge(tour).version, 1);
   });
@@ -596,7 +596,7 @@ describe("private root bridge", () => {
       .beforeAdvance(() => hookBinding.release())
       .build();
     await hookTour.run(hookDefinition);
-    await hookTour.goNext();
+    await hookTour.advance();
     assert.equal(hookTour.state.get().status, "idle");
   });
 

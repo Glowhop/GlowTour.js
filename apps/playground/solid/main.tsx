@@ -31,7 +31,7 @@ const disposeRenderer = render(
         <GlowTour.Content />
         <GlowTour.Footer>
           <GlowTour.BackTrigger />
-          <GlowTour.NextTrigger />
+          <GlowTour.AdvanceTrigger />
           <GlowTour.CancelTrigger />
         </GlowTour.Footer>
       </GlowTour.Popover>
