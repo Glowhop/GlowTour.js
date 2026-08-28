@@ -1,4 +1,3 @@
-import type { WorkflowDirection } from "../types";
 import {
   FOCUSABLE_SELECTOR,
   focusableElements,
@@ -24,7 +23,7 @@ export class FocusGuard {
   private allowTargetInteraction = false;
   private fallback: HTMLElement | null = null;
   private fallbackTabIndex: string | null = null;
-  private direction: WorkflowDirection = "advance";
+  private direction: FocusDirection = "advance";
   private active = false;
   private redirecting = false;
 
@@ -164,7 +163,7 @@ export class FocusGuard {
     this.fallbackTabIndex = null;
   }
 
-  private findFocusable(root: HTMLElement, direction: WorkflowDirection) {
+  private findFocusable(root: HTMLElement, direction: FocusDirection) {
     const candidates = focusableTourControls(root);
     const orderedSelectors =
       direction === "advance"
