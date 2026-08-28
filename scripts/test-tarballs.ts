@@ -199,7 +199,7 @@ import { createGlowTour } from "@glowhop/vanilla-tour";
 const workflow = createCoreGlowTour<string>()
   .create("tarball-consumer")
   .step({ content: "Content", target: "#target", title: "Title" })
-  .delay(0)
+  .wait(0)
   .do(() => true)
   .beforeAdvance(() => {})
   .build();
