@@ -15,7 +15,7 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 
 - [x] 1. Nettoyer les options inertes et types legacy du core. (`a3b3bbb`, revue propre)
 - [x] 2. Publier le bridge partagé `core/adapter`. (`4b9a117` + `c45c4c1`, revue propre)
-- [ ] 3. Migrer les cinq adapters vers le bridge partagé.
+- [x] 3. Migrer les cinq adapters vers le bridge partagé. (`9f04322`, revue propre)
 - [ ] 4. Refuser les workflows non vides sans popover.
 - [ ] 5. Étendre le contrat d’acceptance aux compositions par défaut.
 - [ ] 6. Ajouter `DefaultTour` à React et Solid.
@@ -25,6 +25,12 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [ ] Revue finale de branche.
 
 ## Dernière validation
+
+Task 3, validation ciblée du 28 août 2026 :
+
+- Contrats unitaires des cinq adapters : 15 passent, 0 échec.
+- Typecheck racine : passe.
+- Aucun client bridge ou marqueur framework dupliqué ne subsiste.
 
 Task 2, validation ciblée du 28 août 2026 :
 
