@@ -13,7 +13,7 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 
 ## Avancement
 
-- [ ] 1. Nettoyer les options inertes et types legacy du core.
+- [x] 1. Nettoyer les options inertes et types legacy du core. (`a3b3bbb`, revue propre)
 - [ ] 2. Publier le bridge partagé `core/adapter`.
 - [ ] 3. Migrer les cinq adapters vers le bridge partagé.
 - [ ] 4. Refuser les workflows non vides sans popover.
@@ -25,6 +25,11 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [ ] Revue finale de branche.
 
 ## Dernière validation
+
+Task 1, validation ciblée du 28 août 2026 :
+
+- `bunx tsc -p packages/core/tsconfig.json --noEmit` : passe.
+- Tests builder/options : 21 passent, 0 échec.
 
 Baseline du 28 août 2026 :
 
