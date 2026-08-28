@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
+import { type AdapterRootBinding, connectGlowTourRoot } from "../adapter";
 import type { ReadonlyTourState } from "../index";
 import { createGlowTour } from "../index";
 
@@ -7,28 +8,15 @@ const BRIDGE_SYMBOL = Symbol.for("@glowhop/core-tour/adapter-bridge/v1");
 const ROOT_OWNER_SYMBOL = Symbol.for("@glowhop/core-tour/root-owner/v1");
 const PREFIX_RESERVATIONS_SYMBOL = Symbol.for("@glowhop/core-tour/id-prefix-reservations/v1");
 
-type Cleanup = () => void;
-
 function acceptReadonlyTourState<T>(state: ReadonlyTourState<T>) {
   return state;
 }
 
-interface RootBinding {
-  readonly ids: Readonly<{
-    description: string;
-    popover: string;
-    root: string;
-    title: string;
-  }>;
-  bindOverlay(element: SVGSVGElement): Cleanup;
-  bindPointer(element: HTMLElement): Cleanup;
-  bindPopover(element: HTMLElement): Cleanup;
-  release(): void;
-}
+type RootBinding = AdapterRootBinding;
 
 interface RootBridge {
   readonly version: 1;
-  connectRoot(options: { adapter: unknown; idPrefix?: string; root: HTMLElement }): RootBinding;
+  connectRoot(options: { readonly idPrefix?: string; readonly root: HTMLElement }): RootBinding;
 }
 
 function rootBridge(tour: object): RootBridge {
@@ -266,7 +254,17 @@ describe("private root bridge", () => {
     const definition = tour.create("empty").build();
 
     await assert.rejects(() => tour.run(definition), /connected root/i);
-    rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+    rootBridge(tour).connectRoot({ root: root() });
+    await tour.run(definition);
+    assert.equal(tour.state.get().status, "finished");
+  });
+
+  test("connects a real tour through the supported adapter entry", async () => {
+    const tour = createGlowTour<string>();
+    const binding = connectGlowTourRoot(tour, { root: root() });
+    const definition = tour.create("empty").build();
+
+    assert.equal(binding.ids.root, "glow-tour-root");
     await tour.run(definition);
     assert.equal(tour.state.get().status, "finished");
   });
@@ -276,16 +274,13 @@ describe("private root bridge", () => {
     const second = createGlowTour<string>();
     const firstRoot = root();
 
-    rootBridge(first).connectRoot({ adapter: {}, root: firstRoot });
-    assert.throws(() => rootBridge(first).connectRoot({ adapter: {}, root: root() }), /live root/i);
-    assert.throws(() => rootBridge(second).connectRoot({ adapter: {}, root: firstRoot }), /owned/i);
+    rootBridge(first).connectRoot({ root: firstRoot });
+    assert.throws(() => rootBridge(first).connectRoot({ root: root() }), /live root/i);
+    assert.throws(() => rootBridge(second).connectRoot({ root: firstRoot }), /owned/i);
 
     const duplicateMarkerRoot = root();
     Reflect.set(duplicateMarkerRoot, ROOT_OWNER_SYMBOL, {});
-    assert.throws(
-      () => rootBridge(second).connectRoot({ adapter: {}, root: duplicateMarkerRoot }),
-      /owned/i,
-    );
+    assert.throws(() => rootBridge(second).connectRoot({ root: duplicateMarkerRoot }), /owned/i);
   });
 
   test("reserves the in-progress lease before root attribute callbacks can reenter", () => {
@@ -296,13 +291,13 @@ describe("private root bridge", () => {
     mount.onSetAttribute = (name) => {
       if (name !== "id") return;
       try {
-        rootBridge(tour).connectRoot({ adapter: {}, root: otherRoot });
+        rootBridge(tour).connectRoot({ root: otherRoot });
       } catch (error) {
         reentrantError = error as Error;
       }
     };
 
-    rootBridge(tour).connectRoot({ adapter: {}, root: mount as unknown as HTMLElement });
+    rootBridge(tour).connectRoot({ root: mount as unknown as HTMLElement });
 
     assert.match(String(reentrantError), /live root/i);
     assert.equal(Reflect.has(otherRoot, ROOT_OWNER_SYMBOL), false);
@@ -316,7 +311,7 @@ describe("private root bridge", () => {
     };
 
     assert.throws(
-      () => rootBridge(tour).connectRoot({ adapter: {}, root: mount as unknown as HTMLElement }),
+      () => rootBridge(tour).connectRoot({ root: mount as unknown as HTMLElement }),
       /second attribute failed/,
     );
     assert.equal(mount.getAttribute("id"), null);
@@ -327,7 +322,7 @@ describe("private root bridge", () => {
       0,
     );
     assert.equal(
-      rootBridge(createGlowTour<string>()).connectRoot({ adapter: {}, root: root() }).ids.root,
+      rootBridge(createGlowTour<string>()).connectRoot({ root: root() }).ids.root,
       "glow-tour-root",
     );
   });
@@ -343,7 +338,7 @@ describe("private root bridge", () => {
     };
 
     assert.throws(
-      () => rootBridge(tour).connectRoot({ adapter: {}, root: mount as unknown as HTMLElement }),
+      () => rootBridge(tour).connectRoot({ root: mount as unknown as HTMLElement }),
       /claim failed after pending run/,
     );
     await assert.rejects(pendingRun ?? Promise.resolve(), /connected root/i);
@@ -358,7 +353,7 @@ describe("private root bridge", () => {
     const unsubscribe = tour.state.subscribe((state) => {
       if (!allowRemount || state.status !== "idle") return;
       remounts += 1;
-      rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+      rootBridge(tour).connectRoot({ root: root() });
     });
     mount.onSetAttribute = (name) => {
       if (name === "id") allowRemount = true;
@@ -366,12 +361,12 @@ describe("private root bridge", () => {
     };
 
     assert.throws(
-      () => rootBridge(tour).connectRoot({ adapter: {}, root: mount as unknown as HTMLElement }),
+      () => rootBridge(tour).connectRoot({ root: mount as unknown as HTMLElement }),
       /claim failed before commit/,
     );
 
     assert.equal(remounts, 0);
-    rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+    rootBridge(tour).connectRoot({ root: root() });
     unsubscribe();
   });
 
@@ -383,7 +378,7 @@ describe("private root bridge", () => {
     };
 
     assert.throws(
-      () => rootBridge(tour).connectRoot({ adapter: {}, root: mount as unknown as HTMLElement }),
+      () => rootBridge(tour).connectRoot({ root: mount as unknown as HTMLElement }),
       /disposed|released/i,
     );
     assert.equal(mount.getAttribute("id"), null);
@@ -393,15 +388,15 @@ describe("private root bridge", () => {
       (Reflect.get(document, PREFIX_RESERVATIONS_SYMBOL) as Map<string, object>).size,
       0,
     );
-    assert.throws(() => rootBridge(tour).connectRoot({ adapter: {}, root: root() }), /disposed/i);
+    assert.throws(() => rootBridge(tour).connectRoot({ root: root() }), /disposed/i);
   });
 
   test("allows separate tours to mount to separate roots", () => {
     const first = createGlowTour<string>();
     const second = createGlowTour<string>();
 
-    const firstBinding = rootBridge(first).connectRoot({ adapter: {}, root: root() });
-    const secondBinding = rootBridge(second).connectRoot({ adapter: {}, root: root() });
+    const firstBinding = rootBridge(first).connectRoot({ root: root() });
+    const secondBinding = rootBridge(second).connectRoot({ root: root() });
 
     assert.notEqual(firstBinding.ids.root, secondBinding.ids.root);
   });
@@ -409,19 +404,19 @@ describe("private root bridge", () => {
   test("releases a root for remount and permanently rejects reconnect after dispose", () => {
     const tour = createGlowTour<string>();
     const firstRoot = root();
-    const binding = rootBridge(tour).connectRoot({ adapter: {}, root: firstRoot });
+    const binding = rootBridge(tour).connectRoot({ root: firstRoot });
 
     binding.release();
     assert.equal(Reflect.has(firstRoot, ROOT_OWNER_SYMBOL), false);
-    rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+    rootBridge(tour).connectRoot({ root: root() });
     tour.dispose();
-    assert.throws(() => rootBridge(tour).connectRoot({ adapter: {}, root: root() }), /disposed/i);
+    assert.throws(() => rootBridge(tour).connectRoot({ root: root() }), /disposed/i);
   });
 
   test("does not let stale element cleanup unregister its replacement", () => {
     const tour = createGlowTour<string>();
     const mount = root();
-    const binding = rootBridge(tour).connectRoot({ adapter: {}, root: mount });
+    const binding = rootBridge(tour).connectRoot({ root: mount });
     const first = child(mount);
     const second = child(mount);
 
@@ -435,7 +430,7 @@ describe("private root bridge", () => {
   test("rejects elements outside the claimed root", () => {
     const tour = createGlowTour<string>();
     const mount = root();
-    const binding = rootBridge(tour).connectRoot({ adapter: {}, root: mount });
+    const binding = rootBridge(tour).connectRoot({ root: mount });
 
     assert.throws(() => binding.bindPointer(root()), /descendant/i);
     assert.throws(() => binding.bindPointer(mount), /descendant/i);
@@ -447,7 +442,7 @@ describe("private root bridge", () => {
     document.body.append(occupied);
     const tour = createGlowTour<string>();
     const mount = root();
-    const binding = rootBridge(tour).connectRoot({ adapter: {}, root: mount });
+    const binding = rootBridge(tour).connectRoot({ root: mount });
 
     assert.equal(binding.ids.root, "glow-tour-2-root");
     assert.equal((mount as unknown as MockElement).getAttribute("id"), "glow-tour-2-root");
@@ -460,14 +455,13 @@ describe("private root bridge", () => {
 
     const remountTour = createGlowTour<string>();
     assert.equal(
-      rootBridge(remountTour).connectRoot({ adapter: {}, root: root() }).ids.root,
+      rootBridge(remountTour).connectRoot({ root: root() }).ids.root,
       "glow-tour-2-root",
     );
 
     const explicitTour = createGlowTour<string>();
     const explicitRoot = root();
     const explicit = rootBridge(explicitTour).connectRoot({
-      adapter: {},
       idPrefix: "guided_tour-1",
       root: explicitRoot,
     });
@@ -475,7 +469,6 @@ describe("private root bridge", () => {
     assert.throws(
       () =>
         rootBridge(createGlowTour<string>()).connectRoot({
-          adapter: {},
           idPrefix: "1bad",
           root: root(),
         }),
@@ -495,7 +488,6 @@ describe("private root bridge", () => {
     popover.setAttribute("id", "contained-popover");
 
     const binding = rootBridge(tour).connectRoot({
-      adapter: {},
       idPrefix: "contained",
       root: mount,
     });
@@ -521,7 +513,6 @@ describe("private root bridge", () => {
       assert.throws(
         () =>
           rootBridge(createGlowTour<string>()).connectRoot({
-            adapter: {},
             idPrefix: "collision",
             root: mount,
           }),
@@ -533,7 +524,7 @@ describe("private root bridge", () => {
   test("releases active driver resources, aborts the operation, and permits a later remount", async () => {
     const tour = createGlowTour<string>();
     const mount = root();
-    const binding = rootBridge(tour).connectRoot({ adapter: {}, root: mount });
+    const binding = rootBridge(tour).connectRoot({ root: mount });
     const target = child(mount, "button");
     const definition = tour
       .create("active")
@@ -545,14 +536,14 @@ describe("private root bridge", () => {
     assert.equal(animationFrameCancellations, 1);
     assert.equal(tour.state.get().status, "idle");
     await assert.rejects(() => tour.run(definition), /connected root/i);
-    rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+    rootBridge(tour).connectRoot({ root: root() });
     await tour.run(definition);
     assert.equal(tour.state.get().status, "active");
   });
 
   test("releasing a root during onStart prevents later activation without public cancel hooks", async () => {
     const tour = createGlowTour<string>();
-    const binding = rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+    const binding = rootBridge(tour).connectRoot({ root: root() });
     let cancelCalls = 0;
     const definition = tour
       .create("release-on-start", {
@@ -572,7 +563,7 @@ describe("private root bridge", () => {
 
   test("releasing during target resolution or a navigation hook invalidates the stale operation", async () => {
     const resolverTour = createGlowTour<string>();
-    const resolverBinding = rootBridge(resolverTour).connectRoot({ adapter: {}, root: root() });
+    const resolverBinding = rootBridge(resolverTour).connectRoot({ root: root() });
     await resolverTour.run(
       resolverTour
         .create("release-target")
@@ -589,7 +580,7 @@ describe("private root bridge", () => {
     assert.equal(resolverTour.state.get().status, "idle");
 
     const hookTour = createGlowTour<string>();
-    const hookBinding = rootBridge(hookTour).connectRoot({ adapter: {}, root: root() });
+    const hookBinding = rootBridge(hookTour).connectRoot({ root: root() });
     const hookDefinition = hookTour
       .create("release-hook")
       .step({ content: "content", target: () => root(), title: "title" })
@@ -602,7 +593,7 @@ describe("private root bridge", () => {
 
   test("completes release cleanup before an idle state listener remounts and is idempotent", async () => {
     const tour = createGlowTour<string>();
-    const binding = rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+    const binding = rootBridge(tour).connectRoot({ root: root() });
     const definition = tour
       .create("release-remount")
       .step({ content: "content", target: () => root(), title: "title" })
@@ -612,7 +603,7 @@ describe("private root bridge", () => {
     const unsubscribe = tour.state.subscribe((state) => {
       if (state.status !== "idle") return;
       remounts += 1;
-      rootBridge(tour).connectRoot({ adapter: {}, root: root() });
+      rootBridge(tour).connectRoot({ root: root() });
     });
 
     binding.release();

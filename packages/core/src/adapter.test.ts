@@ -34,6 +34,33 @@ describe("core adapter entry", () => {
     );
   });
 
+  test("rejects a bridge with an incompatible version", () => {
+    const tour = Object.defineProperty({}, BRIDGE_SYMBOL, {
+      value: { connectRoot() {}, version: 2 },
+    }) as GlowTour<unknown>;
+
+    assert.throws(
+      () => connectGlowTourRoot(tour, { root: {} as HTMLElement }),
+      /incompatible Glow Tour adapter bridge/i,
+    );
+  });
+
+  test("rejects a bridge without a callable root connector", () => {
+    const missingConnector = Object.defineProperty({}, BRIDGE_SYMBOL, {
+      value: { version: 1 },
+    }) as GlowTour<unknown>;
+    const invalidConnector = Object.defineProperty({}, BRIDGE_SYMBOL, {
+      value: { connectRoot: null, version: 1 },
+    }) as GlowTour<unknown>;
+
+    for (const tour of [missingConnector, invalidConnector]) {
+      assert.throws(
+        () => connectGlowTourRoot(tour, { root: {} as HTMLElement }),
+        /incompatible Glow Tour adapter bridge/i,
+      );
+    }
+  });
+
   test("forwards a root and optional prefix to the compatible bridge", () => {
     const root = {} as HTMLElement;
     const expectedBinding = binding();
