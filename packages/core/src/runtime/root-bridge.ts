@@ -1,4 +1,5 @@
 import type { DomTourViewDriver } from "../dom/tour-view-driver";
+import type { WorkflowDefinition } from "../definition";
 import {
   ADAPTER_BRIDGE_SYMBOL,
   ADAPTER_BRIDGE_VERSION,
@@ -71,6 +72,10 @@ class TourRootBinding<T> implements AdapterRootBinding {
       this.popover = null;
       this.driver.registerPopover(null);
     };
+  }
+
+  hasPopover() {
+    return this.popover !== null;
   }
 
   release() {
@@ -224,8 +229,11 @@ export function attachRootBridge<T>(
     writable: false,
   });
   return {
-    assertConnected() {
+    assertCanRun(workflow: WorkflowDefinition<T>) {
       if (!binding) throw new Error("Glow tour requires a connected root before run()");
+      if (workflow.steps.length > 0 && !binding.hasPopover()) {
+        throw new Error("Glow tour requires a connected popover before run()");
+      }
     },
     release() {
       binding?.release();

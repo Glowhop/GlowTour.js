@@ -259,6 +259,71 @@ describe("private root bridge", () => {
     assert.equal(tour.state.get().status, "finished");
   });
 
+  test("allows an empty workflow with a root and no popover", async () => {
+    const tour = createGlowTour<string>();
+    rootBridge(tour).connectRoot({ root: root() });
+
+    await tour.run(tour.create("empty-without-popover").build());
+
+    assert.equal(tour.state.get().status, "finished");
+  });
+
+  test("rejects a non-empty workflow without a popover before onStart or state changes", async () => {
+    const tour = createGlowTour<string>();
+    rootBridge(tour).connectRoot({ root: root() });
+    let onStartCalls = 0;
+    const definition = tour
+      .create("missing-popover", {
+        onStart: () => {
+          onStartCalls += 1;
+        },
+      })
+      .step({ content: "content", target: () => root(), title: "title" })
+      .build();
+
+    await assert.rejects(() => tour.run(definition), /connected popover/i);
+
+    assert.equal(onStartCalls, 0);
+    assert.equal(tour.state.get().status, "idle");
+    assert.equal(tour.state.get().error, null);
+  });
+
+  test("allows a non-empty workflow when a popover is currently bound", async () => {
+    const tour = createGlowTour<string>();
+    const mount = root();
+    const binding = rootBridge(tour).connectRoot({ root: mount });
+    binding.bindPopover(child(mount));
+    const definition = tour
+      .create("with-popover")
+      .step({
+        behavior: { missingTargetStrategy: "skip" },
+        content: "content",
+        target: () => null,
+        title: "title",
+      })
+      .build();
+
+    await tour.run(definition);
+
+    assert.equal(tour.state.get().status, "finished");
+  });
+
+  test("rejects a non-empty workflow after its popover cleanup", async () => {
+    const tour = createGlowTour<string>();
+    const mount = root();
+    const binding = rootBridge(tour).connectRoot({ root: mount });
+    const releasePopover = binding.bindPopover(child(mount));
+    const definition = tour
+      .create("removed-popover")
+      .step({ content: "content", target: () => root(), title: "title" })
+      .build();
+
+    releasePopover();
+
+    await assert.rejects(() => tour.run(definition), /connected popover/i);
+    assert.equal(tour.state.get().status, "idle");
+  });
+
   test("connects a real tour through the supported adapter entry", async () => {
     const tour = createGlowTour<string>();
     const binding = connectGlowTourRoot(tour, { root: root() });
@@ -413,7 +478,7 @@ describe("private root bridge", () => {
     assert.throws(() => rootBridge(tour).connectRoot({ root: root() }), /disposed/i);
   });
 
-  test("does not let stale element cleanup unregister its replacement", () => {
+  test("does not let stale popover cleanup unregister its presentation replacement", async () => {
     const tour = createGlowTour<string>();
     const mount = root();
     const binding = rootBridge(tour).connectRoot({ root: mount });
@@ -425,6 +490,19 @@ describe("private root bridge", () => {
     releaseFirst();
 
     assert.equal((second as unknown as MockElement).style.values.get("opacity"), "0");
+    await assert.doesNotReject(() =>
+      tour.run(
+        tour
+          .create("replacement-popover")
+          .step({
+            behavior: { missingTargetStrategy: "skip" },
+            content: "content",
+            target: () => null,
+            title: "title",
+          })
+          .build(),
+      ),
+    );
   });
 
   test("rejects elements outside the claimed root", () => {
@@ -525,9 +603,10 @@ describe("private root bridge", () => {
     const tour = createGlowTour<string>();
     const mount = root();
     const binding = rootBridge(tour).connectRoot({ root: mount });
+    let releasePopover = binding.bindPopover(child(mount));
     const target = child(mount, "button");
     const definition = tour
-      .create("active")
+      .create("active", { onStart: () => releasePopover() })
       .step({ content: "content", target: () => target, title: "title" })
       .build();
 
@@ -536,14 +615,18 @@ describe("private root bridge", () => {
     assert.equal(animationFrameCancellations, 1);
     assert.equal(tour.state.get().status, "idle");
     await assert.rejects(() => tour.run(definition), /connected root/i);
-    rootBridge(tour).connectRoot({ root: root() });
+    const remount = root();
+    const remountBinding = rootBridge(tour).connectRoot({ root: remount });
+    releasePopover = remountBinding.bindPopover(child(remount));
     await tour.run(definition);
     assert.equal(tour.state.get().status, "active");
   });
 
   test("releasing a root during onStart prevents later activation without public cancel hooks", async () => {
     const tour = createGlowTour<string>();
-    const binding = rootBridge(tour).connectRoot({ root: root() });
+    const mount = root();
+    const binding = rootBridge(tour).connectRoot({ root: mount });
+    binding.bindPopover(child(mount));
     let cancelCalls = 0;
     const definition = tour
       .create("release-on-start", {
@@ -563,10 +646,12 @@ describe("private root bridge", () => {
 
   test("releasing during target resolution or a navigation hook invalidates the stale operation", async () => {
     const resolverTour = createGlowTour<string>();
-    const resolverBinding = rootBridge(resolverTour).connectRoot({ root: root() });
+    const resolverMount = root();
+    const resolverBinding = rootBridge(resolverTour).connectRoot({ root: resolverMount });
+    const releaseResolverPopover = resolverBinding.bindPopover(child(resolverMount));
     await resolverTour.run(
       resolverTour
-        .create("release-target")
+        .create("release-target", { onStart: releaseResolverPopover })
         .step({
           content: "content",
           target: () => {
@@ -580,9 +665,11 @@ describe("private root bridge", () => {
     assert.equal(resolverTour.state.get().status, "idle");
 
     const hookTour = createGlowTour<string>();
-    const hookBinding = rootBridge(hookTour).connectRoot({ root: root() });
+    const hookMount = root();
+    const hookBinding = rootBridge(hookTour).connectRoot({ root: hookMount });
+    const releaseHookPopover = hookBinding.bindPopover(child(hookMount));
     const hookDefinition = hookTour
-      .create("release-hook")
+      .create("release-hook", { onStart: releaseHookPopover })
       .step({ content: "content", target: () => root(), title: "title" })
       .beforeAdvance(() => hookBinding.release())
       .build();
@@ -593,9 +680,11 @@ describe("private root bridge", () => {
 
   test("completes release cleanup before an idle state listener remounts and is idempotent", async () => {
     const tour = createGlowTour<string>();
-    const binding = rootBridge(tour).connectRoot({ root: root() });
+    const mount = root();
+    const binding = rootBridge(tour).connectRoot({ root: mount });
+    let releasePopover = binding.bindPopover(child(mount));
     const definition = tour
-      .create("release-remount")
+      .create("release-remount", { onStart: () => releasePopover() })
       .step({ content: "content", target: () => root(), title: "title" })
       .build();
     await tour.run(definition);
@@ -603,7 +692,9 @@ describe("private root bridge", () => {
     const unsubscribe = tour.state.subscribe((state) => {
       if (state.status !== "idle") return;
       remounts += 1;
-      rootBridge(tour).connectRoot({ root: root() });
+      const remount = root();
+      const remountBinding = rootBridge(tour).connectRoot({ root: remount });
+      releasePopover = remountBinding.bindPopover(child(remount));
     });
 
     binding.release();

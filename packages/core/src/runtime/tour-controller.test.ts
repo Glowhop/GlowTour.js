@@ -128,6 +128,29 @@ async function flushMicrotasks() {
 }
 
 describe("instance-first TourController", () => {
+  test("passes the workflow to assertCanRun before lifecycle state changes", async () => {
+    let onStartCalls = 0;
+    const tour = new TourController<string>(undefined, {
+      assertCanRun: (workflow) => {
+        if (workflow.steps.length > 0) throw new Error("presentation unavailable");
+      },
+    });
+    const workflow = tour
+      .create("guarded", {
+        onStart: () => {
+          onStartCalls += 1;
+        },
+      })
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .build();
+
+    await assert.rejects(() => tour.run(workflow), /presentation unavailable/);
+
+    assert.equal(onStartCalls, 0);
+    assert.equal(tour.state.get().status, "idle");
+    assert.equal(tour.state.get().error, null);
+  });
+
   test("does not expose the removed updateCurrentStep command", () => {
     const tour = new TourController<string>();
 
