@@ -11,7 +11,7 @@ type PackageBuild = {
 
 const root = resolve(import.meta.dir, "..");
 const packageRoot = join(root, "packages");
-const sharedReleaseDocuments = ["README.md", "LICENSE"] as const;
+const sharedReleaseDocuments = ["LICENSE"] as const;
 const packageBuilds: readonly PackageBuild[] = [
   { id: "core", entrypoints: ["src/index.ts", "src/adapter.ts"] },
   { id: "react", entrypoints: ["src/index.ts"] },
@@ -59,6 +59,11 @@ function buildManifest(packageDirectory: string) {
 }
 
 function copyReleaseDocuments(packageDirectory: string, distDirectory: string) {
+  const packageReadme = join(packageDirectory, "README.md");
+  if (!existsSync(packageReadme)) {
+    throw new Error(`Missing package README: ${packageReadme}`);
+  }
+  copyFileSync(packageReadme, join(distDirectory, "README.md"));
   for (const document of sharedReleaseDocuments) {
     copyFileSync(join(root, document), join(distDirectory, document));
   }

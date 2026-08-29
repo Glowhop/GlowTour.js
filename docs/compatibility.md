@@ -20,3 +20,9 @@ their workspace manifests. Angular is distributed in Angular Package Format with
 compilation. The styles package is CSS-only.
 
 The private `apps/playground` exercises the adapters but is not a published compatibility package.
+
+## SSR and hydration
+
+No SSR or hydration behavior is part of the verified contract yet. The adapters connect roots to
+the browser DOM and should be mounted in a client-only boundary; do not rely on server-rendered
+tour markup or hydration of an active tour until a framework-specific contract is documented.
