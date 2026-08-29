@@ -76,6 +76,20 @@ function readPackedManifest(tarball: string): Record<string, unknown> {
   return JSON.parse(run("tar", ["-xOzf", tarball, "package/package.json"])) as Record<string, unknown>;
 }
 
+const snippetPattern = /<!--\s*glow-tour:snippet\s+(core|react|vue|angular|solid|vanilla)\s*-->\s*```[\w-]*\s*\n([\s\S]*?)\n```/g;
+
+function readCanonicalSnippets(): Record<string, string> {
+  const snippets: Record<string, string> = {};
+  for (const file of ["README.md", ...packageNames.map((name) => `packages/${name.replace("@glowhop/", "").replace("-tour", "")}/README.md`)]) {
+    for (const [, id, source] of readFileSync(join(root, file), "utf8").matchAll(snippetPattern)) {
+      assert.equal(snippets[id], undefined, `duplicate canonical README snippet: ${id}`);
+      snippets[id] = source;
+    }
+  }
+  for (const id of ["core", "react", "vue", "angular", "solid", "vanilla"]) assert.ok(snippets[id], `missing canonical README snippet: ${id}`);
+  return snippets;
+}
+
 function assertPackedArtifact(packageName: PackageName) {
   const tarball = tarballFor(packageName);
   const contents = run("tar", ["-tzf", tarball]);
@@ -157,6 +171,7 @@ function assertPackedArtifact(packageName: PackageName) {
 }
 
 function writeConsumerFixture(directory: string) {
+  const snippets = readCanonicalSnippets();
   const dependencies = Object.fromEntries(
     packageNames.map((packageName) => [packageName, `file:${tarballFor(packageName)}`]),
   );
@@ -184,10 +199,12 @@ function writeConsumerFixture(directory: string) {
         devDependencies: {
           "@types/node": "22.18.6",
           "@types/react": "19.1.16",
+          "@types/react-dom": "19.1.9",
           "@angular/compiler-cli": "18.2.13",
           typescript: "5.5.4",
           "typescript-side-effect-checks": "npm:typescript@5.7.3",
           vite: "6.4.3",
+          "@vitejs/plugin-vue": "5.2.4",
         },
       },
       null,
@@ -211,6 +228,13 @@ export default defineConfig({
 });
 `,
   );
+  writeFileSync(join(directory, "core.ts"), snippets.core);
+  writeFileSync(join(directory, "react.tsx"), snippets.react);
+  writeFileSync(join(directory, "solid.tsx"), snippets.solid);
+  writeFileSync(join(directory, "vanilla.ts"), snippets.vanilla);
+  writeFileSync(join(directory, "vue.vue"), snippets.vue);
+  writeFileSync(join(directory, "vue-entry.ts"), 'import "./vue.vue";\n');
+  writeFileSync(join(directory, "vue-vite.config.mts"), `import vue from "@vitejs/plugin-vue";\nimport { defineConfig } from "vite";\nexport default defineConfig({ plugins: [vue()], build: { outDir: "vue-dist", lib: { entry: "./vue-entry.ts", formats: ["es"] } } });\n`);
   writeFileSync(
     join(directory, "runtime-imports.mjs"),
     `import assert from "node:assert/strict";
@@ -375,12 +399,14 @@ void registerGlowTourElements;
           strict: true,
           target: "ES2022",
         },
-        files: ["consumer.ts"],
+        files: ["consumer.ts", "core.ts", "vanilla.ts"],
       },
       null,
       2,
     )}\n`,
   );
+  writeFileSync(join(directory, "react-tsconfig.json"), JSON.stringify({ extends: "./tsconfig.json", compilerOptions: { jsx: "react-jsx" }, files: ["react.tsx"] }, null, 2));
+  writeFileSync(join(directory, "solid-tsconfig.json"), JSON.stringify({ extends: "./tsconfig.json", compilerOptions: { jsx: "preserve", jsxImportSource: "solid-js" }, files: ["solid.tsx"] }, null, 2));
   const angularDirectory = join(directory, "angular-app");
   mkdirSync(angularDirectory);
   writeFileSync(
@@ -423,6 +449,7 @@ void bootstrapApplication(TarballAngularApp);
       2,
     )}\n`,
   );
+  writeFileSync(join(angularDirectory, "main.ts"), snippets.angular);
 }
 
 assert.ok(existsSync(tarballDirectory), "run bun run pack before bun run test:tarballs");
@@ -452,7 +479,10 @@ try {
     ["node_modules/typescript-side-effect-checks/bin/tsc", "--project", "tsconfig.json"],
     consumerDirectory,
   );
+  run("node_modules/typescript-side-effect-checks/bin/tsc", ["--project", "react-tsconfig.json"], consumerDirectory);
+  run("node_modules/typescript-side-effect-checks/bin/tsc", ["--project", "solid-tsconfig.json"], consumerDirectory);
   run("npx", ["vite", "build"], consumerDirectory);
+  run("npx", ["vite", "build", "--config", "vue-vite.config.mts"], consumerDirectory);
   const cssOutput = readdirSync(join(consumerDirectory, "css-dist"), { recursive: true }).find((fileName) =>
     fileName.endsWith(".css"),
   );

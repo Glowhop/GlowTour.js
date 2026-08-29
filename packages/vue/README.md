@@ -1,19 +1,18 @@
 # @glowhop/vue-tour
 
-ESM-only Vue 3.5 adapter with native refs and provide/inject reactive state.
+ESM-only Vue 3.5 adapter with provide/inject refs for native reactive state. Content is Vue slot content. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
 
+<!-- glow-tour:snippet vue -->
 ```vue
 <script setup lang="ts">
+import { onMounted } from "vue";
+import "@glowhop/styles-tour/default.css";
 import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
 const tour = createGlowTour();
+const workflow = tour.create("intro").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build();
+onMounted(() => void tour.run(workflow));
 </script>
-<template><GlowTourDefault :tour="tour" /></template>
+<template><button id="welcome">Welcome</button><GlowTourDefault :tour="tour" /></template>
 ```
 
-Use `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, and named trigger primitives. Static/dynamic targets, placement, interaction, scroll, callbacks, actions/events, cancellation, and cleanup are supported. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core).
-
-Advanced composition uses named primitives:
-
-```vue
-<GlowTourRoot :tour="tour"><GlowTourOverlay /><GlowTourPopover><GlowTourHeader /><GlowTourContent /><GlowTourFooter><GlowTourAdvanceTrigger /></GlowTourFooter></GlowTourPopover></GlowTourRoot>
-```
+Use `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, and named triggers for composition. Vue refs and provide/inject are the native state surface. Static/dynamic targets, placement, interaction, scroll, callbacks, actions/events, cancellation, and cleanup follow Core.

@@ -1,10 +1,44 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { expect, test } from "bun:test";
 
 const root = resolve(import.meta.dir, "..");
 const packages = ["core", "styles", "react", "vue", "angular", "solid", "vanilla"] as const;
 const read = (path: string) => readFileSync(join(root, path), "utf8");
+
+const canonicalIds = ["core", "react", "vue", "angular", "solid", "vanilla"] as const;
+const marker = /<!--\s*glow-tour:snippet\s+(core|react|vue|angular|solid|vanilla)\s*-->\s*```([\w-]*)\s*\n([\s\S]*?)\n```/g;
+
+function canonicalSnippets() {
+  const snippets = new Map<string, { file: string; language: string; source: string }>();
+  for (const file of ["README.md", ...packages.map((id) => `packages/${id}/README.md`)]) {
+    const source = read(file);
+    for (const match of source.matchAll(marker)) {
+      const [, id, language, snippet] = match;
+      expect(snippets.has(id)).toBe(false);
+      snippets.set(id, { file, language, source: snippet });
+    }
+  }
+  expect([...snippets.keys()].sort()).toEqual([...canonicalIds].sort());
+  return snippets;
+}
+
+function assertLocalLinks(file: string, source: string) {
+  for (const match of source.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
+    const href = match[1].trim();
+    if (/^https?:\/\//.test(href)) continue;
+    const [pathname, anchor] = href.split("#", 2);
+    const targetFile = pathname ? resolve(root, dirname(file), pathname) : resolve(root, file);
+    expect(existsSync(targetFile), `${file} links to missing ${href}`).toBe(true);
+    if (anchor) {
+      const target = readFileSync(targetFile, "utf8");
+      const headings = [...target.matchAll(/^#{1,6}\s+(.+)$/gm)].map((heading) =>
+        heading[1].toLowerCase().replace(/<[^>]+>/g, "").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-"),
+      );
+      expect(headings, `${file} links to missing anchor ${href}`).toContain(anchor.toLowerCase());
+    }
+  }
+}
 
 test("the root README is a concise portal with current contracts", () => {
   const readme = read("README.md");
@@ -23,13 +57,22 @@ test("each public package has distinct documentation", () => {
     return read(path);
   });
   expect(new Set(readmes).size).toBe(packages.length);
-  for (const readme of readmes) {
-    const relativeLinks = [...readme.matchAll(/\[[^\]]+\]\((?!https?:\/\/|#)([^)]+)\)/g)].map(
-      (match) => match[1],
-    );
-    expect(relativeLinks).toEqual([]);
+  for (const [index, readme] of readmes.entries()) {
     expect(readme).toContain("ESM-only");
+    assertLocalLinks(`packages/${packages[index]}/README.md`, readme);
   }
+  assertLocalLinks("README.md", read("README.md"));
+});
+
+test("canonical snippets are uniquely marked and complete", () => {
+  const snippets = canonicalSnippets();
+  expect(snippets.get("core")?.language).toBe("ts");
+  expect(snippets.get("react")?.language).toBe("tsx");
+  expect(snippets.get("solid")?.language).toBe("tsx");
+  expect(snippets.get("vue")?.language).toBe("vue");
+  expect(snippets.get("angular")?.language).toBe("ts");
+  expect(snippets.get("vanilla")?.language).toBe("ts");
+  for (const { source } of snippets.values()) expect(source.trim().length).toBeGreaterThan(0);
 });
 
 test("adapter guides cover the documented quick-start and advanced concerns", () => {
