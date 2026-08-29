@@ -25,7 +25,7 @@ Branche : `codex/tour-focus-step2`
 - [x] Modalité exclusive et inertness bornée.
 - [x] Contrat d’acceptance cross-framework.
 - [x] Changeset `minor` pour `@glowhop/core-tour`.
-- [ ] Validation finale.
+- [x] Validation finale.
 
 ## Baseline
 
@@ -39,14 +39,20 @@ Validation du 29 août 2026 :
 ## Commits
 
 - `e2955dd fix(core): simplify interactive focus scope`
-- Modalité/acceptance : commit en attente.
+- `fa70812 fix(core): isolate modal tours per document`
 
 ## Dernière validation
 
-- Tests Core ciblés : 76 tests passent.
-- Contrat navigateur des cinq adapters : 69 tests passent.
-- `bun run check` et `bun run typecheck` passent.
+- Validation finale du 29 août 2026 :
+  - `bun run check` : passe, 113 fichiers.
+  - `bun run typecheck` : passe.
+  - `bun test` : passe, 255 tests.
+  - `bun run test:browser` : passe, 69 tests Happy DOM.
+  - `bun run build` : passe, 7 packages.
+  - `bun run pack` : passe, 7 tarballs.
+  - `bun run test:tarballs` : passe, contrat smoke de 7 packages ; relancé avec accès réseau après blocage de l’installation en sandbox.
+  - `bun run --cwd apps/playground build` : passe ; avertissement Vite existant sur la taille du chunk Angular.
 
 ## Reprise
 
-Reprendre à la validation finale complète, puis consigner ses résultats. Aucun blocage connu.
+Étape 2 terminée. Aucun travail inachevé ni blocage connu. Playwright, SSR/hydratation et la normalisation des options ARIA restent reportés conformément au périmètre.
