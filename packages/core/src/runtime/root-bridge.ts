@@ -1,5 +1,5 @@
-import type { DomTourViewDriver } from "../dom/tour-view-driver";
 import type { WorkflowDefinition } from "../definition";
+import type { DomTourViewDriver } from "../dom/tour-view-driver";
 import {
   ADAPTER_BRIDGE_SYMBOL,
   ADAPTER_BRIDGE_VERSION,

@@ -1,5 +1,5 @@
 import type { DynamicStepProps, TourState } from "@glowhop/core-tour";
-import { connectGlowTourRoot, type AdapterRootBinding } from "@glowhop/core-tour/adapter";
+import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import type { VanillaGlowTour, VanillaTourContent } from "../glow-tour";
 
 export const GLOW_TOUR_ELEMENT_NAMES = [

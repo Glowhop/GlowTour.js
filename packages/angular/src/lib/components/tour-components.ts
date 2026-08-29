@@ -21,7 +21,7 @@ import {
   ViewChild,
 } from "@angular/core";
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { connectGlowTourRoot, type AdapterRootBinding } from "@glowhop/core-tour/adapter";
+import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import type { AngularTourContent } from "../glow-tour";
 
 type Tour = CoreGlowTour<AngularTourContent>;
@@ -206,10 +206,7 @@ abstract class GlowTourBoundElement<T extends Element> {
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
-  protected bind(
-    element: T,
-    bindElement: (binding: AdapterRootBinding, element: T) => () => void,
-  ) {
+  protected bind(element: T, bindElement: (binding: AdapterRootBinding, element: T) => () => void) {
     const cleanup = effect(
       (onCleanup) => {
         const binding = this.scope.binding();

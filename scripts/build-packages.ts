@@ -104,7 +104,13 @@ function buildAngular() {
   const directory = join(packageRoot, "angular");
   const distDirectory = join(directory, "dist");
   rmSync(distDirectory, { force: true, recursive: true });
-  run("bunx", ["ng-packagr", "--project", "packages/angular/ng-package.json"]);
+  run("bunx", [
+    "ng-packagr",
+    "--project",
+    "packages/angular/ng-package.json",
+    "--config",
+    "packages/angular/tsconfig.ngc.json",
+  ]);
   copyReleaseDocuments(directory, distDirectory);
   buildManifest(directory);
 }

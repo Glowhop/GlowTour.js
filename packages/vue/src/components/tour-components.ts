@@ -1,5 +1,5 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { connectGlowTourRoot, type AdapterRootBinding } from "@glowhop/core-tour/adapter";
+import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import type { VNodeChild } from "vue";
 import {
   defineComponent,
