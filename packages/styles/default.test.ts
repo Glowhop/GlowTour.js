@@ -33,6 +33,7 @@ describe("default tour theme", () => {
     const publicTokens = [
       "color-accent",
       "color-accent-hover",
+      "color-accent-active",
       "color-on-accent",
       "color-surface",
       "color-surface-muted",
@@ -82,6 +83,7 @@ describe("default tour theme", () => {
     const tokensWithFallbacks = [
       "color-accent",
       "color-accent-hover",
+      "color-accent-active",
       "color-on-accent",
       "color-surface",
       "color-surface-muted",
@@ -184,10 +186,13 @@ describe("default tour theme", () => {
       stylesheet,
       /\[data-glow-tour-cancel-trigger\][^{]*\{[^}]*margin-inline-end:\s*auto/s,
     );
-    assert.match(
-      stylesheet,
-      /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*data-glow-tour-cancel-trigger[\s\S]*data-glow-tour-previous-trigger[\s\S]*data-glow-tour-advance-trigger/,
-    );
+    const reducedMotion = atRuleContent("@media (prefers-reduced-motion: reduce)");
+
+    for (const control of controls) {
+      assert.match(reducedMotion, new RegExp(`data-glow-tour-${control}-trigger`));
+    }
+
+    assert.match(reducedMotion, /transition-duration:\s*0\.01ms/);
 
     const sharedGeometry = stylesheet.match(
       /\[data-glow-tour-cancel-trigger\],[\s\S]*?\[data-glow-tour-advance-trigger\]\s*\{(?<declarations>[^}]*)\}/,
@@ -227,8 +232,17 @@ describe("default tour theme", () => {
 
     assert.match(
       stylesheet,
-      /\[data-glow-tour-advance-trigger\]:active:not\(:disabled\)[^{]*\{[^}]*background:\s*var\(--glow-tour-color-accent-hover,\s*#3f2be0\)/s,
+      /\[data-glow-tour-advance-trigger\]:active:not\(:disabled\)[^{]*\{[^}]*background:\s*var\(--glow-tour-color-accent-active,\s*#3522c7\)[^}]*border-color:\s*var\(--glow-tour-color-accent-active,\s*#3522c7\)/s,
     );
+
+    const advanceHover = stylesheet.match(
+      /\[data-glow-tour-advance-trigger\]:hover:not\(:disabled\)[^{]*\{(?<declarations>[^}]*)\}/s,
+    );
+    const advanceActive = stylesheet.match(
+      /\[data-glow-tour-advance-trigger\]:active:not\(:disabled\)[^{]*\{(?<declarations>[^}]*)\}/s,
+    );
+
+    assert.notEqual(advanceActive?.groups?.declarations, advanceHover?.groups?.declarations);
   });
 
   test("exposes arrow theme variables without owning its pseudo-element", () => {

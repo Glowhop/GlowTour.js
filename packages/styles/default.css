@@ -127,8 +127,8 @@
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-advance-trigger]:active:not(:disabled) {
-  background: var(--glow-tour-color-accent-hover, #3f2be0);
-  border-color: var(--glow-tour-color-accent-hover, #3f2be0);
+  background: var(--glow-tour-color-accent-active, #3522c7);
+  border-color: var(--glow-tour-color-accent-active, #3522c7);
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:focus-visible,
