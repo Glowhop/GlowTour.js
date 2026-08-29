@@ -19,11 +19,11 @@
   display: grid;
   font: inherit;
   gap: calc(var(--glow-tour-spacing, 8px) * 1.5);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   max-height: calc(100dvh - (var(--glow-tour-viewport-gap, 16px) * 2));
   max-width: calc(100vw - (var(--glow-tour-viewport-gap, 16px) * 2));
+  overflow: visible;
   overflow-wrap: anywhere;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   padding: calc(var(--glow-tour-spacing, 8px) * 2);
   width: min(
     var(--glow-tour-popover-width, 352px),
@@ -47,6 +47,9 @@
   color: var(--glow-tour-color-text-muted, #5f5f66);
   font-size: 0.875rem;
   line-height: 1.5;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-footer] {
@@ -124,8 +127,8 @@
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-advance-trigger]:active:not(:disabled) {
-  background: var(--glow-tour-color-accent, #4c35fd);
-  border-color: var(--glow-tour-color-accent, #4c35fd);
+  background: var(--glow-tour-color-accent-hover, #3f2be0);
+  border-color: var(--glow-tour-color-accent-hover, #3f2be0);
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:focus-visible,
