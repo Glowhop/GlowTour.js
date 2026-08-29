@@ -22,10 +22,21 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [x] 7. Ajouter `GlowTourDefault` à Vue et Angular. (`5805f7a`, revue propre)
 - [x] 8. Ajouter la factory de composition Vanilla. (`f746b90` + `f14103e`, revue propre)
 - [x] 9a. Normaliser et tester la matrice publique des cinq adapters. (`bcebefc`, revue propre)
-- [ ] 9b. Vérifier les builds, manifests, tarballs et Changesets.
+- [x] 9b. Vérifier les builds, manifests, tarballs et Changesets. (`c45d69a` + `b7d18fe`, revue propre)
 - [ ] Revue finale de branche.
 
 ## Dernière validation
+
+Validation complète du 29 août 2026 :
+
+- `bun run check` : passe, 113 fichiers.
+- `bun run typecheck` : passe.
+- `bun test` : passe, 249 tests.
+- `bun run test:browser` : passe, 69 tests Happy DOM.
+- `bun run build` : passe, 7 distributions.
+- `bun run pack` : passe, 7 tarballs locaux.
+- `bun run test:tarballs` : passe pour 7 packages avec installation npm stricte ; premier essai sandboxé sans réseau échoué sur les métadonnées React tierces, relance réseau autorisée réussie.
+- Aucune publication, aucun dry-run de publication, aucun lookup npm des packages Glow Tour, aucun tag ou release.
 
 Task 9a, validation ciblée du 29 août 2026 :
 
