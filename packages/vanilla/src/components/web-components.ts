@@ -534,7 +534,7 @@ export function registerGlowTourElements() {
     private labelOwned = false;
     private labelSnapshot?: string;
     private capabilityDisabled = false;
-    private migratedInitialDisabledState = false;
+    private evaluatedInitialDisabledState = false;
 
     get disabled() {
       return this.hasAttribute("disabled");
@@ -554,12 +554,11 @@ export function registerGlowTourElements() {
       this.labelOwned = this.button.childNodes.length === 0;
       this.labelSnapshot = this.button.textContent ?? "";
       if (!this.button.parentElement) this.appendChild(this.button);
-      if (
-        !this.migratedInitialDisabledState &&
-        (this.button.disabled || this.button.getAttribute("aria-disabled") === "true")
-      ) {
-        this.disabled = true;
-        this.migratedInitialDisabledState = true;
+      if (!this.evaluatedInitialDisabledState) {
+        this.evaluatedInitialDisabledState = true;
+        if (this.button.disabled || this.button.getAttribute("aria-disabled") === "true") {
+          this.disabled = true;
+        }
       }
       this.button.type = "button";
       this.button.setAttribute(`data-glow-tour-${this.action}-trigger`, "");

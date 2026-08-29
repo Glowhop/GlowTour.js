@@ -446,6 +446,30 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(button.disabled, false);
   });
 
+  test("does not migrate a child disabled after the first trigger connection", async () => {
+    const tour = runtime.createGlowTour();
+    const rootElement = root(tour, "trigger-disabled-reconnect");
+    rootElement.innerHTML =
+      "<glow-tour-popover></glow-tour-popover><glow-tour-advance-trigger><button>Advance</button></glow-tour-advance-trigger>";
+    document.body.append(rootElement);
+    await settle();
+    const trigger = rootElement.querySelector<HTMLElement>("glow-tour-advance-trigger");
+    const button = trigger?.querySelector<HTMLButtonElement>("button");
+    assert.ok(trigger);
+    assert.ok(button);
+    const disabledTrigger = trigger as HTMLElement & { disabled: boolean };
+    assert.equal(disabledTrigger.disabled, false);
+
+    button.disabled = true;
+    trigger.remove();
+    await settle();
+    rootElement.append(trigger);
+    await settle();
+
+    assert.equal(disabledTrigger.disabled, false);
+    assert.equal(button.disabled, false);
+  });
+
   test("restores trigger ownership and keeps generated last-step labels dynamic after reconnect", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");
