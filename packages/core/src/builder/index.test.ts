@@ -1,7 +1,20 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { StepContext } from "../types";
+import type { PopoverOptions, StepContext } from "../types";
 import { WorkflowBuilder } from "./index";
+
+const removedProgressOption: PopoverOptions = {
+  // @ts-expect-error PopoverOptions must not expose inactive progress state.
+  hideProgressIndicator: true,
+};
+
+const removedButtonOption: PopoverOptions = {
+  // @ts-expect-error PopoverOptions must not expose inactive button labels.
+  buttons: { advanceLabel: "Next" },
+};
+
+void removedProgressOption;
+void removedButtonOption;
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({

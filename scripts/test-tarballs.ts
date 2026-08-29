@@ -31,6 +31,15 @@ const packageNames: readonly PackageName[] = [
   "@glowhop/solid-tour",
   "@glowhop/vanilla-tour",
 ];
+const consumerPeerDependencies: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  "@glowhop/react-tour": { react: "^19.2.0" },
+  "@glowhop/vue-tour": { vue: "^3.5.0" },
+  "@glowhop/angular-tour": {
+    "@angular/common": "^18.2.0",
+    "@angular/core": "^18.2.0",
+  },
+  "@glowhop/solid-tour": { "solid-js": "^1.9.14" },
+};
 
 function run(command: string, args: readonly string[], cwd = root): string {
   const result = Bun.spawnSync([command, ...args], {
@@ -51,6 +60,16 @@ function tarballFor(packageName: PackageName): string {
   );
   assert.ok(tarball, `missing tarball for ${packageName}`);
   return join(tarballDirectory, tarball);
+}
+
+function localTarballDependencies(dependencies: Record<string, string>) {
+  for (const packageName of packageNames) {
+    assert.equal(
+      dependencies[packageName],
+      `file:${tarballFor(packageName)}`,
+      `${packageName} must be installed from its local tarball`,
+    );
+  }
 }
 
 function readPackedManifest(tarball: string): Record<string, unknown> {
@@ -100,6 +119,11 @@ function assertPackedArtifact(packageName: PackageName) {
   assert.match(JSON.stringify(manifest), /"exports"/);
   assert.equal("devDependencies" in manifest, false);
   assert.equal("scripts" in manifest, false);
+  assert.deepEqual(
+    manifest.peerDependencies ?? {},
+    consumerPeerDependencies[packageName] ?? {},
+    `${packageName} packed peerDependencies must match the consumer contract`,
+  );
   assert.doesNotMatch(JSON.stringify(manifest), /workspace:\*/);
   assert.doesNotMatch(JSON.stringify(manifest), /["']\.\/src\//);
   assert.doesNotMatch(contents, /package\/src\//);
@@ -116,12 +140,17 @@ function assertPackedArtifact(packageName: PackageName) {
     assert.match(contents, /package\/default\.css$/m);
     assert.match(contents, /package\/default\.css\.d\.ts$/m);
   }
+  if (packageName === "@glowhop/core-tour") {
+    assert.match(contents, /package\/adapter\.js$/m);
+    assert.match(contents, /package\/adapter\.d\.ts$/m);
+  }
 }
 
 function writeConsumerFixture(directory: string) {
   const dependencies = Object.fromEntries(
     packageNames.map((packageName) => [packageName, `file:${tarballFor(packageName)}`]),
   );
+  localTarballDependencies(dependencies);
 
   writeFileSync(
     join(directory, "package.json"),
@@ -136,7 +165,9 @@ function writeConsumerFixture(directory: string) {
           "@angular/compiler": "18.2.13",
           "@angular/core": "18.2.13",
           "@angular/platform-browser": "18.2.13",
-          react: "19.1.1",
+          rxjs: "7.8.1",
+          react: "19.2.0",
+          "react-dom": "19.2.0",
           "solid-js": "^1.9.14",
           vue: "3.5.22",
         },
@@ -173,28 +204,114 @@ export default defineConfig({
   writeFileSync(
     join(directory, "runtime-imports.mjs"),
     `import assert from "node:assert/strict";
+import "@angular/compiler";
 import * as CoreTour from "@glowhop/core-tour";
-import { GlowTour as ReactGlowTour } from "@glowhop/react-tour";
-import { GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
-import { GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
-import { createGlowTour } from "@glowhop/vanilla-tour";
+import * as CoreAdapter from "@glowhop/core-tour/adapter";
+import {
+  DefaultTour as ReactDefaultTour,
+  GlowTour as ReactGlowTour,
+  createGlowTour as createReactGlowTour,
+} from "@glowhop/react-tour";
+import { GlowTourDefault as VueGlowTourDefault, GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
+import { GlowTourDefault as AngularGlowTourDefault, GlowTourRoot as AngularGlowTourRoot } from "@glowhop/angular-tour";
+import { DefaultTour as SolidDefaultTour, GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
+import { createDefaultTourElement, createGlowTour } from "@glowhop/vanilla-tour";
 
 assert.deepEqual(Object.keys(CoreTour), ["createGlowTour"]);
+assert.deepEqual(Object.keys(CoreAdapter), ["connectGlowTourRoot"]);
 assert.equal(typeof ReactGlowTour.Root, "function");
+assert.equal(typeof ReactDefaultTour, "function");
+assert.equal(ReactGlowTour.Default, ReactDefaultTour);
 assert.equal(typeof VueGlowTourRoot, "object");
+assert.equal(typeof VueGlowTourDefault, "object");
+assert.equal(typeof AngularGlowTourRoot, "function");
+assert.equal(typeof AngularGlowTourDefault, "function");
 assert.equal(typeof SolidGlowTour.Root, "function");
+assert.equal(typeof SolidDefaultTour, "function");
+assert.equal(SolidGlowTour.Default, SolidDefaultTour);
 assert.equal(typeof createGlowTour, "function");
+assert.equal(typeof createDefaultTourElement, "function");
+`,
+  );
+  writeFileSync(
+    join(directory, "render-react-default-tour.mjs"),
+    `import assert from "node:assert/strict";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
+
+const markup = renderToStaticMarkup(createElement(DefaultTour, { tour: createGlowTour() }));
+
+assert.match(markup, /data-glow-tour-root/);
+assert.match(markup, /data-glow-tour-popover/);
 `,
   );
   writeFileSync(
     join(directory, "consumer.ts"),
     `import { createGlowTour as createCoreGlowTour } from "@glowhop/core-tour";
 import "@glowhop/styles-tour/default.css";
-import { GlowTour as ReactGlowTour } from "@glowhop/react-tour";
-import { GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
-import { GlowTourRoot as AngularGlowTourRoot } from "@glowhop/angular-tour";
-import { GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
+import type {
+  DynamicStepProps as ReactDynamicStepProps,
+  Tour as ReactTour,
+  TourState as ReactTourState,
+  WorkflowDefinition as ReactWorkflowDefinition,
+} from "@glowhop/react-tour";
+import { GlowTour as ReactGlowTour, createGlowTour as createReactGlowTour } from "@glowhop/react-tour";
+import type {
+  DynamicStepProps as VueDynamicStepProps,
+  Tour as VueTour,
+  TourState as VueTourState,
+  WorkflowDefinition as VueWorkflowDefinition,
+} from "@glowhop/vue-tour";
+import { GlowTourRoot as VueGlowTourRoot, createGlowTour as createVueGlowTour } from "@glowhop/vue-tour";
+import type {
+  DynamicStepProps as AngularDynamicStepProps,
+  Tour as AngularTour,
+  TourState as AngularTourState,
+  WorkflowDefinition as AngularWorkflowDefinition,
+} from "@glowhop/angular-tour";
+import {
+  GlowTourRoot as AngularGlowTourRoot,
+  createGlowTour as createAngularGlowTour,
+} from "@glowhop/angular-tour";
+import type {
+  DynamicStepProps as SolidDynamicStepProps,
+  Tour as SolidTour,
+  TourState as SolidTourState,
+  WorkflowDefinition as SolidWorkflowDefinition,
+} from "@glowhop/solid-tour";
+import {
+  GlowTour as SolidGlowTour,
+  createGlowTour as createSolidGlowTour,
+} from "@glowhop/solid-tour";
+import type {
+  DynamicStepProps as VanillaDynamicStepProps,
+  Tour as VanillaTour,
+  TourState as VanillaTourState,
+  WorkflowDefinition as VanillaWorkflowDefinition,
+} from "@glowhop/vanilla-tour";
 import { createGlowTour } from "@glowhop/vanilla-tour";
+
+const reactTour: ReactTour = createReactGlowTour();
+const reactState: ReactTourState | null = null;
+const reactStep: ReactDynamicStepProps | null = null;
+const reactWorkflow: ReactWorkflowDefinition | null = null;
+const vueTour: VueTour = createVueGlowTour();
+const vueState: VueTourState | null = null;
+const vueStep: VueDynamicStepProps | null = null;
+const vueWorkflow: VueWorkflowDefinition | null = null;
+const angularTour: AngularTour = createAngularGlowTour();
+const angularState: AngularTourState | null = null;
+const angularStep: AngularDynamicStepProps | null = null;
+const angularWorkflow: AngularWorkflowDefinition | null = null;
+const solidTour: SolidTour = createSolidGlowTour();
+const solidState: SolidTourState | null = null;
+const solidStep: SolidDynamicStepProps | null = null;
+const solidWorkflow: SolidWorkflowDefinition | null = null;
+const vanillaTour: VanillaTour = createGlowTour();
+const vanillaState: VanillaTourState | null = null;
+const vanillaStep: VanillaDynamicStepProps | null = null;
+const vanillaWorkflow: VanillaWorkflowDefinition | null = null;
 
 const workflow = createCoreGlowTour<string>()
   .create("tarball-consumer")
@@ -204,6 +321,26 @@ const workflow = createCoreGlowTour<string>()
   .beforeAdvance(() => {})
   .build();
 void workflow;
+void reactTour;
+void reactState;
+void reactStep;
+void reactWorkflow;
+void vueTour;
+void vueState;
+void vueStep;
+void vueWorkflow;
+void angularTour;
+void angularState;
+void angularStep;
+void angularWorkflow;
+void solidTour;
+void solidState;
+void solidStep;
+void solidWorkflow;
+void vanillaTour;
+void vanillaState;
+void vanillaStep;
+void vanillaWorkflow;
 void ReactGlowTour;
 void VueGlowTourRoot;
 void AngularGlowTourRoot;
@@ -283,8 +420,19 @@ for (const packageName of packageNames) {
 const consumerDirectory = mkdtempSync(join(tmpdir(), "glow-tour-tarball-consumer-"));
 try {
   writeConsumerFixture(consumerDirectory);
-  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--package-lock=false"], consumerDirectory);
+  run(
+    "npm",
+    [
+      "install",
+      "--ignore-scripts",
+      "--no-audit",
+      "--no-fund",
+      "--package-lock=false",
+    ],
+    consumerDirectory,
+  );
   run("node", ["runtime-imports.mjs"], consumerDirectory);
+  run("node", ["render-react-default-tour.mjs"], consumerDirectory);
   run(
     "node",
     ["node_modules/typescript-side-effect-checks/bin/tsc", "--project", "tsconfig.json"],

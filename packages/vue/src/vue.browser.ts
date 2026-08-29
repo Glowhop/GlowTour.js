@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import type { StepContext } from "@glowhop/core-tour";
 import { Window } from "happy-dom";
+import { runDefaultTourAcceptance } from "../../../scripts/adapter-acceptance";
 import type { VueTourContent } from "./glow-tour";
 
 let window: Window;
@@ -31,6 +32,43 @@ afterEach(() => {
 });
 
 describe("vue adapter browser behavior", () => {
+  test("passes the shared default-tour acceptance contract", async () => {
+    const [{ createApp, h, nextTick }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = runtime.createGlowTour();
+    const app = createApp({
+      render: () => h(runtime.GlowTourDefault, { idPrefix: "vue-default", tour }),
+    });
+    app.mount(container);
+    await nextTick();
+    const root = container.querySelector<HTMLElement>("[data-glow-tour-root]");
+    assert.ok(root);
+
+    await runDefaultTourAcceptance({
+      content: (value) => value,
+      idPrefix: "vue-default",
+      name: "vue default",
+      root,
+      target,
+      tour,
+      async settle() {
+        await nextTick();
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+        await nextTick();
+      },
+      async unmount() {
+        app.unmount();
+        container.remove();
+        target.remove();
+      },
+    });
+  });
+
   test("exposes reactive tour state to descendants", async () => {
     const [{ createApp, defineComponent, h, nextTick }, runtime] = await Promise.all([
       import("vue"),
@@ -52,7 +90,8 @@ describe("vue adapter browser behavior", () => {
       },
     });
     const app = createApp({
-      render: () => h(runtime.GlowTourRoot, { tour }, () => h(Observer)),
+      render: () =>
+        h(runtime.GlowTourRoot, { tour }, () => [h(runtime.GlowTourPopover), h(Observer)]),
     });
     app.mount(container);
     await tour.run(workflow);
@@ -275,8 +314,10 @@ describe("vue adapter browser behavior", () => {
     const app = createApp({
       render: () =>
         h(runtime.GlowTourRoot, { idPrefix: "outer", tour: outer }, () => [
+          h(runtime.GlowTourPopover),
           h(runtime.GlowTourAdvanceTrigger),
           h(runtime.GlowTourRoot, { idPrefix: "inner", tour: inner }, () => [
+            h(runtime.GlowTourPopover),
             h(runtime.GlowTourAdvanceTrigger),
           ]),
         ]),
@@ -325,6 +366,7 @@ describe("vue adapter browser behavior", () => {
     const app = createApp({
       render: () =>
         h(runtime.GlowTourRoot, { tour }, () => [
+          h(runtime.GlowTourPopover),
           h(runtime.GlowTourCancelTrigger),
           h(runtime.GlowTourBackTrigger),
           showAdvance.value

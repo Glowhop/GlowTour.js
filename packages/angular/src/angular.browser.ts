@@ -6,7 +6,10 @@ import { Component, ErrorHandler, type OnInit } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
 import type { StepContext } from "@glowhop/core-tour";
 import { Window } from "happy-dom";
-import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
+import {
+  runAdapterAcceptance,
+  runDefaultTourAcceptance,
+} from "../../../scripts/adapter-acceptance";
 import type { AngularTourContent } from "./lib/glow-tour";
 import * as runtime from "./public-api";
 
@@ -46,6 +49,49 @@ async function settle() {
 }
 
 describe("angular adapter browser behavior", () => {
+  test("passes the shared default-tour acceptance contract", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    document.body.append(target);
+
+    @Component({
+      selector: "angular-default-tour-acceptance",
+      standalone: true,
+      imports: [runtime.GlowTourDefault],
+      template: '<glow-tour-default [tour]="tour" idPrefix="angular-default" />',
+    })
+    class DefaultTourAcceptanceHarness {
+      readonly tour = tour;
+    }
+
+    const host = document.createElement("angular-default-tour-acceptance");
+    document.body.append(host);
+    const app = await bootstrapApplication(DefaultTourAcceptanceHarness);
+    await settle();
+    app.tick();
+    const root = host.querySelector<HTMLElement>("[data-glow-tour-root]");
+    assert.ok(root);
+
+    await runDefaultTourAcceptance({
+      content: (value) => value,
+      idPrefix: "angular-default",
+      name: "angular default",
+      root,
+      target,
+      tour,
+      async settle() {
+        await settle();
+        app.tick();
+        await settle();
+      },
+      async unmount() {
+        await app.destroy();
+        host.remove();
+        target.remove();
+      },
+    });
+  });
+
   test("exposes reactive tour state to descendants", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");
@@ -63,9 +109,10 @@ describe("angular adapter browser behavior", () => {
     @Component({
       selector: "angular-tour-state-harness",
       standalone: true,
-      imports: [runtime.GlowTourRoot, TourStateObserver],
+      imports: [runtime.GlowTourRoot, runtime.GlowTourPopover, TourStateObserver],
       template: `
         <glow-tour-root [tour]="tour">
+          <glow-tour-popover />
           <angular-tour-state-observer />
         </glow-tour-root>
       `,
@@ -204,11 +251,13 @@ describe("angular adapter browser behavior", () => {
     @Component({
       selector: "angular-root-replacement",
       standalone: true,
-      imports: [runtime.GlowTourRoot, runtime.GlowTourAdvanceTrigger],
+      imports: [runtime.GlowTourRoot, runtime.GlowTourPopover, runtime.GlowTourAdvanceTrigger],
       template: `
         <glow-tour-root [tour]="tour" [idPrefix]="idPrefix">
+          <glow-tour-popover />
           <glow-tour-advance-trigger />
           <glow-tour-root [tour]="inner" idPrefix="inner">
+            <glow-tour-popover />
             <glow-tour-advance-trigger />
           </glow-tour-root>
         </glow-tour-root>
@@ -425,9 +474,10 @@ describe("angular adapter browser behavior", () => {
     @Component({
       selector: "angular-late-trigger",
       standalone: true,
-      imports: [runtime.GlowTourRoot, runtime.GlowTourAdvanceTrigger],
+      imports: [runtime.GlowTourRoot, runtime.GlowTourPopover, runtime.GlowTourAdvanceTrigger],
       template: `
         <glow-tour-root [tour]="tour">
+          <glow-tour-popover />
           @if (showAdvance) { <glow-tour-advance-trigger /> }
         </glow-tour-root>
       `,
@@ -531,12 +581,14 @@ describe("angular adapter browser behavior", () => {
       standalone: true,
       imports: [
         runtime.GlowTourRoot,
+        runtime.GlowTourPopover,
         runtime.GlowTourBackTrigger,
         runtime.GlowTourAdvanceTrigger,
         runtime.GlowTourCancelTrigger,
       ],
       template: `
         <glow-tour-root [tour]="tour">
+          <glow-tour-popover />
           <glow-tour-back-trigger [backLabel]="backLabel" [disabled]="disabled" />
           <glow-tour-advance-trigger [finishLabel]="finishLabel" [advanceLabel]="advanceLabel" [disabled]="disabled" (click)="onAdvanceClick($event)" />
           <glow-tour-cancel-trigger [ariaLabel]="cancelAria" [disabled]="disabled" />

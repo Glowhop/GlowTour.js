@@ -26,7 +26,6 @@ export type {
   StepActionInstruction,
   StepActionResult,
   StepBehavior,
-  StepConstructor,
   StepContext,
   StepEventContext,
   StepParameters,

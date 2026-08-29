@@ -55,7 +55,6 @@ export function mergePopoverOptions(
 
   const placementTryOrder = overrides?.placementTryOrder ?? defaults?.placementTryOrder;
   const hasArrow = !!defaults?.arrow || !!overrides?.arrow;
-  const hasButtons = !!defaults?.buttons || !!overrides?.buttons;
   const hasKeyboardShortcuts = !!defaults?.keyboardShortcuts || !!overrides?.keyboardShortcuts;
 
   return {
@@ -73,16 +72,8 @@ export function mergePopoverOptions(
         }
       : undefined,
     disableAutoFocus: overrides?.disableAutoFocus ?? defaults?.disableAutoFocus,
-    hideProgressIndicator: overrides?.hideProgressIndicator ?? defaults?.hideProgressIndicator,
     gap: overrides?.gap ?? defaults?.gap,
     placementTryOrder: cloneArray(placementTryOrder),
-    buttons: hasButtons
-      ? {
-          previousLabel: overrides?.buttons?.previousLabel ?? defaults?.buttons?.previousLabel,
-          advanceLabel: overrides?.buttons?.advanceLabel ?? defaults?.buttons?.advanceLabel,
-          finishLabel: overrides?.buttons?.finishLabel ?? defaults?.buttons?.finishLabel,
-        }
-      : undefined,
     keyboardShortcuts: hasKeyboardShortcuts
       ? {
           previous: cloneArray(

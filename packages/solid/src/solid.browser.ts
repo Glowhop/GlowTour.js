@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
-import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
+import {
+  runAdapterAcceptance,
+  runDefaultTourAcceptance,
+} from "../../../scripts/adapter-acceptance";
 
 let window: Window;
 const ADAPTER_BRIDGE_SYMBOL = Symbol.for("@glowhop/core-tour/adapter-bridge/v1");
@@ -63,6 +66,43 @@ afterEach(() => {
 });
 
 describe("solid adapter browser behavior", () => {
+  test("passes the shared default-tour acceptance contract", async () => {
+    const [{ createComponent }, { render }, { createGlowTour, DefaultTour }] = await Promise.all([
+      import("solid-js"),
+      import("solid-js/web"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const dispose = render(
+      () => createComponent(DefaultTour, { idPrefix: "solid-default", tour }),
+      container,
+    );
+    const root = container.querySelector<HTMLElement>("[data-glow-tour-root]");
+    assert.ok(root);
+
+    await runDefaultTourAcceptance({
+      content(value) {
+        return value;
+      },
+      idPrefix: "solid-default",
+      name: "solid default",
+      root,
+      target,
+      tour,
+      async settle() {
+        await new Promise((resolve) => window.setTimeout(resolve, 10));
+      },
+      async unmount() {
+        dispose();
+        container.remove();
+        target.remove();
+      },
+    });
+  });
+
   test("exposes reactive tour state to descendants", async () => {
     const [{ createComponent }, { Dynamic, render }, { createGlowTour, GlowTour, useTour }] =
       await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
@@ -89,7 +129,7 @@ describe("solid adapter browser behavior", () => {
         createComponent(GlowTour.Root, {
           tour,
           get children() {
-            return createComponent(Observer, {});
+            return [createComponent(GlowTour.Popover, {}), createComponent(Observer, {})];
           },
         }),
       container,
@@ -126,6 +166,7 @@ describe("solid adapter browser behavior", () => {
           tour: outer,
           get children() {
             return [
+              createComponent(GlowTour.Popover, {}),
               createComponent(GlowTour.AdvanceTrigger, {}),
               createComponent(GlowTour.Root, {
                 idPrefix: "inner",
@@ -175,12 +216,14 @@ describe("solid adapter browser behavior", () => {
     const dispose = render(() => {
       const [disabledFirst, updateDisabledFirst] = createSignal(true);
       setDisabledFirst = updateDisabledFirst;
+      let popover: ReturnType<typeof GlowTour.Popover> | undefined;
       return createComponent(GlowTour.Root, {
         tour,
         get children() {
+          popover ??= createComponent(GlowTour.Popover, {});
           const disabled = createComponent(GlowTour.AdvanceTrigger, { disabled: true });
           const enabled = createComponent(GlowTour.AdvanceTrigger, {});
-          return disabledFirst() ? [disabled, enabled] : [enabled, disabled];
+          return disabledFirst() ? [popover, disabled, enabled] : [popover, enabled, disabled];
         },
       });
     }, container);
@@ -218,10 +261,13 @@ describe("solid adapter browser behavior", () => {
     const dispose = render(() => {
       const [showAdvance, updateShowAdvance] = createSignal(false);
       setShowAdvance = updateShowAdvance;
+      let popover: ReturnType<typeof GlowTour.Popover> | undefined;
       return createComponent(GlowTour.Root, {
         tour,
         get children() {
+          popover ??= createComponent(GlowTour.Popover, {});
           return [
+            popover,
             createComponent(GlowTour.CancelTrigger, {}),
             createComponent(GlowTour.BackTrigger, {}),
             showAdvance() ? createComponent(GlowTour.AdvanceTrigger, {}) : null,
@@ -281,11 +327,14 @@ describe("solid adapter browser behavior", () => {
       return createComponent(GlowTour.Root, {
         tour,
         get children() {
-          return createComponent(GlowTour.AdvanceTrigger, {
-            get disabled() {
-              return disabled();
-            },
-          });
+          return [
+            createComponent(GlowTour.Popover, {}),
+            createComponent(GlowTour.AdvanceTrigger, {
+              get disabled() {
+                return disabled();
+              },
+            }),
+          ];
         },
       });
     }, container);
@@ -375,10 +424,13 @@ describe("solid adapter browser behavior", () => {
         createComponent(GlowTour.Root, {
           tour,
           get children() {
-            return createComponent(GlowTour.AdvanceTrigger, {
-              finishLabel: "Complete",
-              advanceLabel: "Continue",
-            });
+            return [
+              createComponent(GlowTour.Popover, {}),
+              createComponent(GlowTour.AdvanceTrigger, {
+                finishLabel: "Complete",
+                advanceLabel: "Continue",
+              }),
+            ];
           },
         }),
       container,
@@ -423,6 +475,7 @@ describe("solid adapter browser behavior", () => {
           },
           get children() {
             return [
+              createComponent(GlowTour.Popover, {}),
               createComponent(GlowTour.Content, {}),
               createComponent(GlowTour.AdvanceTrigger, {}),
             ];
@@ -472,6 +525,7 @@ describe("solid adapter browser behavior", () => {
           tour,
           get children() {
             return [
+              createComponent(GlowTour.Popover, {}),
               createComponent(GlowTour.BackTrigger, { disabled: true }),
               createComponent(GlowTour.AdvanceTrigger, { disabled: true }),
               createComponent(GlowTour.CancelTrigger, { disabled: true }),

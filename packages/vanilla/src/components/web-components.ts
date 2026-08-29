@@ -1,5 +1,5 @@
 import type { DynamicStepProps, TourState } from "@glowhop/core-tour";
-import { getAdapterBridge, type RootBinding, vanillaAdapter } from "../adapter-bridge";
+import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import type { VanillaGlowTour, VanillaTourContent } from "../glow-tour";
 
 export const GLOW_TOUR_ELEMENT_NAMES = [
@@ -29,12 +29,12 @@ declare global {
 const ROOT_CHANGE_EVENT = "glow-tour-root-change";
 
 interface RootContext {
-  readonly binding: RootBinding | null;
+  readonly binding: AdapterRootBinding | null;
   readonly tour: VanillaGlowTour | null;
 }
 
 interface ActiveRootBinding {
-  readonly binding: RootBinding;
+  readonly binding: AdapterRootBinding;
   readonly idPrefix: string | undefined;
   readonly tour: VanillaGlowTour;
 }
@@ -157,8 +157,7 @@ function reconcileRoot(root: GlowTourRootElement) {
     notifyRoot(root);
     return;
   }
-  const binding = getAdapterBridge(state.tour).connectRoot({
-    adapter: vanillaAdapter,
+  const binding = connectGlowTourRoot(state.tour, {
     idPrefix,
     root,
   });

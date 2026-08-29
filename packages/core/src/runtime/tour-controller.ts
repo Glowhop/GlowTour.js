@@ -44,8 +44,8 @@ function waitForTimer(delay: number, signal: AbortSignal) {
   });
 }
 
-interface TourControllerOptions {
-  assertCanRun?: () => void;
+interface TourControllerOptions<T> {
+  assertCanRun?: (workflow: WorkflowDefinition<T>) => void;
   onDispose?: () => void;
 }
 
@@ -92,7 +92,7 @@ export class TourController<T> {
 
   constructor(
     private readonly driver: TourViewDriver<T> = new NoopTourViewDriver<T>(),
-    private readonly options: TourControllerOptions = {},
+    private readonly options: TourControllerOptions<T> = {},
   ) {
     this.snapshot = new Observable<TourState<T>>(this.createSnapshot());
     this.driver.setCommands?.({
@@ -125,7 +125,7 @@ export class TourController<T> {
 
   async run(workflow: WorkflowDefinition<T>) {
     this.assertNotDisposed();
-    this.options.assertCanRun?.();
+    this.options.assertCanRun?.(workflow);
     const retainedPresentation = this.capturePresentation();
     const operation = this.beginOperation();
     this.workflow = workflow;
@@ -567,7 +567,7 @@ export function createGlowTour<T>(): GlowTour<T> {
   let bridge!: ReturnType<typeof attachRootBridge<T>>;
 
   const controller = new TourController<T>(driver, {
-    assertCanRun: () => bridge.assertConnected(),
+    assertCanRun: (workflow) => bridge.assertCanRun(workflow),
     onDispose: () => bridge.release(),
   });
 

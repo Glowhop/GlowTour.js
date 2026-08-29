@@ -1,7 +1,8 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import * as React from "react";
-import { getAdapterBridge, type RootBinding, reactAdapter } from "../adapter-bridge";
 import type { ReactTourContent } from "../glow-tour";
+import { DefaultTour } from "./default-tour";
 
 type Tour = CoreGlowTour<ReactTourContent>;
 type RootProps = Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "id" | "ref"> & {
@@ -27,7 +28,7 @@ type AdvanceTriggerProps = ButtonProps & { finishLabel?: string; advanceLabel?: 
 type CancelTriggerProps = ButtonProps;
 
 interface TourContextValue {
-  readonly binding: RootBinding | null;
+  readonly binding: AdapterRootBinding | null;
   readonly tour: Tour;
 }
 
@@ -46,7 +47,7 @@ function useTourSnapshot(tour: Tour): TourState<ReactTourContent> {
 }
 
 function useBoundElement<T extends Element>(
-  bind: (binding: RootBinding, element: T) => () => void,
+  bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
   const { binding } = useTourContext();
   const [element, setElement] = React.useState<T | null>(null);
@@ -66,8 +67,10 @@ function useStep(snapshot: TourState<ReactTourContent>) {
 }
 
 export function Root({ children, idPrefix, tour, ...props }: RootProps) {
-  const mounted = React.useRef<{ binding: RootBinding; element: HTMLDivElement } | null>(null);
-  const [binding, setBinding] = React.useState<RootBinding | null>(null);
+  const mounted = React.useRef<{ binding: AdapterRootBinding; element: HTMLDivElement } | null>(
+    null,
+  );
+  const [binding, setBinding] = React.useState<AdapterRootBinding | null>(null);
 
   const release = React.useCallback(() => {
     const current = mounted.current;
@@ -81,8 +84,7 @@ export function Root({ children, idPrefix, tour, ...props }: RootProps) {
     (element: HTMLDivElement | null) => {
       release();
       if (!element) return;
-      const nextBinding = getAdapterBridge(tour).connectRoot({
-        adapter: reactAdapter,
+      const nextBinding = connectGlowTourRoot(tour, {
         idPrefix,
         root: element,
       });
@@ -286,6 +288,7 @@ export function useTour(): TourState<ReactTourContent> {
 }
 
 export const GlowTour = {
+  Default: DefaultTour,
   Root,
   Popover,
   Header,

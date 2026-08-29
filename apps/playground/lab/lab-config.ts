@@ -27,13 +27,7 @@ export const LAB_CONFIG = {
           edgePadding: 18,
         },
         disableAutoFocus: false,
-        hideProgressIndicator: false,
         gap: 14,
-        buttons: {
-          previousLabel: "Précédent",
-          advanceLabel: "Continuer",
-          finishLabel: "Terminer le lab",
-        },
         keyboardShortcuts: {
           previous: ["ArrowLeft"],
           advance: ["Enter", "ArrowRight"],

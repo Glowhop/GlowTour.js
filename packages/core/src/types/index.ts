@@ -25,17 +25,6 @@ export interface WaitOptions {
   interval?: number;
 }
 
-export type WorkflowDirection = "advance" | "previous";
-export type WorkflowStatus =
-  | "not-started"
-  | "idle"
-  | "starting"
-  | "running"
-  | "paused"
-  | "finished"
-  | "cancelled"
-  | "error";
-
 export interface StepBehavior {
   allowInteraction?: boolean;
   missingTargetStrategy?: "wait" | "skip" | "error";
@@ -76,13 +65,7 @@ export interface PopoverOptions extends BaseOptions {
   placementTryOrder?: readonly TryOrderOptions[];
   arrow?: PopoverArrowOptions;
   disableAutoFocus?: boolean;
-  hideProgressIndicator?: boolean;
   gap?: number;
-  buttons?: {
-    previousLabel?: string;
-    advanceLabel?: string;
-    finishLabel?: string;
-  };
   keyboardShortcuts?: {
     /**
      * @default ["ArrowLeft", "Backspace"]
@@ -232,44 +215,11 @@ export interface GlowTour<T> {
   readonly state: ReadonlyTourState<T>;
 }
 
-export interface WorkflowStepPublicProps<T> {
-  initialProps: Readonly<DynamicStepProps<T>>;
-  currentProps: StepPropsStore<T>;
-  target: HTMLElement | null;
-}
-
-export interface WorkflowState<T> {
-  name: string;
-  totalSteps: number;
-  currentStepIndex: number;
-  currentStep: WorkflowStepPublicProps<T> | null;
-  direction: WorkflowDirection;
-  canAdvance: boolean;
-  canPrevious: boolean;
-  canCancel: boolean;
-  isFirstStep: boolean;
-  isLastStep: boolean;
-  status: WorkflowStatus;
-  startOptions: StartOptions;
-  error: Error | null;
-}
-
-export interface WorkflowControls<T> {
-  start: (workflow?: WorkflowDefinition<T>) => Promise<void>;
-  advance: () => Promise<void>;
-  previous: () => Promise<void>;
-  cancel: () => Promise<void>;
-  goTo: (index: number) => Promise<void>;
-}
-
-export interface StepConstructor<T> {
+export type StepParameters<T> = DynamicStepProps<T> & {
   target: TargetResolver;
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
   indicator?: IndicatorOptions;
   scroll?: ScrollOptions;
   behavior?: StepBehavior;
-  props: DynamicStepProps<T>;
-}
-
-export type StepParameters<T> = DynamicStepProps<T> & Omit<StepConstructor<T>, "props">;
+};

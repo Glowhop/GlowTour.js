@@ -1,4 +1,5 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import {
   type Accessor,
   createComponent,
@@ -15,8 +16,8 @@ import {
   type ValidComponent,
 } from "solid-js";
 import { Dynamic } from "solid-js/web";
-import { getAdapterBridge, type RootBinding, solidAdapter } from "../adapter-bridge";
 import type { SolidTourContent } from "../glow-tour";
+import { DefaultTour } from "./default-tour";
 
 type Tour = CoreGlowTour<SolidTourContent>;
 type RootProps = ParentProps<
@@ -43,7 +44,7 @@ type CancelTriggerProps = ButtonProps;
 type ButtonClickEvent = MouseEvent & { currentTarget: HTMLButtonElement; target: Element };
 
 interface TourContextValue {
-  readonly binding: () => RootBinding | null;
+  readonly binding: () => AdapterRootBinding | null;
   readonly tour: () => Tour;
 }
 
@@ -73,7 +74,7 @@ export function useTour(): Accessor<TourState<SolidTourContent>> {
 }
 
 function useBoundElement<T extends Element>(
-  bind: (binding: RootBinding, element: T) => () => void,
+  bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
   const context = useTourContext();
   const [element, setElement] = createSignal<T | null>(null);
@@ -93,15 +94,14 @@ function currentStep(snapshot: TourState<SolidTourContent>) {
 export function Root(props: RootProps): JSX.Element {
   const [local, other] = splitProps(props, ["children", "idPrefix", "tour"]);
   const [element, setElement] = createSignal<HTMLElement | null>(null);
-  const [binding, setBinding] = createSignal<RootBinding | null>(null);
+  const [binding, setBinding] = createSignal<AdapterRootBinding | null>(null);
 
   createEffect(() => {
     const root = element();
     const tour = local.tour;
     const idPrefix = local.idPrefix;
     if (!root) return;
-    const lease = getAdapterBridge(tour).connectRoot({
-      adapter: solidAdapter,
+    const lease = connectGlowTourRoot(tour, {
       idPrefix,
       root,
     });
@@ -398,6 +398,7 @@ export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
 }
 
 export const GlowTour = {
+  Default: DefaultTour,
   Root,
   Popover,
   Header,
