@@ -1,6 +1,13 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
+import type { Tour } from "./index";
 import * as runtime from "./index";
+
+type Assert<T extends true> = T;
+const createGlowTourReturnsConcreteTour: Assert<
+  ReturnType<typeof runtime.createGlowTour> extends Tour ? true : false
+> = true;
+void createGlowTourReturnsConcreteTour;
 
 describe("vanilla adapter public contract", () => {
   test("exports the Vanilla tour factories and intentional element metadata", () => {
