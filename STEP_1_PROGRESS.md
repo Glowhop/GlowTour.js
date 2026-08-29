@@ -19,12 +19,19 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [x] 4. Refuser les workflows non vides sans popover. (`e74b98e`, fonctionnellement validé ; exception TDD acceptée)
 - [x] 5. Étendre le contrat d’acceptance aux compositions par défaut. (`7d53fae`, avec le lot 6)
 - [x] 6. Ajouter `DefaultTour` à React et Solid. (`7d53fae`, revue propre)
-- [ ] 7. Ajouter `GlowTourDefault` à Vue et Angular.
+- [x] 7. Ajouter `GlowTourDefault` à Vue et Angular. (`5805f7a`, revue propre)
 - [ ] 8. Ajouter la factory de composition Vanilla.
 - [ ] 9. Vérifier la matrice publique, les builds et les tarballs.
 - [ ] Revue finale de branche.
 
 ## Dernière validation
+
+Task 7, validation ciblée du 29 août 2026 :
+
+- Contrats Vue/Angular : 7 passent, 0 échec.
+- Tests navigateur Vue/Angular : 25 passent, 0 échec.
+- Typecheck racine : passe.
+- Hiérarchie native et ordre `Cancel`, `Back`, `Advance` validés, y compris avec les hosts Angular.
 
 Tasks 5-6, validation ciblée du 29 août 2026 :
 
