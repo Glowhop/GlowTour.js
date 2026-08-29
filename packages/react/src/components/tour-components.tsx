@@ -1,7 +1,8 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { connectGlowTourRoot, type AdapterRootBinding } from "@glowhop/core-tour/adapter";
+import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import * as React from "react";
 import type { ReactTourContent } from "../glow-tour";
+import { DefaultTour } from "./default-tour";
 
 type Tour = CoreGlowTour<ReactTourContent>;
 type RootProps = Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "id" | "ref"> & {
@@ -287,6 +288,7 @@ export function useTour(): TourState<ReactTourContent> {
 }
 
 export const GlowTour = {
+  Default: DefaultTour,
   Root,
   Popover,
   Header,

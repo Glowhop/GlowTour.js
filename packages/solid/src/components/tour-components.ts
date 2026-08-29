@@ -1,5 +1,5 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { connectGlowTourRoot, type AdapterRootBinding } from "@glowhop/core-tour/adapter";
+import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import {
   type Accessor,
   createComponent,
@@ -17,6 +17,7 @@ import {
 } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import type { SolidTourContent } from "../glow-tour";
+import { DefaultTour } from "./default-tour";
 
 type Tour = CoreGlowTour<SolidTourContent>;
 type RootProps = ParentProps<
@@ -397,6 +398,7 @@ export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
 }
 
 export const GlowTour = {
+  Default: DefaultTour,
   Root,
   Popover,
   Header,

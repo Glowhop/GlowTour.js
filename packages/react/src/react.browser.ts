@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
-import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
+import {
+  runAdapterAcceptance,
+  runDefaultTourAcceptance,
+} from "../../../scripts/adapter-acceptance";
 
 let window: Window;
 
@@ -30,6 +33,53 @@ afterEach(() => {
 });
 
 describe("react adapter browser behavior", () => {
+  test("passes the shared default-tour acceptance contract", async () => {
+    const [React, { createRoot }, { createGlowTour, DefaultTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const root = createRoot(container);
+    const actTour = {
+      create: tour.create.bind(tour),
+      async run(workflow: Parameters<typeof tour.run>[0]) {
+        await React.act(() => tour.run(workflow));
+      },
+      state: tour.state,
+    };
+
+    await React.act(async () => {
+      root.render(React.createElement(DefaultTour, { idPrefix: "react-default", tour }));
+    });
+    const tourRoot = container.querySelector<HTMLElement>("[data-glow-tour-root]");
+    assert.ok(tourRoot);
+
+    await runDefaultTourAcceptance({
+      content(value) {
+        return value;
+      },
+      idPrefix: "react-default",
+      name: "react default",
+      root: tourRoot,
+      target,
+      tour: actTour,
+      async settle() {
+        await React.act(async () => {
+          await new Promise((resolve) => window.setTimeout(resolve, 0));
+        });
+      },
+      async unmount() {
+        await React.act(async () => root.unmount());
+        container.remove();
+        target.remove();
+      },
+    });
+  });
+
   test("exposes reactive tour state to descendants", async () => {
     const [React, { createRoot }, { createGlowTour, GlowTour, useTour }] = await Promise.all([
       import("react"),
@@ -51,7 +101,14 @@ describe("react adapter browser behavior", () => {
     }
     const root = createRoot(container);
     await React.act(async () => {
-      root.render(React.createElement(GlowTour.Root, { tour }, React.createElement(Observer)));
+      root.render(
+        React.createElement(
+          GlowTour.Root,
+          { tour },
+          React.createElement(GlowTour.Popover),
+          React.createElement(Observer),
+        ),
+      );
     });
     await React.act(async () => {
       await tour.run(workflow);
@@ -86,6 +143,7 @@ describe("react adapter browser behavior", () => {
         React.createElement(
           GlowTour.Root,
           { idPrefix: "outer", tour: outer },
+          React.createElement(GlowTour.Popover),
           React.createElement(GlowTour.AdvanceTrigger),
           React.createElement(
             GlowTour.Root,
@@ -141,6 +199,7 @@ describe("react adapter browser behavior", () => {
       return React.createElement(
         GlowTour.Root,
         { tour },
+        React.createElement(GlowTour.Popover),
         disabledFirst ? disabled : enabled,
         disabledFirst ? enabled : disabled,
       );
@@ -202,6 +261,7 @@ describe("react adapter browser behavior", () => {
       return React.createElement(
         GlowTour.Root,
         { tour },
+        React.createElement(GlowTour.Popover),
         visible ? React.createElement(GlowTour.AdvanceTrigger) : null,
       );
     }
@@ -240,6 +300,7 @@ describe("react adapter browser behavior", () => {
       return React.createElement(
         GlowTour.Root,
         { tour },
+        React.createElement(GlowTour.Popover),
         React.createElement(GlowTour.CancelTrigger),
         React.createElement(GlowTour.BackTrigger),
         showAdvance ? React.createElement(GlowTour.AdvanceTrigger) : null,
@@ -318,6 +379,7 @@ describe("react adapter browser behavior", () => {
         React.createElement(
           GlowTour.Root,
           { tour },
+          React.createElement(GlowTour.Popover),
           React.createElement(
             GlowTour.AdvanceTrigger,
             { onClick: () => (wrapperClicks += 1) },
@@ -363,6 +425,7 @@ describe("react adapter browser behavior", () => {
         React.createElement(
           GlowTour.Root,
           { tour },
+          React.createElement(GlowTour.Popover),
           React.createElement(GlowTour.AdvanceTrigger, {
             onClick: (event) => event.preventDefault(),
           }),
@@ -403,7 +466,12 @@ describe("react adapter browser behavior", () => {
 
     await React.act(async () => {
       root.render(
-        React.createElement(GlowTour.Root, { tour }, React.createElement(GlowTour.AdvanceTrigger)),
+        React.createElement(
+          GlowTour.Root,
+          { tour },
+          React.createElement(GlowTour.Popover),
+          React.createElement(GlowTour.AdvanceTrigger),
+        ),
       );
     });
     await React.act(async () => {
@@ -447,6 +515,7 @@ describe("react adapter browser behavior", () => {
         React.createElement(
           GlowTour.Root,
           { tour },
+          React.createElement(GlowTour.Popover),
           React.createElement(GlowTour.AdvanceTrigger, { onClick: () => tour.run(replacement) }),
         ),
       );
@@ -488,6 +557,7 @@ describe("react adapter browser behavior", () => {
       return React.createElement(
         GlowTour.Root,
         { tour },
+        React.createElement(GlowTour.Popover),
         React.createElement(GlowTour.AdvanceTrigger, { disabled }),
       );
     }
@@ -539,6 +609,7 @@ describe("react adapter browser behavior", () => {
         React.createElement(
           GlowTour.Root,
           { tour },
+          React.createElement(GlowTour.Popover),
           React.createElement(
             GlowTour.AdvanceTrigger,
             null,
@@ -664,6 +735,7 @@ describe("react adapter browser behavior", () => {
       return React.createElement(
         GlowTour.Root,
         { tour },
+        React.createElement(GlowTour.Popover),
         React.createElement(GlowTour.Content, null),
       );
     }
