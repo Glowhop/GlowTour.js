@@ -16,8 +16,8 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [x] 1. Nettoyer les options inertes et types legacy du core. (`a3b3bbb`, revue propre)
 - [x] 2. Publier le bridge partagé `core/adapter`. (`4b9a117` + `c45c4c1`, revue propre)
 - [x] 3. Migrer les cinq adapters vers le bridge partagé. (`9f04322`, revue propre)
-- [ ] 4. Refuser les workflows non vides sans popover.
-- [ ] 5. Étendre le contrat d’acceptance aux compositions par défaut.
+- [x] 4. Refuser les workflows non vides sans popover. (`e74b98e`, fonctionnellement validé ; exception TDD acceptée)
+- [ ] 5. Étendre le contrat d’acceptance aux compositions par défaut. (fusionné avec le lot 6)
 - [ ] 6. Ajouter `DefaultTour` à React et Solid.
 - [ ] 7. Ajouter `GlowTourDefault` à Vue et Angular.
 - [ ] 8. Ajouter la factory de composition Vanilla.
@@ -25,6 +25,14 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [ ] Revue finale de branche.
 
 ## Dernière validation
+
+Task 4, validation ciblée du 29 août 2026 :
+
+- Tests root bridge/controller : 77 passent, 0 échec.
+- Suite complète : 249 passent, 0 échec.
+- Typechecks core et racine : passent.
+- Revue fonctionnelle et qualité : passe.
+- Exception acceptée : la chronologie RED originale a été perdue avec l’arrêt du premier agent ; un test de sensibilité reconstruit confirme la régression.
 
 Task 3, validation ciblée du 28 août 2026 :
 
