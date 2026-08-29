@@ -7,8 +7,10 @@ describe("angular adapter contract", () => {
   test("exports an instance factory and standalone native components without legacy runtime values", () => {
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.injectGlowTour, "function");
+    assert.equal(typeof runtime.GlowTourDefault, "function");
 
     for (const component of [
+      runtime.GlowTourDefault,
       runtime.GlowTourRoot,
       runtime.GlowTourHeader,
       runtime.GlowTourContent,

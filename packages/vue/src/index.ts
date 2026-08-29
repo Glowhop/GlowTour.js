@@ -4,6 +4,7 @@ export type {
   StartOptions,
   WorkflowDefinition,
 } from "@glowhop/core-tour";
+export { GlowTourDefault } from "./components/default-tour";
 export {
   GlowTourAdvanceTrigger,
   GlowTourBackTrigger,

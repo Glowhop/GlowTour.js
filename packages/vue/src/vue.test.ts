@@ -8,8 +8,10 @@ describe("vue adapter contract", () => {
   test("exports an instance factory and named native components without legacy runtime values", () => {
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.useTour, "function");
+    assert.equal(typeof runtime.GlowTourDefault, "object");
 
     for (const component of [
+      runtime.GlowTourDefault,
       runtime.GlowTourRoot,
       runtime.GlowTourHeader,
       runtime.GlowTourContent,

@@ -39,34 +39,34 @@ function advanceTrigger(root: HTMLElement) {
   return element;
 }
 
-function requiredElement(root: HTMLElement, selector: string, name: string) {
+function requiredOwnedElement(root: HTMLElement, selector: string, name: string) {
+  const elements = Array.from(root.querySelectorAll<HTMLElement>(selector)).filter(
+    (element) => element.closest("[data-glow-tour-root]") === root,
+  );
   assert.equal(
-    root.querySelectorAll(selector).length,
+    elements.length,
     1,
     `${name}: ${selector} must occur exactly once inside the root`,
   );
-  const element = root.querySelector<HTMLElement>(selector);
+  const element = elements[0];
   if (!element) throw new Error(`${name}: ${selector} must exist inside the root`);
   return element;
 }
 
-function directChildMarkers(element: HTMLElement) {
-  const markers: string[] = [];
-  for (let index = 0; index < element.children.length; index += 1) {
-    const child = element.children.item(index);
-    if (!child) continue;
-    if (child.hasAttribute("data-glow-tour-overlay")) markers.push("overlay");
-    else if (child.hasAttribute("data-glow-tour-pointer")) markers.push("pointer");
-    else if (child.hasAttribute("data-glow-tour-popover")) markers.push("popover");
-    else if (child.hasAttribute("data-glow-tour-header")) markers.push("header");
-    else if (child.hasAttribute("data-glow-tour-content")) markers.push("content");
-    else if (child.hasAttribute("data-glow-tour-footer")) markers.push("footer");
-    else if (child.hasAttribute("data-glow-tour-cancel-trigger")) markers.push("cancel");
-    else if (child.hasAttribute("data-glow-tour-previous-trigger")) markers.push("previous");
-    else if (child.hasAttribute("data-glow-tour-advance-trigger")) markers.push("advance");
-    else markers.push("unknown");
+function assertContainedBy(child: HTMLElement, parent: HTMLElement, message: string) {
+  assert.ok(parent.contains(child), message);
+}
+
+function assertDocumentOrder(elements: readonly HTMLElement[], message: string) {
+  for (let index = 1; index < elements.length; index += 1) {
+    const previous = elements[index - 1];
+    const current = elements[index];
+    if (!previous || !current) continue;
+    assert.ok(
+      (previous.compareDocumentPosition(current) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      message,
+    );
   }
-  return markers;
 }
 
 function assertIdFamily(root: HTMLElement, otherRoot: HTMLElement, name: string) {
@@ -208,37 +208,28 @@ export async function runDefaultTourAcceptance<TContent>(
     0,
     `${name}: root must not contain nested roots`,
   );
-  const overlay = requiredElement(root, "[data-glow-tour-overlay]", name);
-  const pointer = requiredElement(root, "[data-glow-tour-pointer]", name);
-  const popover = requiredElement(root, "[data-glow-tour-popover]", name);
-  const header = requiredElement(root, "[data-glow-tour-header]", name);
-  const description = requiredElement(root, "[data-glow-tour-content]", name);
-  const footer = requiredElement(root, "[data-glow-tour-footer]", name);
-  const cancel = requiredElement(root, "[data-glow-tour-cancel-trigger]", name);
-  const previous = requiredElement(root, "[data-glow-tour-previous-trigger]", name);
-  const advance = requiredElement(root, "[data-glow-tour-advance-trigger]", name);
+  const overlay = requiredOwnedElement(root, "[data-glow-tour-overlay]", name);
+  const pointer = requiredOwnedElement(root, "[data-glow-tour-pointer]", name);
+  const popover = requiredOwnedElement(root, "[data-glow-tour-popover]", name);
+  const header = requiredOwnedElement(root, "[data-glow-tour-header]", name);
+  const description = requiredOwnedElement(root, "[data-glow-tour-content]", name);
+  const footer = requiredOwnedElement(root, "[data-glow-tour-footer]", name);
+  const cancel = requiredOwnedElement(root, "[data-glow-tour-cancel-trigger]", name);
+  const previous = requiredOwnedElement(root, "[data-glow-tour-previous-trigger]", name);
+  const advance = requiredOwnedElement(root, "[data-glow-tour-advance-trigger]", name);
 
-  assert.ok(overlay.parentElement === root, `${name}: overlay must be a root child`);
-  assert.ok(pointer.parentElement === root, `${name}: pointer must be a root child`);
-  assert.ok(popover.parentElement === root, `${name}: popover must be a root child`);
-  assert.deepEqual(
-    directChildMarkers(root),
-    ["overlay", "pointer", "popover"],
-    `${name}: root child order`,
-  );
-  assert.equal(header.parentElement, popover, `${name}: header must be inside popover`);
-  assert.equal(description.parentElement, popover, `${name}: content must be inside popover`);
-  assert.equal(footer.parentElement, popover, `${name}: footer must be inside popover`);
-  assert.deepEqual(
-    directChildMarkers(popover),
-    ["header", "content", "footer"],
-    `${name}: popover child order`,
-  );
-  assert.deepEqual(
-    directChildMarkers(footer),
-    ["cancel", "previous", "advance"],
-    `${name}: footer control order`,
-  );
+  for (const element of [overlay, pointer, popover]) {
+    assertContainedBy(element, root, `${name}: presentation must belong to the root`);
+  }
+  assertDocumentOrder([overlay, pointer, popover], `${name}: root presentation order`);
+  for (const element of [header, description, footer]) {
+    assertContainedBy(element, popover, `${name}: popover content must belong to the popover`);
+  }
+  assertDocumentOrder([header, description, footer], `${name}: popover content order`);
+  for (const trigger of [cancel, previous, advance]) {
+    assertContainedBy(trigger, footer, `${name}: footer control must belong to the footer`);
+  }
+  assertDocumentOrder([cancel, previous, advance], `${name}: footer control order`);
   assert.equal(popover.getAttribute("aria-labelledby"), header.id, `${name}: title relation`);
   assert.equal(
     popover.getAttribute("aria-describedby"),
@@ -269,7 +260,7 @@ export async function runDefaultTourAcceptance<TContent>(
 
   await tour.run(workflow());
   await settle();
-  requiredElement(root, "[data-glow-tour-cancel-trigger]", name).dispatchEvent(
+  requiredOwnedElement(root, "[data-glow-tour-cancel-trigger]", name).dispatchEvent(
     new MouseEvent("click", { bubbles: true, cancelable: true }),
   );
   await settle();
