@@ -21,11 +21,17 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [x] 6. Ajouter `DefaultTour` à React et Solid. (`7d53fae`, revue propre)
 - [x] 7. Ajouter `GlowTourDefault` à Vue et Angular. (`5805f7a`, revue propre)
 - [x] 8. Ajouter la factory de composition Vanilla. (`f746b90` + `f14103e`, revue propre)
-- [ ] 9a. Normaliser et tester la matrice publique des cinq adapters.
+- [x] 9a. Normaliser et tester la matrice publique des cinq adapters. (`bcebefc`, revue propre)
 - [ ] 9b. Vérifier les builds, manifests, tarballs et Changesets.
 - [ ] Revue finale de branche.
 
 ## Dernière validation
+
+Task 9a, validation ciblée du 29 août 2026 :
+
+- Contrats des cinq adapters : 15 passent, 0 échec.
+- Typecheck racine : passe.
+- Types concrets sans générique et formes runtime inchangées validés.
 
 Task 8, validation ciblée du 29 août 2026 :
 
