@@ -31,6 +31,15 @@ const packageNames: readonly PackageName[] = [
   "@glowhop/solid-tour",
   "@glowhop/vanilla-tour",
 ];
+const consumerPeerDependencies: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  "@glowhop/react-tour": { react: "^19.0.0" },
+  "@glowhop/vue-tour": { vue: "^3.5.0" },
+  "@glowhop/angular-tour": {
+    "@angular/common": "^18.2.0",
+    "@angular/core": "^18.2.0",
+  },
+  "@glowhop/solid-tour": { "solid-js": "^1.9.14" },
+};
 
 function run(command: string, args: readonly string[], cwd = root): string {
   const result = Bun.spawnSync([command, ...args], {
@@ -110,6 +119,11 @@ function assertPackedArtifact(packageName: PackageName) {
   assert.match(JSON.stringify(manifest), /"exports"/);
   assert.equal("devDependencies" in manifest, false);
   assert.equal("scripts" in manifest, false);
+  assert.deepEqual(
+    manifest.peerDependencies ?? {},
+    consumerPeerDependencies[packageName] ?? {},
+    `${packageName} packed peerDependencies must match the consumer contract`,
+  );
   assert.doesNotMatch(JSON.stringify(manifest), /workspace:\*/);
   assert.doesNotMatch(JSON.stringify(manifest), /["']\.\/src\//);
   assert.doesNotMatch(contents, /package\/src\//);
@@ -397,7 +411,6 @@ try {
     [
       "install",
       "--ignore-scripts",
-      "--legacy-peer-deps",
       "--no-audit",
       "--no-fund",
       "--package-lock=false",
