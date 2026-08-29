@@ -1281,7 +1281,7 @@ describe("DomTourViewDriver", () => {
     );
     assert.equal(document.activeElement, visible);
   });
-  test("excludes arbitrary popover controls from the modal Tab loop", async () => {
+  test("includes rich popover controls in the modal Tab loop", async () => {
     const { driver, elements } = installDriver(),
       summary = document.createElement("summary"),
       audio = document.createElement("audio"),
@@ -1296,9 +1296,9 @@ describe("DomTourViewDriver", () => {
     step.target = createTarget() as unknown as HTMLElement;
     await driver.show(step, "advance", new AbortController().signal);
     audio.focus();
-    assert.equal(document.activeElement, elements.advance);
+    assert.equal(document.activeElement, audio);
 
-    const tab = new MockKeyboardEvent("keydown", { key: "Tab", target: elements.advance });
+    const tab = new MockKeyboardEvent("keydown", { key: "Tab", target: audio });
     window.dispatchEvent(tab);
     assert.equal(tab.defaultPrevented, true);
     assert.equal(document.activeElement, elements.back);
@@ -1328,6 +1328,10 @@ describe("DomTourViewDriver", () => {
     firstChild.focus();
     assert.equal(document.activeElement, elements.advance);
     secondChild.focus();
+    assert.equal(document.activeElement, secondChild);
+    const tab = new MockKeyboardEvent("keydown", { key: "Tab", target: secondChild });
+    window.dispatchEvent(tab);
+    assert.equal(tab.defaultPrevented, false);
     assert.equal(document.activeElement, secondChild);
   });
   test("scopes trigger lookup to the registered root and follows element replacement and detachment", async () => {

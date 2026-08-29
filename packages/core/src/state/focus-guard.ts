@@ -1,6 +1,5 @@
 import {
-  FOCUSABLE_SELECTOR,
-  focusableElements,
+  focusableElementsOwnedBy,
   focusableTourControls,
   isFocusable,
 } from "./focusable";
@@ -95,34 +94,13 @@ export class FocusGuard {
     if (target === this.fallback) return true;
 
     const popover = this.popover;
-    if (popover?.contains(target)) {
-      if (target === popover) return true;
-      return this.containsFocusable(popover, focusableTourControls(popover), target);
-    }
+    if (popover && belongsToScope(target, popover)) return true;
 
     return (
       this.allowTargetInteraction &&
       !!this.allowedTarget &&
-      this.allowedTarget.contains(target) &&
-      this.containsFocusable(
-        this.allowedTarget,
-        focusableElements(this.allowedTarget),
-        target,
-        true,
-      )
+      belongsToScope(target, this.allowedTarget)
     );
-  }
-
-  private containsFocusable(
-    root: HTMLElement,
-    candidates: HTMLElement[],
-    target: Node,
-    includeRoot = false,
-  ) {
-    if (includeRoot && target === root && root.matches(FOCUSABLE_SELECTOR) && isFocusable(root)) {
-      return true;
-    }
-    return candidates.some((candidate) => candidate === target || candidate.contains(target));
   }
 
   private focusFallback() {
@@ -178,6 +156,16 @@ export class FocusGuard {
       }
     }
 
-    return candidates[0] ?? null;
+    return candidates[0] ?? focusableElementsOwnedBy(root)[0] ?? null;
   }
+}
+
+function belongsToScope(target: Node, scope: HTMLElement) {
+  if (!scope.contains(target)) return false;
+  const element = target instanceof HTMLElement ? target : target.parentElement;
+  if (!element) return target === scope;
+  return (
+    element.closest<HTMLElement>("[data-glow-tour-root]") ===
+    scope.closest<HTMLElement>("[data-glow-tour-root]")
+  );
 }

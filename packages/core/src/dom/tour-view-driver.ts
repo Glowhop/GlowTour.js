@@ -3,7 +3,7 @@ import PointerElement from "../elements/pointer";
 import PopoverElement from "../elements/popover";
 import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
-import { focusableTourControls } from "../state/focusable";
+import { focusableElementsOwnedBy } from "../state/focusable";
 import type { TourDirection } from "../types";
 import { isInViewport } from "../utils/utils";
 
@@ -456,7 +456,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private loopFocus(event: KeyboardEvent) {
     const popover = this.popover?.getElement();
     if (!(popover instanceof HTMLElement)) return;
-    const focusable = focusableTourControls(popover);
+    const focusable = focusableElementsOwnedBy(popover);
     if (focusable.length === 0) {
       event.preventDefault();
       popover.focus();
