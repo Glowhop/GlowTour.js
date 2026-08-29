@@ -76,7 +76,7 @@ function readPackedManifest(tarball: string): Record<string, unknown> {
   return JSON.parse(run("tar", ["-xOzf", tarball, "package/package.json"])) as Record<string, unknown>;
 }
 
-const snippetPattern = /<!--\s*glow-tour:snippet\s+(core|react|vue|angular|solid|vanilla)\s*-->\s*```[\w-]*\s*\n([\s\S]*?)\n```/g;
+const snippetPattern = /<!--\s*glow-tour:snippet\s+([\w-]+)\s*-->\s*```[\w-]*\s*\n([\s\S]*?)\n```/g;
 
 function readCanonicalSnippets(): Record<string, string> {
   const snippets: Record<string, string> = {};
@@ -86,7 +86,7 @@ function readCanonicalSnippets(): Record<string, string> {
       snippets[id] = source;
     }
   }
-  for (const id of ["core", "react", "vue", "angular", "solid", "vanilla"]) assert.ok(snippets[id], `missing canonical README snippet: ${id}`);
+  for (const id of ["core-workflow", "react-quick-start", "react-advanced", "vue-quick-start", "vue-advanced", "angular-quick-start", "angular-advanced", "solid-quick-start", "solid-advanced", "vanilla-quick-start", "vanilla-advanced"]) assert.ok(snippets[id], `missing canonical README snippet: ${id}`);
   return snippets;
 }
 
@@ -228,13 +228,12 @@ export default defineConfig({
 });
 `,
   );
-  writeFileSync(join(directory, "core.ts"), snippets.core);
-  writeFileSync(join(directory, "react.tsx"), snippets.react);
-  writeFileSync(join(directory, "solid.tsx"), snippets.solid);
-  writeFileSync(join(directory, "vanilla.ts"), snippets.vanilla);
-  writeFileSync(join(directory, "vue.vue"), snippets.vue);
-  writeFileSync(join(directory, "vue-entry.ts"), 'import "./vue.vue";\n');
-  writeFileSync(join(directory, "vue-vite.config.mts"), `import vue from "@vitejs/plugin-vue";\nimport { defineConfig } from "vite";\nexport default defineConfig({ plugins: [vue()], build: { outDir: "vue-dist", lib: { entry: "./vue-entry.ts", formats: ["es"] } } });\n`);
+  writeFileSync(join(directory, "core.ts"), snippets["core-workflow"]);
+  for (const id of ["react-quick-start", "react-advanced"]) writeFileSync(join(directory, `${id}.tsx`), snippets[id]);
+  for (const id of ["solid-quick-start", "solid-advanced"]) writeFileSync(join(directory, `${id}.tsx`), snippets[id]);
+  for (const id of ["vanilla-quick-start", "vanilla-advanced"]) writeFileSync(join(directory, `${id}.ts`), snippets[id]);
+  for (const id of ["vue-quick-start", "vue-advanced"]) { writeFileSync(join(directory, `${id}.vue`), snippets[id]); writeFileSync(join(directory, `${id}-entry.ts`), `import "./${id}.vue";\n`); }
+  writeFileSync(join(directory, "vue-vite.config.mts"), `import vue from "@vitejs/plugin-vue";\nimport { defineConfig } from "vite";\nexport default defineConfig({ plugins: [vue()], build: { outDir: "vue-dist", lib: { entry: "./vue-quick-start-entry.ts", formats: ["es"] } } });\n`);
   writeFileSync(
     join(directory, "runtime-imports.mjs"),
     `import assert from "node:assert/strict";
@@ -399,14 +398,14 @@ void registerGlowTourElements;
           strict: true,
           target: "ES2022",
         },
-        files: ["consumer.ts", "core.ts", "vanilla.ts"],
+        files: ["consumer.ts", "core.ts", "vanilla-quick-start.ts", "vanilla-advanced.ts"],
       },
       null,
       2,
     )}\n`,
   );
-  writeFileSync(join(directory, "react-tsconfig.json"), JSON.stringify({ extends: "./tsconfig.json", compilerOptions: { jsx: "react-jsx" }, files: ["react.tsx"] }, null, 2));
-  writeFileSync(join(directory, "solid-tsconfig.json"), JSON.stringify({ extends: "./tsconfig.json", compilerOptions: { jsx: "preserve", jsxImportSource: "solid-js" }, files: ["solid.tsx"] }, null, 2));
+  writeFileSync(join(directory, "react-tsconfig.json"), JSON.stringify({ extends: "./tsconfig.json", compilerOptions: { jsx: "react-jsx" }, files: ["react-quick-start.tsx", "react-advanced.tsx"] }, null, 2));
+  writeFileSync(join(directory, "solid-tsconfig.json"), JSON.stringify({ extends: "./tsconfig.json", compilerOptions: { jsx: "preserve", jsxImportSource: "solid-js" }, files: ["solid-quick-start.tsx", "solid-advanced.tsx"] }, null, 2));
   const angularDirectory = join(directory, "angular-app");
   mkdirSync(angularDirectory);
   writeFileSync(
@@ -449,7 +448,12 @@ void bootstrapApplication(TarballAngularApp);
       2,
     )}\n`,
   );
-  writeFileSync(join(angularDirectory, "main.ts"), snippets.angular);
+  writeFileSync(join(angularDirectory, "quick.ts"), snippets["angular-quick-start"]);
+  writeFileSync(join(angularDirectory, "advanced.ts"), snippets["angular-advanced"]);
+  writeFileSync(join(angularDirectory, "main.ts"), `export { Onboarding } from "./quick"; export { CustomTour } from "./advanced";\n`);
+  const angularConfig = JSON.parse(readFileSync(join(angularDirectory, "tsconfig.json"), "utf8")) as { files: string[] };
+  angularConfig.files = ["main.ts", "quick.ts", "advanced.ts"];
+  writeFileSync(join(angularDirectory, "tsconfig.json"), `${JSON.stringify(angularConfig, null, 2)}\n`);
 }
 
 assert.ok(existsSync(tarballDirectory), "run bun run pack before bun run test:tarballs");
@@ -482,6 +486,8 @@ try {
   run("node_modules/typescript-side-effect-checks/bin/tsc", ["--project", "react-tsconfig.json"], consumerDirectory);
   run("node_modules/typescript-side-effect-checks/bin/tsc", ["--project", "solid-tsconfig.json"], consumerDirectory);
   run("npx", ["vite", "build"], consumerDirectory);
+  run("npx", ["vite", "build", "--config", "vue-vite.config.mts"], consumerDirectory);
+  writeFileSync(join(consumerDirectory, "vue-vite.config.mts"), `import vue from "@vitejs/plugin-vue"; import { defineConfig } from "vite"; export default defineConfig({ plugins: [vue()], build: { outDir: "vue-dist-advanced", lib: { entry: "./vue-advanced-entry.ts", formats: ["es"] } } });`);
   run("npx", ["vite", "build", "--config", "vue-vite.config.mts"], consumerDirectory);
   const cssOutput = readdirSync(join(consumerDirectory, "css-dist"), { recursive: true }).find((fileName) =>
     fileName.endsWith(".css"),

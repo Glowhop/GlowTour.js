@@ -1,8 +1,8 @@
 # @glowhop/core-tour
 
-ESM-only workflow engine. Core has no overlay, popover, or other presentation. Calling `run()` before an adapter mounts a root fails because no root is connected; mounting a root without a popover fails because the required presentation elements are absent. An adapter/default composition must mount first. The adapter-author entry point is [`@glowhop/core-tour/adapter`](https://github.com/Glowhop/glow-tour/blob/main/packages/core/src/adapter.ts).
+ESM-only workflow engine. Core has no overlay, popover, or other presentation. Connecting a root succeeds without a popover; running a non-empty workflow fails if the root or popover is missing. The adapter-author entry point is [`@glowhop/core-tour/adapter`](https://github.com/Glowhop/glow-tour/blob/main/packages/core/src/adapter.ts).
 
-<!-- glow-tour:snippet core -->
+<!-- glow-tour:snippet core-workflow -->
 ```ts
 import { createGlowTour } from "@glowhop/core-tour";
 

@@ -6,8 +6,8 @@ const root = resolve(import.meta.dir, "..");
 const packages = ["core", "styles", "react", "vue", "angular", "solid", "vanilla"] as const;
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
-const canonicalIds = ["core", "react", "vue", "angular", "solid", "vanilla"] as const;
-const marker = /<!--\s*glow-tour:snippet\s+(core|react|vue|angular|solid|vanilla)\s*-->\s*```([\w-]*)\s*\n([\s\S]*?)\n```/g;
+const canonicalIds = ["core-workflow", "react-quick-start", "react-advanced", "vue-quick-start", "vue-advanced", "angular-quick-start", "angular-advanced", "solid-quick-start", "solid-advanced", "vanilla-quick-start", "vanilla-advanced"] as const;
+const marker = /<!--\s*glow-tour:snippet\s+([\w-]+)\s*-->\s*```([\w-]*)\s*\n([\s\S]*?)\n```/g;
 
 function canonicalSnippets() {
   const snippets = new Map<string, { file: string; language: string; source: string }>();
@@ -66,12 +66,10 @@ test("each public package has distinct documentation", () => {
 
 test("canonical snippets are uniquely marked and complete", () => {
   const snippets = canonicalSnippets();
-  expect(snippets.get("core")?.language).toBe("ts");
-  expect(snippets.get("react")?.language).toBe("tsx");
-  expect(snippets.get("solid")?.language).toBe("tsx");
-  expect(snippets.get("vue")?.language).toBe("vue");
-  expect(snippets.get("angular")?.language).toBe("ts");
-  expect(snippets.get("vanilla")?.language).toBe("ts");
+  expect(snippets.get("core-workflow")?.language).toBe("ts");
+  for (const id of ["react-quick-start", "react-advanced", "solid-quick-start", "solid-advanced"]) expect(snippets.get(id)?.language).toBe("tsx");
+  for (const id of ["vue-quick-start", "vue-advanced"]) expect(snippets.get(id)?.language).toBe("vue");
+  for (const id of ["angular-quick-start", "angular-advanced", "vanilla-quick-start", "vanilla-advanced"]) expect(snippets.get(id)?.language).toBe("ts");
   for (const { source } of snippets.values()) expect(source.trim().length).toBeGreaterThan(0);
 });
 
@@ -82,6 +80,12 @@ test("adapter guides cover the documented quick-start and advanced concerns", ()
       expect(readme.toLowerCase()).toContain(term.toLowerCase());
     }
   }
+  expect(read("packages/react/README.md")).toContain("<button type=\"button\" onClick={() => void tour.run(workflow)}>");
+  expect(read("packages/vue/README.md")).toContain("@click=\"start\"");
+  expect(read("packages/angular/README.md")).toContain('<button type="button" (click)="start()">');
+  expect(read("packages/angular/README.md")).toContain('<glow-tour-default [tour]="tour" />');
+  expect(read("packages/solid/README.md")).toContain("onClick={() => void tour.run(workflow)}");
+  expect(read("packages/vanilla/README.md")).toContain("startButton.addEventListener(\"click\"");
 });
 
 test("package builds require package-local READMEs", () => {
