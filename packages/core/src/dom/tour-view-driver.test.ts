@@ -90,11 +90,18 @@ class MockElement extends MockNode {
   constructor(readonly tagName: string) {
     super();
   }
+  get ownerDocument() {
+    return document;
+  }
   get parentElement() {
     return this.parent;
   }
   append(...children: MockElement[]) {
     for (const child of children) {
+      if (child.parent) {
+        const index = child.parent.children.indexOf(child);
+        if (index >= 0) child.parent.children.splice(index, 1);
+      }
       child.parent = this;
       this.children.push(child);
     }
@@ -867,6 +874,7 @@ describe("DomTourViewDriver", () => {
       step.target = createTarget() as unknown as HTMLElement;
       await driver.show(step, "advance", new AbortController().signal);
       assert.equal(createdAnimations.length, 3);
+      driver.dispose();
     }
   });
   test("clears step resources and terminal dispose remains idempotent", async () => {
@@ -1002,6 +1010,7 @@ describe("DomTourViewDriver", () => {
     );
     await new Promise<void>((resolve) => setTimeout(resolve));
     assert.equal(tour.state.get().status, "cancelled");
+    assert.equal(target.getAttribute("inert"), null);
   });
   test("preserves an adapter's consumer-disabled trigger marker", async () => {
     const { calls, driver, elements } = installDriver();
@@ -1057,6 +1066,7 @@ describe("DomTourViewDriver", () => {
       await Promise.resolve();
 
       assert.deepEqual(calls, []);
+      driver.dispose();
     }
   });
   test("defers trigger commands until a later consumer listener can prevent the native event", async () => {
@@ -1188,6 +1198,81 @@ describe("DomTourViewDriver", () => {
     await driver.show(allowed, "advance", new AbortController().signal);
     assert.equal(elements.popover.getAttribute("aria-modal"), null);
   });
+  test("inerts only sibling branches and restores their authored state", async () => {
+    const shell = document.createElement("main"),
+      authoredInert = document.createElement("aside"),
+      authoredChild = document.createElement("button"),
+      sibling = document.createElement("section"),
+      siblingChild = document.createElement("button"),
+      { driver, elements } = installDriver(),
+      target = createTarget(),
+      modal = createStep(),
+      interactive = createStep({ allowInteraction: true });
+    authoredInert.setAttribute("inert", "authored");
+    authoredInert.append(authoredChild);
+    sibling.append(siblingChild);
+    shell.append(authoredInert, sibling, elements.root);
+    document.body.append(shell);
+    modal.target = target as unknown as HTMLElement;
+    interactive.target = target as unknown as HTMLElement;
+
+    await driver.show(modal, "advance", new AbortController().signal);
+
+    assert.equal(authoredInert.getAttribute("inert"), "");
+    assert.equal(sibling.getAttribute("inert"), "");
+    assert.equal(target.getAttribute("inert"), "");
+    assert.equal(authoredChild.getAttribute("inert"), null);
+    assert.equal(siblingChild.getAttribute("inert"), null);
+    assert.equal(elements.root.getAttribute("inert"), null);
+    sibling.setAttribute("inert", "consumer");
+
+    await driver.show(interactive, "advance", new AbortController().signal);
+
+    assert.equal(authoredInert.getAttribute("inert"), "authored");
+    assert.equal(sibling.getAttribute("inert"), "consumer");
+    assert.equal(target.getAttribute("inert"), null);
+    assert.equal(elements.popover.getAttribute("aria-modal"), null);
+  });
+  test("rejects a second modal in one document but permits a nonmodal tour", async () => {
+    const first = installDriver(),
+      second = installDriver(),
+      firstStep = createStep(),
+      secondModal = createStep(),
+      secondInteractive = createStep({ allowInteraction: true });
+    firstStep.target = createTarget() as unknown as HTMLElement;
+    secondModal.target = createTarget() as unknown as HTMLElement;
+    secondInteractive.target = secondModal.target;
+
+    await first.driver.show(firstStep, "advance", new AbortController().signal);
+    await assert.rejects(
+      () => second.driver.show(secondModal, "advance", new AbortController().signal),
+      /only supports one active modal tour per document/,
+    );
+    assert.equal(second.elements.popover.getAttribute("aria-modal"), null);
+
+    await second.driver.show(secondInteractive, "advance", new AbortController().signal);
+    assert.equal(second.elements.popover.getAttribute("aria-modal"), null);
+
+    await first.driver.clear(new AbortController().signal);
+    await second.driver.show(secondModal, "advance", new AbortController().signal);
+    assert.equal(second.elements.popover.getAttribute("aria-modal"), "true");
+  });
+  test("releases modal ownership and inert branches on clear, mount release, and dispose", async () => {
+    for (const release of ["clear", "releaseMount", "dispose"] as const) {
+      const { driver, elements } = installDriver(),
+        target = createTarget(),
+        step = createStep();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      assert.equal(target.getAttribute("inert"), "");
+
+      if (release === "clear") await driver.clear(new AbortController().signal);
+      else driver[release]();
+
+      assert.equal(target.getAttribute("inert"), null);
+      assert.equal(elements.popover.getAttribute("aria-modal"), null);
+    }
+  });
   test("focuses the directional trigger after controller transitions settle", async () => {
     const { driver, elements } = installDriver(),
       firstTarget = createTarget(),
@@ -1209,6 +1294,11 @@ describe("DomTourViewDriver", () => {
     assert.equal(document.activeElement, elements.advance);
     await tour.previous();
     assert.equal(document.activeElement, elements.advance);
+    await tour.advance();
+    await tour.advance();
+    assert.equal(tour.state.get().status, "finished");
+    assert.equal(firstTarget.getAttribute("inert"), null);
+    assert.equal(secondTarget.getAttribute("inert"), null);
   });
   test("never restores external focus while replacing an active step", async () => {
     const launcher = document.createElement("button");
@@ -1697,6 +1787,52 @@ describe("DomTourViewDriver", () => {
     assert.equal(scrolls, 0);
     assert.equal(TestResizeObserver.instances.length, 0);
     assert.equal(window.listeners.get("keydown")?.size ?? 0, 0);
+  });
+  test("releases modal ownership when an active show is aborted", async () => {
+    animationMode = "controlled";
+    const first = installDriver(),
+      target = createTarget(),
+      step = createStep(),
+      operation = new AbortController();
+    step.target = target as unknown as HTMLElement;
+    const showing = first.driver.show(step, "advance", operation.signal);
+    await Promise.resolve();
+    assert.equal(target.getAttribute("inert"), "");
+
+    operation.abort();
+    await assert.rejects(() => showing, { name: "AbortError" });
+
+    assert.equal(target.getAttribute("inert"), null);
+    assert.equal(first.elements.popover.getAttribute("aria-modal"), null);
+    animationMode = "resolved";
+    const second = installDriver(),
+      secondStep = createStep();
+    secondStep.target = createTarget() as unknown as HTMLElement;
+    await second.driver.show(secondStep, "advance", new AbortController().signal);
+    second.driver.dispose();
+  });
+  test("releases modal ownership when showing the step fails", async () => {
+    const first = installDriver(),
+      target = createTarget(),
+      step = createStep();
+    step.target = target as unknown as HTMLElement;
+    Object.defineProperty(target, "getBoundingClientRect", {
+      value: () => {
+        throw new Error("geometry failed");
+      },
+    });
+
+    await assert.rejects(
+      () => first.driver.show(step, "advance", new AbortController().signal),
+      /geometry failed/,
+    );
+    assert.equal(first.elements.popover.getAttribute("aria-modal"), null);
+
+    const second = installDriver(),
+      secondStep = createStep();
+    secondStep.target = createTarget() as unknown as HTMLElement;
+    await second.driver.show(secondStep, "advance", new AbortController().signal);
+    second.driver.dispose();
   });
   test("rejects a mid-animation clear and leaves no listeners, observer, or animation continuation", async () => {
     const { driver } = installDriver(),

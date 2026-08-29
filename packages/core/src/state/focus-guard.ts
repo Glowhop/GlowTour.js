@@ -1,8 +1,4 @@
-import {
-  focusableElementsOwnedBy,
-  focusableTourControls,
-  isFocusable,
-} from "./focusable";
+import { focusableElementsOwnedBy, focusableTourControls, isFocusable } from "./focusable";
 
 type FocusDirection = "advance" | "previous";
 

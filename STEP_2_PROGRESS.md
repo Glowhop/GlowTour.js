@@ -22,9 +22,10 @@ Branche : `codex/tour-focus-step2`
 
 - [x] Baseline de la branche.
 - [x] Simplification du focus.
-- [ ] Modalité exclusive et inertness bornée.
-- [ ] Contrat d’acceptance cross-framework.
-- [ ] Changeset et validation finale.
+- [x] Modalité exclusive et inertness bornée.
+- [x] Contrat d’acceptance cross-framework.
+- [x] Changeset `minor` pour `@glowhop/core-tour`.
+- [ ] Validation finale.
 
 ## Baseline
 
@@ -37,12 +38,15 @@ Validation du 29 août 2026 :
 
 ## Commits
 
-- Focus : tests RED confirmés (4 échecs attendus), puis 71 tests ciblés et typecheck Core au vert.
+- `e2955dd fix(core): simplify interactive focus scope`
+- Modalité/acceptance : commit en attente.
 
 ## Dernière validation
 
-En attente.
+- Tests Core ciblés : 76 tests passent.
+- Contrat navigateur des cinq adapters : 69 tests passent.
+- `bun run check` et `bun run typecheck` passent.
 
 ## Reprise
 
-Reprendre à la modalité exclusive et l’inertness bornée. Aucun blocage connu.
+Reprendre à la validation finale complète, puis consigner ses résultats. Aucun blocage connu.

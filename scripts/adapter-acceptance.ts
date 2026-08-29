@@ -119,10 +119,16 @@ export async function runAdapterAcceptance<TContent>(
     target: HTMLElement,
     workflowName: string,
     captureProps?: (props: StepContext<TContent>["props"]) => void,
+    allowInteraction = false,
   ) =>
     tour
       .create(workflowName)
-      .step({ content: content("First content"), target, title: content("First title") })
+      .step({
+        behavior: allowInteraction ? { allowInteraction: true } : undefined,
+        content: content("First content"),
+        target,
+        title: content("First title"),
+      })
       .do(({ props }) => captureProps?.(props))
       .step({
         behavior: { allowInteraction: true },
@@ -146,7 +152,13 @@ export async function runAdapterAcceptance<TContent>(
       primaryProps = props;
     }),
   );
-  await secondaryTour.run(workflow(secondaryTour, secondaryTarget, `${name}-secondary`));
+  await assert.rejects(
+    () => secondaryTour.run(workflow(secondaryTour, secondaryTarget, `${name}-secondary-modal`)),
+    /only supports one active modal tour per document/,
+  );
+  await secondaryTour.run(
+    workflow(secondaryTour, secondaryTarget, `${name}-secondary`, undefined, true),
+  );
   await settle();
 
   assert.equal(primaryTour.state.get().status, "active", `${name}: primary active`);

@@ -29,9 +29,7 @@ export function focusableElementsOwnedBy(root: HTMLElement) {
 }
 
 export function focusableTourControls(root: HTMLElement) {
-  return focusableElementsOwnedBy(root).filter((element) =>
-    element.matches(TOUR_TRIGGER_SELECTOR),
-  );
+  return focusableElementsOwnedBy(root).filter((element) => element.matches(TOUR_TRIGGER_SELECTOR));
 }
 
 export function isFocusable(element: HTMLElement) {
