@@ -22,7 +22,9 @@
   "publishConfig": {
     "access": "public"
   },
-  "sideEffects": true,
+  "sideEffects": [
+    "./dist/auto.js"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Glowhop/glow-tour.git",
@@ -34,6 +36,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./auto": {
+      "types": "./dist/auto.d.ts",
+      "import": "./dist/auto.js"
     }
   },
   "dependencies": {

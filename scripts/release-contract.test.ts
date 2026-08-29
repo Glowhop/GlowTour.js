@@ -85,7 +85,7 @@ test("source manifests contain complete public npm metadata and preserve require
     vue: undefined,
     angular: undefined,
     solid: undefined,
-    vanilla: true,
+    vanilla: ["./dist/auto.js"],
   };
 
   for (const packageId of packageIds) {
@@ -100,6 +100,14 @@ test("source manifests contain complete public npm metadata and preserve require
     expect(manifest.publishConfig).toEqual({ access: "public" });
     expect(manifest.sideEffects).toEqual(expectedSideEffects[packageId]);
   }
+});
+
+test("the Vanilla package exposes separate pure and auto registration entries", () => {
+  const manifest = JSON.parse(read("packages/vanilla/package.json")) as Record<string, unknown>;
+  expect(manifest.exports).toEqual({
+    ".": { import: "./dist/index.js", types: "./dist/index.d.ts" },
+    "./auto": { import: "./dist/auto.js", types: "./dist/auto.d.ts" },
+  });
 });
 
 test("package builds copy shared documents and prefer package changelogs", () => {

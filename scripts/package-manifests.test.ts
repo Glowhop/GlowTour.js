@@ -72,8 +72,12 @@ test("preserves publish metadata and package-specific side effects", () => {
   ).toBe(false);
   expect(
     buildPublishedManifest(
-      { name: "@glowhop/vanilla-tour", sideEffects: true, version: "0.2.0" },
+      {
+        name: "@glowhop/vanilla-tour",
+        sideEffects: ["./dist/auto.js"],
+        version: "0.2.0",
+      },
       {},
     ).sideEffects,
-  ).toBe(true);
+  ).toEqual(["./auto.js"]);
 });

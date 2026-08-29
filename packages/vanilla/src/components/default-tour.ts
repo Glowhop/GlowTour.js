@@ -1,5 +1,5 @@
 import type { VanillaGlowTour } from "../glow-tour";
-import type { GlowTourRootElement } from "./web-components";
+import { areGlowTourElementsRegistered, type GlowTourRootElement } from "./web-components";
 
 export interface CreateDefaultTourElementOptions {
   readonly idPrefix?: string;
@@ -9,6 +9,11 @@ export function createDefaultTourElement(
   tour: VanillaGlowTour,
   options?: CreateDefaultTourElementOptions,
 ): GlowTourRootElement {
+  if (!areGlowTourElementsRegistered()) {
+    throw new Error(
+      'Glow Tour custom elements are not registered. Call registerGlowTourElements() or import "@glowhop/vanilla-tour/auto" before creating a default tour.',
+    );
+  }
   const root = document.createElement("glow-tour-root");
   root.tour = tour;
   root.idPrefix = options?.idPrefix;

@@ -16,6 +16,7 @@ describe("vanilla adapter public contract", () => {
       "GLOW_TOUR_ELEMENT_NAMES",
       "createDefaultTourElement",
       "createGlowTour",
+      "registerGlowTourElements",
     ]);
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.createDefaultTourElement, "function");
@@ -49,9 +50,104 @@ describe("vanilla adapter public contract", () => {
       });
       const noDomRuntime = await import(`./index?no-dom=${Date.now()}`);
       assert.equal(typeof noDomRuntime.createGlowTour, "function");
+      assert.doesNotThrow(() => noDomRuntime.registerGlowTourElements());
     } finally {
       Object.defineProperties(globalThis, {
         HTMLElement: { configurable: true, value: originalHTMLElement },
+        customElements: { configurable: true, value: originalCustomElements },
+        document: { configurable: true, value: originalDocument },
+      });
+    }
+  });
+
+  test("keeps the main entry pure and exposes explicit registration", async () => {
+    const originalHTMLElement = globalThis.HTMLElement;
+    const originalCustomElements = globalThis.customElements;
+    const definitions = new Map<string, CustomElementConstructor>();
+    class FakeHTMLElement {}
+    const registry = {
+      define(name: string, elementConstructor: CustomElementConstructor) {
+        definitions.set(name, elementConstructor);
+      },
+      get(name: string) {
+        return definitions.get(name);
+      },
+    } as unknown as CustomElementRegistry;
+    try {
+      Object.defineProperties(globalThis, {
+        HTMLElement: { configurable: true, value: FakeHTMLElement },
+        customElements: { configurable: true, value: registry },
+      });
+      const pureRuntime = await import(`./index?pure=${Date.now()}`);
+      assert.equal(definitions.size, 0);
+      pureRuntime.registerGlowTourElements();
+      assert.deepEqual([...definitions.keys()], pureRuntime.GLOW_TOUR_ELEMENT_NAMES);
+    } finally {
+      Object.defineProperties(globalThis, {
+        HTMLElement: { configurable: true, value: originalHTMLElement },
+        customElements: { configurable: true, value: originalCustomElements },
+      });
+    }
+  });
+
+  test("memoizes registrations and rejects incompatible constructors", async () => {
+    const originalHTMLElement = globalThis.HTMLElement;
+    const originalCustomElements = globalThis.customElements;
+    const definitions = new Map<string, CustomElementConstructor>();
+    class FakeHTMLElement {}
+    const registry = {
+      define(name: string, elementConstructor: CustomElementConstructor) {
+        definitions.set(name, elementConstructor);
+      },
+      get(name: string) {
+        return definitions.get(name);
+      },
+    } as unknown as CustomElementRegistry;
+    try {
+      Object.defineProperties(globalThis, {
+        HTMLElement: { configurable: true, value: FakeHTMLElement },
+        customElements: { configurable: true, value: registry },
+      });
+      const pureRuntime = await import(`./index?registry=${Date.now()}`);
+      pureRuntime.registerGlowTourElements();
+      const rootConstructor = definitions.get("glow-tour-root");
+      pureRuntime.registerGlowTourElements();
+      assert.equal(definitions.get("glow-tour-root"), rootConstructor);
+      definitions.set("glow-tour-root", class {} as CustomElementConstructor);
+      assert.throws(() => pureRuntime.registerGlowTourElements(), /incompatible constructor/);
+    } finally {
+      Object.defineProperties(globalThis, {
+        HTMLElement: { configurable: true, value: originalHTMLElement },
+        customElements: { configurable: true, value: originalCustomElements },
+      });
+    }
+  });
+
+  test("rejects default-tour creation before registration without creating markup", async () => {
+    const originalCustomElements = globalThis.customElements;
+    const originalDocument = globalThis.document;
+    let created = 0;
+    try {
+      Object.defineProperties(globalThis, {
+        customElements: { configurable: true, value: undefined },
+        document: {
+          configurable: true,
+          value: {
+            createElement() {
+              created += 1;
+              throw new Error("markup must not be created");
+            },
+          },
+        },
+      });
+      const pureRuntime = await import(`./index?default=${Date.now()}`);
+      assert.throws(() => pureRuntime.createDefaultTourElement(runtime.createGlowTour()), {
+        message:
+          'Glow Tour custom elements are not registered. Call registerGlowTourElements() or import "@glowhop/vanilla-tour/auto" before creating a default tour.',
+      });
+      assert.equal(created, 0);
+    } finally {
+      Object.defineProperties(globalThis, {
         customElements: { configurable: true, value: originalCustomElements },
         document: { configurable: true, value: originalDocument },
       });

@@ -17,7 +17,7 @@ const packageBuilds: readonly PackageBuild[] = [
   { id: "react", entrypoints: ["src/index.ts"] },
   { id: "vue", entrypoints: ["src/index.ts"] },
   { id: "solid", entrypoints: ["src/index.ts"] },
-  { id: "vanilla", entrypoints: ["src/index.ts"] },
+  { id: "vanilla", entrypoints: ["src/index.ts", "src/auto.ts"] },
 ];
 const externalPackages = [
   "@angular/common",

@@ -8,7 +8,7 @@ import {
 } from "../../../scripts/adapter-acceptance";
 import type { VanillaTourContent } from "./glow-tour";
 
-type VanillaRuntime = typeof import("./index");
+type VanillaRuntime = typeof import("./auto");
 
 let window: Window;
 let runtime: VanillaRuntime;
@@ -37,7 +37,7 @@ beforeAll(async () => {
   preUpgradeTour = createCoreGlowTour<string | Node>();
   preUpgradeRoot = document.createElement("glow-tour-root");
   Object.assign(preUpgradeRoot, { idPrefix: "pre-upgrade", tour: preUpgradeTour });
-  runtime = await import("./index");
+  runtime = await import("./auto");
 });
 
 beforeEach(() => document.body.replaceChildren());
@@ -412,237 +412,38 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(header.id, "move-second-title");
   });
 
-  test("keeps consumer disabled intent through property and attribute changes in idle and active states", async () => {
+  test("uses trigger disabled state as the dynamic source and migrates initial button state once", async () => {
     const tour = runtime.createGlowTour();
-    const target = document.createElement("button");
-    const element = root(tour, "consumer");
-    element.innerHTML =
-      "<glow-tour-popover></glow-tour-popover><glow-tour-back-trigger><button></button></glow-tour-back-trigger><glow-tour-advance-trigger><button></button></glow-tour-advance-trigger>";
-    document.body.append(target, element);
-    await settle();
-    const button = element.querySelector<HTMLButtonElement>("glow-tour-advance-trigger button");
-    const back = element.querySelector<HTMLButtonElement>("glow-tour-back-trigger button");
-    assert.ok(button);
-    assert.ok(back);
-    button.disabled = true;
-    const tourWorkflow = workflow(tour, target, "consumer");
-    await tour.run(tourWorkflow);
-    await settle();
-    assert.equal(button.disabled, true);
-    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    button.removeAttribute("disabled");
-    await settle();
-    assert.equal(button.disabled, false);
-    assert.equal(button.getAttribute("aria-disabled"), "false");
-    button.setAttribute("disabled", "");
-    await settle();
-    assert.equal(button.disabled, true);
-    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    button.removeAttribute("disabled");
-    await settle();
-    assert.equal(button.disabled, false);
-    back.disabled = true;
-    await settle();
-    assert.equal(back.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    await settle();
-    assert.equal(tour.state.get().currentStepIndex, 1);
-    assert.equal(back.disabled, true);
-    back.disabled = false;
-    await settle();
-    assert.equal(back.disabled, false);
-  });
-
-  test("treats authored aria-disabled as consumer intent through reconnect and toggles", async () => {
-    const tour = runtime.createGlowTour();
-    const target = document.createElement("button");
-    const rootElement = root(tour, "aria-disabled");
+    const rootElement = root(tour, "trigger-disabled");
     rootElement.innerHTML =
       '<glow-tour-popover></glow-tour-popover><glow-tour-advance-trigger><button aria-disabled="true">Advance</button></glow-tour-advance-trigger>';
-    document.body.append(target, rootElement);
-    await tour.run(workflow(tour, target, "aria disabled"));
-    await settle();
-    const trigger = rootElement.querySelector<HTMLElement>("glow-tour-advance-trigger");
-    const button = trigger?.querySelector<HTMLButtonElement>("button");
-    assert.ok(trigger);
-    assert.ok(button);
-    assert.equal(button.disabled, true);
-    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    trigger.remove();
-    await settle();
-    rootElement.append(trigger);
-    await settle();
-    assert.equal(button.getAttribute("aria-disabled"), "true");
-    assert.equal(button.disabled, true);
-    button.setAttribute("aria-disabled", "false");
-    await settle();
-    assert.equal(button.disabled, false);
-    assert.equal(button.hasAttribute("data-glow-tour-consumer-disabled"), false);
-    button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    await settle();
-    assert.equal(tour.state.get().currentStepIndex, 1);
-    button.setAttribute("aria-disabled", "true");
-    await settle();
-    assert.equal(button.disabled, true);
-    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    button.removeAttribute("aria-disabled");
-    await settle();
-    assert.equal(button.disabled, false);
-    assert.equal(button.hasAttribute("data-glow-tour-consumer-disabled"), false);
-  });
-
-  test("synchronizes same-tick aria-disabled intent across trigger remounts", async () => {
-    const tour = runtime.createGlowTour();
-    const target = document.createElement("button");
-    const rootElement = root(tour, "aria-same-tick");
-    rootElement.innerHTML =
-      "<glow-tour-popover></glow-tour-popover><glow-tour-advance-trigger><button>Advance</button></glow-tour-advance-trigger>";
-    document.body.append(target, rootElement);
-    await tour.run(workflow(tour, target, "aria same tick"));
-    await settle();
-    const trigger = rootElement.querySelector<HTMLElement>("glow-tour-advance-trigger");
-    const button = trigger?.querySelector<HTMLButtonElement>("button");
-    assert.ok(trigger);
-    assert.ok(button);
-    button.setAttribute("aria-disabled", "true");
-    assert.equal(button.disabled, true);
-    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    button.setAttribute("aria-disabled", "false");
-    assert.equal(button.disabled, false);
-    assert.equal(button.hasAttribute("data-glow-tour-consumer-disabled"), false);
-    trigger.remove();
-    rootElement.append(trigger);
-    assert.equal(button.getAttribute("aria-disabled"), "false");
-    assert.equal(button.disabled, false);
-    assert.equal(button.hasAttribute("data-glow-tour-consumer-disabled"), false);
-    button.setAttribute("aria-disabled", "true");
-    assert.equal(button.disabled, true);
-    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    trigger.remove();
-    rootElement.append(trigger);
-    assert.equal(button.getAttribute("aria-disabled"), "true");
-    assert.equal(button.disabled, true);
-    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), "true");
-  });
-
-  test("restores preexisting button descriptors and preserves consumer replacements", async () => {
-    const tour = runtime.createGlowTour();
-    const rootElement = root(tour, "descriptors");
-    const trigger = document.createElement("glow-tour-advance-trigger");
-    const button = document.createElement("button");
-    const nativeDisabled = Object.getOwnPropertyDescriptor(
-      Object.getPrototypeOf(button),
-      "disabled",
-    );
-    assert.ok(nativeDisabled?.get);
-    assert.ok(nativeDisabled?.set);
-    const originalDisabled: PropertyDescriptor = {
-      configurable: true,
-      get: () => nativeDisabled.get?.call(button),
-      set: (value: boolean) => nativeDisabled.set?.call(button, value),
-    };
-    const originalSetAttribute: PropertyDescriptor = {
-      configurable: true,
-      value: (name: string, value: string) =>
-        HTMLElement.prototype.setAttribute.call(button, name, value),
-    };
-    const originalRemoveAttribute: PropertyDescriptor = {
-      configurable: true,
-      value: (name: string) => HTMLElement.prototype.removeAttribute.call(button, name),
-    };
-    Object.defineProperties(button, {
-      disabled: originalDisabled,
-      removeAttribute: originalRemoveAttribute,
-      setAttribute: originalSetAttribute,
-    });
-    trigger.append(button);
-    rootElement.append(trigger);
     document.body.append(rootElement);
     await settle();
-    trigger.remove();
+    const trigger = rootElement.querySelector<HTMLElement>("glow-tour-advance-trigger");
+    const button = trigger?.querySelector<HTMLButtonElement>("button");
+    assert.ok(trigger);
+    assert.ok(button);
+    const disabledTrigger = trigger as HTMLElement & { disabled: boolean };
+    assert.equal(disabledTrigger.disabled, true);
+    assert.equal(button.disabled, true);
+    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), null);
+    disabledTrigger.disabled = false;
     await settle();
-    assert.equal(Object.getOwnPropertyDescriptor(button, "disabled")?.get, originalDisabled.get);
-    assert.equal(
-      Object.getOwnPropertyDescriptor(button, "setAttribute")?.value,
-      originalSetAttribute.value,
-    );
-    assert.equal(
-      Object.getOwnPropertyDescriptor(button, "removeAttribute")?.value,
-      originalRemoveAttribute.value,
-    );
-    rootElement.append(trigger);
-    await settle();
-    const replacement: PropertyDescriptor = {
-      configurable: true,
-      get: () => false,
-      set: () => {},
-    };
-    const replacementSetAttribute: PropertyDescriptor = {
-      configurable: true,
-      value: () => {},
-    };
-    const replacementRemoveAttribute: PropertyDescriptor = {
-      configurable: true,
-      value: () => {},
-    };
-    Object.defineProperties(button, {
-      disabled: replacement,
-      removeAttribute: replacementRemoveAttribute,
-      setAttribute: replacementSetAttribute,
-    });
-    trigger.remove();
-    await settle();
-    assert.equal(Object.getOwnPropertyDescriptor(button, "disabled")?.get, replacement.get);
-    assert.equal(
-      Object.getOwnPropertyDescriptor(button, "setAttribute")?.value,
-      replacementSetAttribute.value,
-    );
-    assert.equal(
-      Object.getOwnPropertyDescriptor(button, "removeAttribute")?.value,
-      replacementRemoveAttribute.value,
-    );
-  });
-
-  test("keeps disabled tracking when an own setAttribute descriptor is non-configurable", async () => {
-    const tour = runtime.createGlowTour();
-    const target = document.createElement("button");
-    const rootElement = root(tour, "non-configurable-set-attribute");
-    const trigger = document.createElement("glow-tour-advance-trigger");
-    const button = document.createElement("button");
-    const nativeSetAttribute = button.setAttribute.bind(button);
-    const setAttribute: PropertyDescriptor = {
-      configurable: false,
-      value: (name: string, value: string) => nativeSetAttribute(name, value),
-    };
-    Object.defineProperty(button, "setAttribute", setAttribute);
-    trigger.append(button);
-    rootElement.append(trigger);
-    rootElement.append(document.createElement("glow-tour-popover"));
-    document.body.append(target, rootElement);
-    await settle();
-    button.disabled = true;
-    await tour.run(workflow(tour, target, "non configurable"));
+    assert.equal(button.disabled, false);
+    assert.equal(button.getAttribute("aria-disabled"), "false");
+    trigger.setAttribute("aria-disabled", "true");
     await settle();
     assert.equal(button.disabled, true);
-    assert.equal(button.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    button.disabled = false;
-    button.setAttribute("aria-disabled", "true");
-    button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    trigger.removeAttribute("aria-disabled");
     await settle();
-    assert.equal(tour.state.get().currentStepIndex, 0);
-    button.setAttribute("aria-disabled", "false");
-    button.disabled = false;
     assert.equal(button.disabled, false);
-    assert.equal(button.hasAttribute("data-glow-tour-consumer-disabled"), false);
-    button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    await settle();
-    assert.equal(tour.state.get().currentStepIndex, 1);
+    button.disabled = true;
     trigger.remove();
     await settle();
-    assert.equal(
-      Object.getOwnPropertyDescriptor(button, "setAttribute")?.value,
-      setAttribute.value,
-    );
+    rootElement.append(trigger);
+    await settle();
+    assert.equal(disabledTrigger.disabled, false);
+    assert.equal(button.disabled, false);
   });
 
   test("restores trigger ownership and keeps generated last-step labels dynamic after reconnect", async () => {
@@ -675,7 +476,7 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(generatedButton.textContent, "Finished");
   });
 
-  test("delegates Cancel, Back, late Advance, consumer disabled state, prevented clicks, and custom shortcuts", async () => {
+  test("delegates Cancel, Back, late Advance, host disabled state, prevented clicks, and custom shortcuts", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");
     const element = root(tour, "controls");
@@ -703,16 +504,16 @@ describe("vanilla adapter browser behavior", () => {
     element.append(advance);
     await settle();
     assert.equal(advanceButton.getAttribute("aria-keyshortcuts"), "N");
-    advanceButton.disabled = true;
+    const disabledAdvance = advance as HTMLElement & { disabled: boolean };
+    disabledAdvance.disabled = true;
     await settle();
     assert.equal(advanceButton.getAttribute("aria-disabled"), "true");
-    assert.equal(advanceButton.getAttribute("data-glow-tour-consumer-disabled"), "true");
     advanceButton.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
     assert.equal(tour.state.get().currentStepIndex, 0);
-    advanceButton.disabled = false;
+    disabledAdvance.disabled = false;
     await settle();
-    assert.equal(advanceButton.hasAttribute("data-glow-tour-consumer-disabled"), false);
+    assert.equal(advanceButton.getAttribute("aria-disabled"), "false");
     advanceButton.addEventListener("click", (event) => event.preventDefault(), { once: true });
     advanceButton.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();

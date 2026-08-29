@@ -47,9 +47,21 @@ interface RootState {
 }
 
 const ROOT_STATES = new WeakMap<HTMLElement, RootState>();
+const REGISTRATIONS = new WeakMap<
+  CustomElementRegistry,
+  Readonly<Record<string, CustomElementConstructor>>
+>();
 
-function canRegisterCustomElements() {
-  return typeof customElements !== "undefined" && typeof HTMLElement !== "undefined";
+function customElementRegistry() {
+  if (typeof customElements === "undefined" || typeof HTMLElement === "undefined") return null;
+  return customElements;
+}
+
+export function areGlowTourElementsRegistered() {
+  const registry = customElementRegistry();
+  return (
+    registry !== null && GLOW_TOUR_ELEMENT_NAMES.every((name) => registry.get(name) !== undefined)
+  );
 }
 
 function rootContext(root: HTMLElement): RootContext | null {
@@ -275,30 +287,20 @@ function effectiveId(root: HTMLElement, selector: string, fallback: string) {
   return element?.id || fallback;
 }
 
-function sameDescriptor(left: PropertyDescriptor | undefined, right: PropertyDescriptor) {
-  return (
-    Boolean(left?.configurable) === Boolean(right.configurable) &&
-    Boolean(left?.enumerable) === Boolean(right.enumerable) &&
-    left?.get === right.get &&
-    left?.set === right.set &&
-    left?.value === right.value &&
-    Boolean(left?.writable) === Boolean(right.writable)
-  );
-}
-
-function restoreDescriptor(
-  element: object,
-  name: PropertyKey,
-  original: PropertyDescriptor | undefined,
-  wrapper: PropertyDescriptor,
-) {
-  if (!sameDescriptor(Object.getOwnPropertyDescriptor(element, name), wrapper)) return;
-  if (original) Object.defineProperty(element, name, original);
-  else Reflect.deleteProperty(element, name);
-}
-
 export function registerGlowTourElements() {
-  if (!canRegisterCustomElements()) return;
+  const registry = customElementRegistry();
+  if (!registry) return;
+  const previousDefinitions = REGISTRATIONS.get(registry);
+  if (previousDefinitions) {
+    for (const name of GLOW_TOUR_ELEMENT_NAMES) {
+      if (registry.get(name) !== previousDefinitions[name]) {
+        throw new Error(
+          `Glow Tour custom element "${name}" is registered with an incompatible constructor.`,
+        );
+      }
+    }
+    return;
+  }
 
   class GlowTourRoot extends HTMLElement implements GlowTourRootElement {
     get tour() {
@@ -532,35 +534,41 @@ export function registerGlowTourElements() {
     private labelOwned = false;
     private labelSnapshot?: string;
     private capabilityDisabled = false;
-    private consumerDisabled = false;
-    private disabledPropertyWrapped = false;
-    private syncingDisabled = false;
-    private status: TourState<VanillaTourContent>["status"] = "idle";
-    private restoreDisabledTracking?: () => void;
-    private disabledObserver?: MutationObserver;
+    private migratedInitialDisabledState = false;
+
+    get disabled() {
+      return this.hasAttribute("disabled");
+    }
+
+    set disabled(value: boolean) {
+      this.toggleAttribute("disabled", value);
+    }
+
+    static get observedAttributes() {
+      return ["aria-disabled", "disabled"];
+    }
 
     connectedCallback() {
       this.button =
         this.querySelector<HTMLButtonElement>("button") ?? document.createElement("button");
       this.labelOwned = this.button.childNodes.length === 0;
       this.labelSnapshot = this.button.textContent ?? "";
-      this.consumerDisabled =
-        this.button.disabled ||
-        this.button.getAttribute("aria-disabled") === "true" ||
-        this.button.getAttribute("data-glow-tour-consumer-disabled") === "true";
       if (!this.button.parentElement) this.appendChild(this.button);
+      if (
+        !this.migratedInitialDisabledState &&
+        (this.button.disabled || this.button.getAttribute("aria-disabled") === "true")
+      ) {
+        this.disabled = true;
+        this.migratedInitialDisabledState = true;
+      }
       this.button.type = "button";
       this.button.setAttribute(`data-glow-tour-${this.action}-trigger`, "");
       this.managedAttributes.set(this.button, "data-glow-tour-control-managed", "");
-      this.trackConsumerDisabled();
+      this.syncDisabled();
       super.connectedCallback();
     }
 
     override disconnectedCallback() {
-      this.restoreDisabledTracking?.();
-      this.restoreDisabledTracking = undefined;
-      this.disabledObserver?.disconnect();
-      this.disabledObserver = undefined;
       if (this.button && this.labelOwned && this.labelSnapshot !== undefined) {
         this.button.textContent = this.labelSnapshot;
       }
@@ -568,10 +576,8 @@ export function registerGlowTourElements() {
       super.disconnectedCallback();
     }
 
-    protected override restoreManagedAttributes() {
-      this.syncingDisabled = true;
-      super.restoreManagedAttributes();
-      this.syncingDisabled = false;
+    attributeChangedCallback(name: string) {
+      if (name === "aria-disabled" || name === "disabled") this.syncDisabled();
     }
 
     protected render(
@@ -593,7 +599,6 @@ export function registerGlowTourElements() {
         );
       }
       const details = this.details(state, props);
-      this.status = state.status;
       this.hidden = details.hidden;
       this.capabilityDisabled = state.status === "active" && details.disabled;
       this.syncDisabled();
@@ -605,140 +610,12 @@ export function registerGlowTourElements() {
 
     private syncDisabled() {
       if (!this.button) return;
-      if (
-        !this.disabledPropertyWrapped &&
-        !this.managedAttributes.isManaged(this.button, "disabled")
-      ) {
-        this.consumerDisabled =
-          this.button.disabled ||
-          this.button.getAttribute("aria-disabled") === "true" ||
-          this.button.getAttribute("data-glow-tour-consumer-disabled") === "true";
-      }
-      const disabled = this.effectiveDisabled();
+      const disabled =
+        this.capabilityDisabled || this.disabled || this.getAttribute("aria-disabled") === "true";
       this.managedAttributes.capture(this.button, "disabled");
-      this.syncingDisabled = true;
-      try {
-        this.button.disabled = disabled;
-        this.managedAttributes.note(this.button, "disabled");
-        if (!this.managedAttributes.isAuthored(this.button, "aria-disabled")) {
-          this.managedAttributes.set(this.button, "aria-disabled", String(disabled));
-        }
-        if (!this.managedAttributes.isAuthored(this.button, "data-glow-tour-consumer-disabled")) {
-          this.managedAttributes.set(
-            this.button,
-            "data-glow-tour-consumer-disabled",
-            this.consumerDisabled ? "true" : null,
-          );
-        }
-      } finally {
-        this.syncingDisabled = false;
-      }
-    }
-
-    private effectiveDisabled() {
-      return this.capabilityDisabled || this.consumerDisabled;
-    }
-
-    private trackConsumerDisabled() {
-      const button = this.button;
-      if (!button) return;
-      const originalDisabled = Object.getOwnPropertyDescriptor(button, "disabled");
-      const originalSetAttribute = Object.getOwnPropertyDescriptor(button, "setAttribute");
-      const originalRemoveAttribute = Object.getOwnPropertyDescriptor(button, "removeAttribute");
-      let prototype: object | null = Object.getPrototypeOf(button);
-      let inheritedDisabled: PropertyDescriptor | undefined;
-      while (prototype && !inheritedDisabled) {
-        inheritedDisabled = Object.getOwnPropertyDescriptor(prototype, "disabled");
-        prototype = Object.getPrototypeOf(prototype);
-      }
-      const descriptor = originalDisabled ?? inheritedDisabled;
-      const setAttribute = button.setAttribute;
-      const removeAttribute = button.removeAttribute;
-      const restores: (() => void)[] = [];
-      if (descriptor?.get && descriptor.set && originalDisabled?.configurable !== false) {
-        const disabledWrapper: PropertyDescriptor = {
-          configurable: true,
-          get: () => descriptor.get?.call(button),
-          set: (value: boolean) => {
-            descriptor.set?.call(button, value);
-            if (this.syncingDisabled) return;
-            if (this.status === "starting" || this.status === "transitioning") return;
-            this.setConsumerDisabled(Boolean(value));
-          },
-        };
-        Object.defineProperty(button, "disabled", disabledWrapper);
-        this.disabledPropertyWrapped = true;
-        restores.push(() =>
-          restoreDescriptor(button, "disabled", originalDisabled, disabledWrapper),
-        );
-      }
-      if (originalRemoveAttribute?.configurable !== false) {
-        const removeAttributeWrapper: PropertyDescriptor = {
-          configurable: true,
-          value: (name: string) => {
-            removeAttribute.call(button, name);
-            if (name === "disabled" && !this.syncingDisabled) this.setConsumerDisabled(false);
-            if (name === "aria-disabled" && !this.syncingDisabled) this.setConsumerDisabled(false);
-          },
-        };
-        Object.defineProperty(button, "removeAttribute", removeAttributeWrapper);
-        restores.push(() =>
-          restoreDescriptor(
-            button,
-            "removeAttribute",
-            originalRemoveAttribute,
-            removeAttributeWrapper,
-          ),
-        );
-      }
-      if (originalSetAttribute?.configurable !== false) {
-        const setAttributeWrapper: PropertyDescriptor = {
-          configurable: true,
-          value: (name: string, value: string) => {
-            setAttribute.call(button, name, value);
-            if (name === "disabled" && !this.syncingDisabled) this.setConsumerDisabled(true);
-            if (name === "aria-disabled" && !this.syncingDisabled) {
-              this.setConsumerDisabled(value === "true");
-            }
-          },
-        };
-        Object.defineProperty(button, "setAttribute", setAttributeWrapper);
-        restores.push(() =>
-          restoreDescriptor(button, "setAttribute", originalSetAttribute, setAttributeWrapper),
-        );
-      }
-      this.restoreDisabledTracking = () => {
-        for (const restore of restores) restore();
-        this.disabledPropertyWrapped = false;
-      };
-      this.disabledObserver = new MutationObserver((records) => {
-        if (!this.button || this.syncingDisabled) return;
-        this.managedAttributes.relinquishChanged(this.button);
-        if (
-          records.some((record) => record.attributeName === "aria-disabled") &&
-          this.managedAttributes.isAuthored(this.button, "aria-disabled")
-        ) {
-          this.setConsumerDisabled(this.button.getAttribute("aria-disabled") === "true");
-          return;
-        }
-        if (
-          records.some((record) => record.attributeName === "aria-disabled") &&
-          this.button.disabled === this.effectiveDisabled()
-        ) {
-          return;
-        }
-        this.setConsumerDisabled(this.button.disabled);
-      });
-      this.disabledObserver.observe(button, {
-        attributeFilter: ["aria-disabled", "disabled"],
-        attributes: true,
-      });
-    }
-
-    private setConsumerDisabled(disabled: boolean) {
-      if (!this.button) return;
-      this.consumerDisabled = disabled;
-      this.syncDisabled();
+      this.button.disabled = disabled;
+      this.managedAttributes.note(this.button, "disabled");
+      this.managedAttributes.set(this.button, "aria-disabled", String(disabled));
     }
 
     protected abstract details(
@@ -807,6 +684,15 @@ export function registerGlowTourElements() {
     "glow-tour-overlay": GlowTourOverlay,
   };
   for (const name of GLOW_TOUR_ELEMENT_NAMES) {
-    if (!customElements.get(name)) customElements.define(name, definitions[name]);
+    const existing = registry.get(name);
+    if (existing && existing !== definitions[name]) {
+      throw new Error(
+        `Glow Tour custom element "${name}" is registered with an incompatible constructor.`,
+      );
+    }
   }
+  for (const name of GLOW_TOUR_ELEMENT_NAMES) {
+    registry.define(name, definitions[name]);
+  }
+  REGISTRATIONS.set(registry, definitions);
 }

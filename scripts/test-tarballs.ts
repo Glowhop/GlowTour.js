@@ -109,7 +109,9 @@ function assertPackedArtifact(packageName: PackageName) {
     manifest.sideEffects,
     packageName === "@glowhop/styles-tour"
       ? ["*.css"]
-      : packageName === "@glowhop/vanilla-tour",
+      : packageName === "@glowhop/vanilla-tour"
+        ? ["./auto.js"]
+        : false,
   );
   assert.deepEqual(manifest.repository, {
     directory: `packages/${packageName.replace("@glowhop/", "").replace("-tour", "")}`,
@@ -143,6 +145,14 @@ function assertPackedArtifact(packageName: PackageName) {
   if (packageName === "@glowhop/core-tour") {
     assert.match(contents, /package\/adapter\.js$/m);
     assert.match(contents, /package\/adapter\.d\.ts$/m);
+  }
+  if (packageName === "@glowhop/vanilla-tour") {
+    assert.match(contents, /package\/auto\.js$/m);
+    assert.match(contents, /package\/auto\.d\.ts$/m);
+    assert.deepEqual(manifest.exports, {
+      ".": { import: "./index.js", types: "./index.d.ts" },
+      "./auto": { import: "./auto.js", types: "./auto.d.ts" },
+    });
   }
 }
 
@@ -216,6 +226,7 @@ import { GlowTourDefault as VueGlowTourDefault, GlowTourRoot as VueGlowTourRoot 
 import { GlowTourDefault as AngularGlowTourDefault, GlowTourRoot as AngularGlowTourRoot } from "@glowhop/angular-tour";
 import { DefaultTour as SolidDefaultTour, GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
 import { createDefaultTourElement, createGlowTour } from "@glowhop/vanilla-tour";
+import { registerGlowTourElements } from "@glowhop/vanilla-tour/auto";
 
 assert.deepEqual(Object.keys(CoreTour), ["createGlowTour"]);
 assert.deepEqual(Object.keys(CoreAdapter), ["connectGlowTourRoot"]);
@@ -231,6 +242,7 @@ assert.equal(typeof SolidDefaultTour, "function");
 assert.equal(SolidGlowTour.Default, SolidDefaultTour);
 assert.equal(typeof createGlowTour, "function");
 assert.equal(typeof createDefaultTourElement, "function");
+assert.equal(typeof registerGlowTourElements, "function");
 `,
   );
   writeFileSync(
@@ -291,6 +303,7 @@ import type {
   WorkflowDefinition as VanillaWorkflowDefinition,
 } from "@glowhop/vanilla-tour";
 import { createGlowTour } from "@glowhop/vanilla-tour";
+import { registerGlowTourElements } from "@glowhop/vanilla-tour/auto";
 
 const reactTour: ReactTour = createReactGlowTour();
 const reactState: ReactTourState | null = null;
@@ -346,6 +359,7 @@ void VueGlowTourRoot;
 void AngularGlowTourRoot;
 void SolidGlowTour;
 void createGlowTour;
+void registerGlowTourElements;
 `,
   );
   writeFileSync(
