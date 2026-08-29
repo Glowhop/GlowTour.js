@@ -1,16 +1,22 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { Tour } from "./index";
+import type { DynamicStepProps, StartOptions, Tour, TourState, WorkflowDefinition } from "./index";
 import * as runtime from "./index";
 
-type Assert<T extends true> = T;
-const createGlowTourReturnsConcreteTour: Assert<
-  ReturnType<typeof runtime.createGlowTour> extends Tour ? true : false
-> = true;
-void createGlowTourReturnsConcreteTour;
+const tour: Tour = runtime.createGlowTour();
+const tourState: TourState | null = null;
+const dynamicStepProps: DynamicStepProps | null = null;
+const workflowDefinition: WorkflowDefinition | null = null;
+const startOptions: StartOptions | null = null;
+void [tour, tourState, dynamicStepProps, workflowDefinition, startOptions];
 
 describe("vanilla adapter public contract", () => {
   test("exports the Vanilla tour factories and intentional element metadata", () => {
+    assert.deepEqual(Object.keys(runtime).sort(), [
+      "GLOW_TOUR_ELEMENT_NAMES",
+      "createDefaultTourElement",
+      "createGlowTour",
+    ]);
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.createDefaultTourElement, "function");
     assert.equal("glowTour" in runtime, false);

@@ -1,10 +1,34 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { renderToString } from "solid-js/web";
+import type { DynamicStepProps, StartOptions, Tour, TourState, WorkflowDefinition } from "./index";
 import * as runtime from "./index";
+
+const tour: Tour = runtime.createGlowTour();
+const tourState: TourState | null = null;
+const dynamicStepProps: DynamicStepProps | null = null;
+const workflowDefinition: WorkflowDefinition | null = null;
+const startOptions: StartOptions | null = null;
+void [tour, tourState, dynamicStepProps, workflowDefinition, startOptions];
 
 describe("solid adapter contract", () => {
   test("exports an instance factory and component namespace without legacy runtime values", () => {
+    assert.deepEqual(Object.keys(runtime).sort(), [
+      "AdvanceTrigger",
+      "BackTrigger",
+      "CancelTrigger",
+      "Content",
+      "DefaultTour",
+      "Footer",
+      "GlowTour",
+      "Header",
+      "Overlay",
+      "Pointer",
+      "Popover",
+      "Root",
+      "createGlowTour",
+      "useTour",
+    ]);
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.GlowTour, "object");
     assert.equal(typeof runtime.useTour, "function");

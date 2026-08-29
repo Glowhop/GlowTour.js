@@ -1,9 +1,4 @@
-export type {
-  DynamicStepProps,
-  GlowTour as Tour,
-  StartOptions,
-  WorkflowDefinition,
-} from "@glowhop/core-tour";
+export type { StartOptions } from "@glowhop/core-tour";
 export { GlowTourDefault } from "./components/default-tour";
 export {
   GlowTourAdvanceTrigger,
@@ -18,5 +13,11 @@ export {
   GlowTourRoot,
   useTour,
 } from "./components/tour-components";
-export type { VueTourContent } from "./glow-tour";
+export type {
+  DynamicStepProps,
+  Tour,
+  TourState,
+  VueTourContent,
+  WorkflowDefinition,
+} from "./glow-tour";
 export { createGlowTour } from "./glow-tour";

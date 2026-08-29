@@ -2,10 +2,33 @@ import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { renderToString } from "@vue/server-renderer";
 import { createSSRApp, h } from "vue";
+import type { DynamicStepProps, StartOptions, Tour, TourState, WorkflowDefinition } from "./index";
 import * as runtime from "./index";
+
+const tour: Tour = runtime.createGlowTour();
+const tourState: TourState | null = null;
+const dynamicStepProps: DynamicStepProps | null = null;
+const workflowDefinition: WorkflowDefinition | null = null;
+const startOptions: StartOptions | null = null;
+void [tour, tourState, dynamicStepProps, workflowDefinition, startOptions];
 
 describe("vue adapter contract", () => {
   test("exports an instance factory and named native components without legacy runtime values", () => {
+    assert.deepEqual(Object.keys(runtime).sort(), [
+      "GlowTourAdvanceTrigger",
+      "GlowTourBackTrigger",
+      "GlowTourCancelTrigger",
+      "GlowTourContent",
+      "GlowTourDefault",
+      "GlowTourFooter",
+      "GlowTourHeader",
+      "GlowTourOverlay",
+      "GlowTourPointer",
+      "GlowTourPopover",
+      "GlowTourRoot",
+      "createGlowTour",
+      "useTour",
+    ]);
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.useTour, "function");
     assert.equal(typeof runtime.GlowTourDefault, "object");
