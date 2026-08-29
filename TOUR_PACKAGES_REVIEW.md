@@ -331,7 +331,6 @@ Il n'est pas nécessaire de créer un huitième package. Un sous-export `core/ad
 1. Autoriser tous les contrôles focalisables dans le popover.
 2. Corriger la modalité pour les technologies d'assistance.
 3. Clarifier SSR/hydratation et les responsabilités des options ARIA.
-4. Ajouter le smoke Playwright cross-framework.
 
 ### Étape 3 — Finir la DX et le thème
 
@@ -339,6 +338,11 @@ Il n'est pas nécessaire de créer un huitième package. Un sous-export `core/ad
 2. Compléter le style Cancel et le reflow vertical.
 3. Simplifier Vanilla et séparer entrée pure/auto.
 4. Vérifier le tree-shaking et les tailles bundle.
+
+### Étape 4 - Tests avancés
+
+1. Ajouter le smoke Playwright cross-framework. 
+
 
 ## Critères de sortie « production ready »
 
