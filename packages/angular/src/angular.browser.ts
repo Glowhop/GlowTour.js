@@ -287,14 +287,29 @@ describe("angular adapter browser behavior", () => {
       /connected root/i,
     );
 
-    const workflow = (tour: typeof second, target: HTMLElement, name: string) =>
+    const workflow = (
+      tour: typeof second,
+      target: HTMLElement,
+      name: string,
+      allowInteraction = false,
+    ) =>
       tour
         .create(name)
-        .step({ content: "One", target, title: "One" })
-        .step({ content: "Two", target, title: "Two" })
+        .step({
+          behavior: allowInteraction ? { allowInteraction: true } : undefined,
+          content: "One",
+          target,
+          title: "One",
+        })
+        .step({
+          behavior: allowInteraction ? { allowInteraction: true } : undefined,
+          content: "Two",
+          target,
+          title: "Two",
+        })
         .build();
     await second.run(workflow(second, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner"));
+    await inner.run(workflow(inner, innerTarget, "inner", true));
     const [outerAdvance, innerAdvance] = Array.from(
       document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
@@ -339,14 +354,29 @@ describe("angular adapter browser behavior", () => {
 
     document.body.append(document.createElement("angular-sibling-roots"));
     const app = await bootstrapApplication(SiblingRootsHarness);
-    const workflow = (tour: typeof first, target: HTMLElement, name: string) =>
+    const workflow = (
+      tour: typeof first,
+      target: HTMLElement,
+      name: string,
+      allowInteraction = false,
+    ) =>
       tour
         .create(name)
-        .step({ content: `${name} one`, target, title: `${name} one` })
-        .step({ content: `${name} two`, target, title: `${name} two` })
+        .step({
+          behavior: allowInteraction ? { allowInteraction: true } : undefined,
+          content: `${name} one`,
+          target,
+          title: `${name} one`,
+        })
+        .step({
+          behavior: allowInteraction ? { allowInteraction: true } : undefined,
+          content: `${name} two`,
+          target,
+          title: `${name} two`,
+        })
         .build();
     await first.run(workflow(first, firstTarget, "first"));
-    await second.run(workflow(second, secondTarget, "second"));
+    await second.run(workflow(second, secondTarget, "second", true));
     await settle();
     app.tick();
 

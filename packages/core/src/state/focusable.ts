@@ -21,13 +21,15 @@ export function focusableElements(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(isFocusable);
 }
 
-export function focusableTourControls(root: HTMLElement) {
+export function focusableElementsOwnedBy(root: HTMLElement) {
   const ownerRoot = root.closest<HTMLElement>("[data-glow-tour-root]");
   return focusableElements(root).filter(
-    (element) =>
-      element.matches(TOUR_TRIGGER_SELECTOR) &&
-      element.closest<HTMLElement>("[data-glow-tour-root]") === ownerRoot,
+    (element) => element.closest<HTMLElement>("[data-glow-tour-root]") === ownerRoot,
   );
+}
+
+export function focusableTourControls(root: HTMLElement) {
+  return focusableElementsOwnedBy(root).filter((element) => element.matches(TOUR_TRIGGER_SELECTOR));
 }
 
 export function isFocusable(element: HTMLElement) {

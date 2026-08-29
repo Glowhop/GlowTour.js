@@ -305,11 +305,26 @@ describe("vue adapter browser behavior", () => {
     document.body.append(container, outerTarget, innerTarget);
     const outer = runtime.createGlowTour();
     const inner = runtime.createGlowTour();
-    const workflow = (tour: typeof outer, target: HTMLElement, name: string) =>
+    const workflow = (
+      tour: typeof outer,
+      target: HTMLElement,
+      name: string,
+      allowInteraction = false,
+    ) =>
       tour
         .create(name)
-        .step({ content: "One", target, title: "One" })
-        .step({ content: "Two", target, title: "Two" })
+        .step({
+          behavior: allowInteraction ? { allowInteraction: true } : undefined,
+          content: "One",
+          target,
+          title: "One",
+        })
+        .step({
+          behavior: allowInteraction ? { allowInteraction: true } : undefined,
+          content: "Two",
+          target,
+          title: "Two",
+        })
         .build();
     const app = createApp({
       render: () =>
@@ -326,7 +341,7 @@ describe("vue adapter browser behavior", () => {
     app.mount(container);
     await nextTick();
     await outer.run(workflow(outer, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner"));
+    await inner.run(workflow(inner, innerTarget, "inner", true));
     const [outerAdvance, innerAdvance] = Array.from(
       container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );

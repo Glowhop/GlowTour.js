@@ -60,12 +60,23 @@ function workflow(
   target: HTMLElement,
   name: string,
   captureProps?: (props: StepContext<VanillaTourContent>["props"]) => void,
+  allowInteraction = false,
 ) {
   return tour
     .create(name)
-    .step({ content: `${name} one`, target, title: `${name} one` })
+    .step({
+      behavior: allowInteraction ? { allowInteraction: true } : undefined,
+      content: `${name} one`,
+      target,
+      title: `${name} one`,
+    })
     .do(({ props }) => captureProps?.(props))
-    .step({ content: `${name} two`, target, title: `${name} two` })
+    .step({
+      behavior: allowInteraction ? { allowInteraction: true } : undefined,
+      content: `${name} two`,
+      target,
+      title: `${name} two`,
+    })
     .build();
 }
 
@@ -240,8 +251,8 @@ describe("vanilla adapter browser behavior", () => {
     document.body.append(outerTarget, innerTarget, siblingTarget, outerRoot, siblingRoot);
     await settle();
     await outer.run(workflow(outer, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner"));
-    await sibling.run(workflow(sibling, siblingTarget, "sibling"));
+    await inner.run(workflow(inner, innerTarget, "inner", undefined, true));
+    await sibling.run(workflow(sibling, siblingTarget, "sibling", undefined, true));
     const [outerAdvance, innerAdvance, siblingAdvance] = Array.from(
       document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );

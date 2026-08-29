@@ -3,11 +3,12 @@ import PointerElement from "../elements/pointer";
 import PopoverElement from "../elements/popover";
 import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
-import { focusableTourControls } from "../state/focusable";
+import { focusableElementsOwnedBy } from "../state/focusable";
 import type { TourDirection } from "../types";
 import { isInViewport } from "../utils/utils";
 
 const DEFAULT_SCROLL_END_TIMEOUT = 1000;
+const ACTIVE_MODAL_BY_DOCUMENT = new WeakMap<Document, object>();
 const DEFAULT_SHORTCUTS = {
   previous: ["ArrowLeft", "Backspace"],
   cancel: ["Escape"],
@@ -15,6 +16,11 @@ const DEFAULT_SHORTCUTS = {
 } as const;
 
 type TourViewCommand = "advance" | "previous" | "cancel";
+
+interface InertBranch {
+  readonly element: HTMLElement;
+  readonly previous: string | null;
+}
 
 export interface TourViewCommands {
   advance(): Promise<void>;
@@ -62,6 +68,7 @@ export class NoopTourViewDriver<T> implements TourViewDriver<T> {
 
 export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private readonly focusGuard = new FocusGuard();
+  private readonly modalToken = {};
   private readonly stepCleanups: Array<() => void> = [];
   private commands: TourViewCommands | null;
   private direction: TourDirection = "advance";
@@ -71,6 +78,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private generation = 0;
   private active = false;
   private lastTargetRect: RectSnapshot | null = null;
+  private inertBranches: InertBranch[] = [];
+  private modalDocument: Document | null = null;
+  private modalRoot: HTMLElement | null = null;
   private overlay: OverlayElement<T> | null = null;
   private pendingKeyboardCommand: { command: TourViewCommand; generation: number } | null = null;
   private pointer: PointerElement<T> | null = null;
@@ -90,6 +100,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   registerRoot(element: HTMLElement | null) {
     if (this.disposed || this.root === element) return;
+    if (this.active) this.releaseModality();
     this.root = element;
     this.refreshRegisteredElements();
   }
@@ -106,11 +117,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   registerPopover(element: HTMLElement | null) {
     if (this.disposed) return;
     if (this.popover?.getElement() === element) return;
-    if (!element && this.active) this.focusGuard.deactivate();
+    if (!element && this.active) {
+      this.releaseModality();
+      this.focusGuard.deactivate();
+    }
     this.popover?.release();
     this.popover = element ? new PopoverElement<T>(element) : null;
     this.popover?.initializeProps();
-    this.refreshRegisteredElements();
+    if (element) this.refreshRegisteredElements();
   }
 
   registerPointer(element: HTMLElement | null) {
@@ -150,6 +164,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       const target = step.target;
       if (!target) return;
 
+      this.syncModality(step.behavior?.allowInteraction === true);
       await this.scrollTargetIntoView(step, target, signal);
       this.throwIfStale(generation, signal);
       this.initializeElements(step);
@@ -163,6 +178,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       removeTransitionKeydown();
       removeTransitionKeydown = () => {};
       this.attachStepResources(step, target, generation, signal);
+    } catch (error) {
+      if (this.isCurrentGeneration(generation)) this.releaseModality();
+      throw error;
     } finally {
       removeTransitionKeydown();
       removeAbort();
@@ -170,11 +188,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   async clear(signal: AbortSignal): Promise<void> {
+    if (signal.aborted || this.disposed) this.releaseModality();
     this.throwIfAborted(signal);
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
     try {
       this.cleanupStepResources();
+      this.releaseModality();
       this.focusGuard.deactivate();
       this.throwIfStale(generation, signal);
       this.active = false;
@@ -197,6 +217,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (this.disposed) return;
     this.beginGeneration();
     this.cleanupStepResources();
+    this.releaseModality();
     this.focusGuard.deactivate();
     this.active = false;
     this.currentStep = null;
@@ -246,12 +267,61 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.popover?.initializeProps();
     this.popover?.setAnimationOptions(animationOptions(step, step.popover));
     const popover = this.popover?.getElement();
-    if (popover instanceof HTMLElement) {
-      if (interactionAllowed) popover.removeAttribute("aria-modal");
-      else popover.setAttribute("aria-modal", "true");
-    }
+    if (popover instanceof HTMLElement && !interactionAllowed)
+      popover.setAttribute("aria-modal", "true");
     this.pointer?.initializeProps();
     this.pointer?.setAnimationOptions(animationOptions(step, step.indicator));
+  }
+
+  private syncModality(interactionAllowed: boolean) {
+    if (interactionAllowed) {
+      this.releaseModality();
+      return;
+    }
+
+    const root = this.root;
+    if (!root) return;
+    const document = root.ownerDocument;
+    const owner = ACTIVE_MODAL_BY_DOCUMENT.get(document);
+    if (owner && owner !== this.modalToken) {
+      throw new Error("Glow Tour only supports one active modal tour per document");
+    }
+    ACTIVE_MODAL_BY_DOCUMENT.set(document, this.modalToken);
+    this.modalDocument = document;
+    if (this.modalRoot === root) return;
+
+    this.restoreInertBranches();
+    this.modalRoot = root;
+    let branch = root;
+    while (branch !== document.body) {
+      const parent = branch.parentElement;
+      if (!parent) break;
+      for (const sibling of Array.from(parent.children)) {
+        if (!(sibling instanceof HTMLElement) || sibling === branch) continue;
+        this.inertBranches.push({ element: sibling, previous: sibling.getAttribute("inert") });
+        sibling.setAttribute("inert", "");
+      }
+      branch = parent;
+    }
+  }
+
+  private releaseModality() {
+    this.popover?.getElement()?.removeAttribute("aria-modal");
+    this.restoreInertBranches();
+    const document = this.modalDocument;
+    if (document && ACTIVE_MODAL_BY_DOCUMENT.get(document) === this.modalToken) {
+      ACTIVE_MODAL_BY_DOCUMENT.delete(document);
+    }
+    this.modalDocument = null;
+    this.modalRoot = null;
+  }
+
+  private restoreInertBranches() {
+    for (const { element, previous } of this.inertBranches.splice(0)) {
+      if (element.getAttribute("inert") !== "") continue;
+      if (previous === null) element.removeAttribute("inert");
+      else element.setAttribute("inert", previous);
+    }
   }
 
   private async appear(
@@ -456,7 +526,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private loopFocus(event: KeyboardEvent) {
     const popover = this.popover?.getElement();
     if (!(popover instanceof HTMLElement)) return;
-    const focusable = focusableTourControls(popover);
+    const focusable = focusableElementsOwnedBy(popover);
     if (focusable.length === 0) {
       event.preventDefault();
       popover.focus();

@@ -153,11 +153,26 @@ describe("solid adapter browser behavior", () => {
     document.body.append(container, outerTarget, innerTarget);
     const outer = createGlowTour();
     const inner = createGlowTour();
-    const workflow = (tour: typeof outer, target: HTMLElement, name: string) =>
+    const workflow = (
+      tour: typeof outer,
+      target: HTMLElement,
+      name: string,
+      allowInteraction = false,
+    ) =>
       tour
         .create(name)
-        .step({ content: "First", target, title: "First" })
-        .step({ content: "Second", target, title: "Second" })
+        .step({
+          behavior: allowInteraction ? { allowInteraction: true } : undefined,
+          content: "First",
+          target,
+          title: "First",
+        })
+        .step({
+          behavior: allowInteraction ? { allowInteraction: true } : undefined,
+          content: "Second",
+          target,
+          title: "Second",
+        })
         .build();
     const dispose = render(
       () =>
@@ -184,7 +199,7 @@ describe("solid adapter browser behavior", () => {
       container,
     );
     await outer.run(workflow(outer, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner"));
+    await inner.run(workflow(inner, innerTarget, "inner", true));
     const [outerAdvance, innerAdvance] = Array.from(
       container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );

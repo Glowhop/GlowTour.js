@@ -31,6 +31,9 @@ class MockElement extends MockNode {
   }
 
   closest(selector: string): MockElement | null {
+    if (selector.includes("data-glow-tour-root") && this.attributes.has("data-glow-tour-root")) {
+      return this;
+    }
     const isMatch =
       (selector.includes("[hidden]") && this.attributes.has("hidden")) ||
       (selector.includes("[inert]") && this.attributes.has("inert")) ||
@@ -138,6 +141,8 @@ afterEach(() => {
 });
 
 function createScope() {
+  const root = new MockElement("root");
+  root.attributes.set("data-glow-tour-root", "");
   const popover = new MockElement("popover");
   const backHost = new MockElement("back-host");
   const back = new MockElement("back");
@@ -147,9 +152,10 @@ function createScope() {
   const advance = new MockElement("advance");
   advance.attributes.set("data-glow-tour-advance-trigger", "");
   advanceHost.append(advance);
-  const contentLink = new MockElement("content-link");
+  const contentLink = new MockElement("custom-button");
   popover.append(backHost, advanceHost, contentLink);
-  return { back, backHost, contentLink, advance, advanceHost, popover };
+  root.append(popover);
+  return { back, backHost, contentLink, advance, advanceHost, popover, root };
 }
 
 describe("FocusGuard", () => {
@@ -171,9 +177,9 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, back);
   });
 
-  test("falls back to the other trigger and then the popover", () => {
+  test("falls back to the other trigger and then rich popover content", () => {
     const guard = new FocusGuard();
-    const { back, advance, popover } = createScope();
+    const { back, contentLink, advance, popover } = createScope();
     advance.attributes.set("disabled", "");
 
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
@@ -185,7 +191,7 @@ describe("FocusGuard", () => {
     mockDocument.activeElement = null;
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
 
-    assert.equal(mockDocument.activeElement, popover);
+    assert.equal(mockDocument.activeElement, contentLink);
   });
 
   test("ignores a trigger inside a hidden host", () => {
@@ -220,14 +226,16 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, initialFocus);
   });
 
-  test("rejects arbitrary popover controls and ignores CSS-hidden ancestors", () => {
+  test("falls back to visible rich controls and ignores CSS-hidden ancestors", () => {
     const guard = new FocusGuard();
-    const { backHost, advanceHost, popover } = createScope();
+    const { backHost, contentLink, advanceHost, popover } = createScope();
     const hiddenHost = new MockElement("hidden-host");
     const hiddenSummary = new MockElement("summary");
     const audio = new MockElement("audio");
     backHost.attributes.set("hidden", "");
     advanceHost.attributes.set("hidden", "");
+    contentLink.attributes.set("hidden", "");
+    contentLink.hidden = true;
     hiddenHost.visibility = "hidden";
     hiddenHost.append(hiddenSummary);
     audio.attributes.set("controls", "");
@@ -235,10 +243,10 @@ describe("FocusGuard", () => {
 
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
 
-    assert.equal(mockDocument.activeElement, popover);
+    assert.equal(mockDocument.activeElement, audio);
   });
 
-  test("redirects focus from arbitrary popover controls and external elements", () => {
+  test("allows rich popover controls and redirects external elements", () => {
     const guard = new FocusGuard();
     const { advance, popover } = createScope();
     const customButton = new MockElement("custom-button");
@@ -247,9 +255,24 @@ describe("FocusGuard", () => {
 
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
     customButton.focus();
-    assert.equal(mockDocument.activeElement, advance);
+    assert.equal(mockDocument.activeElement, customButton);
 
     launcher.focus();
+    assert.equal(mockDocument.activeElement, advance);
+  });
+
+  test("rejects controls owned by a nested tour root", () => {
+    const guard = new FocusGuard();
+    const { advance, popover } = createScope();
+    const nestedRoot = new MockElement("nested-root");
+    const nestedButton = new MockElement("custom-button");
+    nestedRoot.attributes.set("data-glow-tour-root", "");
+    nestedRoot.append(nestedButton);
+    popover.append(nestedRoot);
+
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+    nestedButton.focus();
+
     assert.equal(mockDocument.activeElement, advance);
   });
 
