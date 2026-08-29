@@ -32,7 +32,7 @@ const packageNames: readonly PackageName[] = [
   "@glowhop/vanilla-tour",
 ];
 const consumerPeerDependencies: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-  "@glowhop/react-tour": { react: "^19.0.0" },
+  "@glowhop/react-tour": { react: "^19.2.0" },
   "@glowhop/vue-tour": { vue: "^3.5.0" },
   "@glowhop/angular-tour": {
     "@angular/common": "^18.2.0",
@@ -166,7 +166,8 @@ function writeConsumerFixture(directory: string) {
           "@angular/core": "18.2.13",
           "@angular/platform-browser": "18.2.13",
           rxjs: "7.8.1",
-          react: "19.1.1",
+          react: "19.2.0",
+          "react-dom": "19.2.0",
           "solid-js": "^1.9.14",
           vue: "3.5.22",
         },
@@ -230,6 +231,19 @@ assert.equal(typeof SolidDefaultTour, "function");
 assert.equal(SolidGlowTour.Default, SolidDefaultTour);
 assert.equal(typeof createGlowTour, "function");
 assert.equal(typeof createDefaultTourElement, "function");
+`,
+  );
+  writeFileSync(
+    join(directory, "render-react-default-tour.mjs"),
+    `import assert from "node:assert/strict";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
+
+const markup = renderToStaticMarkup(createElement(DefaultTour, { tour: createGlowTour() }));
+
+assert.match(markup, /data-glow-tour-root/);
+assert.match(markup, /data-glow-tour-popover/);
 `,
   );
   writeFileSync(
@@ -418,6 +432,7 @@ try {
     consumerDirectory,
   );
   run("node", ["runtime-imports.mjs"], consumerDirectory);
+  run("node", ["render-react-default-tour.mjs"], consumerDirectory);
   run(
     "node",
     ["node_modules/typescript-side-effect-checks/bin/tsc", "--project", "tsconfig.json"],
