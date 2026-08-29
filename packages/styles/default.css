@@ -1,159 +1,205 @@
-:root {
-  --glow-tour-color-accent: #4c35fd;
-  --glow-tour-color-accent-hover: #3f2be0;
-  --glow-tour-color-on-accent: #ffffff;
-  --glow-tour-color-surface: #ffffff;
-  --glow-tour-color-surface-muted: #f6f6f7;
-  --glow-tour-color-text: #1f1f23;
-  --glow-tour-color-text-muted: #5f5f66;
-  --glow-tour-color-border: #dedee3;
-  --glow-tour-arrow-color: var(--glow-tour-color-surface);
-  --glow-tour-arrow-border-color: var(--glow-tour-color-border);
-  --glow-tour-radius: 8px;
-  --glow-tour-shadow: 0 4px 12px rgb(0 0 0 / 8%);
-  --glow-tour-transition-duration: 120ms;
-  --glow-tour-transition-easing: ease-out;
-}
-
-[data-glow-tour-popover],
-[data-glow-tour-popover] *,
-[data-glow-tour-pointer],
-[data-glow-tour-pointer] * {
+:where([data-glow-tour-root]) [data-glow-tour-popover],
+:where([data-glow-tour-root]) [data-glow-tour-popover] *,
+:where([data-glow-tour-root]) [data-glow-tour-pointer],
+:where([data-glow-tour-root]) [data-glow-tour-pointer] * {
   box-sizing: border-box;
 }
 
-[data-glow-tour-overlay] {
+:where([data-glow-tour-root]) [data-glow-tour-overlay] {
   display: block;
   overflow: visible;
 }
 
-[data-glow-tour-popover] {
-  background: var(--glow-tour-color-surface);
-  border: 1px solid var(--glow-tour-color-border);
-  border-radius: var(--glow-tour-radius);
-  box-shadow: var(--glow-tour-shadow);
-  color: var(--glow-tour-color-text);
+:where([data-glow-tour-root]) [data-glow-tour-popover] {
+  background: var(--glow-tour-color-surface, #ffffff);
+  border: 1px solid var(--glow-tour-color-border, #dedee3);
+  border-radius: var(--glow-tour-radius, 8px);
+  box-shadow: var(--glow-tour-shadow, 0 4px 12px rgb(0 0 0 / 8%));
+  color: var(--glow-tour-color-text, #1f1f23);
   display: grid;
-  font-family: inherit;
-  gap: 12px;
-  max-width: calc(100vw - 32px);
-  padding: 16px;
-  width: 352px;
+  font: inherit;
+  gap: calc(var(--glow-tour-spacing, 8px) * 1.5);
+  max-height: calc(100dvh - (var(--glow-tour-viewport-gap, 16px) * 2));
+  max-width: calc(100vw - (var(--glow-tour-viewport-gap, 16px) * 2));
+  overflow-wrap: anywhere;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: calc(var(--glow-tour-spacing, 8px) * 2);
+  width: min(
+    var(--glow-tour-popover-width, 352px),
+    calc(100vw - (var(--glow-tour-viewport-gap, 16px) * 2))
+  );
 }
 
-[data-glow-tour-popover]:focus-visible {
-  outline: 3px solid var(--glow-tour-color-accent);
+:where([data-glow-tour-root]) [data-glow-tour-popover]:focus-visible {
+  outline: 3px solid var(--glow-tour-color-accent, #4c35fd);
   outline-offset: 3px;
 }
 
-[data-glow-tour-header] {
-  color: var(--glow-tour-color-text);
+:where([data-glow-tour-root]) [data-glow-tour-header] {
+  color: var(--glow-tour-color-text, #1f1f23);
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.4;
 }
 
-[data-glow-tour-content] {
-  color: var(--glow-tour-color-text-muted);
+:where([data-glow-tour-root]) [data-glow-tour-content] {
+  color: var(--glow-tour-color-text-muted, #5f5f66);
   font-size: 0.875rem;
   line-height: 1.5;
 }
 
-[data-glow-tour-footer] {
+:where([data-glow-tour-root]) [data-glow-tour-footer] {
   align-items: center;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--glow-tour-spacing, 8px);
   justify-content: flex-end;
-  padding-top: 4px;
+  padding-top: calc(var(--glow-tour-spacing, 8px) / 2);
 }
 
-[data-glow-tour-previous-trigger],
-[data-glow-tour-advance-trigger] {
+:where([data-glow-tour-root]) [data-glow-tour-cancel-trigger],
+:where([data-glow-tour-root]) [data-glow-tour-previous-trigger],
+:where([data-glow-tour-root]) [data-glow-tour-advance-trigger] {
   align-items: center;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--glow-tour-radius, 8px);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
   font-size: 0.875rem;
   font-weight: 600;
   justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: var(--glow-tour-control-height, 40px);
+  padding: 0 calc(var(--glow-tour-spacing, 8px) * 1.75);
   transition:
-    background-color var(--glow-tour-transition-duration) var(--glow-tour-transition-easing),
-    border-color var(--glow-tour-transition-duration) var(--glow-tour-transition-easing),
-    color var(--glow-tour-transition-duration) var(--glow-tour-transition-easing);
+    background-color var(--glow-tour-transition-duration, 120ms)
+    var(--glow-tour-transition-easing, ease-out),
+    border-color var(--glow-tour-transition-duration, 120ms)
+    var(--glow-tour-transition-easing, ease-out),
+    color var(--glow-tour-transition-duration, 120ms) var(--glow-tour-transition-easing, ease-out);
 }
 
-[data-glow-tour-previous-trigger] {
-  background: var(--glow-tour-color-surface);
-  border-color: var(--glow-tour-color-border);
-  color: var(--glow-tour-color-text);
+:where([data-glow-tour-root]) [data-glow-tour-cancel-trigger] {
+  background: transparent;
+  color: var(--glow-tour-color-text-muted, #5f5f66);
+  margin-inline-end: auto;
 }
 
-[data-glow-tour-previous-trigger]:hover:not(:disabled) {
-  background: var(--glow-tour-color-surface-muted);
-  border-color: var(--glow-tour-color-text-muted);
+:where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:hover:not(:disabled) {
+  background: var(--glow-tour-color-surface-muted, #f6f6f7);
+  border-color: var(--glow-tour-color-border, #dedee3);
 }
 
-[data-glow-tour-advance-trigger] {
-  background: var(--glow-tour-color-accent);
-  border-color: var(--glow-tour-color-accent);
-  color: var(--glow-tour-color-on-accent);
+:where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:active:not(:disabled) {
+  background: var(--glow-tour-color-surface, #ffffff);
+  border-color: var(--glow-tour-color-text-muted, #5f5f66);
 }
 
-[data-glow-tour-advance-trigger]:hover:not(:disabled) {
-  background: var(--glow-tour-color-accent-hover);
-  border-color: var(--glow-tour-color-accent-hover);
+:where([data-glow-tour-root]) [data-glow-tour-previous-trigger] {
+  background: var(--glow-tour-color-surface, #ffffff);
+  border-color: var(--glow-tour-color-border, #dedee3);
+  color: var(--glow-tour-color-text, #1f1f23);
 }
 
-[data-glow-tour-previous-trigger]:focus-visible,
-[data-glow-tour-advance-trigger]:focus-visible {
-  outline: 3px solid var(--glow-tour-color-accent);
+:where([data-glow-tour-root]) [data-glow-tour-previous-trigger]:hover:not(:disabled) {
+  background: var(--glow-tour-color-surface-muted, #f6f6f7);
+  border-color: var(--glow-tour-color-text-muted, #5f5f66);
+}
+
+:where([data-glow-tour-root]) [data-glow-tour-previous-trigger]:active:not(:disabled) {
+  background: var(--glow-tour-color-surface, #ffffff);
+  border-color: var(--glow-tour-color-text, #1f1f23);
+}
+
+:where([data-glow-tour-root]) [data-glow-tour-advance-trigger] {
+  background: var(--glow-tour-color-accent, #4c35fd);
+  border-color: var(--glow-tour-color-accent, #4c35fd);
+  color: var(--glow-tour-color-on-accent, #ffffff);
+}
+
+:where([data-glow-tour-root]) [data-glow-tour-advance-trigger]:hover:not(:disabled) {
+  background: var(--glow-tour-color-accent-hover, #3f2be0);
+  border-color: var(--glow-tour-color-accent-hover, #3f2be0);
+}
+
+:where([data-glow-tour-root]) [data-glow-tour-advance-trigger]:active:not(:disabled) {
+  background: var(--glow-tour-color-accent, #4c35fd);
+  border-color: var(--glow-tour-color-accent, #4c35fd);
+}
+
+:where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:focus-visible,
+:where([data-glow-tour-root]) [data-glow-tour-previous-trigger]:focus-visible,
+:where([data-glow-tour-root]) [data-glow-tour-advance-trigger]:focus-visible {
+  outline: 3px solid var(--glow-tour-color-accent, #4c35fd);
   outline-offset: 2px;
 }
 
-[data-glow-tour-previous-trigger]:disabled,
-[data-glow-tour-advance-trigger]:disabled {
-  background: var(--glow-tour-color-surface-muted);
-  border-color: var(--glow-tour-color-border);
+:where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:disabled,
+:where([data-glow-tour-root]) [data-glow-tour-previous-trigger]:disabled,
+:where([data-glow-tour-root]) [data-glow-tour-advance-trigger]:disabled {
+  background: var(--glow-tour-color-surface-muted, #f6f6f7);
+  border-color: var(--glow-tour-color-border, #dedee3);
   box-shadow: none;
-  color: var(--glow-tour-color-text-muted);
+  color: var(--glow-tour-color-text-muted, #5f5f66);
   cursor: not-allowed;
   opacity: 0.65;
 }
 
-[data-glow-tour-pointer] {
+:where([data-glow-tour-root]) [data-glow-tour-pointer] {
   font-size: 2rem;
   line-height: 1;
 }
 
-[data-glow-tour-pointer-content] {
+:where([data-glow-tour-root]) [data-glow-tour-pointer-content] {
   display: block;
   transform: rotate(0deg);
   transform-origin: center;
 }
 
-[data-glow-tour-pointer][data-glow-tour-placement="top"] [data-glow-tour-pointer-content] {
+:where([data-glow-tour-root])
+  [data-glow-tour-pointer][data-glow-tour-placement="top"]
+  [data-glow-tour-pointer-content] {
   transform: rotate(180deg);
 }
 
-[data-glow-tour-pointer][data-glow-tour-placement="bottom"] [data-glow-tour-pointer-content] {
+:where([data-glow-tour-root])
+  [data-glow-tour-pointer][data-glow-tour-placement="bottom"]
+  [data-glow-tour-pointer-content] {
   transform: rotate(0deg);
 }
 
-[data-glow-tour-pointer][data-glow-tour-placement="left"] [data-glow-tour-pointer-content] {
+:where([data-glow-tour-root])
+  [data-glow-tour-pointer][data-glow-tour-placement="left"]
+  [data-glow-tour-pointer-content] {
   transform: scaleX(-1) rotate(-90deg);
 }
 
-[data-glow-tour-pointer][data-glow-tour-placement="right"] [data-glow-tour-pointer-content] {
+:where([data-glow-tour-root])
+  [data-glow-tour-pointer][data-glow-tour-placement="right"]
+  [data-glow-tour-pointer-content] {
   transform: rotate(-90deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-glow-tour-previous-trigger],
-  [data-glow-tour-advance-trigger] {
+  :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger],
+  :where([data-glow-tour-root]) [data-glow-tour-previous-trigger],
+  :where([data-glow-tour-root]) [data-glow-tour-advance-trigger] {
     transition-duration: 0.01ms;
+  }
+}
+
+@media (forced-colors: active) {
+  :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger],
+  :where([data-glow-tour-root]) [data-glow-tour-previous-trigger],
+  :where([data-glow-tour-root]) [data-glow-tour-advance-trigger] {
+    border-color: ButtonText;
+    forced-color-adjust: auto;
+  }
+
+  :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:focus-visible,
+  :where([data-glow-tour-root]) [data-glow-tour-previous-trigger]:focus-visible,
+  :where([data-glow-tour-root]) [data-glow-tour-advance-trigger]:focus-visible {
+    outline-color: Highlight;
   }
 }
