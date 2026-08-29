@@ -2,7 +2,10 @@ import { afterAll, beforeAll, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { createGlowTour as createCoreGlowTour, type StepContext } from "@glowhop/core-tour";
 import { Window } from "happy-dom";
-import { runAdapterAcceptance } from "../../../scripts/adapter-acceptance";
+import {
+  runAdapterAcceptance,
+  runDefaultTourAcceptance,
+} from "../../../scripts/adapter-acceptance";
 import type { VanillaTourContent } from "./glow-tour";
 
 type VanillaRuntime = typeof import("./index");
@@ -67,6 +70,29 @@ function workflow(
 }
 
 describe("vanilla adapter browser behavior", () => {
+  test("passes the shared default-tour acceptance contract", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    const rootElement = runtime.createDefaultTourElement(tour, { idPrefix: "vanilla-default" });
+    document.body.append(target, rootElement);
+    await settle();
+
+    await runDefaultTourAcceptance({
+      content: (value) => value,
+      idPrefix: "vanilla-default",
+      name: "vanilla default",
+      root: rootElement,
+      target,
+      tour,
+      settle,
+      async unmount() {
+        rootElement.remove();
+        target.remove();
+        await settle();
+      },
+    });
+  });
+
   test("passes the shared mounted adapter acceptance contract", async () => {
     const primaryTour = runtime.createGlowTour();
     const secondaryTour = runtime.createGlowTour();
@@ -380,7 +406,7 @@ describe("vanilla adapter browser behavior", () => {
     const target = document.createElement("button");
     const element = root(tour, "consumer");
     element.innerHTML =
-      "<glow-tour-back-trigger><button></button></glow-tour-back-trigger><glow-tour-advance-trigger><button></button></glow-tour-advance-trigger>";
+      "<glow-tour-popover></glow-tour-popover><glow-tour-back-trigger><button></button></glow-tour-back-trigger><glow-tour-advance-trigger><button></button></glow-tour-advance-trigger>";
     document.body.append(target, element);
     await settle();
     const button = element.querySelector<HTMLButtonElement>("glow-tour-advance-trigger button");
@@ -421,7 +447,7 @@ describe("vanilla adapter browser behavior", () => {
     const target = document.createElement("button");
     const rootElement = root(tour, "aria-disabled");
     rootElement.innerHTML =
-      '<glow-tour-advance-trigger><button aria-disabled="true">Advance</button></glow-tour-advance-trigger>';
+      '<glow-tour-popover></glow-tour-popover><glow-tour-advance-trigger><button aria-disabled="true">Advance</button></glow-tour-advance-trigger>';
     document.body.append(target, rootElement);
     await tour.run(workflow(tour, target, "aria disabled"));
     await settle();
@@ -459,7 +485,7 @@ describe("vanilla adapter browser behavior", () => {
     const target = document.createElement("button");
     const rootElement = root(tour, "aria-same-tick");
     rootElement.innerHTML =
-      "<glow-tour-advance-trigger><button>Advance</button></glow-tour-advance-trigger>";
+      "<glow-tour-popover></glow-tour-popover><glow-tour-advance-trigger><button>Advance</button></glow-tour-advance-trigger>";
     document.body.append(target, rootElement);
     await tour.run(workflow(tour, target, "aria same tick"));
     await settle();
@@ -580,6 +606,7 @@ describe("vanilla adapter browser behavior", () => {
     Object.defineProperty(button, "setAttribute", setAttribute);
     trigger.append(button);
     rootElement.append(trigger);
+    rootElement.append(document.createElement("glow-tour-popover"));
     document.body.append(target, rootElement);
     await settle();
     button.disabled = true;
@@ -612,7 +639,7 @@ describe("vanilla adapter browser behavior", () => {
     const target = document.createElement("button");
     const element = root(tour, "trigger-reconnect");
     element.innerHTML =
-      '<glow-tour-advance-trigger finish-label="Finished"><button aria-label="Authored advance">Authored text</button></glow-tour-advance-trigger><glow-tour-advance-trigger finish-label="Finished"></glow-tour-advance-trigger>';
+      '<glow-tour-popover></glow-tour-popover><glow-tour-advance-trigger finish-label="Finished"><button aria-label="Authored advance">Authored text</button></glow-tour-advance-trigger><glow-tour-advance-trigger finish-label="Finished"></glow-tour-advance-trigger>';
     document.body.append(target, element);
     await settle();
     const [trigger, generatedTrigger] = Array.from(
@@ -642,7 +669,7 @@ describe("vanilla adapter browser behavior", () => {
     const target = document.createElement("button");
     const element = root(tour, "controls");
     element.innerHTML =
-      "<glow-tour-back-trigger></glow-tour-back-trigger><glow-tour-cancel-trigger></glow-tour-cancel-trigger>";
+      "<glow-tour-popover></glow-tour-popover><glow-tour-back-trigger></glow-tour-back-trigger><glow-tour-cancel-trigger></glow-tour-cancel-trigger>";
     document.body.append(target, element);
     await settle();
     const tourWorkflow = tour

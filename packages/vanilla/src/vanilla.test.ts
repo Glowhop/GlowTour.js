@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import * as runtime from "./index";
 
 describe("vanilla adapter public contract", () => {
-  test("exports only the Vanilla tour factory and intentional element metadata", () => {
+  test("exports the Vanilla tour factories and intentional element metadata", () => {
     assert.equal(typeof runtime.createGlowTour, "function");
+    assert.equal(typeof runtime.createDefaultTourElement, "function");
     assert.equal("glowTour" in runtime, false);
     assert.equal("createTourStore" in runtime, false);
     assert.equal("TourStore" in runtime, false);
