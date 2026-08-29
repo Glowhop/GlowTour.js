@@ -23,11 +23,11 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [x] 8. Ajouter la factory de composition Vanilla. (`f746b90` + `f14103e`, revue propre)
 - [x] 9a. Normaliser et tester la matrice publique des cinq adapters. (`bcebefc`, revue propre)
 - [x] 9b. Vérifier les builds, manifests, tarballs et Changesets. (`c45d69a` + `b7d18fe`, revue propre)
-- [ ] Revue finale de branche.
+- [x] Revue finale de branche. (aucun finding après correction React 19.2)
 
 ## Dernière validation
 
-Validation complète du 29 août 2026 :
+Validation finale après correction React 19.2, 29 août 2026 :
 
 - `bun run check` : passe, 113 fichiers.
 - `bun run typecheck` : passe.
@@ -36,7 +36,14 @@ Validation complète du 29 août 2026 :
 - `bun run build` : passe, 7 distributions.
 - `bun run pack` : passe, 7 tarballs locaux.
 - `bun run test:tarballs` : passe pour 7 packages avec installation npm stricte ; premier essai sandboxé sans réseau échoué sur les métadonnées React tierces, relance réseau autorisée réussie.
+- Le consommateur tarball rend réellement le `DefaultTour` React avec React/React DOM 19.2.0.
 - Aucune publication, aucun dry-run de publication, aucun lookup npm des packages Glow Tour, aucun tag ou release.
+
+## Revue finale
+
+- Revue globale `main..HEAD` : aucun finding critique, important ou mineur.
+- Correctif final : plancher peer React relevé à `^19.2.0` pour correspondre à `useEffectEvent`.
+- Verdict : prêt à intégrer.
 
 Task 9a, validation ciblée du 29 août 2026 :
 
