@@ -20,11 +20,19 @@ Worktree : `/private/tmp/glow-tour-step1-codex`
 - [x] 5. Étendre le contrat d’acceptance aux compositions par défaut. (`7d53fae`, avec le lot 6)
 - [x] 6. Ajouter `DefaultTour` à React et Solid. (`7d53fae`, revue propre)
 - [x] 7. Ajouter `GlowTourDefault` à Vue et Angular. (`5805f7a`, revue propre)
-- [ ] 8. Ajouter la factory de composition Vanilla.
-- [ ] 9. Vérifier la matrice publique, les builds et les tarballs.
+- [x] 8. Ajouter la factory de composition Vanilla. (`f746b90` + `f14103e`, revue propre)
+- [ ] 9a. Normaliser et tester la matrice publique des cinq adapters.
+- [ ] 9b. Vérifier les builds, manifests, tarballs et Changesets.
 - [ ] Revue finale de branche.
 
 ## Dernière validation
+
+Task 8, validation ciblée du 29 août 2026 :
+
+- Contrat Vanilla : 2 passent, 0 échec.
+- Typecheck racine : passe.
+- Factory DOM, SSR import-safe et type concret `Tour` validés.
+- Suite navigateur complète passée par l’agent sur la révision runtime.
 
 Task 7, validation ciblée du 29 août 2026 :
 
