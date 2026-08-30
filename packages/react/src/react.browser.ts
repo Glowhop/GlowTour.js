@@ -299,6 +299,13 @@ describe("react adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     assert.equal(advance?.getAttribute("aria-keyshortcuts"), "N");
+    await React.act(async () => {
+      advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await waitForCondition(
+        () => tour.state.get().currentStepIndex === 1 && tour.state.get().status === "active",
+        "the late Advance trigger command to finish",
+      );
+    });
     await React.act(async () => root.unmount());
   });
 
