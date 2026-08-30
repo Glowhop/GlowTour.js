@@ -2,6 +2,8 @@
 
 ESM-only Vue 3.5 adapter with provide/inject refs for native reactive state. Content is Vue slot content. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
 
+Compatibility: Vue 3.5.x (`^3.5.0`). The root can render in SSR; browser work starts on mount. Hydration of an active tour is unverified.
+
 <!-- glow-tour:snippet vue-quick-start -->
 ```vue
 <script setup lang="ts">

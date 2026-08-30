@@ -79,15 +79,31 @@ function readPackedManifest(tarball: string): Record<string, unknown> {
 
 const snippetPattern = /<!--\s*glow-tour:snippet\s+([\w-]+)\s*-->\s*```[\w-]*\s*\n([\s\S]*?)\n```/g;
 
-function readCanonicalSnippets(): Record<string, string> {
+function readCanonicalSnippets(baseDirectory = root, installed = false): Record<string, string> {
   const snippets: Record<string, string> = {};
-  for (const file of ["README.md", ...packageNames.map((name) => `packages/${name.replace("@glowhop/", "").replace("-tour", "")}/README.md`)]) {
-    for (const [, id, source] of readFileSync(join(root, file), "utf8").matchAll(snippetPattern)) {
-      assert.equal(snippets[id], undefined, `duplicate canonical README snippet: ${id}`);
+  const files: string[] = [];
+  if (installed) {
+    for (const name of packageNames) files.push("node_modules/" + name + "/README.md");
+  } else {
+    files.push("README.md");
+    for (const name of packageNames) files.push("packages/" + name.replace("@glowhop/", "").replace("-tour", "") + "/README.md");
+  }
+  for (const file of files) {
+    const readme = readFileSync(join(baseDirectory, file), "utf8");
+    if (installed) {
+      const packageName = file.split("/").slice(-3, -1).join("/");
+      const expectedHeading = "# " + packageName;
+      assert.equal(readme.slice(0, expectedHeading.length), expectedHeading, "tarball README must name " + packageName);
+    }
+    for (const match of readme.matchAll(snippetPattern)) {
+      const id = match[1];
+      const source = match[2];
+      assert.ok(id && source, "canonical README marker must include an id and source");
+      assert.equal(snippets[id], undefined, "duplicate canonical README snippet: " + id);
       snippets[id] = source;
     }
   }
-  for (const id of ["core-workflow", "react-quick-start", "react-advanced", "vue-quick-start", "vue-advanced", "angular-quick-start", "angular-advanced", "solid-quick-start", "solid-advanced", "vanilla-quick-start", "vanilla-advanced"]) assert.ok(snippets[id], `missing canonical README snippet: ${id}`);
+  for (const id of ["core-workflow", "react-quick-start", "react-advanced", "vue-quick-start", "vue-advanced", "angular-quick-start", "angular-advanced", "solid-quick-start", "solid-advanced", "vanilla-quick-start", "vanilla-advanced"]) assert.ok(snippets[id], "missing canonical README snippet: " + id);
   return snippets;
 }
 
@@ -477,6 +493,14 @@ try {
     ],
     consumerDirectory,
   );
+  const installedSnippets = readCanonicalSnippets(consumerDirectory, true);
+  writeFileSync(join(consumerDirectory, "core.ts"), installedSnippets["core-workflow"]);
+  for (const id of ["react-quick-start", "react-advanced"]) writeFileSync(join(consumerDirectory, `${id}.tsx`), installedSnippets[id]);
+  for (const id of ["solid-quick-start", "solid-advanced"]) writeFileSync(join(consumerDirectory, `${id}.tsx`), installedSnippets[id]);
+  for (const id of ["vanilla-quick-start", "vanilla-advanced"]) writeFileSync(join(consumerDirectory, `${id}.ts`), installedSnippets[id]);
+  for (const id of ["vue-quick-start", "vue-advanced"]) writeFileSync(join(consumerDirectory, `${id}.vue`), installedSnippets[id]);
+  writeFileSync(join(consumerDirectory, "angular-app/quick.ts"), installedSnippets["angular-quick-start"]);
+  writeFileSync(join(consumerDirectory, "angular-app/advanced.ts"), installedSnippets["angular-advanced"]);
   process.stdout.write(run("bun", [bundleVerifier, consumerDirectory], consumerDirectory));
   run("node", ["runtime-imports.mjs"], consumerDirectory);
   run("node", ["render-react-default-tour.mjs"], consumerDirectory);

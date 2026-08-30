@@ -2,6 +2,8 @@
 
 ESM-only React 19 adapter with `useSyncExternalStore`-backed state. Content is React content. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
 
+Compatibility: React 19 only. `DefaultTour` supports static SSR and package imports are DOM-free; hydration of an active tour is unverified.
+
 <!-- glow-tour:snippet react-quick-start -->
 ```tsx
 import { createRoot } from "react-dom/client";
@@ -17,7 +19,7 @@ createRoot(document.getElementById("app")!).render(<><button id="welcome">Welcom
 ```tsx
 import { GlowTour, createGlowTour } from "@glowhop/react-tour";
 const tour = createGlowTour(); const workflow = tour.create("custom").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build();
-export function CustomTour() { return <><button type="button" onClick={() => void tour.run(workflow)}>Start</button><GlowTour.Root tour={tour}><GlowTour.Overlay /><GlowTour.Pointer /><GlowTour.Popover><GlowTour.Header /><GlowTour.Content /><GlowTour.Footer><GlowTour.CancelTrigger /><GlowTour.AdvanceTrigger /></GlowTour.Footer></GlowTour.Popover></GlowTour.Root></>; }
+export function CustomTour() { return <><button id="welcome">Target</button><button type="button" onClick={() => void tour.run(workflow)}>Start</button><GlowTour.Root tour={tour}><GlowTour.Overlay /><GlowTour.Pointer /><GlowTour.Popover><GlowTour.Header /><GlowTour.Content /><GlowTour.Footer><GlowTour.CancelTrigger /><GlowTour.AdvanceTrigger /></GlowTour.Footer></GlowTour.Popover></GlowTour.Root></>; }
 ```
 
 Compose `GlowTour.Root`, `Overlay`, `Pointer`, `Popover`, `Header`, `Content`, `Footer`, and trigger primitives. `DefaultTour` is the complete default composition; `useTour()` exposes native reactive state. Static/dynamic targets, placement, interaction, scroll, callbacks, actions/events, cancellation, and cleanup follow Core.

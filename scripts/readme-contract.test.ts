@@ -59,6 +59,9 @@ test("each public package has distinct documentation", () => {
   expect(new Set(readmes).size).toBe(packages.length);
   for (const [index, readme] of readmes.entries()) {
     expect(readme).toContain("ESM-only");
+    expect(readme.toLowerCase()).toContain("compatibility");
+    expect(readme.toLowerCase()).toContain("ssr");
+    expect(readme.toLowerCase()).toContain("hydration");
     assertLocalLinks(`packages/${packages[index]}/README.md`, readme);
   }
   assertLocalLinks("README.md", read("README.md"));

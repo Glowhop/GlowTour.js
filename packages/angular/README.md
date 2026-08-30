@@ -2,6 +2,8 @@
 
 ESM-only Angular 18.2 adapter with DI-scoped signals for native reactive state. Content is Angular template content. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
 
+Compatibility: Angular 18.2.x (`^18.2.0`). SSR: package imports are DOM-free; hydration of an active tour is unverified.
+
 <!-- glow-tour:snippet angular-quick-start -->
 ```ts
 import { Component } from "@angular/core";

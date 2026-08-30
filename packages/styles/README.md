@@ -2,6 +2,8 @@
 
 ESM-only CSS package. Import the light-only theme:
 
+Compatibility: CSS-only package; no framework version or runtime SSR surface applies. Hydration is not applicable.
+
 ```ts
 import "@glowhop/styles-tour/default.css";
 ```

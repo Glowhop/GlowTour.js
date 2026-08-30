@@ -2,6 +2,8 @@
 
 ESM-only workflow engine. Core has no overlay, popover, or other presentation. Connecting a root succeeds without a popover; running a non-empty workflow fails if the root or popover is missing. The adapter-author entry point is [`@glowhop/core-tour/adapter`](https://github.com/Glowhop/glow-tour/blob/main/packages/core/src/adapter.ts).
 
+Compatibility: framework-independent ESM package. Core provides no SSR-rendered UI; hydration is not applicable to Core itself.
+
 <!-- glow-tour:snippet core-workflow -->
 ```ts
 import { createGlowTour } from "@glowhop/core-tour";
