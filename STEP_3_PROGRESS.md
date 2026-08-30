@@ -51,6 +51,8 @@ Fresh validation on 30 August 2026:
 
 The browser count changed from 69 to 66 because the Vanilla browser suite changed from 18 to 15 tests during Step 3; the other four framework suites retained their counts. The history shows disabled-state cases were consolidated/replaced in that suite. All 66 current tests pass; this count change is not treated as a test failure.
 
+Final validation also exposed an intermittent React Happy DOM test that combined late-trigger insertion with fire-and-forget delegated navigation. The dedicated late-trigger test retains that coverage; the command test now isolates Cancel, Back, and Advance and waits for their terminal state. Both targeted contracts passed 500 consecutive repetitions, and the complete React browser suite passed 100 consecutive repetitions (1,500 tests).
+
 ## Commits
 
 - Implementation range: `c03e21f..732311d`.
