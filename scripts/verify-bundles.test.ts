@@ -55,18 +55,56 @@ test("requires Vanilla auto bundles to retain registration while the main entry 
     }),
   ).toThrow("must not register custom elements");
   expect(() =>
-    assertBundleScenario(auto!, { gzipBytes: 1, inputs: [], output: "export {};" }),
+    assertBundleScenario(auto!, { gzipBytes: 1, inputs: [], output: "customElements;" }),
   ).toThrow("must retain custom-element registration");
+  expect(() =>
+    assertBundleScenario(auto!, {
+      gzipBytes: 1,
+      inputs: [],
+      output: 'customElements.define("glow-tour-root", Root);',
+    }),
+  ).not.toThrow();
 });
 
 test("builds deterministic minified ESM without source maps", () => {
-  const arguments_ = esbuildArguments("entry.ts", "output.js", "metadata.json");
+  const scenario = bundleScenarios.find((candidate) => candidate.name === "React");
+  expect(scenario).toBeDefined();
+  const arguments_ = esbuildArguments(scenario!, "entry.ts", "output.js", "metadata.json");
 
   expect(arguments_).toContain("--bundle");
   expect(arguments_).toContain("--format=esm");
   expect(arguments_).toContain("--minify");
   expect(arguments_).not.toContain("--sourcemap");
   expect(arguments_).not.toContain("--sourcemap=false");
+});
+
+test("bundles Core itself and externalizes only each scenario's declared dependencies", () => {
+  const core = bundleScenarios.find((scenario) => scenario.name === "Core index");
+  const react = bundleScenarios.find((scenario) => scenario.name === "React");
+  expect(core).toBeDefined();
+  expect(react).toBeDefined();
+
+  const coreArguments = esbuildArguments(core!, "entry.ts", "output.js", "metadata.json");
+  const reactArguments = esbuildArguments(react!, "entry.ts", "output.js", "metadata.json");
+
+  expect(coreArguments).not.toContain("--external:@glowhop/core-tour");
+  expect(coreArguments).toContain("--external:@glowhop/observables");
+  expect(reactArguments).toContain("--external:@glowhop/core-tour");
+  expect(reactArguments).toContain("--external:react");
+  expect(reactArguments).not.toContain("--external:vue");
+});
+
+test("rejects a framework import that is not declared by the measured adapter", () => {
+  const react = bundleScenarios.find((scenario) => scenario.name === "React");
+  expect(react).toBeDefined();
+
+  expect(() =>
+    assertBundleScenario(react!, {
+      gzipBytes: 1,
+      inputs: ["node_modules/vue/dist/vue.runtime.esm-bundler.js"],
+      output: "export {};",
+    }),
+  ).toThrow("must not bundle another framework");
 });
 
 test("formats current gzip bytes, budget, and delta for every scenario", () => {

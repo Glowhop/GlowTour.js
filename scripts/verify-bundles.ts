@@ -11,6 +11,7 @@ type BundleResult = {
 
 export type BundleScenario = {
   readonly entry: string;
+  readonly externalPackages: readonly string[];
   readonly gzipBudget: number;
   readonly name: string;
   readonly outputExtension: "css" | "js";
@@ -29,38 +30,26 @@ const packageNames = [
   "@glowhop/solid-tour",
   "@glowhop/vanilla-tour",
 ] as const;
-const externalPackages = [
-  "@angular/common",
-  "@angular/common/*",
-  "@angular/core",
-  "@angular/core/*",
-  "@glowhop/core-tour",
-  "@glowhop/observables",
-  "react",
-  "react/*",
-  "solid-js",
-  "solid-js/*",
-  "tslib",
-  "vue",
-  "vue/*",
-] as const;
 const frameworkInput = /node_modules\/(?:@angular\/|react\/|solid-js\/|vue\/)/;
 
 export const bundleScenarios: readonly BundleScenario[] = [
   {
     entry: 'import { createGlowTour } from "@glowhop/core-tour"; createGlowTour();',
+    externalPackages: ["@glowhop/observables"],
     gzipBudget: 18 * KIB,
     name: "Core index",
     outputExtension: "js",
   },
   {
     entry: 'export { connectGlowTourRoot } from "@glowhop/core-tour/adapter";',
+    externalPackages: [],
     gzipBudget: 0.75 * KIB,
     name: "Core adapter",
     outputExtension: "js",
   },
   {
     entry: 'import { createGlowTour } from "@glowhop/react-tour"; createGlowTour();',
+    externalPackages: ["@glowhop/core-tour", "react", "react/*"],
     gzipBudget: 2.5 * KIB,
     name: "React",
     outputExtension: "js",
@@ -68,6 +57,7 @@ export const bundleScenarios: readonly BundleScenario[] = [
   },
   {
     entry: 'import { createGlowTour } from "@glowhop/vue-tour"; createGlowTour();',
+    externalPackages: ["@glowhop/core-tour", "vue", "vue/*"],
     gzipBudget: 2.75 * KIB,
     name: "Vue",
     outputExtension: "js",
@@ -75,6 +65,15 @@ export const bundleScenarios: readonly BundleScenario[] = [
   },
   {
     entry: 'import { createGlowTour } from "@glowhop/angular-tour"; createGlowTour();',
+    externalPackages: [
+      "@angular/common",
+      "@angular/common/*",
+      "@angular/core",
+      "@angular/core/*",
+      "@glowhop/core-tour",
+      "@glowhop/core-tour/*",
+      "tslib",
+    ],
     gzipBudget: 4.5 * KIB,
     name: "Angular",
     outputExtension: "js",
@@ -83,6 +82,7 @@ export const bundleScenarios: readonly BundleScenario[] = [
   },
   {
     entry: 'import { createGlowTour } from "@glowhop/solid-tour"; createGlowTour();',
+    externalPackages: ["@glowhop/core-tour", "solid-js", "solid-js/*"],
     gzipBudget: 2.5 * KIB,
     name: "Solid",
     outputExtension: "js",
@@ -90,6 +90,7 @@ export const bundleScenarios: readonly BundleScenario[] = [
   },
   {
     entry: 'import { createGlowTour } from "@glowhop/vanilla-tour"; createGlowTour();',
+    externalPackages: ["@glowhop/core-tour"],
     gzipBudget: 4.5 * KIB,
     name: "Vanilla main",
     outputExtension: "js",
@@ -97,6 +98,7 @@ export const bundleScenarios: readonly BundleScenario[] = [
   },
   {
     entry: 'import "@glowhop/vanilla-tour/auto";',
+    externalPackages: ["@glowhop/core-tour"],
     gzipBudget: 4.75 * KIB,
     name: "Vanilla /auto",
     outputExtension: "js",
@@ -104,6 +106,7 @@ export const bundleScenarios: readonly BundleScenario[] = [
   },
   {
     entry: 'import "@glowhop/styles-tour/default.css";',
+    externalPackages: [],
     gzipBudget: 1.75 * KIB,
     name: "Styles CSS",
     outputExtension: "css",
@@ -137,13 +140,18 @@ export function assertBundleScenario(scenario: BundleScenario, result: BundleRes
   }
   if (scenario.requiresAutoRegistration) {
     assert.ok(
-      result.output.includes("customElements"),
+      result.output.includes("glow-tour-root") && /\.define\(/.test(result.output),
       "Vanilla /auto must retain custom-element registration",
     );
   }
 }
 
-export function esbuildArguments(entry: string, output: string, metafile: string): string[] {
+export function esbuildArguments(
+  scenario: BundleScenario,
+  entry: string,
+  output: string,
+  metafile: string,
+): string[] {
   return [
     entry,
     "--bundle",
@@ -153,7 +161,7 @@ export function esbuildArguments(entry: string, output: string, metafile: string
     "--target=es2022",
     `--outfile=${output}`,
     `--metafile=${metafile}`,
-    ...externalPackages.map((packageName) => `--external:${packageName}`),
+    ...scenario.externalPackages.map((packageName) => `--external:${packageName}`),
   ];
 }
 
@@ -195,7 +203,7 @@ function verifyBundles(consumerDirectory: string) {
       writeFileSync(entry, `${scenario.entry}\n`);
       run(
         esbuild,
-        esbuildArguments(entry, output, metafile),
+        esbuildArguments(scenario, entry, output, metafile),
         consumerDirectory,
       );
       const outputPath = output.replace(/\.js$/, `.${scenario.outputExtension}`);
