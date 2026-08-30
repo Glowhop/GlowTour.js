@@ -75,7 +75,9 @@ export function createLabWorkflow<TContent>(
       target: selectors.revealButton,
       title: content.title("clickTarget() + waitUntilElement()"),
       content: content.paragraph(copy.reveal),
-
+      popover: {
+        disableAdvanceButton: true,
+      },
       data: { api: "waitUntilElement" },
     })
     .clickTarget()
@@ -83,7 +85,13 @@ export function createLabWorkflow<TContent>(
       interval: timing.elementPollingInterval,
       timeout: timing.targetTimeout,
     })
-    .do(() => actions.log("waitUntilElement — cible révélée détectée"))
+    .do((context) => {
+      actions.log("waitUntilElement — cible révélée détectée");
+      context.props.set((current) => ({
+        ...current,
+        popover: { ...current.popover, disableAdvanceButton: false },
+      }));
+    })
     .step({
       target: async ({ signal }) => {
         if (signal.aborted) return null;
