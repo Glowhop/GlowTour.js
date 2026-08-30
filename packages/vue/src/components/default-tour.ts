@@ -1,6 +1,6 @@
 import type { GlowTour as CoreGlowTour } from "@glowhop/core-tour";
 import { defineComponent, h, type PropType } from "vue";
-import type { VueTourContent } from "../glow-tour";
+import type { VueTourContent } from "../glow-tour.js";
 import {
   GlowTourAdvanceTrigger,
   GlowTourBackTrigger,
@@ -12,11 +12,11 @@ import {
   GlowTourPointer,
   GlowTourPopover,
   GlowTourRoot,
-} from "./tour-components";
+} from "./tour-components.js";
 
 type Tour = CoreGlowTour<VueTourContent>;
 
-export const GlowTourDefault = defineComponent({
+export const GlowTourDefault = /* @__PURE__ */ defineComponent({
   name: "GlowTourDefault",
   props: {
     idPrefix: { type: String },

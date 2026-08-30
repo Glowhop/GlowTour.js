@@ -32,6 +32,16 @@ afterEach(() => {
   window.close();
 });
 
+async function waitForCondition(condition: () => boolean, description: string, timeoutMs = 1_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (!condition()) {
+    if (Date.now() >= deadline) {
+      throw new Error(`Timed out after ${timeoutMs}ms waiting for ${description}`);
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 1));
+  }
+}
+
 describe("react adapter browser behavior", () => {
   test("passes the shared default-tour acceptance contract", async () => {
     const [React, { createRoot }, { createGlowTour, DefaultTour }] = await Promise.all([
@@ -289,10 +299,17 @@ describe("react adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     assert.equal(advance?.getAttribute("aria-keyshortcuts"), "N");
+    await React.act(async () => {
+      advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await waitForCondition(
+        () => tour.state.get().currentStepIndex === 1 && tour.state.get().status === "active",
+        "the late Advance trigger command to finish",
+      );
+    });
     await React.act(async () => root.unmount());
   });
 
-  test("delegates commands to controls that appear while a tour is active", async () => {
+  test("delegates cancel, back, and advance commands while a tour is active", async () => {
     const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
       import("react"),
       import("react-dom/client"),
@@ -307,18 +324,14 @@ describe("react adapter browser behavior", () => {
       .step({ content: "First", target, title: "First" })
       .step({ content: "Second", target, title: "Second" })
       .build();
-    let setShowAdvance!: (show: boolean) => void;
-
     function Harness() {
-      const [showAdvance, updateShowAdvance] = React.useState(false);
-      setShowAdvance = updateShowAdvance;
       return React.createElement(
         GlowTour.Root,
         { tour },
         React.createElement(GlowTour.Popover),
         React.createElement(GlowTour.CancelTrigger),
         React.createElement(GlowTour.BackTrigger),
-        showAdvance ? React.createElement(GlowTour.AdvanceTrigger) : null,
+        React.createElement(GlowTour.AdvanceTrigger),
       );
     }
 
@@ -338,34 +351,39 @@ describe("react adapter browser behavior", () => {
     assert.equal(cancel?.disabled, false);
     await React.act(async () => {
       cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-      await Promise.resolve();
+      await waitForCondition(
+        () => tour.state.get().status === "cancelled",
+        "the delegated Cancel command to finish",
+      );
     });
-    assert.equal(tour.state.get().status, "cancelled");
 
     await React.act(async () => {
       await tour.run(workflow);
       await tour.advance();
     });
-    await new Promise((resolve) => window.setTimeout(resolve, 0));
+
     const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(back?.disabled, false);
     assert.equal(back?.getAttribute("aria-keyshortcuts"), "ArrowLeft Backspace");
     await React.act(async () => {
       back?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-      await Promise.resolve();
+      await waitForCondition(
+        () => tour.state.get().currentStepIndex === 0 && tour.state.get().status === "active",
+        "the delegated Back navigation to finish",
+      );
     });
-    assert.equal(tour.state.get().currentStepIndex, 0);
 
-    await React.act(async () => setShowAdvance(true));
-    await new Promise((resolve) => window.setTimeout(resolve, 0));
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     assert.equal(advance?.disabled, false);
     assert.equal(advance?.getAttribute("aria-keyshortcuts"), "Enter ArrowRight");
+
     await React.act(async () => {
       advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-      await Promise.resolve();
+      await waitForCondition(
+        () => tour.state.get().currentStepIndex === 1 && tour.state.get().status === "active",
+        "the delegated Advance navigation to finish",
+      );
     });
-    assert.equal(tour.state.get().currentStepIndex, 1);
 
     await React.act(async () => root.unmount());
   });

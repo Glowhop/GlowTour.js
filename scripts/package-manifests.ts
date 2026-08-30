@@ -38,7 +38,7 @@ export function buildPublishedManifest(source: PackageManifest, versions: Packag
     dependencies: resolveDependencies(source.dependencies, versions),
     exports: preparePublishedValue(source.exports, versions),
     files: ["**/*"],
-    sideEffects: source.sideEffects ?? false,
+    sideEffects: preparePublishedValue(source.sideEffects ?? false, versions),
     types: preparePublishedValue(source.types, versions),
   };
 

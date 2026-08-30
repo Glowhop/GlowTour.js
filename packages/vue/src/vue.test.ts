@@ -1,5 +1,8 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { renderToString } from "@vue/server-renderer";
 import { createSSRApp, h } from "vue";
 import type { DynamicStepProps, StartOptions, Tour, TourState, WorkflowDefinition } from "./index";
@@ -74,6 +77,38 @@ describe("vue adapter contract", () => {
     });
 
     assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
+  });
+
+  test("preserves pure presentation component initializers in the flattened entry", () => {
+    const directory = mkdtempSync(join(tmpdir(), "glow-tour-vue-tree-shaking-"));
+
+    try {
+      const result = Bun.spawnSync({
+        cmd: [
+          "bun",
+          "build",
+          join(import.meta.dir, "index.ts"),
+          "--format=esm",
+          "--target=browser",
+          "--external=vue",
+          "--external=@glowhop/core-tour",
+          "--external=@glowhop/core-tour/*",
+          `--outdir=${directory}`,
+        ],
+        cwd: process.cwd(),
+        stderr: "pipe",
+      });
+
+      assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
+      const emittedSource = readFileSync(join(directory, "index.js"), "utf8");
+      assert.equal(
+        emittedSource.match(/\/\* @__PURE__ \*\/ defineComponent\d*\(/g)?.length,
+        11,
+        "every exported presentation component must be marked pure in the flattened entry",
+      );
+    } finally {
+      rmSync(directory, { force: true, recursive: true });
+    }
   });
 
   test("renders a root boundary without client-generated IDs during SSR", async () => {

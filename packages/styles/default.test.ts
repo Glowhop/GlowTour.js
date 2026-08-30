@@ -7,21 +7,106 @@ const packageManifest = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as Record<string, unknown>;
 
+function atRuleContent(atRule: string): string {
+  const start = stylesheet.indexOf(atRule);
+  assert.notEqual(start, -1, `finds ${atRule}`);
+
+  const openingBrace = stylesheet.indexOf("{", start);
+  let depth = 1;
+
+  for (let index = openingBrace + 1; index < stylesheet.length; index += 1) {
+    if (stylesheet[index] === "{") depth += 1;
+    if (stylesheet[index] === "}") depth -= 1;
+    if (depth === 0) return stylesheet.slice(openingBrace + 1, index);
+  }
+
+  assert.fail(`${atRule} is not closed`);
+}
+
 describe("default tour theme", () => {
   test("publishes the stylesheet as the package side effect", () => {
     assert.deepEqual(packageManifest.files, ["dist/**/*"]);
     assert.deepEqual(packageManifest.sideEffects, ["*.css"]);
   });
 
-  test("exposes the shared theme tokens and component selectors", () => {
-    assert.match(stylesheet, /--glow-tour-color-accent:\s*#4c35fd/);
-    assert.match(stylesheet, /\[data-glow-tour-popover\]/);
-    assert.match(stylesheet, /\[data-glow-tour-header\]/);
-    assert.match(stylesheet, /\[data-glow-tour-content\]/);
-    assert.match(stylesheet, /\[data-glow-tour-footer\]/);
-    assert.match(stylesheet, /\[data-glow-tour-previous-trigger\]/);
-    assert.match(stylesheet, /\[data-glow-tour-advance-trigger\]/);
-    assert.match(stylesheet, /\[data-glow-tour-pointer-content\]/);
+  test("scopes every component selector to a tour root without redeclaring public tokens", () => {
+    const publicTokens = [
+      "color-accent",
+      "color-accent-hover",
+      "color-accent-active",
+      "color-on-accent",
+      "color-surface",
+      "color-surface-muted",
+      "color-text",
+      "color-text-muted",
+      "color-border",
+      "arrow-color",
+      "arrow-border-color",
+      "radius",
+      "shadow",
+      "transition-duration",
+      "transition-easing",
+      "popover-width",
+      "viewport-gap",
+      "spacing",
+      "control-height",
+    ];
+
+    assert.doesNotMatch(stylesheet, /:root\b/);
+
+    for (const token of publicTokens) {
+      assert.doesNotMatch(
+        stylesheet,
+        new RegExp(`--glow-tour-${token}:`),
+        `does not redeclare --glow-tour-${token}`,
+      );
+    }
+
+    const selectors = stylesheet.matchAll(/(?:^|[{}])\s*(?!@)(?<selector>[^{}]+?)\s*\{/gm);
+
+    for (const match of selectors) {
+      for (const selector of match.groups?.selector?.split(",") ?? []) {
+        if (selector.includes("[data-glow-tour-")) {
+          assert.match(
+            selector.trim(),
+            /^:where\(\[data-glow-tour-root\]\)/,
+            `scopes selector ${selector.trim()}`,
+          );
+        }
+      }
+    }
+
+    assert.match(stylesheet, /^:where\(\[data-glow-tour-root\]\) \[data-glow-tour-popover\]/m);
+  });
+
+  test("uses inherited public token fallbacks at their scoped points of use", () => {
+    const tokensWithFallbacks = [
+      "color-accent",
+      "color-accent-hover",
+      "color-accent-active",
+      "color-on-accent",
+      "color-surface",
+      "color-surface-muted",
+      "color-text",
+      "color-text-muted",
+      "color-border",
+      "radius",
+      "shadow",
+      "transition-duration",
+      "transition-easing",
+      "popover-width",
+      "viewport-gap",
+      "spacing",
+      "control-height",
+    ];
+
+    for (const token of tokensWithFallbacks) {
+      assert.match(
+        stylesheet,
+        new RegExp(`var\\(--glow-tour-${token},\\s*[^)]+\\)`),
+        `uses --glow-tour-${token} with a fallback`,
+      );
+    }
   });
 
   test("transforms application-provided pointer content for every placement", () => {
@@ -43,8 +128,8 @@ describe("default tour theme", () => {
   });
 
   test("keeps the default theme minimal and motionless", () => {
-    assert.match(stylesheet, /--glow-tour-radius:\s*8px/);
-    assert.match(stylesheet, /--glow-tour-shadow:\s*0 4px 12px rgb\(0 0 0 \/ 8%\)/);
+    assert.match(stylesheet, /var\(--glow-tour-radius,\s*8px\)/);
+    assert.match(stylesheet, /var\(--glow-tour-shadow,\s*0 4px 12px rgb\(0 0 0 \/ 8%\)\)/);
     assert.doesNotMatch(stylesheet, /border-radius:\s*999px/);
     assert.doesNotMatch(stylesheet, /color-mix\(/);
     assert.doesNotMatch(stylesheet, /filter:\s*drop-shadow/);
@@ -58,15 +143,111 @@ describe("default tour theme", () => {
     assert.doesNotMatch(pointerContentRule.groups.declarations, /transition/);
   });
 
-  test("covers keyboard focus, disabled controls and reduced motion", () => {
-    assert.match(stylesheet, /:focus-visible/);
-    assert.match(stylesheet, /:disabled|\[disabled\]/);
-    assert.match(stylesheet, /prefers-reduced-motion:\s*reduce/);
+  test("keeps the popover arrow visible while content scrolls within the viewport", () => {
+    assert.match(stylesheet, /width:\s*min\(/);
+    assert.match(
+      stylesheet,
+      /max-height:\s*calc\(100dvh - \(var\(--glow-tour-viewport-gap,\s*16px\) \* 2\)\)/,
+    );
+    assert.match(
+      stylesheet,
+      /:where\(\[data-glow-tour-root\]\) \[data-glow-tour-popover\] \{[^}]*display:\s*grid[^}]*overflow:\s*visible/s,
+    );
+    assert.match(stylesheet, /overflow-wrap:\s*anywhere/);
+    assert.match(stylesheet, /flex-wrap:\s*wrap/);
+    assert.match(
+      stylesheet,
+      /\[data-glow-tour-content\][^{]*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto[^}]*overscroll-behavior:\s*contain/s,
+    );
+  });
+
+  test("styles cancel, previous, and advance controls across interaction states", () => {
+    const controls = ["cancel", "previous", "advance"] as const;
+
+    for (const control of controls) {
+      assert.match(stylesheet, new RegExp(`data-glow-tour-${control}-trigger`));
+      assert.match(
+        stylesheet,
+        new RegExp(
+          `data-glow-tour-${control}-trigger[^}]*:focus-visible|data-glow-tour-${control}-trigger]:focus-visible`,
+          "s",
+        ),
+      );
+      assert.match(
+        stylesheet,
+        new RegExp(
+          `data-glow-tour-${control}-trigger[^}]*:disabled|data-glow-tour-${control}-trigger]:disabled`,
+          "s",
+        ),
+      );
+    }
+
+    assert.match(
+      stylesheet,
+      /\[data-glow-tour-cancel-trigger\][^{]*\{[^}]*margin-inline-end:\s*auto/s,
+    );
+    const reducedMotion = atRuleContent("@media (prefers-reduced-motion: reduce)");
+
+    for (const control of controls) {
+      assert.match(reducedMotion, new RegExp(`data-glow-tour-${control}-trigger`));
+    }
+
+    assert.match(reducedMotion, /transition-duration:\s*0\.01ms/);
+
+    const sharedGeometry = stylesheet.match(
+      /\[data-glow-tour-cancel-trigger\],[\s\S]*?\[data-glow-tour-advance-trigger\]\s*\{(?<declarations>[^}]*)\}/,
+    );
+
+    assert.match(sharedGeometry?.groups?.declarations ?? "", /border:\s*1px solid transparent/);
+    assert.match(sharedGeometry?.groups?.declarations ?? "", /border-radius:/);
+    assert.match(sharedGeometry?.groups?.declarations ?? "", /min-height:/);
+    assert.match(sharedGeometry?.groups?.declarations ?? "", /padding:/);
+    assert.match(sharedGeometry?.groups?.declarations ?? "", /transition:/);
+
+    for (const control of controls) {
+      assert.match(
+        stylesheet,
+        new RegExp(
+          `data-glow-tour-${control}-trigger]:hover:not\\(:disabled\\)[^{]*\\{[^}]*background:[^}]*border-color:`,
+          "s",
+        ),
+      );
+      assert.match(
+        stylesheet,
+        new RegExp(
+          `data-glow-tour-${control}-trigger]:active:not\\(:disabled\\)[^{]*\\{[^}]*background:[^}]*border-color:`,
+          "s",
+        ),
+      );
+    }
+
+    const forcedColors = atRuleContent("@media (forced-colors: active)");
+
+    for (const control of controls) {
+      assert.match(forcedColors, new RegExp(`data-glow-tour-${control}-trigger`));
+    }
+
+    assert.match(forcedColors, /border-color:\s*ButtonText/);
+    assert.match(forcedColors, /:focus-visible[\s\S]*outline-color:\s*Highlight/);
+
+    assert.match(
+      stylesheet,
+      /\[data-glow-tour-advance-trigger\]:active:not\(:disabled\)[^{]*\{[^}]*background:\s*var\(--glow-tour-color-accent-active,\s*#3522c7\)[^}]*border-color:\s*var\(--glow-tour-color-accent-active,\s*#3522c7\)/s,
+    );
+
+    const advanceHover = stylesheet.match(
+      /\[data-glow-tour-advance-trigger\]:hover:not\(:disabled\)[^{]*\{(?<declarations>[^}]*)\}/s,
+    );
+    const advanceActive = stylesheet.match(
+      /\[data-glow-tour-advance-trigger\]:active:not\(:disabled\)[^{]*\{(?<declarations>[^}]*)\}/s,
+    );
+
+    assert.notEqual(advanceActive?.groups?.declarations, advanceHover?.groups?.declarations);
   });
 
   test("exposes arrow theme variables without owning its pseudo-element", () => {
-    assert.match(stylesheet, /--glow-tour-arrow-color:\s*var\(--glow-tour-color-surface\)/);
-    assert.match(stylesheet, /--glow-tour-arrow-border-color:\s*var\(--glow-tour-color-border\)/);
+    assert.doesNotMatch(stylesheet, /--glow-tour-arrow-color:/);
+    assert.doesNotMatch(stylesheet, /--glow-tour-arrow-border-color:/);
     assert.doesNotMatch(stylesheet, /\[data-glow-tour-popover[^}]*::before/);
   });
 });

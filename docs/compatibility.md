@@ -20,3 +20,16 @@ their workspace manifests. Angular is distributed in Angular Package Format with
 compilation. The styles package is CSS-only.
 
 The private `apps/playground` exercises the adapters but is not a published compatibility package.
+
+## SSR and hydration
+
+The following are the verified server-side facts. Hydration is unverified for every adapter; do not
+rely on hydrating an active tour.
+
+| Adapter | Verified SSR fact |
+| --- | --- |
+| React | Packaged `DefaultTour` supports static SSR, and importing the package is DOM-free. |
+| Vue | The packaged root can be rendered in SSR; browser work starts when it mounts. |
+| Solid | The packaged root can be rendered in SSR; browser work starts when it mounts. |
+| Angular | Importing the package is DOM-free. |
+| Vanilla | Importing the package is DOM-free; custom-element mounting is browser-only. |

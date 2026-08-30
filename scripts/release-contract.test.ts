@@ -85,7 +85,7 @@ test("source manifests contain complete public npm metadata and preserve require
     vue: undefined,
     angular: undefined,
     solid: undefined,
-    vanilla: true,
+    vanilla: ["./dist/auto.js"],
   };
 
   for (const packageId of packageIds) {
@@ -100,6 +100,14 @@ test("source manifests contain complete public npm metadata and preserve require
     expect(manifest.publishConfig).toEqual({ access: "public" });
     expect(manifest.sideEffects).toEqual(expectedSideEffects[packageId]);
   }
+});
+
+test("the Vanilla package exposes separate pure and auto registration entries", () => {
+  const manifest = JSON.parse(read("packages/vanilla/package.json")) as Record<string, unknown>;
+  expect(manifest.exports).toEqual({
+    ".": { import: "./dist/index.js", types: "./dist/index.d.ts" },
+    "./auto": { import: "./dist/auto.js", types: "./dist/auto.d.ts" },
+  });
 });
 
 test("package builds copy shared documents and prefer package changelogs", () => {
@@ -132,6 +140,7 @@ test("the private playground stays outside all package build, pack, release, and
   for (const script of [buildScript, packScript, tarballScript, publishScript]) {
     expect(script).not.toContain("playground");
   }
+  expect(tarballScript).toContain('scripts/verify-bundles.ts');
   expect(packScript).toContain('const packageIds = ["core", "styles", "react", "vue", "angular", "solid", "vanilla"]');
   expect(tarballScript).not.toContain("@glowhop/playground");
 });
@@ -143,6 +152,17 @@ test("adapter declaration builds exclude browser acceptance sources", () => {
     };
     expect(config.exclude).toContain("src/**/*.browser.ts");
   }
+});
+
+test("Vue preserves presentation modules for downstream tree-shaking", () => {
+  const buildScript = read("scripts/build-packages.ts");
+
+  expect(buildScript).toContain('"src/components/default-tour.ts"');
+  expect(buildScript).toContain('"src/components/tour-components.ts"');
+  expect(buildScript).toContain('"src/glow-tour.ts"');
+  expect(buildScript).toContain('...(build.preserveModules ? ["./*", "../*"] : [])');
+  expect(buildScript).toMatch(/\{\s*id: "vue",/);
+  expect(buildScript).toContain("preserveModules: true");
 });
 
 test("Core keeps obsolete animation and highlight contracts out of its public surface", () => {
