@@ -55,7 +55,8 @@ The browser count changed from 69 to 66 because the Vanilla browser suite change
 
 - Implementation range: `c03e21f..732311d`.
 - Initial traceability commit: `1db2171 docs: complete step 3 progress journal`.
-- This journal correction is a subsequent documentation correction to that traceability commit; no implementation changes are included.
+- Baseline clarification: `dbb3720 docs: clarify step 3 validation baseline`.
+- Final documentation review fixes: `341faa6 fix(docs): verify installed package guides`.
 
 ## Risks and deferrals
 
