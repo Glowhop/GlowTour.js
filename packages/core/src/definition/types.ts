@@ -29,6 +29,7 @@ export type ReadonlyStartOptions = DeepReadonly<StartOptions>;
 
 export interface WorkflowStepDefinition<T> {
   readonly target: TargetResolver;
+  readonly resetPropsOnEnter?: boolean;
   readonly overlay?: DeepReadonly<OverlayOptions>;
   readonly popover?: DeepReadonly<PopoverOptions>;
   readonly indicator?: DeepReadonly<IndicatorOptions>;

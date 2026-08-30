@@ -273,12 +273,7 @@ export function CancelTrigger(props: CancelTriggerProps) {
   const snapshot = useTourSnapshot(tour);
   if (!snapshot.canCancel) return null;
   return (
-    <Trigger
-      {...props}
-      capabilityDisabled={!snapshot.canCancel}
-      label="Cancel tour"
-      marker="cancel"
-    />
+    <Trigger {...props} capabilityDisabled={!snapshot.canCancel} label="Skip" marker="cancel" />
   );
 }
 

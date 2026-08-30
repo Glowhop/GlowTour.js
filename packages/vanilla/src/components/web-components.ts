@@ -665,7 +665,7 @@ export function registerGlowTourElements() {
       return {
         disabled: !state.canCancel,
         hidden: !state.canCancel,
-        label: "Cancel tour",
+        label: "Skip",
       };
     }
   }

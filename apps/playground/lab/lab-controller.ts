@@ -125,11 +125,13 @@ export function mountLab<TContent>({
     view.revealButton,
     "click",
     () => {
-      const revealed = document.createElement("strong");
-      revealed.className = "lab-revealed-target";
-      revealed.id = LAB_CONFIG.selectors.revealed.slice(1);
-      revealed.textContent = "Resolver prêt";
-      view.revealedHost.replaceChildren(revealed);
+      setTimeout(() => {
+        const revealed = document.createElement("strong");
+        revealed.className = "lab-revealed-target";
+        revealed.id = LAB_CONFIG.selectors.revealed.slice(1);
+        revealed.textContent = "Resolver prêt";
+        view.revealedHost.replaceChildren(revealed);
+      }, LAB_CONFIG.timing.resolverWait);
     },
     cleanups,
   );

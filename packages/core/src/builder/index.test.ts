@@ -1,6 +1,6 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { PopoverOptions, StepContext } from "../types";
+import type { DynamicStepProps, PopoverOptions, StepContext } from "../types";
 import { WorkflowBuilder } from "./index";
 
 const removedProgressOption: PopoverOptions = {
@@ -13,8 +13,12 @@ const removedButtonOption: PopoverOptions = {
   buttons: { advanceLabel: "Next" },
 };
 
+// @ts-expect-error Lifecycle configuration must not be exposed through context.props.
+const removedResetPropsOnEnter: keyof DynamicStepProps<string> = "resetPropsOnEnter";
+
 void removedProgressOption;
 void removedButtonOption;
+void removedResetPropsOnEnter;
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
@@ -44,6 +48,20 @@ describe("WorkflowBuilder public contract", () => {
       ["click", "keydown"],
     );
     assert.equal(definition.steps[0].eventHandlers[0].callback, callback);
+  });
+
+  test("keeps resetPropsOnEnter outside dynamic step props", () => {
+    const definition = new WorkflowBuilder<string>("static-reset-policy")
+      .step({
+        content: "Content",
+        resetPropsOnEnter: false,
+        target: "#target",
+        title: "Title",
+      })
+      .build();
+
+    assert.equal(definition.steps[0].resetPropsOnEnter, false);
+    assert.equal("resetPropsOnEnter" in definition.steps[0].props, false);
   });
 
   test("does not retain former builder aliases", () => {
@@ -334,7 +352,12 @@ describe("StepBuilder lifecycle", () => {
 describe("StepBuilder.append", () => {
   test("appends an immutable workflow definition", () => {
     const reusable = new WorkflowBuilder<string>("reusable")
-      .step({ content: "Reusable", target: "#reusable", title: "Reusable" })
+      .step({
+        content: "Reusable",
+        resetPropsOnEnter: false,
+        target: "#reusable",
+        title: "Reusable",
+      })
       .build();
     const workflow = new WorkflowBuilder<string>("composed")
       .step({ content: "First", target: "#first", title: "First" })
@@ -345,6 +368,8 @@ describe("StepBuilder.append", () => {
       workflow.steps.map((step) => step.props.title),
       ["First", "Reusable"],
     );
+    assert.equal(workflow.steps[1].resetPropsOnEnter, false);
+    assert.equal("resetPropsOnEnter" in workflow.steps[1].props, false);
   });
 
   test("rejects an empty workflow definition", () => {

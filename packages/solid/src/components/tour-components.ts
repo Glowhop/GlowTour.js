@@ -389,7 +389,7 @@ export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
           get capabilityDisabled() {
             return !snapshot().canCancel;
           },
-          label: "Cancel tour",
+          label: "Skip",
           marker: "cancel" as const,
         }),
       );

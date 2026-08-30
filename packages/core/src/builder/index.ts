@@ -122,6 +122,7 @@ export class WorkflowBuilder<T> {
     this.commitCurrentStep();
     this.currentStep = new WorkflowStepBuilder(this, {
       target: options.target,
+      resetPropsOnEnter: options.resetPropsOnEnter,
       props: {
         title: options.title,
         content: options.content,
@@ -131,7 +132,6 @@ export class WorkflowBuilder<T> {
         disableAdvanceButton: options.disableAdvanceButton,
         hideAdvanceButton: options.hideAdvanceButton,
         disableAutoScroll: options.disableAutoScroll,
-        resetPropsOnEnter: options.resetPropsOnEnter,
         data: cloneStepProps(options).data,
       },
       overlay: options.overlay,

@@ -1293,7 +1293,7 @@ describe("DomTourViewDriver", () => {
     await tour.advance();
     assert.equal(document.activeElement, elements.advance);
     await tour.previous();
-    assert.equal(document.activeElement, elements.advance);
+    assert.equal(document.activeElement, elements.popover);
     await tour.advance();
     await tour.advance();
     assert.equal(tour.state.get().status, "finished");

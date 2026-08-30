@@ -346,7 +346,7 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
     const renderTrigger = trigger(
       "cancel",
       () => !snapshot.value.canCancel,
-      () => "Cancel tour",
+      () => "Skip",
       () => props.ariaLabel,
       attrs,
       slots,

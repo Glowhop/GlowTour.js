@@ -402,5 +402,5 @@ export class GlowTourCancelTrigger extends GlowTourTrigger {
   }
 
   readonly isDisabled = computed(() => this.consumerDisabled() || !this.snapshot()?.canCancel);
-  readonly label = computed(() => "Cancel tour");
+  readonly label = computed(() => "Skip");
 }

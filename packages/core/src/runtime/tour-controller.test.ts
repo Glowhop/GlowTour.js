@@ -771,6 +771,40 @@ describe("instance-first TourController", () => {
     assert.deepEqual(workflow.steps[0].props.data, { value: 1 });
   });
 
+  test("resets dynamic props on reentry unless the static step policy disables it", async () => {
+    const reenterFirstStep = async (resetPropsOnEnter?: false) => {
+      const tour = createGlowTour<string>();
+      let activeProps!: StepContext<string>["props"];
+      const workflow = tour
+        .create("reset-on-reentry")
+        .step({
+          content: "one",
+          resetPropsOnEnter,
+          target: targetResolver,
+          title: "initial",
+        })
+        .do(({ props }) => {
+          activeProps = props;
+        })
+        .step({ content: "two", target: targetResolver, title: "two" })
+        .build();
+
+      await tour.run(workflow);
+      activeProps.set((props) => ({ ...props, title: "mutated" }));
+      await tour.advance();
+      await tour.previous();
+
+      const step = tour.state.get().currentStep;
+      assert.ok(step);
+      assert.equal("resetPropsOnEnter" in step.initialProps, false);
+      assert.equal("resetPropsOnEnter" in step.currentProps, false);
+      return step.currentProps.title;
+    };
+
+    assert.equal(await reenterFirstStep(), "initial");
+    assert.equal(await reenterFirstStep(false), "mutated");
+  });
+
   test("runs empty workflow lifecycle callbacks exactly once", async () => {
     let starts = 0;
     let finishes = 0;

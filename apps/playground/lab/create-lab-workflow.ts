@@ -54,12 +54,16 @@ export function createLabWorkflow<TContent>(
       scroll: { behavior: "smooth", block: "center", inline: "center" },
       behavior: { allowInteraction: true },
       data: { api: "focusTarget", targetType: "element" },
+      resetPropsOnEnter: false,
     })
     .focusTarget()
-    .do(({ props, target }) => {
-      actions.log("exec — contenu courant mis à jour");
-      props.set((prev) => ({ ...prev, content: content.paragraph(copy.focused) }));
-      target.focus();
+    .onTargetEvent("input", (ev, context) => {
+      const value = ev.target instanceof HTMLInputElement ? ev.target.value : "";
+      context.props.set((current) => ({
+        ...current,
+        data: { ...current.data, event: ev.type },
+        content: content.paragraph(value),
+      }));
     })
     .wait(timing.focusWait)
     .focusTarget()
@@ -68,7 +72,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.revealButton,
       title: content.title("clickTarget() + waitUntilElement()"),
       content: content.paragraph(copy.reveal),
-      behavior: { allowInteraction: true },
+
       data: { api: "waitUntilElement" },
     })
     .clickTarget()

@@ -12,6 +12,7 @@ import type { ReadonlyStartOptions, WorkflowDefinition, WorkflowStepDefinition }
 
 export interface WorkflowStepDraft<T> {
   target: StepParameters<T>["target"];
+  resetPropsOnEnter?: boolean;
   props: DynamicStepProps<T>;
   overlay?: StepParameters<T>["overlay"];
   popover?: StepParameters<T>["popover"];
@@ -81,6 +82,7 @@ function freezeIndicator(options: StepParameters<unknown>["indicator"]) {
 function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
   return freezeRecord({
     target: draft.target,
+    resetPropsOnEnter: draft.resetPropsOnEnter,
     props: freezeStepProps(draft.props),
     overlay: freezeOverlay(draft.overlay),
     popover: freezePopover(draft.popover),

@@ -25,10 +25,10 @@ reactRoot.render(
     <GlowTour.Popover>
       <GlowTour.Header />
       <GlowTour.Content />
-      <GlowTour.Footer>
+      <GlowTour.Footer className="border border-amber-200">
+        <GlowTour.CancelTrigger />
         <GlowTour.BackTrigger />
         <GlowTour.AdvanceTrigger />
-        <GlowTour.CancelTrigger />
       </GlowTour.Footer>
     </GlowTour.Popover>
   </GlowTour.Root>,

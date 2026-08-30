@@ -515,7 +515,7 @@ try {
   run("npx", ["vite", "build", "--config", "vue-vite.config.mts"], consumerDirectory);
   writeFileSync(join(consumerDirectory, "vue-vite.config.mts"), `import vue from "@vitejs/plugin-vue"; import { defineConfig } from "vite"; export default defineConfig({ plugins: [vue()], build: { outDir: "vue-dist-advanced", lib: { entry: "./vue-advanced-entry.ts", formats: ["es"] } } });`);
   run("npx", ["vite", "build", "--config", "vue-vite.config.mts"], consumerDirectory);
-  const cssOutput = readdirSync(join(consumerDirectory, "css-dist"), { recursive: true }).find((fileName) =>
+  const cssOutput = readdirSync(join(consumerDirectory, "css-dist"), { recursive: true }).find((fileName:string) =>
     fileName.endsWith(".css"),
   );
   assert.ok(cssOutput, "Vite did not bundle the packaged stylesheet");

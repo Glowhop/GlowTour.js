@@ -660,7 +660,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(advance?.disabled, true);
     assert.equal(advance?.getAttribute("aria-disabled"), "true");
     assert.equal(advance?.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    assert.equal(cancel?.textContent, "Cancel tour");
+    assert.equal(cancel?.textContent, "Skip");
     assert.equal(cancel?.getAttribute("aria-label"), "Cancel one");
     assert.equal(staticCancel?.disabled, true);
     assert.equal(staticCancel?.getAttribute("aria-disabled"), "true");

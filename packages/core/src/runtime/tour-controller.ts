@@ -250,7 +250,7 @@ export class TourController<T> {
     this.assertCurrent(operation);
     const step = this.steps[index];
     if (!step) throw new Error(`Step index ${index} is out of bounds`);
-    if (step.initialProps.resetPropsOnEnter !== false) step.reset();
+    if (step.definition.resetPropsOnEnter !== false) step.reset();
     const target = await this.resolveTarget(step, operation);
     this.assertCurrent(operation);
     if (!target) {

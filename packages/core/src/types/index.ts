@@ -91,10 +91,6 @@ export interface DynamicStepProps<T> {
   disableAdvanceButton?: boolean;
   hideAdvanceButton?: boolean;
   disableAutoScroll?: boolean;
-  /**
-   * @default true
-   */
-  resetPropsOnEnter?: boolean;
   data?: Record<string, PrimitiveValue>;
 }
 
@@ -217,6 +213,10 @@ export interface GlowTour<T> {
 
 export type StepParameters<T> = DynamicStepProps<T> & {
   target: TargetResolver;
+  /**
+   * @default true
+   */
+  resetPropsOnEnter?: boolean;
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
   indicator?: IndicatorOptions;

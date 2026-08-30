@@ -19,28 +19,6 @@ body {
   min-height: 100vh;
 }
 
-button {
-  border: 1px solid #b6c3bd;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #1e2428;
-  cursor: pointer;
-  font: inherit;
-  min-height: 36px;
-  padding: 0 12px;
-}
-
-button:hover {
-  border-color: #55766a;
-}
-
-button:disabled {
-  background: #eaf2ef;
-  border-color: #cbd6d0;
-  color: #5c6863;
-  cursor: not-allowed;
-}
-
 .launcher,
 .app-screen {
   display: grid;
