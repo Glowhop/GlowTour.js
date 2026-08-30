@@ -81,6 +81,31 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     }
   }
 
+  syncVisibility(
+    visible: boolean,
+    position: DOMRect,
+    step: TourElementStep,
+    popoverPlacement?: ResolvedPlacement,
+  ) {
+    this.cancelAnimations();
+    this.popoverPlacement = popoverPlacement;
+    if (!visible) {
+      this.element.style.setProperty("opacity", "0");
+      this.element.setAttribute("aria-hidden", "true");
+      this.element.removeAttribute("data-glow-tour-placement");
+      return;
+    }
+
+    const styles = this._getNextStyles(position, step);
+    for (const [property, value] of Object.entries(styles)) {
+      if (value != null) this.element.style.setProperty(property, String(value));
+    }
+    this.element.style.setProperty("opacity", "1");
+    this.element.removeAttribute("aria-hidden");
+    const placement = this.element.getAttribute("data-glow-tour-placement") as TryOrderOptions;
+    this._startAnimation(placement);
+  }
+
   override cancelAnimations() {
     super.cancelAnimations();
     this._stopAnimation();

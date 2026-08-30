@@ -184,7 +184,7 @@ describe("instance-first TourController", () => {
     assert.equal(Object.isFrozen(workflow.steps[0].props.data), true);
     assert.equal(Object.isFrozen(workflow.options.popover?.keyboardShortcuts?.advance), true);
     assert.equal(Object.isFrozen(workflow.options.popover?.arrow), true);
-    assert.equal(Object.isFrozen(workflow.steps[0].overlay?.animation), true);
+    assert.equal(Object.isFrozen(workflow.steps[0].props.overlay?.animation), true);
     assert.equal("clone" in workflow.steps[0], false);
 
     await tour.run(workflow);
@@ -330,7 +330,7 @@ describe("instance-first TourController", () => {
       .step({ content: "zero", target: targetResolver, title: "zero" })
       .step({
         content: "one",
-        disableAdvanceButton: true,
+        popover: { disableAdvanceButton: true },
         target: targetResolver,
         title: "one",
       })
@@ -384,7 +384,7 @@ describe("instance-first TourController", () => {
       .create("replacement", { cancellable: false })
       .step({
         content: "replacement",
-        disableAdvanceButton: true,
+        popover: { disableAdvanceButton: true },
         target: targetResolver,
         title: "replacement",
       })
@@ -928,7 +928,7 @@ describe("instance-first TourController", () => {
       .create("disabled-navigation")
       .step({
         content: "one",
-        disableAdvanceButton: true,
+        popover: { disableAdvanceButton: true },
         target: targetResolver,
         title: "one",
       })
@@ -937,7 +937,7 @@ describe("instance-first TourController", () => {
       })
       .step({
         content: "two",
-        disablePreviousButton: true,
+        popover: { disablePreviousButton: true },
         target: targetResolver,
         title: "two",
       })
@@ -948,7 +948,10 @@ describe("instance-first TourController", () => {
     await tour.advance();
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    firstStepProps.set((props) => ({ ...props, disableAdvanceButton: false }));
+    firstStepProps.set((props) => ({
+      ...props,
+      popover: { ...props.popover, disableAdvanceButton: false },
+    }));
     await tour.advance();
     assert.equal(tour.state.get().currentStepIndex, 1);
     assert.equal(tour.state.get().canPrevious, false);

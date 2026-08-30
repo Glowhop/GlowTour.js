@@ -214,8 +214,7 @@ describe("angular adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      hideFooter: true,
-      hideAdvanceButton: true,
+      popover: { hideFooter: true, hideAdvanceButton: true },
       title: "Updated title",
     }));
     await settle();
@@ -225,7 +224,10 @@ describe("angular adapter browser behavior", () => {
     assert.equal(document.querySelector("[data-glow-tour-footer]"), null);
     assert.equal(document.querySelector("[data-glow-tour-advance-trigger]"), null);
 
-    activeProps.set((props) => ({ ...props, hideFooter: false, hideAdvanceButton: false }));
+    activeProps.set((props) => ({
+      ...props,
+      popover: { ...props.popover, hideFooter: false, hideAdvanceButton: false },
+    }));
     await settle();
     app.tick();
 

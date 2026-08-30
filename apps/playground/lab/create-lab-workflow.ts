@@ -16,7 +16,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.customEvent,
       title: content.title("append() + onTargetEvent<T>()"),
       content: content.paragraph(copy.appended),
-      hideAdvanceButton: true,
+      popover: { hideAdvanceButton: true },
       behavior: { allowInteraction: true },
       data: { api: "append", appended: true },
     })
@@ -39,7 +39,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.start,
       title: content.title("create() + step()"),
       content: content.paragraph(copy.intro),
-      hidePreviousButton: true,
+      popover: { hidePreviousButton: true },
       data: { api: "create", targetType: "selector" },
     })
     .beforeAdvance(({ props }) => actions.log(`onAdvance — ${String(props.get().data?.api)}`))
@@ -49,10 +49,13 @@ export function createLabWorkflow<TContent>(
       title: content.title("focusTarget() + exec()"),
       content: content.paragraph(copy.focus),
       overlay: { color: "#241a70", opacity: 0.62, padding: 9, radius: 10 },
-      popover: { placementTryOrder: ["right", "bottom"], disableAutoFocus: true, gap: 18 },
+      popover: { placementTryOrder: ["right", "bottom"], gap: 18 },
       indicator: { disabled: false, placementTryOrder: ["left", "bottom"] },
-      scroll: { behavior: "smooth", block: "center", inline: "center" },
-      behavior: { allowInteraction: true },
+      behavior: {
+        allowInteraction: true,
+        disableAutoFocus: true,
+        scroll: { behavior: "smooth", block: "center", inline: "center" },
+      },
       data: { api: "focusTarget", targetType: "element" },
       resetPropsOnEnter: false,
     })
@@ -88,8 +91,11 @@ export function createLabWorkflow<TContent>(
       },
       title: content.title("TargetResolver + wait()"),
       content: content.paragraph(copy.resolver),
-      disableAutoScroll: true,
-      behavior: { missingTargetStrategy: "wait", targetTimeout: timing.targetTimeout },
+      behavior: {
+        disableAutoScroll: true,
+        missingTargetStrategy: "wait",
+        targetTimeout: timing.targetTimeout,
+      },
       data: { api: "wait", targetType: "resolver" },
     })
     .wait(timing.resolverWait)
@@ -98,7 +104,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.condition,
       title: content.title("waitUntil() + advance()"),
       content: content.paragraph(copy.condition),
-      hideFooter: true,
+      popover: { hideFooter: true },
       indicator: { animated: false, gap: 8 },
       data: { api: "waitUntil" },
     })
@@ -118,12 +124,14 @@ export function createLabWorkflow<TContent>(
       target: selectors.actions,
       title: content.title("action(): true | false"),
       content: content.paragraph(copy.actions),
-      disablePreviousButton: true,
-      disableAdvanceButton: true,
+      popover: { disablePreviousButton: true, disableAdvanceButton: true },
       data: { api: "action", result: false },
     })
     .do(({ props }) => {
-      props.set((current) => ({ ...current, disableAdvanceButton: false }));
+      props.set((current) => ({
+        ...current,
+        popover: { ...current.popover, disableAdvanceButton: false },
+      }));
       actions.log("action(true) — chaîne poursuivie");
       return true;
     })
@@ -146,7 +154,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.clickAdvance,
       title: content.title("onTargetEvent('click')"),
       content: content.paragraph(copy.clickAdvance),
-      hideAdvanceButton: true,
+      popover: { hideAdvanceButton: true },
       behavior: { allowInteraction: true },
       data: { api: "onTargetEvent", overload: "single" },
     })
@@ -185,7 +193,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.autoAdvance,
       title: content.title("wait() + advance()"),
       content: content.paragraph(copy.autoAdvance),
-      hideFooter: true,
+      popover: { hideFooter: true },
       data: { api: "advance", automatic: true },
     })
     .do(() => actions.log("advance — transition automatique imminente"))

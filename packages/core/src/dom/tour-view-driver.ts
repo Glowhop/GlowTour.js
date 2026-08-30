@@ -86,6 +86,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private pointer: PointerElement<T> | null = null;
   private pendingFocusGeneration: number | null = null;
   private popover: PopoverElement<T> | null = null;
+  private presentationDirty = false;
   private rafId: number | null = null;
   private root: HTMLElement | null = null;
   private scrollAbort: AbortController | null = null;
@@ -155,6 +156,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.currentSignal = signal;
       this.direction = direction;
       this.lastTargetRect = null;
+      this.presentationDirty = false;
       if (replaceVisiblePopover) {
         const listener = (event: Event) =>
           this.queueTransitionKeydown(event as KeyboardEvent, step, generation);
@@ -361,8 +363,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.stepCleanups.push(
       step.props.subscribe(() => {
         if (!this.isCurrentGeneration(generation)) return;
-        this.syncControlState(step);
-        this.syncShortcutLabels(step);
+        this.presentationDirty = true;
       }),
     );
     this.stepCleanups.push(
@@ -431,10 +432,29 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const target = step?.target;
     if (!this.isCurrentGeneration(generation) || !step || !target) return;
     const targetRect = target.getBoundingClientRect();
+    const presentationChanged = this.presentationDirty;
+    if (presentationChanged) {
+      this.presentationDirty = false;
+      this.overlay?.setAnimationOptions(animationOptions(step, step.overlay));
+      this.popover?.setAnimationOptions(animationOptions(step, step.popover));
+      this.pointer?.setAnimationOptions(animationOptions(step, step.indicator));
+      this.syncControlState(step);
+      this.syncShortcutLabels(step);
+    }
     this.overlay?.updatePosition(targetRect, step);
     const popoverPlacement = this.popover?.updatePosition(targetRect, step);
-    if (this.isPointerEnabled(step))
-      this.pointer?.updatePosition(targetRect, step, popoverPlacement);
+    if (presentationChanged) {
+      this.pointer?.syncVisibility(this.isPointerEnabled(step), targetRect, step, popoverPlacement);
+    } else if (this.isPointerEnabled(step)) {
+      const pointer = this.pointer?.getElement();
+      if (pointer?.getAttribute("aria-hidden") === "true") {
+        void this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement);
+      } else {
+        this.pointer?.updatePosition(targetRect, step, popoverPlacement);
+      }
+    } else if (this.pointer?.getElement()?.getAttribute("aria-hidden") !== "true") {
+      void this.pointer?.disappear();
+    }
     this.lastTargetRect = snapshotRect(targetRect);
   }
 
@@ -494,12 +514,12 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     else if (!isEditable(event.target)) {
       if (
         (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
-        step.props.get().disableAdvanceButton !== true
+        step.props.get().popover?.disableAdvanceButton !== true
       )
         command = "advance";
       else if (
         (shortcuts?.previous ?? DEFAULT_SHORTCUTS.previous).includes(event.key) &&
-        step.props.get().disablePreviousButton !== true
+        step.props.get().popover?.disablePreviousButton !== true
       )
         command = "previous";
     }
@@ -551,7 +571,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   ) {
     const popover = this.popover?.getElement();
     if (!(popover instanceof HTMLElement)) return;
-    const autoFocus = step.popover?.disableAutoFocus !== true;
+    const autoFocus = step.behavior?.disableAutoFocus !== true;
     const deferFocus = autoFocus && this.commands?.subscribeCapabilities !== undefined;
     if (deferFocus) this.pendingFocusGeneration = generation;
     this.focusGuard.activate({
@@ -654,14 +674,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.syncControl(
         advance,
         this.commands?.isAdvanceDisabled() === true ||
-          step.props.get().disableAdvanceButton === true,
+          step.props.get().popover?.disableAdvanceButton === true,
       );
     }
     for (const previous of this.findTriggers("previous")) {
       this.syncControl(
         previous,
         this.commands?.isPreviousDisabled() === true ||
-          step.props.get().disablePreviousButton === true,
+          step.props.get().popover?.disablePreviousButton === true,
       );
     }
     for (const cancel of this.findTriggers("cancel")) {
@@ -706,12 +726,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (this.isConsumerDisabled(trigger ?? null)) return false;
     if (command === "advance") {
       return (
-        (this.commands?.canAdvance?.() ?? true) && step.props.get().disableAdvanceButton !== true
+        (this.commands?.canAdvance?.() ?? true) &&
+        step.props.get().popover?.disableAdvanceButton !== true
       );
     }
     if (command === "previous") {
       return (
-        (this.commands?.canPrevious?.() ?? true) && step.props.get().disablePreviousButton !== true
+        (this.commands?.canPrevious?.() ?? true) &&
+        step.props.get().popover?.disablePreviousButton !== true
       );
     }
     return this.commands?.canCancel?.() ?? true;
@@ -746,6 +768,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private cleanupStepResources() {
     this.scrollAbort?.abort();
     this.scrollAbort = null;
+    this.presentationDirty = false;
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
     this.rafId = null;
     for (const cleanup of this.stepCleanups.splice(0)) cleanup();
@@ -781,7 +804,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     signal: AbortSignal,
   ) {
     this.throwIfAborted(signal);
-    if (step.props.get().disableAutoScroll || isInViewport(target.getBoundingClientRect())) return;
+    if (step.behavior?.disableAutoScroll || isInViewport(target.getBoundingClientRect())) return;
     const controller = new AbortController();
     this.scrollAbort = controller;
     await new Promise<void>((resolve, reject) => {
@@ -803,9 +826,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       timeout = setTimeout(complete, DEFAULT_SCROLL_END_TIMEOUT);
       try {
         target.scrollIntoView({
-          behavior: step.scroll?.behavior ?? "smooth",
-          block: step.scroll?.block ?? "center",
-          inline: step.scroll?.inline ?? "nearest",
+          behavior: step.behavior?.scroll?.behavior ?? "smooth",
+          block: step.behavior?.scroll?.block ?? "center",
+          inline: step.behavior?.scroll?.inline ?? "nearest",
         });
       } catch (error) {
         finish(error instanceof Error ? error : new Error(String(error)));

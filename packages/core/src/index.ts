@@ -9,7 +9,6 @@ export { createGlowTour } from "./runtime/tour-controller";
 export type {
   AnimationOptions,
   BaseOptions,
-  DynamicStepProps,
   EventHandler,
   GlowTour,
   IndicatorOptions,
@@ -29,6 +28,7 @@ export type {
   StepContext,
   StepEventContext,
   StepParameters,
+  StepPropsStore,
   StepTransitionAction,
   TargetResolver,
   TargetResolverContext,

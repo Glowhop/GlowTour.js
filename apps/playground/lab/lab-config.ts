@@ -26,7 +26,6 @@ export const LAB_CONFIG = {
           borderRadius: 3,
           edgePadding: 18,
         },
-        disableAutoFocus: false,
         gap: 14,
         keyboardShortcuts: {
           previous: ["ArrowLeft"],
@@ -41,8 +40,12 @@ export const LAB_CONFIG = {
         gap: 12,
         placementTryOrder: ["right", "bottom", "left", "top"],
       },
-      scroll: { behavior: "smooth", block: "center", inline: "nearest" },
-      behavior: { missingTargetStrategy: "error", targetTimeout: 3000 },
+      behavior: {
+        disableAutoFocus: false,
+        missingTargetStrategy: "error",
+        scroll: { behavior: "smooth", block: "center", inline: "nearest" },
+        targetTimeout: 3000,
+      },
     } satisfies StartOptions,
   },
   selectors: {

@@ -5,6 +5,8 @@ const DEFAULT_OVERLAY_PADDING = 16;
 const DEFAULT_OVERLAY_RADIUS = 12;
 
 export default class OverlayElement<T> extends GlowTourElement<T> {
+  private appliedColor: string | undefined;
+
   setInteractionAllowed(allowed: boolean) {
     this.element.style.setProperty("pointer-events", allowed ? "none" : "auto");
     this.element.setAttribute("data-glow-tour-allow-interaction", String(allowed));
@@ -12,6 +14,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
 
   async moveToTarget(nextPosition: DOMRect, step: TourElementStep) {
     const keyframe = this._getNextStyles(nextPosition, step);
+    this.appliedColor = step.overlay?.color;
 
     const path = this._getPathElement();
     if (!path) {
@@ -109,6 +112,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
   }
 
   protected _release() {
+    this.appliedColor = undefined;
     const path = this._getPathElement();
     path?.style.removeProperty("d");
     path?.style.removeProperty("fill");
@@ -117,7 +121,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
   }
 
   updatePosition(nextPosition: DOMRect, step: TourElementStep) {
-    const { padding, radius } = step.overlay || {};
+    const { padding, radius, color, opacity } = step.overlay || {};
     const pathValue = roundedRectPath(nextPosition, viewportDimensions(), {
       padding: padding ?? DEFAULT_OVERLAY_PADDING,
       radius: radius ?? DEFAULT_OVERLAY_RADIUS,
@@ -130,6 +134,16 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     const pathStyle = `path("${pathValue}")`;
     if (path.style.getPropertyValue("d") !== pathStyle) {
       path.style.setProperty("d", pathStyle);
+    }
+    if (color === undefined && this.appliedColor !== undefined) {
+      path.style.removeProperty("fill");
+    } else if (color !== undefined && path.style.getPropertyValue("fill") !== color) {
+      path.style.setProperty("fill", color);
+    }
+    this.appliedColor = color;
+    const nextOpacity = String(opacity ?? 0.7);
+    if (path.style.getPropertyValue("opacity") !== nextOpacity) {
+      path.style.setProperty("opacity", nextOpacity);
     }
     const viewport = viewportDimensions();
     const viewBox = `0 0 ${viewport.width} ${viewport.height}`;

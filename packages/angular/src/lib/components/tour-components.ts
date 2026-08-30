@@ -196,7 +196,7 @@ export class GlowTourContent extends GlowTourReactiveComponent {
 @Component({
   selector: "glow-tour-footer",
   standalone: true,
-  template: `@if (!step()?.hideFooter) { <footer data-glow-tour-footer><ng-content /></footer> }`,
+  template: `@if (!step()?.popover?.hideFooter) { <footer data-glow-tour-footer><ng-content /></footer> }`,
 })
 export class GlowTourFooter extends GlowTourReactiveComponent {}
 
@@ -294,7 +294,7 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   selector: "glow-tour-back-trigger",
   standalone: true,
   template: `
-    @if (!step()?.hidePreviousButton) {
+    @if (!step()?.popover?.hidePreviousButton) {
       <button
         data-glow-tour-previous-trigger
         [attr.aria-controls]="ariaControls()"
@@ -324,7 +324,7 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
     () =>
       this.consumerDisabled() ||
       !this.snapshot()?.canPrevious ||
-      this.step()?.disablePreviousButton === true,
+      this.step()?.popover?.disablePreviousButton === true,
   );
   readonly label = computed(() => this.backLabelValue() ?? "Back step");
 }
@@ -333,7 +333,7 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
   selector: "glow-tour-advance-trigger",
   standalone: true,
   template: `
-    @if (!step()?.hideAdvanceButton) {
+    @if (!step()?.popover?.hideAdvanceButton) {
       <button
         data-glow-tour-advance-trigger
         [attr.aria-controls]="ariaControls()"
@@ -367,7 +367,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
     () =>
       this.consumerDisabled() ||
       !this.snapshot()?.canAdvance ||
-      this.step()?.disableAdvanceButton === true,
+      this.step()?.popover?.disableAdvanceButton === true,
   );
   readonly label = computed(() => {
     return this.snapshot()?.isLastStep

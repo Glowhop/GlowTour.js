@@ -465,12 +465,12 @@ export class TourController<T> {
 
   private isAdvanceAvailable() {
     const props = this.currentStep()?.props.get();
-    return props !== undefined && props.disableAdvanceButton !== true;
+    return props !== undefined && props.popover?.disableAdvanceButton !== true;
   }
 
   private isPreviousAvailable() {
     const props = this.currentStep()?.props.get();
-    return props !== undefined && props.disablePreviousButton !== true && this.index > 0;
+    return props !== undefined && props.popover?.disablePreviousButton !== true && this.index > 0;
   }
 
   private isCancelAvailable() {

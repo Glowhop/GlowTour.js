@@ -71,8 +71,12 @@ export function mergePopoverOptions(
           edgePadding: normalizeGap(overrides?.arrow?.edgePadding ?? defaults?.arrow?.edgePadding),
         }
       : undefined,
-    disableAutoFocus: overrides?.disableAutoFocus ?? defaults?.disableAutoFocus,
+    disableAdvanceButton: overrides?.disableAdvanceButton ?? defaults?.disableAdvanceButton,
+    disablePreviousButton: overrides?.disablePreviousButton ?? defaults?.disablePreviousButton,
     gap: overrides?.gap ?? defaults?.gap,
+    hideAdvanceButton: overrides?.hideAdvanceButton ?? defaults?.hideAdvanceButton,
+    hideFooter: overrides?.hideFooter ?? defaults?.hideFooter,
+    hidePreviousButton: overrides?.hidePreviousButton ?? defaults?.hidePreviousButton,
     placementTryOrder: cloneArray(placementTryOrder),
     keyboardShortcuts: hasKeyboardShortcuts
       ? {
@@ -136,7 +140,10 @@ export function mergeStepBehavior(
   }
   return {
     allowInteraction: overrides?.allowInteraction ?? defaults?.allowInteraction,
+    disableAutoFocus: overrides?.disableAutoFocus ?? defaults?.disableAutoFocus,
+    disableAutoScroll: overrides?.disableAutoScroll ?? defaults?.disableAutoScroll,
     missingTargetStrategy: overrides?.missingTargetStrategy ?? defaults?.missingTargetStrategy,
+    scroll: mergeScrollOptions(defaults?.scroll, overrides?.scroll),
     targetTimeout: overrides?.targetTimeout ?? defaults?.targetTimeout,
   };
 }

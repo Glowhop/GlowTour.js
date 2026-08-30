@@ -493,6 +493,57 @@ describe("DomTourViewDriver", () => {
     assert.equal(animationFrames.length, 1);
     assert.equal(TestResizeObserver.instances.length, 0);
   });
+  test("coalesces dynamic presentation changes onto the next animation frame", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    const overlayPath = elements.overlay.querySelector("path");
+    assert.ok(overlayPath);
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
+
+    step.props.set((props) => ({
+      ...props,
+      indicator: { ...props.indicator, disabled: true },
+      overlay: { ...props.overlay, color: "rgb(12, 34, 56)", opacity: 0.4 },
+      popover: { ...props.popover, disableAdvanceButton: true },
+    }));
+
+    assert.notEqual(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
+    assert.equal(elements.advance.disabled, false);
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.equal(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
+    assert.equal(overlayPath.style.getPropertyValue("opacity"), "0.4");
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
+    assert.equal(elements.advance.disabled, true);
+  });
+  test("does not let a stale indicator animation override the latest dynamic state", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    step.props.set((props) => ({
+      ...props,
+      indicator: { ...props.indicator, disabled: true },
+    }));
+    flushFrame();
+
+    step.props.set((props) => ({
+      ...props,
+      indicator: { ...props.indicator, disabled: false },
+    }));
+    flushFrame();
+    resolveAnimations(animationStart);
+    await flushMicrotasks();
+
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
+  });
   test("changes popover content after fade-out and before fade-in", async () => {
     const { driver } = installDriver(),
       target = createTarget(),
@@ -917,8 +968,11 @@ describe("DomTourViewDriver", () => {
     );
     step.props.set((props) => ({
       ...props,
-      disablePreviousButton: true,
-      disableAdvanceButton: true,
+      popover: {
+        ...props.popover,
+        disablePreviousButton: true,
+        disableAdvanceButton: true,
+      },
     }));
     window.dispatchEvent(
       new MockKeyboardEvent("keydown", { key: "Enter", target: elements.popover }),

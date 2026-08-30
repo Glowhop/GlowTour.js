@@ -303,21 +303,21 @@ assert.match(markup, /data-glow-tour-popover/);
     `import { createGlowTour as createCoreGlowTour } from "@glowhop/core-tour";
 import "@glowhop/styles-tour/default.css";
 import type {
-  DynamicStepProps as ReactDynamicStepProps,
+  StepPropsStore as ReactStepPropsStore,
   Tour as ReactTour,
   TourState as ReactTourState,
   WorkflowDefinition as ReactWorkflowDefinition,
 } from "@glowhop/react-tour";
 import { GlowTour as ReactGlowTour, createGlowTour as createReactGlowTour } from "@glowhop/react-tour";
 import type {
-  DynamicStepProps as VueDynamicStepProps,
+  StepPropsStore as VueStepPropsStore,
   Tour as VueTour,
   TourState as VueTourState,
   WorkflowDefinition as VueWorkflowDefinition,
 } from "@glowhop/vue-tour";
 import { GlowTourRoot as VueGlowTourRoot, createGlowTour as createVueGlowTour } from "@glowhop/vue-tour";
 import type {
-  DynamicStepProps as AngularDynamicStepProps,
+  StepPropsStore as AngularStepPropsStore,
   Tour as AngularTour,
   TourState as AngularTourState,
   WorkflowDefinition as AngularWorkflowDefinition,
@@ -327,7 +327,7 @@ import {
   createGlowTour as createAngularGlowTour,
 } from "@glowhop/angular-tour";
 import type {
-  DynamicStepProps as SolidDynamicStepProps,
+  StepPropsStore as SolidStepPropsStore,
   Tour as SolidTour,
   TourState as SolidTourState,
   WorkflowDefinition as SolidWorkflowDefinition,
@@ -337,7 +337,7 @@ import {
   createGlowTour as createSolidGlowTour,
 } from "@glowhop/solid-tour";
 import type {
-  DynamicStepProps as VanillaDynamicStepProps,
+  StepPropsStore as VanillaStepPropsStore,
   Tour as VanillaTour,
   TourState as VanillaTourState,
   WorkflowDefinition as VanillaWorkflowDefinition,
@@ -347,23 +347,23 @@ import { registerGlowTourElements } from "@glowhop/vanilla-tour/auto";
 
 const reactTour: ReactTour = createReactGlowTour();
 const reactState: ReactTourState | null = null;
-const reactStep: ReactDynamicStepProps | null = null;
+const reactStep: ReactStepPropsStore | null = null;
 const reactWorkflow: ReactWorkflowDefinition | null = null;
 const vueTour: VueTour = createVueGlowTour();
 const vueState: VueTourState | null = null;
-const vueStep: VueDynamicStepProps | null = null;
+const vueStep: VueStepPropsStore | null = null;
 const vueWorkflow: VueWorkflowDefinition | null = null;
 const angularTour: AngularTour = createAngularGlowTour();
 const angularState: AngularTourState | null = null;
-const angularStep: AngularDynamicStepProps | null = null;
+const angularStep: AngularStepPropsStore | null = null;
 const angularWorkflow: AngularWorkflowDefinition | null = null;
 const solidTour: SolidTour = createSolidGlowTour();
 const solidState: SolidTourState | null = null;
-const solidStep: SolidDynamicStepProps | null = null;
+const solidStep: SolidStepPropsStore | null = null;
 const solidWorkflow: SolidWorkflowDefinition | null = null;
 const vanillaTour: VanillaTour = createGlowTour();
 const vanillaState: VanillaTourState | null = null;
-const vanillaStep: VanillaDynamicStepProps | null = null;
+const vanillaStep: VanillaStepPropsStore | null = null;
 const vanillaWorkflow: VanillaWorkflowDefinition | null = null;
 
 const workflow = createCoreGlowTour<string>()

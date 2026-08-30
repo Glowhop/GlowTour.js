@@ -1,4 +1,4 @@
-import type { DynamicStepProps, TourState } from "@glowhop/core-tour";
+import type { ReadonlyStepProps, TourState } from "@glowhop/core-tour";
 import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import type { VanillaGlowTour, VanillaTourContent } from "../glow-tour";
 
@@ -78,7 +78,7 @@ function subscribeToCurrentStep(
   tour: VanillaGlowTour,
   listener: (
     state: TourState<VanillaTourContent>,
-    props: DynamicStepProps<VanillaTourContent>,
+    props: ReadonlyStepProps<VanillaTourContent>,
   ) => void,
 ) {
   const bindStep = (state: TourState<VanillaTourContent>) => {
@@ -402,7 +402,7 @@ export function registerGlowTourElements() {
 
     protected abstract render(
       state: TourState<VanillaTourContent>,
-      props: DynamicStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ): void;
   }
 
@@ -414,7 +414,7 @@ export function registerGlowTourElements() {
 
     protected render(
       _state: TourState<VanillaTourContent>,
-      props: DynamicStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       const root = closestRoot(this);
       const binding = root ? rootContext(root)?.binding : null;
@@ -436,7 +436,7 @@ export function registerGlowTourElements() {
 
     protected render(
       _state: TourState<VanillaTourContent>,
-      props: DynamicStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       const root = closestRoot(this);
       const binding = root ? rootContext(root)?.binding : null;
@@ -455,9 +455,9 @@ export function registerGlowTourElements() {
 
     protected render(
       _state: TourState<VanillaTourContent>,
-      props: DynamicStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ) {
-      this.hidden = props.hideFooter === true;
+      this.hidden = props.popover?.hideFooter === true;
     }
   }
 
@@ -581,7 +581,7 @@ export function registerGlowTourElements() {
 
     protected render(
       state: TourState<VanillaTourContent>,
-      props: DynamicStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       const binding = rootContext(closestRoot(this) as HTMLElement)?.binding;
       const button = this.button;
@@ -619,7 +619,7 @@ export function registerGlowTourElements() {
 
     protected abstract details(
       state: TourState<VanillaTourContent>,
-      props: DynamicStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ): { disabled: boolean; hidden: boolean; label: string };
   }
 
@@ -628,11 +628,11 @@ export function registerGlowTourElements() {
 
     protected details(
       state: TourState<VanillaTourContent>,
-      props: DynamicStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canPrevious || props.disablePreviousButton === true,
-        hidden: props.hidePreviousButton === true,
+        disabled: !state.canPrevious || props.popover?.disablePreviousButton === true,
+        hidden: props.popover?.hidePreviousButton === true,
         label: this.getAttribute("back-label") ?? "Back step",
       };
     }
@@ -643,11 +643,11 @@ export function registerGlowTourElements() {
 
     protected details(
       state: TourState<VanillaTourContent>,
-      props: DynamicStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canAdvance || props.disableAdvanceButton === true,
-        hidden: props.hideAdvanceButton === true,
+        disabled: !state.canAdvance || props.popover?.disableAdvanceButton === true,
+        hidden: props.popover?.hideAdvanceButton === true,
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")
           : (this.getAttribute("advance-label") ?? "Advance step"),
@@ -660,7 +660,7 @@ export function registerGlowTourElements() {
 
     protected details(
       state: TourState<VanillaTourContent>,
-      _props: DynamicStepProps<VanillaTourContent>,
+      _props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
         disabled: !state.canCancel,

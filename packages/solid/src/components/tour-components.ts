@@ -208,7 +208,7 @@ export function Footer(props: ElementProps): JSX.Element {
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return !currentStep(snapshot())?.hideFooter;
+      return !currentStep(snapshot())?.popover?.hideFooter;
     },
     get children() {
       return createComponent(
@@ -333,14 +333,15 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
   return Show({
     get when() {
       const step = currentStep(snapshot());
-      return !step?.hidePreviousButton;
+      return !step?.popover?.hidePreviousButton;
     },
     get children() {
       return Trigger(
         mergeProps(props, {
           get capabilityDisabled() {
             return (
-              !snapshot().canPrevious || currentStep(snapshot())?.disablePreviousButton === true
+              !snapshot().canPrevious ||
+              currentStep(snapshot())?.popover?.disablePreviousButton === true
             );
           },
           label: props.backLabel ?? "Back step",
@@ -356,13 +357,16 @@ export function AdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return !currentStep(snapshot())?.hideAdvanceButton;
+      return !currentStep(snapshot())?.popover?.hideAdvanceButton;
     },
     get children() {
       return Trigger(
         mergeProps(props, {
           get capabilityDisabled() {
-            return !snapshot().canAdvance || currentStep(snapshot())?.disableAdvanceButton === true;
+            return (
+              !snapshot().canAdvance ||
+              currentStep(snapshot())?.popover?.disableAdvanceButton === true
+            );
           },
           get label() {
             return snapshot().isLastStep

@@ -1,6 +1,6 @@
 import type {
-  DynamicStepProps as CoreDynamicStepProps,
   GlowTour as CoreGlowTour,
+  StepPropsStore as CoreStepPropsStore,
   TourState as CoreTourState,
   WorkflowDefinition as CoreWorkflowDefinition,
 } from "@glowhop/core-tour";
@@ -10,7 +10,7 @@ export type VanillaTourContent = string | Node;
 export type Tour = CoreGlowTour<VanillaTourContent>;
 export type VanillaGlowTour = Tour;
 export type TourState = CoreTourState<VanillaTourContent>;
-export type DynamicStepProps = CoreDynamicStepProps<VanillaTourContent>;
+export type StepPropsStore = CoreStepPropsStore<VanillaTourContent>;
 export type WorkflowDefinition = CoreWorkflowDefinition<VanillaTourContent>;
 
 export function createGlowTour(): Tour {

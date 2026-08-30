@@ -27,7 +27,10 @@ export interface WaitOptions {
 
 export interface StepBehavior {
   allowInteraction?: boolean;
+  disableAutoFocus?: boolean;
+  disableAutoScroll?: boolean;
   missingTargetStrategy?: "wait" | "skip" | "error";
+  scroll?: ScrollOptions;
   targetTimeout?: number;
 }
 
@@ -64,7 +67,11 @@ export interface PopoverArrowOptions {
 export interface PopoverOptions extends BaseOptions {
   placementTryOrder?: readonly TryOrderOptions[];
   arrow?: PopoverArrowOptions;
-  disableAutoFocus?: boolean;
+  hideFooter?: boolean;
+  disablePreviousButton?: boolean;
+  hidePreviousButton?: boolean;
+  disableAdvanceButton?: boolean;
+  hideAdvanceButton?: boolean;
   gap?: number;
   keyboardShortcuts?: {
     /**
@@ -80,18 +87,6 @@ export interface PopoverOptions extends BaseOptions {
      */
     cancel?: readonly string[];
   };
-}
-
-export interface DynamicStepProps<T> {
-  title: T;
-  content: T;
-  hideFooter?: boolean;
-  disablePreviousButton?: boolean;
-  hidePreviousButton?: boolean;
-  disableAdvanceButton?: boolean;
-  hideAdvanceButton?: boolean;
-  disableAutoScroll?: boolean;
-  data?: Record<string, PrimitiveValue>;
 }
 
 export interface ScrollOptions {
@@ -110,7 +105,6 @@ export interface StartOptions {
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
   indicator?: IndicatorOptions;
-  scroll?: ScrollOptions;
   animated?: boolean;
   behavior?: StepBehavior;
 
@@ -123,7 +117,9 @@ export interface ReadonlyStepState<T> {
   get(): ReadonlyStepProps<T>;
   subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
 }
-export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
+export type StepPropsStore<T> = Observable<
+  Omit<StepParameters<T>, "target" | "resetPropsOnEnter" | "behavior">
+>;
 export interface StepContext<T> {
   advance(): Promise<void>;
   cancel(): Promise<void>;
@@ -211,7 +207,7 @@ export interface GlowTour<T> {
   readonly state: ReadonlyTourState<T>;
 }
 
-export type StepParameters<T> = DynamicStepProps<T> & {
+export type StepParameters<T> = {
   target: TargetResolver;
   /**
    * @default true
@@ -220,6 +216,8 @@ export type StepParameters<T> = DynamicStepProps<T> & {
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
   indicator?: IndicatorOptions;
-  scroll?: ScrollOptions;
   behavior?: StepBehavior;
+  title: T;
+  content: T;
+  data?: Record<string, PrimitiveValue>;
 };

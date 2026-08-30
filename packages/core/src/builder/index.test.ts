@@ -1,6 +1,16 @@
+// biome-ignore-all assist/source/organizeImports: The removed export needs its own expected-error import.
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { DynamicStepProps, PopoverOptions, StepContext } from "../types";
+// @ts-expect-error DynamicStepProps is no longer part of the public type contract.
+import type { DynamicStepProps } from "../types";
+import type {
+  PopoverOptions,
+  StartOptions,
+  StepBehavior,
+  StepContext,
+  StepParameters,
+  StepPropsStore,
+} from "../types";
 import { WorkflowBuilder } from "./index";
 
 const removedProgressOption: PopoverOptions = {
@@ -13,12 +23,49 @@ const removedButtonOption: PopoverOptions = {
   buttons: { advanceLabel: "Next" },
 };
 
+type StoredStepProps = ReturnType<StepPropsStore<string>["get"]>;
+
+// @ts-expect-error Target resolution must not be exposed through context.props.
+const removedTarget: keyof StoredStepProps = "target";
 // @ts-expect-error Lifecycle configuration must not be exposed through context.props.
-const removedResetPropsOnEnter: keyof DynamicStepProps<string> = "resetPropsOnEnter";
+const removedResetPropsOnEnter: keyof StoredStepProps = "resetPropsOnEnter";
+// @ts-expect-error Static behavior must not be exposed through context.props.
+const removedBehavior: keyof StoredStepProps = "behavior";
+
+const popoverOptions: PopoverOptions = {
+  disableAdvanceButton: true,
+  disablePreviousButton: true,
+  hideAdvanceButton: true,
+  hideFooter: true,
+  hidePreviousButton: true,
+};
+const behaviorOptions: StepBehavior = {
+  disableAutoFocus: true,
+  disableAutoScroll: true,
+  scroll: { behavior: "smooth", block: "center", inline: "nearest" },
+};
+const removedStepScroll: StepParameters<string> = {
+  content: "Content",
+  target: "#target",
+  title: "Title",
+  // @ts-expect-error Scroll configuration now belongs to behavior.scroll.
+  scroll: { behavior: "smooth" },
+};
+const removedStartScroll: StartOptions = {
+  // @ts-expect-error Scroll configuration now belongs to behavior.scroll.
+  scroll: { behavior: "smooth" },
+};
 
 void removedProgressOption;
 void removedButtonOption;
+void removedTarget;
 void removedResetPropsOnEnter;
+void removedBehavior;
+void popoverOptions;
+void behaviorOptions;
+void removedStepScroll;
+void removedStartScroll;
+void (null as DynamicStepProps<string> | null);
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
