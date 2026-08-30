@@ -22,6 +22,7 @@ type PackageName =
 
 const root = resolve(import.meta.dir, "..");
 const tarballDirectory = join(root, ".artifacts", "tarballs");
+const bundleVerifier = resolve(root, "scripts/verify-bundles.ts");
 const packageNames: readonly PackageName[] = [
   "@glowhop/core-tour",
   "@glowhop/styles-tour",
@@ -476,6 +477,7 @@ try {
     ],
     consumerDirectory,
   );
+  process.stdout.write(run("bun", [bundleVerifier, consumerDirectory], consumerDirectory));
   run("node", ["runtime-imports.mjs"], consumerDirectory);
   run("node", ["render-react-default-tour.mjs"], consumerDirectory);
   run(

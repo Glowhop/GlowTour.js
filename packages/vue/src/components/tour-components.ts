@@ -15,7 +15,7 @@ import {
   shallowRef,
   watch,
 } from "vue";
-import type { VueTourContent } from "../glow-tour";
+import type { VueTourContent } from "../glow-tour.js";
 
 type Tour = CoreGlowTour<VueTourContent>;
 
@@ -82,7 +82,7 @@ function isConsumerDisabled(attrs: Record<string, unknown>) {
   return attrs.disabled === "" || attrs.disabled === true;
 }
 
-export const GlowTourRoot = defineComponent({
+export const GlowTourRoot = /* @__PURE__ */ defineComponent({
   name: componentName("Root"),
   inheritAttrs: false,
   props: {
@@ -141,7 +141,7 @@ export const GlowTourRoot = defineComponent({
   },
 });
 
-export const GlowTourHeader = defineComponent({
+export const GlowTourHeader = /* @__PURE__ */ defineComponent({
   name: componentName("Header"),
   inheritAttrs: false,
   setup(_props, { attrs }) {
@@ -156,7 +156,7 @@ export const GlowTourHeader = defineComponent({
   },
 });
 
-export const GlowTourContent = defineComponent({
+export const GlowTourContent = /* @__PURE__ */ defineComponent({
   name: componentName("Content"),
   inheritAttrs: false,
   props: { ariaLive: { default: "polite", type: String } },
@@ -176,7 +176,7 @@ export const GlowTourContent = defineComponent({
   },
 });
 
-export const GlowTourFooter = defineComponent({
+export const GlowTourFooter = /* @__PURE__ */ defineComponent({
   name: componentName("Footer"),
   inheritAttrs: false,
   setup(_props, { attrs, slots }) {
@@ -188,7 +188,7 @@ export const GlowTourFooter = defineComponent({
   },
 });
 
-export const GlowTourPopover = defineComponent({
+export const GlowTourPopover = /* @__PURE__ */ defineComponent({
   name: componentName("Popover"),
   inheritAttrs: false,
   props: { role: { default: "dialog", type: String } },
@@ -214,7 +214,7 @@ export const GlowTourPopover = defineComponent({
   },
 });
 
-export const GlowTourPointer = defineComponent({
+export const GlowTourPointer = /* @__PURE__ */ defineComponent({
   name: componentName("Pointer"),
   inheritAttrs: false,
   setup(_props, { attrs, slots }) {
@@ -230,7 +230,7 @@ export const GlowTourPointer = defineComponent({
   },
 });
 
-export const GlowTourOverlay = defineComponent({
+export const GlowTourOverlay = /* @__PURE__ */ defineComponent({
   name: componentName("Overlay"),
   inheritAttrs: false,
   props: {
@@ -288,7 +288,7 @@ function trigger(
   };
 }
 
-export const GlowTourBackTrigger = defineComponent({
+export const GlowTourBackTrigger = /* @__PURE__ */ defineComponent({
   name: componentName("BackTrigger"),
   inheritAttrs: false,
   props: { ariaLabel: { type: String }, backLabel: { type: String } },
@@ -308,7 +308,7 @@ export const GlowTourBackTrigger = defineComponent({
   },
 });
 
-export const GlowTourAdvanceTrigger = defineComponent({
+export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
   name: componentName("AdvanceTrigger"),
   inheritAttrs: false,
   props: {
@@ -336,7 +336,7 @@ export const GlowTourAdvanceTrigger = defineComponent({
   },
 });
 
-export const GlowTourCancelTrigger = defineComponent({
+export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
   name: componentName("CancelTrigger"),
   inheritAttrs: false,
   props: { ariaLabel: { type: String } },
