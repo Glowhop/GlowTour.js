@@ -25,9 +25,20 @@ Branch: `codex/step-3-dx-theme`
 - [ ] Real reflow/zoom validation deferred to Step 4.
 - [ ] Chromium/WebKit validation deferred to Step 4.
 
-## Baseline/final commands
+## Baseline
 
-- `bun run check` — pass.
+Step 3 started from merge base `c03e21f` (Step 2). The Step 2 journal records the 29 August baseline as:
+
+- `bun run check` — pass, 113 files.
+- `bun run typecheck` — pass.
+- `bun test` — pass, 255 tests at final Step 2 validation.
+- `bun run test:browser` — pass, 69 Happy DOM tests.
+
+## Final validation
+
+Fresh validation on 30 August 2026:
+
+- `bun run check` — pass, 114 files.
 - `bun run typecheck` — pass.
 - `bun test` — pass, 276 tests.
 - `bun run test:browser` — pass, 66 browser-contract tests.
@@ -38,10 +49,13 @@ Branch: `codex/step-3-dx-theme`
 - `bun run release:prepare` — pass.
 - `bun run release:publish -- --dry-run` — pass; nothing was published.
 
+The browser count changed from 69 to 66 because the Vanilla browser suite changed from 18 to 15 tests during Step 3; the other four framework suites retained their counts. The history shows disabled-state cases were consolidated/replaced in that suite. All 66 current tests pass; this count change is not treated as a test failure.
+
 ## Commits
 
-- Reviewed implementation commits through `732311d`.
-- Final traceability is recorded by this journal and the Step 3 Changeset.
+- Implementation range: `c03e21f..732311d`.
+- Initial traceability commit: `1db2171 docs: complete step 3 progress journal`.
+- This journal correction is a subsequent documentation correction to that traceability commit; no implementation changes are included.
 
 ## Risks and deferrals
 
