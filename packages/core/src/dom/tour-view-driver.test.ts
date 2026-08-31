@@ -577,6 +577,86 @@ describe("DomTourViewDriver", () => {
     assert.equal(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
     assert.equal(overlayPath.style.getPropertyValue("opacity"), "0.4");
   });
+  test("reports a current-generation dynamic overlay animation failure once", async () => {
+    const { calls, driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "red" },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    const failure = new Error("dynamic overlay failed");
+    createdAnimations[animationStart]?.reject(failure);
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["error:dynamic overlay failed"]);
+  });
+
+  test("does not report a stale dynamic overlay animation failure", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const path = elements.overlay.querySelector("path");
+    assert.ok(path);
+    const failure = new Error("stale dynamic overlay failed");
+    const animate = path.animate.bind(path);
+    let replaced = false;
+    Object.defineProperty(path, "animate", {
+      value: (
+        keyframes: Keyframe[] | PropertyIndexedKeyframes,
+        options?: number | KeyframeAnimationOptions,
+      ) => {
+        if (replaced) return animate(keyframes, options);
+        replaced = true;
+        driver.registerRoot(document.createElement("section") as unknown as HTMLElement);
+        return {
+          cancel() {},
+          commitStyles() {},
+          finished: Promise.reject(failure),
+        };
+      },
+    });
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "red" },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, []);
+  });
+
+  test("does not report a normally cancelled dynamic overlay animation", async () => {
+    const { calls, driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "red" },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+    const clearing = driver.clear(new AbortController().signal);
+    await flushMicrotasks();
+    resolveAnimations(0);
+    await clearing;
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, []);
+  });
+
   test("animates removal of an overlay color toward its computed CSS value", async () => {
     const { driver, elements } = installDriver();
     const step = createStep();

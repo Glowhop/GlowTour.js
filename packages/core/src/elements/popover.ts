@@ -207,7 +207,11 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     // el.style.setProperty("transform", "translate(0px, 0px)");
   }
 
-  updatePosition(nextPosition: DOMRect, step: TourElementStep): ResolvedPlacement {
+  updatePosition(
+    nextPosition: DOMRect,
+    step: TourElementStep,
+    onReposition?: (reposition: Promise<void>) => void,
+  ): ResolvedPlacement {
     const nextCoordinates = this.resolvePosition(nextPosition, step);
     const appliedPosition = this.appliedPosition;
     if (!appliedPosition) {
@@ -226,7 +230,11 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       Math.abs(nextCoordinates.y - appliedPosition.y) > REPLACEMENT_DIFF;
     if (shouldReposition) {
       this.pendingReposition = { position: nextPosition, step };
-      if (this.repositionPhase === "idle") void this._flushReposition();
+      if (this.repositionPhase === "idle") {
+        const reposition = this._flushReposition();
+        if (onReposition) onReposition(reposition);
+        else void reposition.catch(() => {});
+      }
     } else if (this.repositionPhase === "fading-in") {
       this.pendingReposition = null;
     } else {

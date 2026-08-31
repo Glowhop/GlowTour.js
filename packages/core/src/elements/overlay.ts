@@ -169,7 +169,12 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     this.element.style.setProperty("pointer-events", "none");
   }
 
-  updatePosition(nextPosition: DOMRect, step: TourElementStep, animateChanges = false) {
+  updatePosition(
+    nextPosition: DOMRect,
+    step: TourElementStep,
+    animateChanges = false,
+    onTransition?: (transition: Promise<void>) => void,
+  ) {
     const path = this._getPathElement();
     if (!path) {
       console.warn("No overlay path element found");
@@ -182,8 +187,11 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       this.visualState !== null &&
       !this._isSameVisualState(this.visualState, nextVisualState);
 
-    if (shouldAnimate) void this.animateTo(nextPosition, step);
-    else
+    if (shouldAnimate) {
+      const transition = this.animateTo(nextPosition, step);
+      if (onTransition) onTransition(transition);
+      else void transition.catch(() => {});
+    } else
       this.applyStyles(
         path,
         this.getRenderedTargetStyles(path, this._getNextStyles(nextPosition, step)),
