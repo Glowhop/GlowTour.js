@@ -2172,13 +2172,27 @@ describe("DomTourViewDriver", () => {
             : elements.pointer;
       const animation = createdAnimations.find((candidate) => candidate.target === target);
       assert.ok(animation, `Expected a ${layer} animation`);
+      const remainingAnimations = createdAnimations.filter((candidate) => candidate !== animation);
+      let settledRemainingAnimations = 0;
+      for (const remaining of remainingAnimations) {
+        void remaining.finished.then(
+          () => {
+            settledRemainingAnimations += 1;
+          },
+          () => {
+            settledRemainingAnimations += 1;
+          },
+        );
+      }
       animation.reject(failure);
-      resolveAnimations(0);
 
       await assert.rejects(
         () => showing,
         (error) => error === failure,
       );
+      assert.equal(settledRemainingAnimations, 0);
+      for (const remaining of remainingAnimations) remaining.resolve();
+      await Promise.all(remainingAnimations.map((remaining) => remaining.finished));
       assert.equal(TestResizeObserver.instances.length, 0);
       assert.equal(window.listeners.get("keydown")?.size ?? 0, 0);
     });
@@ -2190,7 +2204,7 @@ describe("DomTourViewDriver", () => {
     const elements = createElements();
     driver.registerRoot(elements.root as unknown as HTMLElement);
     driver.registerPopover(elements.popover as unknown as HTMLElement);
-    const step = createStep();
+    const step = createStep({ allowInteraction: true });
     step.target = createTarget() as unknown as HTMLElement;
 
     await driver.show(step, "advance", new AbortController().signal);

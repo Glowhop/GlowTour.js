@@ -34,6 +34,8 @@ const workflow = tour.create("intro").step({ target: "#welcome", title: "Welcome
 Pass `onSubscriberError(error)` in `GlowTourOptions` to observe failures from state and step-props subscribers:
 
 ```ts
+import { createGlowTour } from "@glowhop/core-tour";
+
 const tour = createGlowTour({
   onSubscriberError(error) {
     console.error("Tour subscriber failed", error);
