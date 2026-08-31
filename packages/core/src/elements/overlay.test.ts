@@ -97,6 +97,25 @@ describe("OverlayElement animation fallbacks", () => {
     assert.equal(element.path.styles.get("fill"), "rgb(0, 0, 0)");
   });
 
+  test("resolves the computed fill after a previous step supplied an explicit color", async () => {
+    const element = new MockOverlay();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        devicePixelRatio: 1,
+        getComputedStyle: () => ({ getPropertyValue: () => "rgb(0, 0, 0)" }),
+        innerHeight: 600,
+        innerWidth: 800,
+      },
+    });
+    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), { overlay: { color: "red" } });
+    await overlay.moveToTarget(rect(200, 200, 40, 20), {});
+
+    assert.equal(element.path.styles.get("fill"), "rgb(0, 0, 0)");
+  });
+
   test("applies the hidden final state when animation creation throws", async () => {
     const element = new MockOverlay();
     element.path.style.setProperty("d", 'path("M0 0")');

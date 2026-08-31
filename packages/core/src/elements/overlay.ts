@@ -21,14 +21,16 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
   }
 
   async moveToTarget(nextPosition: DOMRect, step: TourElementStep) {
-    this.visualState = this._getVisualState(step);
+    const nextVisualState = this._getVisualState(step);
 
     const path = this._getPathElement();
     if (!path) {
+      this.visualState = nextVisualState;
       console.warn("No overlay path element found");
       return;
     }
     const keyframe = this.getRenderedTargetStyles(path, this._getNextStyles(nextPosition, step));
+    this.visualState = nextVisualState;
 
     if (!path.style.getPropertyValue("d")) {
       for (const [property, value] of Object.entries(keyframe)) {
