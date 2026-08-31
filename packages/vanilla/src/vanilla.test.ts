@@ -1,6 +1,13 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { StartOptions, StepPropsStore, Tour, TourState, WorkflowDefinition } from "./index";
+import type {
+  GlowTourOptions,
+  StartOptions,
+  StepPropsStore,
+  Tour,
+  TourState,
+  WorkflowDefinition,
+} from "./index";
 import * as runtime from "./index";
 
 const tour: Tour = runtime.createGlowTour();
@@ -8,9 +15,33 @@ const tourState: TourState | null = null;
 const stepPropsStore: StepPropsStore | null = null;
 const workflowDefinition: WorkflowDefinition | null = null;
 const startOptions: StartOptions | null = null;
-void [tour, tourState, stepPropsStore, workflowDefinition, startOptions];
+const glowTourOptions: GlowTourOptions = {
+  onSubscriberError: (error) => {
+    const typedError: Error = error;
+    void typedError;
+  },
+};
+void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTourOptions];
 
 describe("vanilla adapter public contract", () => {
+  test("forwards subscriber error handlers to the core tour", () => {
+    const errors: Error[] = [];
+    const tour = runtime.createGlowTour({
+      onSubscriberError: (error) => {
+        errors.push(error);
+      },
+    });
+
+    tour.state.subscribe(() => {
+      throw new Error("vanilla subscriber failure");
+    });
+
+    assert.deepEqual(
+      errors.map((error) => error.message),
+      ["vanilla subscriber failure"],
+    );
+  });
+
   test("exports the Vanilla tour factories and intentional element metadata", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
       "GLOW_TOUR_ELEMENT_NAMES",

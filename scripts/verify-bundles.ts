@@ -35,7 +35,7 @@ const frameworkInput = /node_modules\/(?:@angular\/|react\/|solid-js\/|vue\/)/;
 export const bundleScenarios: readonly BundleScenario[] = [
   {
     entry: 'import { createGlowTour } from "@glowhop/core-tour"; createGlowTour();',
-    externalPackages: ["@glowhop/observables"],
+    externalPackages: [],
     gzipBudget: 18 * KIB,
     name: "Core index",
     outputExtension: "js",

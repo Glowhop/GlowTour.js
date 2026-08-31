@@ -2,6 +2,7 @@ import "@angular/compiler";
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import type {
+  GlowTourOptions,
   StartOptions,
   StepPropsStore,
   Tour,
@@ -15,9 +16,33 @@ const tourState: TourState | null = null;
 const stepPropsStore: StepPropsStore | null = null;
 const workflowDefinition: WorkflowDefinition | null = null;
 const startOptions: StartOptions | null = null;
-void [tour, tourState, stepPropsStore, workflowDefinition, startOptions];
+const glowTourOptions: GlowTourOptions = {
+  onSubscriberError: (error) => {
+    const typedError: Error = error;
+    void typedError;
+  },
+};
+void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTourOptions];
 
 describe("angular adapter contract", () => {
+  test("forwards subscriber error handlers to the core tour", () => {
+    const errors: Error[] = [];
+    const tour = runtime.createGlowTour({
+      onSubscriberError: (error) => {
+        errors.push(error);
+      },
+    });
+
+    tour.state.subscribe(() => {
+      throw new Error("angular subscriber failure");
+    });
+
+    assert.deepEqual(
+      errors.map((error) => error.message),
+      ["angular subscriber failure"],
+    );
+  });
+
   test("exports an instance factory and standalone native components without legacy runtime values", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
       "GlowTourAdvanceTrigger",
