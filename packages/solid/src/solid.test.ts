@@ -1,7 +1,14 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { renderToString } from "solid-js/web";
-import type { StartOptions, StepPropsStore, Tour, TourState, WorkflowDefinition } from "./index";
+import type {
+  GlowTourOptions,
+  StartOptions,
+  StepPropsStore,
+  Tour,
+  TourState,
+  WorkflowDefinition,
+} from "./index";
 import * as runtime from "./index";
 
 const tour: Tour = runtime.createGlowTour();
@@ -9,9 +16,33 @@ const tourState: TourState | null = null;
 const stepPropsStore: StepPropsStore | null = null;
 const workflowDefinition: WorkflowDefinition | null = null;
 const startOptions: StartOptions | null = null;
-void [tour, tourState, stepPropsStore, workflowDefinition, startOptions];
+const glowTourOptions: GlowTourOptions = {
+  onSubscriberError: (error) => {
+    const typedError: Error = error;
+    void typedError;
+  },
+};
+void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTourOptions];
 
 describe("solid adapter contract", () => {
+  test("forwards subscriber error handlers to the core tour", () => {
+    const errors: Error[] = [];
+    const tour = runtime.createGlowTour({
+      onSubscriberError: (error) => {
+        errors.push(error);
+      },
+    });
+
+    tour.state.subscribe(() => {
+      throw new Error("solid subscriber failure");
+    });
+
+    assert.deepEqual(
+      errors.map((error) => error.message),
+      ["solid subscriber failure"],
+    );
+  });
+
   test("exports an instance factory and component namespace without legacy runtime values", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
       "AdvanceTrigger",

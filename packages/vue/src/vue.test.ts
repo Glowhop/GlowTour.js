@@ -5,7 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { renderToString } from "@vue/server-renderer";
 import { createSSRApp, h } from "vue";
-import type { StartOptions, StepPropsStore, Tour, TourState, WorkflowDefinition } from "./index";
+import type {
+  GlowTourOptions,
+  StartOptions,
+  StepPropsStore,
+  Tour,
+  TourState,
+  WorkflowDefinition,
+} from "./index";
 import * as runtime from "./index";
 
 const tour: Tour = runtime.createGlowTour();
@@ -13,7 +20,13 @@ const tourState: TourState | null = null;
 const stepPropsStore: StepPropsStore | null = null;
 const workflowDefinition: WorkflowDefinition | null = null;
 const startOptions: StartOptions | null = null;
-void [tour, tourState, stepPropsStore, workflowDefinition, startOptions];
+const glowTourOptions: GlowTourOptions = {
+  onSubscriberError: (error) => {
+    const typedError: Error = error;
+    void typedError;
+  },
+};
+void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTourOptions];
 
 describe("vue adapter contract", () => {
   test("exports an instance factory and named native components without legacy runtime values", () => {
@@ -77,6 +90,24 @@ describe("vue adapter contract", () => {
     });
 
     assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
+  });
+
+  test("forwards subscriber error handlers to the core tour", () => {
+    const errors: Error[] = [];
+    const tour = runtime.createGlowTour({
+      onSubscriberError: (error) => {
+        errors.push(error);
+      },
+    });
+
+    tour.state.subscribe(() => {
+      throw new Error("vue subscriber failure");
+    });
+
+    assert.deepEqual(
+      errors.map((error) => error.message),
+      ["vue subscriber failure"],
+    );
   });
 
   test("preserves pure presentation component initializers in the flattened entry", () => {

@@ -14,6 +14,7 @@ interface MockAnimation {
   finished: Promise<void>;
   keyframes: Keyframe[] | PropertyIndexedKeyframes;
   options?: number | KeyframeAnimationOptions;
+  reject(error: Error): void;
   resolve(): void;
   target: MockElement;
 }
@@ -199,17 +200,20 @@ class MockElement extends MockNode {
     options?: number | KeyframeAnimationOptions,
   ) {
     let resolve = () => {};
+    let reject = (_error: Error) => {};
     const animation: MockAnimation = {
       cancelled: false,
       committed: false,
       finished:
         animationMode === "controlled"
-          ? new Promise<void>((nextResolve) => {
+          ? new Promise<void>((nextResolve, nextReject) => {
               resolve = nextResolve;
+              reject = nextReject;
             })
           : Promise.resolve(),
       keyframes,
       options,
+      reject: (error) => reject(error),
       resolve: () => resolve(),
       target: this,
     };
@@ -573,6 +577,86 @@ describe("DomTourViewDriver", () => {
     assert.equal(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
     assert.equal(overlayPath.style.getPropertyValue("opacity"), "0.4");
   });
+  test("reports a current-generation dynamic overlay animation failure once", async () => {
+    const { calls, driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "red" },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    const failure = new Error("dynamic overlay failed");
+    createdAnimations[animationStart]?.reject(failure);
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["error:dynamic overlay failed"]);
+  });
+
+  test("does not report a stale dynamic overlay animation failure", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const path = elements.overlay.querySelector("path");
+    assert.ok(path);
+    const failure = new Error("stale dynamic overlay failed");
+    const animate = path.animate.bind(path);
+    let replaced = false;
+    Object.defineProperty(path, "animate", {
+      value: (
+        keyframes: Keyframe[] | PropertyIndexedKeyframes,
+        options?: number | KeyframeAnimationOptions,
+      ) => {
+        if (replaced) return animate(keyframes, options);
+        replaced = true;
+        driver.registerRoot(document.createElement("section") as unknown as HTMLElement);
+        return {
+          cancel() {},
+          commitStyles() {},
+          finished: Promise.reject(failure),
+        };
+      },
+    });
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "red" },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, []);
+  });
+
+  test("does not report a normally cancelled dynamic overlay animation", async () => {
+    const { calls, driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "red" },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+    const clearing = driver.clear(new AbortController().signal);
+    await flushMicrotasks();
+    resolveAnimations(0);
+    await clearing;
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, []);
+  });
+
   test("animates removal of an overlay color toward its computed CSS value", async () => {
     const { driver, elements } = installDriver();
     const step = createStep();
@@ -601,7 +685,7 @@ describe("DomTourViewDriver", () => {
     assert.equal((animation.keyframes as Keyframe[])[1]?.fill, "black");
     animation.resolve();
     await flushMicrotasks();
-    assert.equal(overlayPath.style.getPropertyValue("fill"), "");
+    assert.equal(overlayPath.style.getPropertyValue("fill"), "black");
   });
   test("does not animate the overlay for unrelated presentation changes", async () => {
     const { driver } = installDriver();
@@ -647,9 +731,9 @@ describe("DomTourViewDriver", () => {
 
     const secondAnimation = createdAnimations[animationStart + 1];
     assert.ok(secondAnimation);
-    assert.equal(firstAnimation.committed, true);
+    assert.equal(firstAnimation.committed, false);
     assert.equal(firstAnimation.cancelled, true);
-    assert.equal(overlayPath.style.getPropertyValue("fill"), "");
+    assert.equal(overlayPath.style.getPropertyValue("fill"), "black");
 
     secondAnimation.resolve();
     await flushMicrotasks();
@@ -1060,7 +1144,7 @@ describe("DomTourViewDriver", () => {
         step = createStep({ animated: mode !== "workflow" });
       step.target = createTarget() as unknown as HTMLElement;
       await driver.show(step, "advance", new AbortController().signal);
-      assert.equal(createdAnimations.length, 3);
+      assert.equal(createdAnimations.length, 0);
 
       const animationStart = createdAnimations.length;
       step.props.set((props) => ({
@@ -1071,11 +1155,11 @@ describe("DomTourViewDriver", () => {
       flushFrame();
       await flushMicrotasks();
 
-      const overlayPath = elements.overlay.querySelector("path");
-      const overlayAnimation = createdAnimations
-        .slice(animationStart)
-        .find((animation) => animation.target === overlayPath);
-      assert.equal((overlayAnimation?.options as KeyframeAnimationOptions).duration, 0);
+      assert.equal(createdAnimations.length, animationStart);
+      assert.equal(
+        elements.overlay.querySelector("path")?.style.getPropertyValue("opacity"),
+        "0.3",
+      );
       driver.dispose();
     }
   });
@@ -2132,5 +2216,160 @@ describe("DomTourViewDriver", () => {
       createdAnimations.some((animation) => animation.cancelled),
       true,
     );
+  });
+
+  test("rejects show when the commit callback rejects without activating resources", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    const failure = new Error("commit failed");
+
+    await assert.rejects(
+      () =>
+        driver.show(step, "advance", new AbortController().signal, () => Promise.reject(failure)),
+      (error) => error === failure,
+    );
+
+    assert.equal((driver as unknown as { active: boolean }).active, false);
+    assert.equal(TestMutationObserver.instances.length, 0);
+    assert.equal(window.listeners.get("keydown")?.size ?? 0, 0);
+  });
+
+  for (const layer of ["overlay", "popover", "pointer"] as const) {
+    test(`rejects show when the ${layer} appearance animation rejects`, async () => {
+      animationMode = "controlled";
+      const { driver, elements } = installDriver();
+      const step = createStep({ allowInteraction: true });
+      step.target = createTarget() as unknown as HTMLElement;
+      const failure = new Error(`${layer} animation failed`);
+      const showing = driver.show(step, "advance", new AbortController().signal);
+      await flushMicrotasks();
+      const target =
+        layer === "overlay"
+          ? elements.overlay.querySelector("path")
+          : layer === "popover"
+            ? elements.popover
+            : elements.pointer;
+      const animation = createdAnimations.find((candidate) => candidate.target === target);
+      assert.ok(animation, `Expected a ${layer} animation`);
+      const remainingAnimations = createdAnimations.filter((candidate) => candidate !== animation);
+      let settledRemainingAnimations = 0;
+      for (const remaining of remainingAnimations) {
+        void remaining.finished.then(
+          () => {
+            settledRemainingAnimations += 1;
+          },
+          () => {
+            settledRemainingAnimations += 1;
+          },
+        );
+      }
+      animation.reject(failure);
+
+      await assert.rejects(
+        () => showing,
+        (error) => error === failure,
+      );
+      assert.equal(settledRemainingAnimations, 0);
+      for (const remaining of remainingAnimations) remaining.resolve();
+      await Promise.all(remainingAnimations.map((remaining) => remaining.finished));
+      assert.equal(TestResizeObserver.instances.length, 0);
+      assert.equal(window.listeners.get("keydown")?.size ?? 0, 0);
+    });
+  }
+
+  test("shows successfully without optional overlay or pointer layers", async () => {
+    const { commands } = createCommands();
+    const driver = new DomTourViewDriver<string>(commands);
+    const elements = createElements();
+    driver.registerRoot(elements.root as unknown as HTMLElement);
+    driver.registerPopover(elements.popover as unknown as HTMLElement);
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(TestMutationObserver.instances.length, 1);
+    driver.dispose();
+  });
+
+  test("settles all layer cleanup failures without replacing a prior show failure", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    const showFailure = new Error("show failed");
+
+    await assert.rejects(
+      () =>
+        driver.show(step, "advance", new AbortController().signal, () =>
+          Promise.reject(showFailure),
+        ),
+      (error) => error === showFailure,
+    );
+
+    animationMode = "controlled";
+    createdAnimations = [];
+    const clearing = driver.clear(new AbortController().signal);
+    await flushMicrotasks();
+    for (const animation of createdAnimations) animation.reject(new Error("cleanup failed"));
+    await clearing;
+  });
+
+  test("reports a current-generation remount appearance failure", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    createdAnimations = [];
+    const replacement = document.createElementNS("svg", "svg");
+    const path = document.createElementNS("svg", "path");
+    replacement.append(path);
+    elements.root.append(replacement);
+    const failure = new Error("remount failed");
+
+    driver.registerOverlay(replacement as unknown as SVGSVGElement);
+    await flushMicrotasks();
+    const animation = createdAnimations.find((candidate) => candidate.target === path);
+    assert.ok(animation, "Expected a replacement overlay animation");
+    animation.reject(failure);
+    resolveAnimations(0);
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["error:remount failed"]);
+  });
+
+  test("ignores a stale-generation remount appearance failure", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const replacement = document.createElementNS("svg", "svg");
+    const path = document.createElementNS("svg", "path");
+    const failure = new Error("stale remount failed");
+    const animate = path.animate.bind(path);
+    let replaced = false;
+    Object.defineProperty(path, "animate", {
+      value: (
+        keyframes: Keyframe[] | PropertyIndexedKeyframes,
+        options?: number | KeyframeAnimationOptions,
+      ) => {
+        if (replaced) return animate(keyframes, options);
+        replaced = true;
+        driver.registerRoot(document.createElement("section") as unknown as HTMLElement);
+        return {
+          cancel() {},
+          commitStyles() {},
+          finished: Promise.reject(failure),
+        };
+      },
+    });
+    replacement.append(path);
+    elements.root.append(replacement);
+
+    driver.registerOverlay(replacement as unknown as SVGSVGElement);
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, []);
   });
 });

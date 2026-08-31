@@ -1,4 +1,4 @@
-export type { StartOptions } from "@glowhop/core-tour";
+export type { GlowTourOptions, StartOptions } from "@glowhop/core-tour";
 export {
   type CreateDefaultTourElementOptions,
   createDefaultTourElement,

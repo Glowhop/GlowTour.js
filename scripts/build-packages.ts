@@ -33,7 +33,6 @@ const externalPackages = [
   "@angular/common",
   "@angular/core",
   "@glowhop/core-tour",
-  "@glowhop/observables",
   "@glowhop/react-observables",
   "react",
   "solid-js",

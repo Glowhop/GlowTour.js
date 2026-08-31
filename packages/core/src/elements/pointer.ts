@@ -77,7 +77,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
       this.element.setAttribute("data-glow-tour-placement", nextPlacement);
     }
     if (nextPlacement !== currentPlacement && this.element.getAttribute("aria-hidden") !== "true") {
-      this._startAnimation(nextPlacement);
+      this._startPointerAnimation(nextPlacement);
     }
   }
 
@@ -103,7 +103,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     this.element.style.setProperty("opacity", "1");
     this.element.removeAttribute("aria-hidden");
     const placement = this.element.getAttribute("data-glow-tour-placement") as TryOrderOptions;
-    this._startAnimation(placement);
+    this._startPointerAnimation(placement);
   }
 
   override cancelAnimations() {
@@ -117,31 +117,31 @@ export default class PointerElement<T> extends GlowTourElement<T> {
       if (value != null) this.element.style.setProperty(property, String(value));
     }
 
-    const animation = this.element.animate(
+    const animation = this._startAnimation(
       { opacity: 1 },
       {
         ...this._getAnimationOptions(),
         fill: "none",
       },
     );
-    if (!(await this._waitForAnimation(animation))) return;
+    if (animation && !(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "1");
     this.element.removeAttribute("aria-hidden");
     const placement = this.element.getAttribute("data-glow-tour-placement") as TryOrderOptions;
-    this._startAnimation(placement);
+    this._startPointerAnimation(placement);
   }
 
   protected async _disappear() {
     this._stopAnimation();
-    const animation = this.element.animate(
+    const animation = this._startAnimation(
       { opacity: 0 },
       {
         ...this._getAnimationOptions(),
         fill: "none",
       },
     );
-    if (!(await this._waitForAnimation(animation))) return;
+    if (animation && !(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "0");
     this.element.setAttribute("aria-hidden", "true");
@@ -208,12 +208,9 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     } satisfies Record<TryOrderOptions, { x: number; y: number }>;
   }
 
-  private _startAnimation(placement: TryOrderOptions) {
+  private _startPointerAnimation(placement: TryOrderOptions) {
     this._stopAnimation();
-    if (!this._isAnimated()) {
-      return;
-    }
-    this.animation = this.element.animate(
+    this.animation = this._startAnimation(
       [{ transform: "translate(0px, 0px)" }, { transform: this._getTargetTransform(placement) }],
       {
         direction: "alternate",

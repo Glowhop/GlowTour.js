@@ -78,7 +78,7 @@ test("builds deterministic minified ESM without source maps", () => {
   expect(arguments_).not.toContain("--sourcemap=false");
 });
 
-test("bundles Core itself and externalizes only each scenario's declared dependencies", () => {
+test("bundles Core itself without externalizing its removed observables dependency", () => {
   const core = bundleScenarios.find((scenario) => scenario.name === "Core index");
   const react = bundleScenarios.find((scenario) => scenario.name === "React");
   expect(core).toBeDefined();
@@ -88,7 +88,7 @@ test("bundles Core itself and externalizes only each scenario's declared depende
   const reactArguments = esbuildArguments(react!, "entry.ts", "output.js", "metadata.json");
 
   expect(coreArguments).not.toContain("--external:@glowhop/core-tour");
-  expect(coreArguments).toContain("--external:@glowhop/observables");
+  expect(coreArguments).not.toContain("--external:@glowhop/observables");
   expect(reactArguments).toContain("--external:@glowhop/core-tour");
   expect(reactArguments).toContain("--external:react");
   expect(reactArguments).not.toContain("--external:vue");

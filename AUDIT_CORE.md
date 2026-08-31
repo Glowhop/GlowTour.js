@@ -93,14 +93,6 @@ Surfaces examinées :
 
 **Recommandation.** Valider et normaliser toutes les options lors de `build()` ou `run()`, avec des erreurs qui donnent le chemin exact (`steps[2].behavior.targetTimeout`). Utiliser les mêmes helpers de nombres finis pour les timings et la géométrie.
 
-### 7. Le positionnement force une boucle de layout à chaque frame, même sans changement
-
-**Preuve.** `schedulePosition()` se réinscrit inconditionnellement via `requestAnimationFrame()` (`dom/tour-view-driver.ts:420-428`). Chaque frame lit le rectangle de la cible puis met à jour overlay, popover et pointeur (`dom/tour-view-driver.ts:430-461`), dont plusieurs chemins relisent leurs propres rectangles. `lastTargetRect` est écrit mais n'est pas utilisé pour court-circuiter le chemin stable.
-
-**Impact DX.** Un tour actif conserve un coût CPU/layout permanent, particulièrement visible sur mobile, avec plusieurs tours non modaux ou dans une page déjà animée.
-
-**Recommandation.** Court-circuiter lorsque le rectangle et la présentation sont inchangés. À moyen terme, déclencher les mises à jour par `ResizeObserver`, scroll/resize et mutations de props, avec un RAF unique de coalescence.
-
 ## Constats P3
 
 ### 8. `dispose()` laisse `state.get()` sur un snapshot obsolète

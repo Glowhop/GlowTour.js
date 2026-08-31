@@ -207,7 +207,11 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     // el.style.setProperty("transform", "translate(0px, 0px)");
   }
 
-  updatePosition(nextPosition: DOMRect, step: TourElementStep): ResolvedPlacement {
+  updatePosition(
+    nextPosition: DOMRect,
+    step: TourElementStep,
+    onReposition?: (reposition: Promise<void>) => void,
+  ): ResolvedPlacement {
     const nextCoordinates = this.resolvePosition(nextPosition, step);
     const appliedPosition = this.appliedPosition;
     if (!appliedPosition) {
@@ -226,7 +230,11 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       Math.abs(nextCoordinates.y - appliedPosition.y) > REPLACEMENT_DIFF;
     if (shouldReposition) {
       this.pendingReposition = { position: nextPosition, step };
-      if (this.repositionPhase === "idle") void this._flushReposition();
+      if (this.repositionPhase === "idle") {
+        const reposition = this._flushReposition();
+        if (onReposition) onReposition(reposition);
+        else void reposition.catch(() => {});
+      }
     } else if (this.repositionPhase === "fading-in") {
       this.pendingReposition = null;
     } else {
@@ -354,7 +362,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       value != null && this.element.style.setProperty(key, String(value));
     }
 
-    const animation = this.element.animate(
+    const animation = this._startAnimation(
       [
         {
           opacity: 1,
@@ -362,34 +370,36 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
       ],
       this._getAnimationOptions(),
     );
-    if (!(await this._waitForAnimation(animation))) return;
+    if (animation && !(await this._waitForAnimation(animation))) return;
 
-    this.element.style.setProperty("opacity", "1");
-    this.element.removeAttribute("aria-hidden");
-    this.element.removeAttribute("inert");
+    this._applyVisibleState();
   }
 
   async _disappear() {
-    const animation = this.element.animate(
+    const animation = this._startAnimation(
       {
         opacity: 0,
       },
       this._getAnimationOptions(),
     );
 
-    if (!(await this._waitForAnimation(animation))) return;
+    if (animation && !(await this._waitForAnimation(animation))) return;
 
-    animation.commitStyles();
-
-    this.element.style.setProperty("opacity", "0");
-    this.element.setAttribute("aria-hidden", "true");
-    this.element.setAttribute("inert", "true");
-    this.element.style.removeProperty("transform");
-    this.element.style.setProperty("opacity", "0");
+    this._applyHiddenState();
   }
 
   protected _release() {
     this._restoreArrowStyles();
+    this._applyHiddenState();
+  }
+
+  private _applyVisibleState() {
+    this.element.style.setProperty("opacity", "1");
+    this.element.removeAttribute("aria-hidden");
+    this.element.removeAttribute("inert");
+  }
+
+  private _applyHiddenState() {
     this.element.style.setProperty("opacity", "0");
     this.element.setAttribute("aria-hidden", "true");
     this.element.setAttribute("inert", "true");

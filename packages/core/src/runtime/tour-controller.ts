@@ -1,4 +1,3 @@
-import { Observable } from "@glowhop/observables";
 import { WorkflowBuilder } from "../builder";
 import type { WorkflowDefinition } from "../definition";
 import {
@@ -9,6 +8,7 @@ import {
 import type {
   BeforeActionStepContext,
   GlowTour,
+  GlowTourOptions,
   StartOptions,
   StepContext,
   TourDirection,
@@ -26,7 +26,12 @@ function abortError() {
 }
 
 function normalizedError(error: unknown) {
-  return error instanceof Error ? error : new Error(String(error));
+  if (error instanceof Error) return error;
+  try {
+    return new Error(String(error));
+  } catch {
+    return new Error("Unknown error");
+  }
 }
 
 function waitForTimer(delay: number, signal: AbortSignal) {
@@ -45,9 +50,10 @@ function waitForTimer(delay: number, signal: AbortSignal) {
   });
 }
 
-interface TourControllerOptions<T> {
+interface TourControllerOptions<T> extends GlowTourOptions {
   assertCanRun?: (workflow: WorkflowDefinition<T>) => void;
   onDispose?: () => void;
+  reportUnhandledError?: (error: Error) => void;
 }
 
 type TourPresentation<T> = Pick<
@@ -63,7 +69,7 @@ type TourPresentation<T> = Pick<
 >;
 
 export class TourController<T> {
-  private readonly snapshot: Observable<TourState<T>>;
+  private snapshot: TourState<T>;
   private workflow: WorkflowDefinition<T> | null = null;
   private steps: ActiveStep<T>[] = [];
   private index = -1;
@@ -79,10 +85,10 @@ export class TourController<T> {
   private readonly stepPropsSubscriptions: Array<() => void> = [];
 
   readonly state = Object.freeze({
-    get: () => this.snapshot.get(),
+    get: () => this.snapshot,
     subscribe: (listener: (state: TourState<T>) => void) => {
       if (this.disposed) return () => {};
-      listener(this.snapshot.get());
+      this.notifyStateListener(listener, this.snapshot);
       if (this.disposed) return () => {};
       this.stateListeners.add(listener);
       return () => {
@@ -95,7 +101,7 @@ export class TourController<T> {
     private readonly driver: TourViewDriver<T> = new NoopTourViewDriver<T>(),
     private readonly options: TourControllerOptions<T> = {},
   ) {
-    this.snapshot = new Observable<TourState<T>>(this.createSnapshot());
+    this.snapshot = this.createSnapshot();
     this.driver.setCommands?.({
       advance: () => this.advance(),
       canAdvance: () => this.canNavigate("advance"),
@@ -131,7 +137,10 @@ export class TourController<T> {
     const operation = this.beginOperation();
     this.workflow = workflow;
     this.releaseStepPropsSubscriptions();
-    this.steps = workflow.steps.map((step) => new ActiveStep(step, workflow.options));
+    this.steps = workflow.steps.map(
+      (step) =>
+        new ActiveStep(step, workflow.options, (error) => this.reportSubscriberError(error)),
+    );
     for (const step of this.steps) {
       this.stepPropsSubscriptions.push(
         step.props.subscribe(() => {
@@ -521,12 +530,45 @@ export class TourController<T> {
   private publish() {
     const revision = ++this.publicationRevision;
     const state = this.createSnapshot();
-    this.snapshot.set(state);
+    this.snapshot = state;
     for (const listener of Array.from(this.stateListeners)) {
       if (this.disposed || revision !== this.publicationRevision) break;
-      listener(state);
+      this.notifyStateListener(listener, state);
       if (this.disposed || revision !== this.publicationRevision) break;
     }
+  }
+
+  private notifyStateListener(listener: (state: TourState<T>) => void, state: TourState<T>) {
+    try {
+      listener(state);
+    } catch (error) {
+      this.reportSubscriberError(error);
+    }
+  }
+
+  private reportSubscriberError(reason: unknown) {
+    const error = normalizedError(reason);
+    const onSubscriberError = this.options.onSubscriberError;
+    if (!onSubscriberError) {
+      this.reportUnhandledError(error);
+      return;
+    }
+    try {
+      Promise.resolve(onSubscriberError(error)).catch((hookError: unknown) => {
+        this.reportUnhandledError(normalizedError(hookError));
+      });
+    } catch (hookError) {
+      this.reportUnhandledError(normalizedError(hookError));
+    }
+  }
+
+  private reportUnhandledError(error: Error) {
+    const reporter =
+      this.options.reportUnhandledError ??
+      ((reason: Error) => {
+        throw reason;
+      });
+    queueMicrotask(() => reporter(error));
   }
 
   private createSnapshot(): TourState<T> {
@@ -571,12 +613,13 @@ export class TourController<T> {
   }
 }
 
-export function createGlowTour<T>(): GlowTour<T> {
+export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
   const driver = new DomTourViewDriver<T>();
   let bridge!: ReturnType<typeof attachRootBridge<T>>;
 
   const controller = new TourController<T>(driver, {
     assertCanRun: (workflow) => bridge.assertCanRun(workflow),
+    onSubscriberError: options.onSubscriberError,
     onDispose: () => bridge.release(),
   });
 

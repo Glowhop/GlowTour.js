@@ -70,6 +70,10 @@ class MockElement {
   getBoundingClientRect() {
     return rect(0, 0, this.width, this.height);
   }
+
+  animate() {
+    return { cancel() {}, finished: Promise.resolve() } as unknown as Animation;
+  }
 }
 
 class MockStyleElement {
@@ -370,5 +374,37 @@ describe("PopoverElement arrow stylesheet", () => {
     new PopoverElement<string>(element as unknown as HTMLElement).initializeProps();
 
     assert.equal(root.styles.length, 1);
+  });
+});
+
+describe("PopoverElement animation fallbacks", () => {
+  test("applies the visible final state when Web Animations are unavailable", async () => {
+    const element = new MockElement(100, 60);
+    const popover = new PopoverElement<string>(element as unknown as HTMLElement);
+    element.removeAttribute("animate");
+    (element as { animate?: unknown }).animate = undefined;
+
+    await popover.moveToTarget(rect(20, 80, 20, 20), createStep(["bottom"]), true);
+
+    assert.equal(element.styles.get("transform"), "translate(14px, 114px)");
+    assert.equal(element.styles.get("opacity"), "1");
+    assert.equal(element.attributes.has("aria-hidden"), false);
+    assert.equal(element.attributes.has("inert"), false);
+  });
+
+  test("applies the hidden final state when animation creation throws", async () => {
+    const element = new MockElement(100, 60);
+    const popover = new PopoverElement<string>(element as unknown as HTMLElement);
+    element.style.setProperty("transform", "translate(14px, 114px)");
+    element.animate = () => {
+      throw new Error("unsupported animation");
+    };
+
+    await popover.disappear();
+
+    assert.equal(element.styles.get("opacity"), "0");
+    assert.equal(element.attributes.get("aria-hidden"), "true");
+    assert.equal(element.attributes.get("inert"), "true");
+    assert.equal(element.styles.has("transform"), false);
   });
 });

@@ -1,13 +1,10 @@
-import { Observable } from "@glowhop/observables";
 import {
-  cloneStepProps,
   freezeStepProps,
   type ReadonlyStartOptions,
   type ReadonlyStepProps,
-  type StepProps,
   type WorkflowStepDefinition,
 } from "../definition";
-import type { ReadonlyStepState } from "../types";
+import type { ReadonlyStepState, StepPropsStore } from "../types";
 import {
   mergeIndicatorOptions,
   mergeOverlayOptions,
@@ -15,10 +12,11 @@ import {
   mergeStepBehavior,
 } from "../utils/options";
 import { resolveTargetElement } from "../utils/utils";
+import { createStepPropsStore } from "./step-props-store";
 
 export class ActiveStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
-  readonly props: Observable<StepProps<T>>;
+  readonly props: StepPropsStore<T>;
   readonly state: ReadonlyStepState<T>;
   readonly behavior;
   readonly animated: boolean | undefined;
@@ -27,6 +25,7 @@ export class ActiveStep<T> {
   constructor(
     readonly definition: WorkflowStepDefinition<T>,
     defaults: ReadonlyStartOptions,
+    reportSubscriberError: (error: unknown) => void = () => {},
   ) {
     this.initialProps = freezeStepProps({
       title: definition.props.title,
@@ -36,18 +35,18 @@ export class ActiveStep<T> {
       popover: mergePopoverOptions(defaults.popover, definition.props.popover),
       indicator: mergeIndicatorOptions(defaults.indicator, definition.props.indicator),
     });
-    this.props = new Observable(cloneStepProps(this.initialProps));
+    this.props = createStepPropsStore(this.initialProps, reportSubscriberError);
     this.state = Object.freeze({
-      get: () => freezeStepProps(this.props.get()),
+      get: () => this.props.get(),
       subscribe: (listener: (props: ReadonlyStepProps<T>) => void) =>
-        this.props.subscribe((props) => listener(freezeStepProps(props))),
+        this.props.subscribe(listener),
     });
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
   }
 
   reset() {
-    this.props.set(cloneStepProps(this.initialProps));
+    this.props.set(this.initialProps);
   }
 
   get overlay() {

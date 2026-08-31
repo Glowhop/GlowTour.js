@@ -244,7 +244,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (!this.active || !this.currentStep || !this.lastTargetRect) return;
     const generation = this.beginGeneration();
     this.cleanupStepResources();
-    void this.activateRegisteredElements(generation).catch(() => {});
+    void this.activateRegisteredElements(generation).catch((error) => {
+      if (!this.isCurrentGeneration(generation)) return;
+      return this.commands?.reportError(error);
+    });
   }
 
   private async activateRegisteredElements(generation: number) {
@@ -344,7 +347,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const popoverTransition = this.popover
       ? this.popover.moveToTarget(targetRect, step, appearPopover, commitStep)
       : Promise.resolve(commitStep?.());
-    await Promise.allSettled([
+    await Promise.all([
       this.overlay?.moveToTarget(targetRect, step) ?? Promise.resolve(),
       popoverTransition,
       pointerEnabled
@@ -444,21 +447,39 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         "TourViewDriver: presentation changed, updated animation options and synced controls",
       );
     }
-    this.overlay?.updatePosition(targetRect, step, presentationChanged);
-    const popoverPlacement = this.popover?.updatePosition(targetRect, step);
+    this.overlay?.updatePosition(targetRect, step, presentationChanged, (transition) =>
+      this.observeDynamicOperation(transition, generation),
+    );
+    const popoverPlacement = this.popover?.updatePosition(targetRect, step, (reposition) =>
+      this.observeDynamicOperation(reposition, generation),
+    );
     if (presentationChanged) {
       this.pointer?.syncVisibility(this.isPointerEnabled(step), targetRect, step, popoverPlacement);
     } else if (this.isPointerEnabled(step)) {
       const pointer = this.pointer?.getElement();
       if (pointer?.getAttribute("aria-hidden") === "true") {
-        void this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement);
+        this.observeDynamicOperation(
+          this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement),
+          generation,
+        );
       } else {
         this.pointer?.updatePosition(targetRect, step, popoverPlacement);
       }
     } else if (this.pointer?.getElement()?.getAttribute("aria-hidden") !== "true") {
-      void this.pointer?.disappear();
+      this.observeDynamicOperation(this.pointer?.disappear(), generation);
     }
     this.lastTargetRect = snapshotRect(targetRect);
+  }
+
+  private observeDynamicOperation(operation: Promise<void> | undefined, generation: number) {
+    if (!operation) return;
+    void operation.catch((error) => {
+      if (!this.isCurrentGeneration(generation)) return;
+      try {
+        const reported = this.commands?.reportError(error);
+        void reported?.catch(() => {});
+      } catch {}
+    });
   }
 
   private handleKeydown(event: KeyboardEvent) {

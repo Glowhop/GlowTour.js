@@ -21,14 +21,16 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
   }
 
   async moveToTarget(nextPosition: DOMRect, step: TourElementStep) {
-    const keyframe = this._getNextStyles(nextPosition, step);
-    this.visualState = this._getVisualState(step);
+    const nextVisualState = this._getVisualState(step);
 
     const path = this._getPathElement();
     if (!path) {
+      this.visualState = nextVisualState;
       console.warn("No overlay path element found");
       return;
     }
+    const keyframe = this.getRenderedTargetStyles(path, this._getNextStyles(nextPosition, step));
+    this.visualState = nextVisualState;
 
     if (!path.style.getPropertyValue("d")) {
       for (const [property, value] of Object.entries(keyframe)) {
@@ -39,14 +41,16 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
 
       const opacity = keyframe.opacity == null ? "0.7" : String(keyframe.opacity);
       path.style.setProperty("opacity", "0");
-      const animation = path.animate([{ opacity: "0" }, { opacity }], {
-        ...this._getAnimationOptions(),
-        fill: "none",
-      });
+      const animation = this._startAnimation(
+        [{ opacity: "0" }, { opacity }],
+        {
+          ...this._getAnimationOptions(),
+          fill: "none",
+        },
+        path,
+      );
 
-      if (await this._waitForAnimation(animation)) {
-        path.style.setProperty("opacity", opacity);
-      }
+      if (!animation || (await this._waitForAnimation(animation))) this.applyStyles(path, keyframe);
       return;
     }
 
@@ -56,34 +60,48 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       opacity: path.style.getPropertyValue("opacity") ?? "0",
     };
 
-    const animation = path.animate([baseStyle, keyframe], {
-      ...this._getAnimationOptions(),
-      fill: "none",
-    });
+    const animation = this._startAnimation(
+      [baseStyle, keyframe],
+      {
+        ...this._getAnimationOptions(),
+        fill: "none",
+      },
+      path,
+    );
 
-    if (await this._waitForAnimation(animation)) animation.commitStyles();
+    if (!animation || (await this._waitForAnimation(animation))) this.applyStyles(path, keyframe);
   }
 
   async animateTo(position: DOMRect, step: TourElementStep) {
     const path = this._getPathElement();
     if (!path) return;
 
-    this.commitAndCancelCurrentTransition();
+    this.commitAndCancelCurrentTransition(path);
 
     const from = this.getCurrentRenderedStyles(path);
-    const finalStyles = this._getNextStyles(position, step);
-    const renderedTarget = this.getRenderedTargetStyles(path, finalStyles);
-    const animation = path.animate([from, renderedTarget], {
-      ...this._getAnimationOptions(),
-      fill: "none",
-    });
+    const finalStyles = this.getRenderedTargetStyles(path, this._getNextStyles(position, step));
+    const animation = this._startAnimation(
+      [from, finalStyles],
+      {
+        ...this._getAnimationOptions(),
+        fill: "none",
+      },
+      path,
+    );
+    if (!animation) {
+      this.applyStyles(path, finalStyles);
+      return;
+    }
     this.currentTransition = animation;
 
-    const completed = await this._waitForAnimation(animation);
-    if (completed && this.currentTransition === animation) {
-      this.applyStyles(path, finalStyles);
+    try {
+      const completed = await this._waitForAnimation(animation);
+      if (completed && this.currentTransition === animation) {
+        this.applyStyles(path, finalStyles);
+      }
+    } finally {
+      if (this.currentTransition === animation) this.currentTransition = null;
     }
-    if (this.currentTransition === animation) this.currentTransition = null;
   }
 
   _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
@@ -151,7 +169,12 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     this.element.style.setProperty("pointer-events", "none");
   }
 
-  updatePosition(nextPosition: DOMRect, step: TourElementStep, animateChanges = false) {
+  updatePosition(
+    nextPosition: DOMRect,
+    step: TourElementStep,
+    animateChanges = false,
+    onTransition?: (transition: Promise<void>) => void,
+  ) {
     const path = this._getPathElement();
     if (!path) {
       console.warn("No overlay path element found");
@@ -163,10 +186,17 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       animateChanges &&
       this.visualState !== null &&
       !this._isSameVisualState(this.visualState, nextVisualState);
-    this.visualState = nextVisualState;
 
-    if (shouldAnimate) void this.animateTo(nextPosition, step);
-    else this.applyStyles(path, this._getNextStyles(nextPosition, step));
+    if (shouldAnimate) {
+      const transition = this.animateTo(nextPosition, step);
+      if (onTransition) onTransition(transition);
+      else void transition.catch(() => {});
+    } else
+      this.applyStyles(
+        path,
+        this.getRenderedTargetStyles(path, this._getNextStyles(nextPosition, step)),
+      );
+    this.visualState = nextVisualState;
 
     const viewport = viewportDimensions();
     const viewBox = `0 0 ${viewport.width} ${viewport.height}`;
@@ -190,17 +220,13 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     }
   }
 
-  private commitAndCancelCurrentTransition() {
+  private commitAndCancelCurrentTransition(path: SVGPathElement) {
     const animation = this.currentTransition;
     if (!animation) return;
 
-    try {
-      animation.commitStyles();
-    } catch {
-      // The animation may no longer be replaceable when its target was detached.
-    }
+    this.applyStyles(path, this.getCurrentRenderedStyles(path));
     this.currentTransition = null;
-    animation.cancel();
+    this._cancelAnimation(animation);
   }
 
   private getCurrentRenderedStyles(path: SVGPathElement): Keyframe {
@@ -216,6 +242,9 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     if (styles.fill != null) return styles;
 
     const inlineFill = path.style.getPropertyValue("fill");
+    if (inlineFill && this.visualState?.color === undefined) {
+      return { ...styles, fill: inlineFill };
+    }
     path.style.removeProperty("fill");
     const renderedFill = window.getComputedStyle(path).getPropertyValue("fill");
     if (inlineFill) path.style.setProperty("fill", inlineFill);
@@ -248,19 +277,20 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       return Promise.resolve();
     }
 
-    const defaultStyles = this._getNextStyles(position, step);
+    const finalStyles = this.getRenderedTargetStyles(path, this._getNextStyles(position, step));
+    const opacity = String(finalStyles.opacity ?? "0.7");
+    this.applyStyles(path, { ...finalStyles, opacity: "0" });
+    const animation = this._startAnimation(
+      [{ opacity: "0" }, { opacity }],
+      {
+        ...this._getAnimationOptions(),
+        fill: "none",
+      },
+      path,
+    );
 
-    for (const [key, value] of Object.entries(defaultStyles)) {
-      value != null && path.style.setProperty(key, String(value));
-    }
-
-    const keyframe = {
-      opacity: String(defaultStyles.opacity) ?? "0.7",
-    };
-
-    const animation = path.animate([keyframe], this._getAnimationOptions());
-
-    await this._waitForAnimation(animation);
+    if (!animation || (await this._waitForAnimation(animation)))
+      this.applyStyles(path, finalStyles);
   }
 
   async _disappear() {
@@ -270,19 +300,19 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       return Promise.resolve();
     }
 
-    const animation = path.animate(
+    const animation = this._startAnimation(
       {
         opacity: "0",
       },
       { ...this._getAnimationOptions(), fill: "none" },
+      path,
     );
 
-    if (!(await this._waitForAnimation(animation))) return;
-
-    animation.commitStyles();
+    if (animation && !(await this._waitForAnimation(animation))) return;
 
     path.style.removeProperty("d");
     path.style.removeProperty("fill");
+    path.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
   }
 }
