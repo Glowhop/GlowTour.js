@@ -100,6 +100,10 @@ export function createLabWorkflow<TContent>(
       setTimeout(() => {
         context.props.set((current) => ({
           ...current,
+          popover: {
+            ...current.popover,
+            placementTryOrder: ["top", "bottom", "left", "right"],
+          },
           overlay: {
             ...current.overlay,
             color: "green",
