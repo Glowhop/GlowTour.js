@@ -13,9 +13,11 @@ class MockElement {
   readonly attributes = new Map<string, string>();
   animationCalls = 0;
   readonly animations: Array<{ cancelled: boolean }> = [];
+  readonly styles = new Map<string, string>();
   readonly style = {
-    removeProperty() {},
-    setProperty() {},
+    getPropertyValue: (name: string) => this.styles.get(name) ?? "",
+    removeProperty: (name: string) => this.styles.delete(name),
+    setProperty: (name: string, value: string) => this.styles.set(name, value),
   };
 
   getAttribute(name: string) {
@@ -107,14 +109,30 @@ describe("PointerElement", () => {
     assert.equal(zeroPointer.getStyles(target, createStep("bottom", -10)).top, "120px");
   });
 
-  test("does not start a continuous pointer animation when duration is zero", async () => {
+  test("does not invoke Web Animations and applies the visible final state when duration is zero", async () => {
     const element = new MockElement();
     const pointer = new PointerElement<string>(element as unknown as HTMLElement);
     pointer.setAnimationOptions({ duration: 0 });
 
     await pointer.moveToTarget(rect(100, 100, 40, 20), createStep("bottom"), true);
 
-    assert.equal(element.animationCalls, 1);
+    assert.equal(element.animationCalls, 0);
+    assert.equal(element.styles.get("opacity"), "1");
+    assert.equal(element.attributes.has("aria-hidden"), false);
+    assert.equal(element.attributes.get("data-glow-tour-placement"), "bottom");
+  });
+
+  test("applies the hidden final state when Web Animations are unavailable", async () => {
+    const element = new MockElement();
+    const pointer = new PointerElement<string>(element as unknown as HTMLElement);
+
+    await pointer.moveToTarget(rect(100, 100, 40, 20), createStep("bottom"), true);
+    (element as { animate?: unknown }).animate = undefined;
+    await pointer.disappear();
+
+    assert.equal(element.styles.get("opacity"), "0");
+    assert.equal(element.attributes.get("aria-hidden"), "true");
+    assert.equal(element.attributes.has("data-glow-tour-placement"), false);
   });
 
   test("cancels the continuous pointer animation when its owner is invalidated", async () => {

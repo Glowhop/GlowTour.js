@@ -34,6 +34,20 @@ export default abstract class GlowTourElement<_T> {
     return this.options?.disabled !== true && this.options?.duration !== 0;
   }
 
+  protected _startAnimation(
+    keyframes: Keyframe[] | PropertyIndexedKeyframes,
+    options?: KeyframeAnimationOptions,
+    target: Element = this.element,
+  ): Animation | null {
+    if (!this._isAnimated() || typeof target.animate !== "function") return null;
+
+    try {
+      return target.animate(keyframes, options ?? this._getAnimationOptions());
+    } catch {
+      return null;
+    }
+  }
+
   protected async _waitForAnimation(animation: Animation) {
     if (this.released) {
       animation.cancel();
@@ -43,8 +57,9 @@ export default abstract class GlowTourElement<_T> {
     try {
       await animation.finished;
       return !this.released && !this.cancelledAnimations.has(animation);
-    } catch {
-      return false;
+    } catch (error) {
+      if (this.released || this.cancelledAnimations.has(animation)) return false;
+      throw error;
     } finally {
       this.animations.delete(animation);
     }
@@ -75,10 +90,14 @@ export default abstract class GlowTourElement<_T> {
 
   cancelAnimations() {
     for (const animation of this.animations) {
-      this.cancelledAnimations.add(animation);
-      animation.cancel();
+      this._cancelAnimation(animation);
     }
     this.animations.clear();
+  }
+
+  protected _cancelAnimation(animation: Animation) {
+    this.cancelledAnimations.add(animation);
+    animation.cancel();
   }
 
   protected abstract _release(): void;
