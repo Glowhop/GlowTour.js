@@ -79,6 +79,24 @@ describe("OverlayElement animation fallbacks", () => {
     assert.equal(element.path.styles.get("opacity"), "0.5");
   });
 
+  test("writes the computed default fill inline when Web Animations are unavailable", async () => {
+    const element = new MockOverlay();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        devicePixelRatio: 1,
+        getComputedStyle: () => ({ getPropertyValue: () => "rgb(0, 0, 0)" }),
+        innerHeight: 600,
+        innerWidth: 800,
+      },
+    });
+    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+
+    assert.equal(element.path.styles.get("fill"), "rgb(0, 0, 0)");
+  });
+
   test("applies the hidden final state when animation creation throws", async () => {
     const element = new MockOverlay();
     element.path.style.setProperty("d", 'path("M0 0")');
@@ -100,6 +118,7 @@ describe("OverlayElement animation fallbacks", () => {
     const element = new MockOverlay();
     const frames: Array<Keyframe[] | PropertyIndexedKeyframes> = [];
     let rejectFirst: (reason: unknown) => void = () => {};
+    let stylesAtCancellation: Map<string, string> | undefined;
     element.path.style.setProperty("d", 'path("M0 0")');
     element.path.style.setProperty("fill", "#111");
     element.path.style.setProperty("opacity", "0.7");
@@ -108,6 +127,7 @@ describe("OverlayElement animation fallbacks", () => {
       if (frames.length === 1) {
         return {
           cancel() {
+            stylesAtCancellation = new Map(element.path.styles);
             rejectFirst(new Error("cancelled"));
           },
           finished: new Promise<void>((_resolve, reject) => {
@@ -141,5 +161,55 @@ describe("OverlayElement animation fallbacks", () => {
       fill: "rgb(17, 17, 17)",
       opacity: "0.4",
     });
+    assert.deepEqual(stylesAtCancellation, new Map(Object.entries((frames[1] as Keyframe[])[0])));
+  });
+
+  test("clears a rejected transition before the next animation", async () => {
+    const element = new MockOverlay();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        devicePixelRatio: 1,
+        getComputedStyle: (path: MockPath) => ({
+          getPropertyValue: (name: string) => path.style.getPropertyValue(name),
+        }),
+        innerHeight: 600,
+        innerWidth: 800,
+      },
+    });
+    let animationCalls = 0;
+    let cancelCalls = 0;
+    let rejectFirst: (reason: unknown) => void = () => {};
+    element.path.style.setProperty("d", 'path("M0 0")');
+    element.path.style.setProperty("fill", "#111");
+    element.path.style.setProperty("opacity", "0.7");
+    element.path.animate = () => {
+      animationCalls += 1;
+      if (animationCalls === 1) {
+        return {
+          cancel() {
+            cancelCalls += 1;
+          },
+          finished: new Promise<void>((_resolve, reject) => {
+            rejectFirst = reject;
+          }),
+        } as unknown as Animation;
+      }
+      return { cancel() {}, finished: Promise.resolve() } as unknown as Animation;
+    };
+    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const failure = new Error("animation failed");
+
+    const firstAnimation = overlay.animateTo(rect(100, 100, 40, 20), {});
+    await Promise.resolve();
+    rejectFirst(failure);
+    await assert.rejects(
+      () => firstAnimation,
+      (error) => error === failure,
+    );
+
+    await overlay.animateTo(rect(200, 200, 40, 20), {});
+
+    assert.equal(cancelCalls, 0);
   });
 });

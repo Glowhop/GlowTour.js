@@ -25,7 +25,8 @@ export function createStepPropsStore<T>(
     set: (update: StepPropsUpdate<T>) => {
       const next = typeof update === "function" ? update(current) : update;
       current = freezeStepProps(next);
-      for (const listener of Array.from(listeners)) notify(listener, current);
+      const published = current;
+      for (const listener of Array.from(listeners)) notify(listener, published);
     },
     subscribe: (listener: (props: ReadonlyStepProps<T>) => void) => {
       notify(listener, current);

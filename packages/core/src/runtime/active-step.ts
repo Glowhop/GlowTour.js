@@ -38,7 +38,8 @@ export class ActiveStep<T> {
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError);
     this.state = Object.freeze({
       get: () => this.props.get(),
-      subscribe: (listener: (props: ReadonlyStepProps<T>) => void) => this.props.subscribe(listener),
+      subscribe: (listener: (props: ReadonlyStepProps<T>) => void) =>
+        this.props.subscribe(listener),
     });
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;

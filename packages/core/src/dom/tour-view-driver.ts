@@ -244,7 +244,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (!this.active || !this.currentStep || !this.lastTargetRect) return;
     const generation = this.beginGeneration();
     this.cleanupStepResources();
-    void this.activateRegisteredElements(generation).catch(() => {});
+    void this.activateRegisteredElements(generation).catch((error) => {
+      if (!this.isCurrentGeneration(generation)) return;
+      return this.commands?.reportError(error);
+    });
   }
 
   private async activateRegisteredElements(generation: number) {
@@ -344,7 +347,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const popoverTransition = this.popover
       ? this.popover.moveToTarget(targetRect, step, appearPopover, commitStep)
       : Promise.resolve(commitStep?.());
-    await Promise.allSettled([
+    await Promise.all([
       this.overlay?.moveToTarget(targetRect, step) ?? Promise.resolve(),
       popoverTransition,
       pointerEnabled

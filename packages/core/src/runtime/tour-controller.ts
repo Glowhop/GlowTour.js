@@ -26,7 +26,12 @@ function abortError() {
 }
 
 function normalizedError(error: unknown) {
-  return error instanceof Error ? error : new Error(String(error));
+  if (error instanceof Error) return error;
+  try {
+    return new Error(String(error));
+  } catch {
+    return new Error("Unknown error");
+  }
 }
 
 function waitForTimer(delay: number, signal: AbortSignal) {
@@ -133,7 +138,8 @@ export class TourController<T> {
     this.workflow = workflow;
     this.releaseStepPropsSubscriptions();
     this.steps = workflow.steps.map(
-      (step) => new ActiveStep(step, workflow.options, (error) => this.reportSubscriberError(error)),
+      (step) =>
+        new ActiveStep(step, workflow.options, (error) => this.reportSubscriberError(error)),
     );
     for (const step of this.steps) {
       this.stepPropsSubscriptions.push(
@@ -557,9 +563,11 @@ export class TourController<T> {
   }
 
   private reportUnhandledError(error: Error) {
-    const reporter = this.options.reportUnhandledError ?? ((reason: Error) => {
-      throw reason;
-    });
+    const reporter =
+      this.options.reportUnhandledError ??
+      ((reason: Error) => {
+        throw reason;
+      });
     queueMicrotask(() => reporter(error));
   }
 

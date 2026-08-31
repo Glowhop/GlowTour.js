@@ -73,6 +73,20 @@ describe("step props store", () => {
     assert.deepEqual(calls, ["first", "third", "second"]);
   });
 
+  test("publishes the outer snapshot after a nested set", () => {
+    const store = createStepPropsStore(initialProps, () => {});
+    const secondListenerContents: string[] = [];
+    store.subscribe((props) => {
+      if (props.content === "outer") store.set({ ...props, content: "nested" });
+    });
+    store.subscribe((props) => secondListenerContents.push(props.content));
+    secondListenerContents.length = 0;
+
+    store.set({ ...initialProps, content: "outer" });
+
+    assert.deepEqual(secondListenerContents, ["nested", "outer"]);
+  });
+
   test("reports one listener failure and continues to later listeners", () => {
     const failures: unknown[] = [];
     const store = createStepPropsStore(initialProps, (error) => failures.push(error));

@@ -27,7 +27,10 @@ class TestElement extends GlowTourElement<never> {
 }
 
 function createElement(
-  animate?: (keyframes: Keyframe[] | PropertyIndexedKeyframes, options?: KeyframeAnimationOptions) => Animation,
+  animate?: (
+    keyframes: Keyframe[] | PropertyIndexedKeyframes,
+    options?: KeyframeAnimationOptions,
+  ) => Animation,
 ) {
   return { animate } as unknown as HTMLElement;
 }
