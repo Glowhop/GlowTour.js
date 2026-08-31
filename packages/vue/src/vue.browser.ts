@@ -472,8 +472,7 @@ describe("vue adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      hideFooter: true,
-      hideAdvanceButton: true,
+      popover: { hideFooter: true, hideAdvanceButton: true },
       title: "Updated title",
     }));
     await nextTick();
@@ -484,7 +483,10 @@ describe("vue adapter browser behavior", () => {
     );
     assert.equal(container.querySelector("[data-glow-tour-footer]"), null);
 
-    activeProps.set((props) => ({ ...props, hideFooter: false, hideAdvanceButton: false }));
+    activeProps.set((props) => ({
+      ...props,
+      popover: { ...props.popover, hideFooter: false, hideAdvanceButton: false },
+    }));
     await nextTick();
     assert.equal(
       container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]")?.disabled,

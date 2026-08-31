@@ -15,8 +15,8 @@ export {
   useTour,
 } from "./components/tour-components";
 export type {
-  DynamicStepProps,
   SolidTourContent,
+  StepPropsStore,
   Tour,
   TourState,
   WorkflowDefinition,

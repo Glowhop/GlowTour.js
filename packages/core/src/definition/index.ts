@@ -3,6 +3,7 @@ export type {
   DeepReadonly,
   ReadonlyStartOptions,
   ReadonlyStepProps,
+  StepProps,
   WorkflowDefinition,
   WorkflowStepDefinition,
 } from "./types";

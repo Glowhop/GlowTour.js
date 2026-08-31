@@ -13,6 +13,7 @@ interface MockAnimation {
   committed: boolean;
   finished: Promise<void>;
   keyframes: Keyframe[] | PropertyIndexedKeyframes;
+  options?: number | KeyframeAnimationOptions;
   resolve(): void;
   target: MockElement;
 }
@@ -193,7 +194,10 @@ class MockElement extends MockNode {
     else this.setAttribute(name, "");
     return force ?? true;
   }
-  animate(keyframes: Keyframe[] | PropertyIndexedKeyframes) {
+  animate(
+    keyframes: Keyframe[] | PropertyIndexedKeyframes,
+    options?: number | KeyframeAnimationOptions,
+  ) {
     let resolve = () => {};
     const animation: MockAnimation = {
       cancelled: false,
@@ -205,6 +209,7 @@ class MockElement extends MockNode {
             })
           : Promise.resolve(),
       keyframes,
+      options,
       resolve: () => resolve(),
       target: this,
     };
@@ -236,7 +241,12 @@ class MockWindow extends MockEventTarget {
   innerHeight = 800;
   innerWidth = 1200;
   getComputedStyle(element: MockElement) {
-    return { display: element.hidden ? "none" : element.display, visibility: element.visibility };
+    return {
+      display: element.hidden ? "none" : element.display,
+      getPropertyValue: (property: string) =>
+        element.style.getPropertyValue(property) || (property === "fill" ? "black" : ""),
+      visibility: element.visibility,
+    };
   }
   matchMedia() {
     return { matches: reducedMotion };
@@ -492,6 +502,183 @@ describe("DomTourViewDriver", () => {
     flushFrame();
     assert.equal(animationFrames.length, 1);
     assert.equal(TestResizeObserver.instances.length, 0);
+  });
+  test("coalesces dynamic presentation changes onto the next animation frame", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    const overlayPath = elements.overlay.querySelector("path");
+    assert.ok(overlayPath);
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
+
+    step.props.set((props) => ({
+      ...props,
+      indicator: { ...props.indicator, disabled: true },
+      overlay: { ...props.overlay, color: "rgb(12, 34, 56)", opacity: 0.4 },
+      popover: { ...props.popover, disableAdvanceButton: true },
+    }));
+
+    assert.notEqual(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
+    assert.equal(elements.advance.disabled, false);
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.equal(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
+    assert.equal(overlayPath.style.getPropertyValue("opacity"), "0.4");
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
+    assert.equal(elements.advance.disabled, true);
+  });
+  test("animates dynamic overlay styles from updatePosition", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    const overlayPath = elements.overlay.querySelector("path");
+    assert.ok(overlayPath);
+    const initialPath = overlayPath.style.getPropertyValue("d");
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: {
+        ...props.overlay,
+        color: "rgb(12, 34, 56)",
+        opacity: 0.4,
+        padding: 24,
+        radius: 20,
+      },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.equal(createdAnimations.length, animationStart + 1);
+    const animation = createdAnimations[animationStart];
+    assert.equal(animation?.target, overlayPath);
+    assert.deepEqual((animation?.keyframes as Keyframe[])[0], {
+      d: initialPath,
+      fill: "black",
+      opacity: "0.7",
+    });
+    assert.equal((animation?.keyframes as Keyframe[])[1]?.fill, "rgb(12, 34, 56)");
+    assert.equal((animation?.keyframes as Keyframe[])[1]?.opacity, "0.4");
+    assert.notEqual((animation?.keyframes as Keyframe[])[1]?.d, initialPath);
+    assert.equal((animation?.options as KeyframeAnimationOptions).fill, "none");
+
+    animation?.resolve();
+    await flushMicrotasks();
+    assert.equal(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
+    assert.equal(overlayPath.style.getPropertyValue("opacity"), "0.4");
+  });
+  test("animates removal of an overlay color toward its computed CSS value", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "red" },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    const overlayPath = elements.overlay.querySelector("path");
+    assert.ok(overlayPath);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: undefined },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    const animation = createdAnimations[animationStart];
+    assert.ok(animation);
+    assert.equal((animation.keyframes as Keyframe[])[1]?.fill, "black");
+    animation.resolve();
+    await flushMicrotasks();
+    assert.equal(overlayPath.style.getPropertyValue("fill"), "");
+  });
+  test("does not animate the overlay for unrelated presentation changes", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const animationStart = createdAnimations.length;
+
+    step.props.set((props) => ({
+      ...props,
+      popover: { ...props.popover, disableAdvanceButton: true },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.equal(createdAnimations.length, animationStart);
+  });
+  test("retargets an active dynamic overlay animation from its rendered state", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const overlayPath = elements.overlay.querySelector("path");
+    assert.ok(overlayPath);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "red", opacity: 0.5 },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+    const firstAnimation = createdAnimations[animationStart];
+    assert.ok(firstAnimation);
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "blue", opacity: 0.25 },
+    }));
+    flushFrame();
+    await flushMicrotasks();
+
+    const secondAnimation = createdAnimations[animationStart + 1];
+    assert.ok(secondAnimation);
+    assert.equal(firstAnimation.committed, true);
+    assert.equal(firstAnimation.cancelled, true);
+    assert.equal(overlayPath.style.getPropertyValue("fill"), "");
+
+    secondAnimation.resolve();
+    await flushMicrotasks();
+    assert.equal(overlayPath.style.getPropertyValue("fill"), "blue");
+    assert.equal(overlayPath.style.getPropertyValue("opacity"), "0.25");
+  });
+  test("does not let a stale indicator animation override the latest dynamic state", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    step.props.set((props) => ({
+      ...props,
+      indicator: { ...props.indicator, disabled: true },
+    }));
+    flushFrame();
+
+    step.props.set((props) => ({
+      ...props,
+      indicator: { ...props.indicator, disabled: false },
+    }));
+    flushFrame();
+    resolveAnimations(animationStart);
+    await flushMicrotasks();
+
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
   });
   test("changes popover content after fade-out and before fade-in", async () => {
     const { driver } = installDriver(),
@@ -869,11 +1056,26 @@ describe("DomTourViewDriver", () => {
     for (const mode of ["workflow", "reduced-motion"] as const) {
       createdAnimations = [];
       reducedMotion = mode === "reduced-motion";
-      const { driver } = installDriver(),
-        step = createStep({ animated: mode === "workflow" ? false : undefined });
+      const { driver, elements } = installDriver(),
+        step = createStep({ animated: mode !== "workflow" });
       step.target = createTarget() as unknown as HTMLElement;
       await driver.show(step, "advance", new AbortController().signal);
       assert.equal(createdAnimations.length, 3);
+
+      const animationStart = createdAnimations.length;
+      step.props.set((props) => ({
+        ...props,
+        overlay: { ...props.overlay, opacity: 0.3 },
+      }));
+      flushFrame();
+      flushFrame();
+      await flushMicrotasks();
+
+      const overlayPath = elements.overlay.querySelector("path");
+      const overlayAnimation = createdAnimations
+        .slice(animationStart)
+        .find((animation) => animation.target === overlayPath);
+      assert.equal((overlayAnimation?.options as KeyframeAnimationOptions).duration, 0);
       driver.dispose();
     }
   });
@@ -917,8 +1119,11 @@ describe("DomTourViewDriver", () => {
     );
     step.props.set((props) => ({
       ...props,
-      disablePreviousButton: true,
-      disableAdvanceButton: true,
+      popover: {
+        ...props.popover,
+        disablePreviousButton: true,
+        disableAdvanceButton: true,
+      },
     }));
     window.dispatchEvent(
       new MockKeyboardEvent("keydown", { key: "Enter", target: elements.popover }),
@@ -1293,7 +1498,7 @@ describe("DomTourViewDriver", () => {
     await tour.advance();
     assert.equal(document.activeElement, elements.advance);
     await tour.previous();
-    assert.equal(document.activeElement, elements.advance);
+    assert.equal(document.activeElement, elements.popover);
     await tour.advance();
     await tour.advance();
     assert.equal(tour.state.get().status, "finished");
@@ -1787,6 +1992,35 @@ describe("DomTourViewDriver", () => {
     assert.equal(scrolls, 0);
     assert.equal(TestResizeObserver.instances.length, 0);
     assert.equal(window.listeners.get("keydown")?.size ?? 0, 0);
+  });
+  test("uses instant scroll when reduced motion overrides developer animation settings", async () => {
+    reducedMotion = true;
+    const { driver } = installDriver();
+    const target = createTarget();
+    target.setRect({ height: 20, left: 10, top: 2000, width: 20 });
+    let scrollOptions: ScrollIntoViewOptions | undefined;
+    target.scrollIntoView = (options?: ScrollIntoViewOptions) => {
+      scrollOptions = options;
+      window.dispatchEvent(new MockEvent("scrollend"));
+    };
+    const workflow = new WorkflowBuilder<string>("reduced-motion-scroll", {
+      animated: true,
+      behavior: { scroll: { behavior: "smooth" } },
+    })
+      .step({ content: "content", target: "#target", title: "title" })
+      .build();
+    const definition = workflow.steps[0];
+    if (!definition) throw new Error("Expected one workflow step");
+    const step = new ActiveStep(definition, workflow.options);
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.deepEqual(scrollOptions, {
+      behavior: "instant",
+      block: "center",
+      inline: "nearest",
+    });
   });
   test("releases modal ownership when an active show is aborted", async () => {
     animationMode = "controlled";

@@ -15,7 +15,7 @@ export {
 } from "./lib/components/tour-components";
 export type {
   AngularTourContent,
-  DynamicStepProps,
+  StepPropsStore,
   Tour,
   TourState,
   WorkflowDefinition,

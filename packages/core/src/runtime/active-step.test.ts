@@ -7,6 +7,7 @@ function definition(options: {
   indicator?: { gap?: number };
   popover?: {
     arrow?: { color?: string; disabled?: boolean; edgePadding?: number; size?: number };
+    hideFooter?: boolean;
     gap?: number;
   };
 }) {
@@ -14,6 +15,8 @@ function definition(options: {
     indicator: { gap: 22 },
     popover: {
       arrow: { color: "var(--workflow-arrow)", disabled: true, edgePadding: 18, size: 12 },
+      disableAdvanceButton: true,
+      hideFooter: true,
       gap: 18,
     },
   })
@@ -60,5 +63,25 @@ describe("ActiveStep presentation options", () => {
       edgePadding: 18,
       size: 20,
     });
+  });
+
+  test("stores effective presentation props and resets nested mutations", () => {
+    const workflow = definition({ popover: { gap: 6, hideFooter: false } });
+    const step = new ActiveStep(workflow.steps[0], workflow.options);
+
+    assert.equal(step.props.get().popover?.disableAdvanceButton, true);
+    assert.equal(step.props.get().popover?.hideFooter, false);
+    assert.equal(step.snapshot().currentProps.popover?.gap, 6);
+
+    step.props.set((props) => ({
+      ...props,
+      popover: { ...props.popover, disableAdvanceButton: false, hideFooter: true },
+    }));
+    assert.equal(step.snapshot().currentProps.popover?.disableAdvanceButton, false);
+    assert.equal(step.snapshot().currentProps.popover?.hideFooter, true);
+
+    step.reset();
+    assert.equal(step.props.get().popover?.disableAdvanceButton, true);
+    assert.equal(step.props.get().popover?.hideFooter, false);
   });
 });

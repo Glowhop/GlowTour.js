@@ -1,7 +1,7 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import type { TourViewCommands, TourViewDriver } from "../dom/tour-view-driver";
-import type { StepContext } from "../types";
+import type { BeforeActionStepContext, StepContext } from "../types";
 import type { ActiveStep } from "./active-step";
 import { TourController } from "./tour-controller";
 
@@ -184,7 +184,7 @@ describe("instance-first TourController", () => {
     assert.equal(Object.isFrozen(workflow.steps[0].props.data), true);
     assert.equal(Object.isFrozen(workflow.options.popover?.keyboardShortcuts?.advance), true);
     assert.equal(Object.isFrozen(workflow.options.popover?.arrow), true);
-    assert.equal(Object.isFrozen(workflow.steps[0].overlay?.animation), true);
+    assert.equal(Object.isFrozen(workflow.steps[0].props.overlay?.animation), true);
     assert.equal("clone" in workflow.steps[0], false);
 
     await tour.run(workflow);
@@ -330,7 +330,7 @@ describe("instance-first TourController", () => {
       .step({ content: "zero", target: targetResolver, title: "zero" })
       .step({
         content: "one",
-        disableAdvanceButton: true,
+        popover: { disableAdvanceButton: true },
         target: targetResolver,
         title: "one",
       })
@@ -384,7 +384,7 @@ describe("instance-first TourController", () => {
       .create("replacement", { cancellable: false })
       .step({
         content: "replacement",
-        disableAdvanceButton: true,
+        popover: { disableAdvanceButton: true },
         target: targetResolver,
         title: "replacement",
       })
@@ -525,6 +525,69 @@ describe("instance-first TourController", () => {
     await assert.rejects(() => failingTour.advance(), /hook failed/);
     assert.equal(failingTour.state.get().status, "error");
     assert.equal(failingTour.state.get().error?.message, "hook failed");
+  });
+
+  test("passes frozen current step snapshots to every transition hook", async () => {
+    const contexts: BeforeActionStepContext<string>[] = [];
+    const tour = createGlowTour<string>();
+    const capture = async (context: BeforeActionStepContext<string>) => {
+      await Promise.resolve();
+      contexts.push(context);
+    };
+    const workflow = tour
+      .create("readonly-hook-contexts", { cancellable: true })
+      .step({
+        content: "first content",
+        data: { count: 1 },
+        overlay: { animation: { duration: 100, easing: "linear" }, color: "red" },
+        popover: { arrow: { color: "white" }, keyboardShortcuts: { advance: ["Enter"] } },
+        target: targetResolver,
+        title: "first title",
+      })
+      .do(({ props }) => {
+        props.set((current) => ({
+          ...current,
+          data: { count: 2 },
+          overlay: { ...current.overlay, color: "green" },
+          title: "current title",
+        }));
+      })
+      .beforeAdvance(capture)
+      .beforeCancel(capture)
+      .step({ content: "second content", target: targetResolver, title: "second title" })
+      .beforePrevious(capture)
+      .build();
+
+    await tour.run(workflow);
+    await tour.advance();
+    await tour.previous();
+    await tour.cancel();
+
+    assert.equal(contexts.length, 3);
+    assert.equal(contexts[0].title, "current title");
+    assert.deepEqual(contexts[0].data, { count: 2 });
+    assert.equal(contexts[0].overlay?.color, "green");
+    assert.equal(contexts[1].title, "second title");
+    assert.equal(contexts[2].title, "current title");
+    for (const context of contexts) {
+      assert.equal(context.target, target);
+      assert.equal(Object.isFrozen(context), true);
+      assert.equal("props" in context, false);
+      assert.equal("advance" in context, false);
+      assert.equal("previous" in context, false);
+      assert.equal("cancel" in context, false);
+      assert.equal("signal" in context, false);
+      assert.equal("resetPropsOnEnter" in context, false);
+      assert.equal("behavior" in context, false);
+    }
+    assert.equal(Object.isFrozen(contexts[0].data), true);
+    assert.equal(Object.isFrozen(contexts[0].overlay), true);
+    assert.equal(Object.isFrozen(contexts[0].overlay?.animation), true);
+    assert.equal(Object.isFrozen(contexts[0].popover), true);
+    assert.equal(Object.isFrozen(contexts[0].popover?.arrow), true);
+    assert.equal(Object.isFrozen(contexts[0].popover?.keyboardShortcuts), true);
+    assert.equal(Object.isFrozen(contexts[0].popover?.keyboardShortcuts?.advance), true);
+    assert.equal(Object.isFrozen(target), false);
   });
 
   test("ignores a second advance while the first transition is pending", async () => {
@@ -771,6 +834,40 @@ describe("instance-first TourController", () => {
     assert.deepEqual(workflow.steps[0].props.data, { value: 1 });
   });
 
+  test("resets dynamic props on reentry unless the static step policy disables it", async () => {
+    const reenterFirstStep = async (resetPropsOnEnter?: false) => {
+      const tour = createGlowTour<string>();
+      let activeProps!: StepContext<string>["props"];
+      const workflow = tour
+        .create("reset-on-reentry")
+        .step({
+          content: "one",
+          resetPropsOnEnter,
+          target: targetResolver,
+          title: "initial",
+        })
+        .do(({ props }) => {
+          activeProps = props;
+        })
+        .step({ content: "two", target: targetResolver, title: "two" })
+        .build();
+
+      await tour.run(workflow);
+      activeProps.set((props) => ({ ...props, title: "mutated" }));
+      await tour.advance();
+      await tour.previous();
+
+      const step = tour.state.get().currentStep;
+      assert.ok(step);
+      assert.equal("resetPropsOnEnter" in step.initialProps, false);
+      assert.equal("resetPropsOnEnter" in step.currentProps, false);
+      return step.currentProps.title;
+    };
+
+    assert.equal(await reenterFirstStep(), "initial");
+    assert.equal(await reenterFirstStep(false), "mutated");
+  });
+
   test("runs empty workflow lifecycle callbacks exactly once", async () => {
     let starts = 0;
     let finishes = 0;
@@ -894,7 +991,7 @@ describe("instance-first TourController", () => {
       .create("disabled-navigation")
       .step({
         content: "one",
-        disableAdvanceButton: true,
+        popover: { disableAdvanceButton: true },
         target: targetResolver,
         title: "one",
       })
@@ -903,7 +1000,7 @@ describe("instance-first TourController", () => {
       })
       .step({
         content: "two",
-        disablePreviousButton: true,
+        popover: { disablePreviousButton: true },
         target: targetResolver,
         title: "two",
       })
@@ -914,7 +1011,10 @@ describe("instance-first TourController", () => {
     await tour.advance();
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    firstStepProps.set((props) => ({ ...props, disableAdvanceButton: false }));
+    firstStepProps.set((props) => ({
+      ...props,
+      popover: { ...props.popover, disableAdvanceButton: false },
+    }));
     await tour.advance();
     assert.equal(tour.state.get().currentStepIndex, 1);
     assert.equal(tour.state.get().canPrevious, false);

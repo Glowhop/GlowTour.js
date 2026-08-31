@@ -1,14 +1,13 @@
 import type {
-  DynamicStepProps,
   EventHandler,
   IndicatorOptions,
   OverlayOptions,
   PopoverOptions,
   PrimitiveValue,
-  ScrollOptions,
   StartOptions,
   StepActionInstruction,
   StepBehavior,
+  StepParameters,
   StepTransitionAction,
   TargetResolver,
 } from "../types";
@@ -21,18 +20,22 @@ export type DeepReadonly<T> = T extends (...arguments_: infer _Arguments) => inf
       ? { readonly [TKey in keyof T]: DeepReadonly<T[TKey]> }
       : T;
 
-export type ReadonlyStepProps<T> = Omit<Readonly<DynamicStepProps<T>>, "data"> & {
+export type StepProps<T> = Omit<StepParameters<T>, "target" | "resetPropsOnEnter" | "behavior">;
+
+export type ReadonlyStepProps<T> = {
+  readonly title: T;
+  readonly content: T;
   readonly data?: Readonly<Record<string, PrimitiveValue>>;
+  readonly overlay?: DeepReadonly<OverlayOptions>;
+  readonly popover?: DeepReadonly<PopoverOptions>;
+  readonly indicator?: DeepReadonly<IndicatorOptions>;
 };
 
 export type ReadonlyStartOptions = DeepReadonly<StartOptions>;
 
 export interface WorkflowStepDefinition<T> {
   readonly target: TargetResolver;
-  readonly overlay?: DeepReadonly<OverlayOptions>;
-  readonly popover?: DeepReadonly<PopoverOptions>;
-  readonly indicator?: DeepReadonly<IndicatorOptions>;
-  readonly scroll?: DeepReadonly<ScrollOptions>;
+  readonly resetPropsOnEnter?: boolean;
   readonly behavior?: DeepReadonly<StepBehavior>;
   readonly props: ReadonlyStepProps<T>;
   readonly actions: readonly StepActionInstruction<T>[];

@@ -1,14 +1,14 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { DynamicStepProps, StartOptions, Tour, TourState, WorkflowDefinition } from "./index";
+import type { StartOptions, StepPropsStore, Tour, TourState, WorkflowDefinition } from "./index";
 import * as runtime from "./index";
 
 const tour: Tour = runtime.createGlowTour();
 const tourState: TourState | null = null;
-const dynamicStepProps: DynamicStepProps | null = null;
+const stepPropsStore: StepPropsStore | null = null;
 const workflowDefinition: WorkflowDefinition | null = null;
 const startOptions: StartOptions | null = null;
-void [tour, tourState, dynamicStepProps, workflowDefinition, startOptions];
+void [tour, tourState, stepPropsStore, workflowDefinition, startOptions];
 
 describe("react adapter contract", () => {
   test("exports an instance factory and component namespace without legacy runtime values", () => {

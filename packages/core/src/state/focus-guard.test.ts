@@ -168,6 +168,31 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, advance);
   });
 
+  test("does not focus another control when advance is unavailable", () => {
+    const guard = new FocusGuard();
+    const { advance, popover } = createScope();
+    advance.attributes.set("disabled", "");
+
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+
+    assert.equal(mockDocument.activeElement, popover);
+  });
+
+  test("keeps neutral fallback focus inside the popover dialog", () => {
+    const guard = new FocusGuard();
+    const fallback = new MockElement("fallback");
+    const { advance, popover } = createScope();
+    advance.attributes.set("disabled", "");
+
+    guard.activate({
+      direction: "advance",
+      fallback: fallback as unknown as HTMLElement,
+      popover: popover as unknown as HTMLElement,
+    });
+
+    assert.equal(mockDocument.activeElement, popover);
+  });
+
   test("focuses the previous trigger when entering in the previous direction", () => {
     const guard = new FocusGuard();
     const { back, popover } = createScope();
@@ -177,13 +202,13 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, back);
   });
 
-  test("falls back to the other trigger and then rich popover content", () => {
+  test("does not fall back to another trigger or rich popover content", () => {
     const guard = new FocusGuard();
-    const { back, contentLink, advance, popover } = createScope();
+    const { back, advance, popover } = createScope();
     advance.attributes.set("disabled", "");
 
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
-    assert.equal(mockDocument.activeElement, back);
+    assert.equal(mockDocument.activeElement, popover);
 
     guard.deactivate();
     back.attributes.set("hidden", "");
@@ -191,27 +216,27 @@ describe("FocusGuard", () => {
     mockDocument.activeElement = null;
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
 
-    assert.equal(mockDocument.activeElement, contentLink);
+    assert.equal(mockDocument.activeElement, popover);
   });
 
   test("ignores a trigger inside a hidden host", () => {
     const guard = new FocusGuard();
-    const { back, advanceHost, popover } = createScope();
+    const { advanceHost, popover } = createScope();
     advanceHost.attributes.set("hidden", "");
 
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
 
-    assert.equal(mockDocument.activeElement, back);
+    assert.equal(mockDocument.activeElement, popover);
   });
 
-  test("falls back from an unavailable previous trigger to advance", () => {
+  test("does not fall back from an unavailable previous trigger to advance", () => {
     const guard = new FocusGuard();
-    const { backHost, advance, popover } = createScope();
+    const { backHost, popover } = createScope();
     backHost.attributes.set("hidden", "");
 
     guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
 
-    assert.equal(mockDocument.activeElement, advance);
+    assert.equal(mockDocument.activeElement, popover);
   });
 
   test("restores the initially focused element when deactivated", () => {
@@ -226,7 +251,7 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, initialFocus);
   });
 
-  test("falls back to visible rich controls and ignores CSS-hidden ancestors", () => {
+  test("does not fall back to rich controls when directional controls are unavailable", () => {
     const guard = new FocusGuard();
     const { backHost, contentLink, advanceHost, popover } = createScope();
     const hiddenHost = new MockElement("hidden-host");
@@ -243,7 +268,7 @@ describe("FocusGuard", () => {
 
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
 
-    assert.equal(mockDocument.activeElement, audio);
+    assert.equal(mockDocument.activeElement, popover);
   });
 
   test("allows rich popover controls and redirects external elements", () => {

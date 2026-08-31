@@ -4,26 +4,22 @@ import {
   freezeStepProps,
   type ReadonlyStartOptions,
   type ReadonlyStepProps,
+  type StepProps,
   type WorkflowStepDefinition,
 } from "../definition";
-import type { DynamicStepProps, ReadonlyStepState } from "../types";
+import type { ReadonlyStepState } from "../types";
 import {
   mergeIndicatorOptions,
   mergeOverlayOptions,
   mergePopoverOptions,
-  mergeScrollOptions,
   mergeStepBehavior,
 } from "../utils/options";
 import { resolveTargetElement } from "../utils/utils";
 
 export class ActiveStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
-  readonly props: Observable<DynamicStepProps<T>>;
+  readonly props: Observable<StepProps<T>>;
   readonly state: ReadonlyStepState<T>;
-  readonly overlay;
-  readonly popover;
-  readonly indicator;
-  readonly scroll;
   readonly behavior;
   readonly animated: boolean | undefined;
   target: HTMLElement | null = null;
@@ -32,23 +28,38 @@ export class ActiveStep<T> {
     readonly definition: WorkflowStepDefinition<T>,
     defaults: ReadonlyStartOptions,
   ) {
-    this.initialProps = freezeStepProps(definition.props);
+    this.initialProps = freezeStepProps({
+      title: definition.props.title,
+      content: definition.props.content,
+      data: definition.props.data,
+      overlay: mergeOverlayOptions(defaults.overlay, definition.props.overlay),
+      popover: mergePopoverOptions(defaults.popover, definition.props.popover),
+      indicator: mergeIndicatorOptions(defaults.indicator, definition.props.indicator),
+    });
     this.props = new Observable(cloneStepProps(this.initialProps));
     this.state = Object.freeze({
       get: () => freezeStepProps(this.props.get()),
       subscribe: (listener: (props: ReadonlyStepProps<T>) => void) =>
         this.props.subscribe((props) => listener(freezeStepProps(props))),
     });
-    this.overlay = mergeOverlayOptions(defaults.overlay, definition.overlay);
-    this.popover = mergePopoverOptions(defaults.popover, definition.popover);
-    this.indicator = mergeIndicatorOptions(defaults.indicator, definition.indicator);
-    this.scroll = mergeScrollOptions(defaults.scroll, definition.scroll);
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
   }
 
   reset() {
     this.props.set(cloneStepProps(this.initialProps));
+  }
+
+  get overlay() {
+    return this.props.get().overlay;
+  }
+
+  get popover() {
+    return this.props.get().popover;
+  }
+
+  get indicator() {
+    return this.props.get().indicator;
   }
 
   async resolveTarget(signal: AbortSignal) {

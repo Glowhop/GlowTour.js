@@ -14,7 +14,7 @@ export {
   useTour,
 } from "./components/tour-components.js";
 export type {
-  DynamicStepProps,
+  StepPropsStore,
   Tour,
   TourState,
   VueTourContent,

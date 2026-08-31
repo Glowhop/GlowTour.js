@@ -55,10 +55,8 @@
 :where([data-glow-tour-root]) [data-glow-tour-footer] {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: var(--glow-tour-spacing, 8px);
   justify-content: flex-end;
-  padding-top: calc(var(--glow-tour-spacing, 8px) / 2);
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger],
@@ -70,11 +68,11 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   justify-content: center;
-  min-height: var(--glow-tour-control-height, 40px);
-  padding: 0 calc(var(--glow-tour-spacing, 8px) * 1.75);
+  min-height: var(--glow-tour-control-height, 32px);
+  padding: 0 var(--glow-tour-spacing, 8px);
   transition:
     background-color var(--glow-tour-transition-duration, 120ms)
     var(--glow-tour-transition-easing, ease-out),
@@ -90,13 +88,11 @@
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:hover:not(:disabled) {
-  background: var(--glow-tour-color-surface-muted, #f6f6f7);
-  border-color: var(--glow-tour-color-border, #dedee3);
+  text-decoration: underline;
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:active:not(:disabled) {
-  background: var(--glow-tour-color-surface, #ffffff);
-  border-color: var(--glow-tour-color-text-muted, #5f5f66);
+  text-decoration: underline;
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-previous-trigger] {

@@ -214,8 +214,7 @@ describe("angular adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      hideFooter: true,
-      hideAdvanceButton: true,
+      popover: { hideFooter: true, hideAdvanceButton: true },
       title: "Updated title",
     }));
     await settle();
@@ -225,7 +224,10 @@ describe("angular adapter browser behavior", () => {
     assert.equal(document.querySelector("[data-glow-tour-footer]"), null);
     assert.equal(document.querySelector("[data-glow-tour-advance-trigger]"), null);
 
-    activeProps.set((props) => ({ ...props, hideFooter: false, hideAdvanceButton: false }));
+    activeProps.set((props) => ({
+      ...props,
+      popover: { ...props.popover, hideFooter: false, hideAdvanceButton: false },
+    }));
     await settle();
     app.tick();
 
@@ -660,7 +662,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(advance?.disabled, true);
     assert.equal(advance?.getAttribute("aria-disabled"), "true");
     assert.equal(advance?.getAttribute("data-glow-tour-consumer-disabled"), "true");
-    assert.equal(cancel?.textContent, "Cancel tour");
+    assert.equal(cancel?.textContent, "Skip");
     assert.equal(cancel?.getAttribute("aria-label"), "Cancel one");
     assert.equal(staticCancel?.disabled, true);
     assert.equal(staticCancel?.getAttribute("aria-disabled"), "true");

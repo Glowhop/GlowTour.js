@@ -27,7 +27,10 @@ export interface WaitOptions {
 
 export interface StepBehavior {
   allowInteraction?: boolean;
+  disableAutoFocus?: boolean;
+  disableAutoScroll?: boolean;
   missingTargetStrategy?: "wait" | "skip" | "error";
+  scroll?: ScrollOptions;
   targetTimeout?: number;
 }
 
@@ -64,7 +67,11 @@ export interface PopoverArrowOptions {
 export interface PopoverOptions extends BaseOptions {
   placementTryOrder?: readonly TryOrderOptions[];
   arrow?: PopoverArrowOptions;
-  disableAutoFocus?: boolean;
+  hideFooter?: boolean;
+  disablePreviousButton?: boolean;
+  hidePreviousButton?: boolean;
+  disableAdvanceButton?: boolean;
+  hideAdvanceButton?: boolean;
   gap?: number;
   keyboardShortcuts?: {
     /**
@@ -80,22 +87,6 @@ export interface PopoverOptions extends BaseOptions {
      */
     cancel?: readonly string[];
   };
-}
-
-export interface DynamicStepProps<T> {
-  title: T;
-  content: T;
-  hideFooter?: boolean;
-  disablePreviousButton?: boolean;
-  hidePreviousButton?: boolean;
-  disableAdvanceButton?: boolean;
-  hideAdvanceButton?: boolean;
-  disableAutoScroll?: boolean;
-  /**
-   * @default true
-   */
-  resetPropsOnEnter?: boolean;
-  data?: Record<string, PrimitiveValue>;
 }
 
 export interface ScrollOptions {
@@ -114,7 +105,6 @@ export interface StartOptions {
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
   indicator?: IndicatorOptions;
-  scroll?: ScrollOptions;
   animated?: boolean;
   behavior?: StepBehavior;
 
@@ -127,7 +117,9 @@ export interface ReadonlyStepState<T> {
   get(): ReadonlyStepProps<T>;
   subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
 }
-export type StepPropsStore<T> = Observable<DynamicStepProps<T>>;
+export type StepPropsStore<T> = Observable<
+  Omit<StepParameters<T>, "target" | "resetPropsOnEnter" | "behavior">
+>;
 export interface StepContext<T> {
   advance(): Promise<void>;
   cancel(): Promise<void>;
@@ -136,6 +128,12 @@ export interface StepContext<T> {
   readonly props: StepPropsStore<T>;
   readonly signal: AbortSignal;
 }
+
+export type BeforeActionStepContext<T> = Readonly<
+  ReadonlyStepProps<T> & {
+    readonly target: HTMLElement;
+  }
+>;
 
 export type StepEventContext<T> = StepContext<T>;
 
@@ -160,7 +158,7 @@ export type StepWaitPredicate<T> = (
 
 export type StepActionInstruction<T> = StepAction<T> | number;
 
-export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
+export type StepTransitionAction<T> = (context: BeforeActionStepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   event: string;
@@ -215,11 +213,17 @@ export interface GlowTour<T> {
   readonly state: ReadonlyTourState<T>;
 }
 
-export type StepParameters<T> = DynamicStepProps<T> & {
+export type StepParameters<T> = {
   target: TargetResolver;
+  /**
+   * @default true
+   */
+  resetPropsOnEnter?: boolean;
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
   indicator?: IndicatorOptions;
-  scroll?: ScrollOptions;
   behavior?: StepBehavior;
+  title: T;
+  content: T;
+  data?: Record<string, PrimitiveValue>;
 };

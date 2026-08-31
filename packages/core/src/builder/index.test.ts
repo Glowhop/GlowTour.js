@@ -1,6 +1,17 @@
+// biome-ignore-all assist/source/organizeImports: The removed export needs its own expected-error import.
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { PopoverOptions, StepContext } from "../types";
+import type { BeforeActionStepContext } from "../index";
+// @ts-expect-error DynamicStepProps is no longer part of the public type contract.
+import type { DynamicStepProps } from "../types";
+import type {
+  PopoverOptions,
+  StartOptions,
+  StepBehavior,
+  StepContext,
+  StepParameters,
+  StepPropsStore,
+} from "../types";
 import { WorkflowBuilder } from "./index";
 
 const removedProgressOption: PopoverOptions = {
@@ -13,8 +24,78 @@ const removedButtonOption: PopoverOptions = {
   buttons: { advanceLabel: "Next" },
 };
 
+type StoredStepProps = ReturnType<StepPropsStore<string>["get"]>;
+
+// @ts-expect-error Target resolution must not be exposed through context.props.
+const removedTarget: keyof StoredStepProps = "target";
+// @ts-expect-error Lifecycle configuration must not be exposed through context.props.
+const removedResetPropsOnEnter: keyof StoredStepProps = "resetPropsOnEnter";
+// @ts-expect-error Static behavior must not be exposed through context.props.
+const removedBehavior: keyof StoredStepProps = "behavior";
+
+const popoverOptions: PopoverOptions = {
+  disableAdvanceButton: true,
+  disablePreviousButton: true,
+  hideAdvanceButton: true,
+  hideFooter: true,
+  hidePreviousButton: true,
+};
+const behaviorOptions: StepBehavior = {
+  disableAutoFocus: true,
+  disableAutoScroll: true,
+  scroll: { behavior: "smooth", block: "center", inline: "nearest" },
+};
+const removedStepScroll: StepParameters<string> = {
+  content: "Content",
+  target: "#target",
+  title: "Title",
+  // @ts-expect-error Scroll configuration now belongs to behavior.scroll.
+  scroll: { behavior: "smooth" },
+};
+const removedStartScroll: StartOptions = {
+  // @ts-expect-error Scroll configuration now belongs to behavior.scroll.
+  scroll: { behavior: "smooth" },
+};
+
 void removedProgressOption;
 void removedButtonOption;
+void removedTarget;
+void removedResetPropsOnEnter;
+void removedBehavior;
+void popoverOptions;
+void behaviorOptions;
+void removedStepScroll;
+void removedStartScroll;
+void (null as DynamicStepProps<string> | null);
+
+function assertBeforeActionContext(context: BeforeActionStepContext<string>) {
+  const target: HTMLElement = context.target;
+  const title: string = context.title;
+  const content: string = context.content;
+  const data: Readonly<Record<string, string | number | boolean | null>> | undefined = context.data;
+
+  // @ts-expect-error Transition hook snapshots must not be assignable.
+  context.title = "Changed";
+  // @ts-expect-error Nested transition hook options must be readonly.
+  if (context.popover) context.popover.hideFooter = true;
+  // @ts-expect-error Transition hooks must not expose the mutable props store.
+  context.props;
+  // @ts-expect-error Transition hooks must not expose action navigation commands.
+  context.advance;
+  // @ts-expect-error Transition hooks must not expose the action abort signal.
+  context.signal;
+  // @ts-expect-error Lifecycle configuration is not part of the hook snapshot.
+  context.resetPropsOnEnter;
+  // @ts-expect-error Static behavior is not part of the hook snapshot.
+  context.behavior;
+
+  void target;
+  void title;
+  void content;
+  void data;
+}
+
+void assertBeforeActionContext;
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
@@ -25,6 +106,14 @@ function workflow(name = "builder") {
 }
 
 describe("WorkflowBuilder public contract", () => {
+  test("types every transition hook with the readonly before-action context", () => {
+    const callback = (context: BeforeActionStepContext<string>) => {
+      assert.equal(typeof context.title, "string");
+    };
+
+    workflow().beforeAdvance(callback).beforePrevious(callback).beforeCancel(callback);
+  });
+
   test("builds a frozen definition through the canonical fluent methods", () => {
     const callback = () => {};
     const definition = workflow()
@@ -44,6 +133,20 @@ describe("WorkflowBuilder public contract", () => {
       ["click", "keydown"],
     );
     assert.equal(definition.steps[0].eventHandlers[0].callback, callback);
+  });
+
+  test("keeps resetPropsOnEnter outside dynamic step props", () => {
+    const definition = new WorkflowBuilder<string>("static-reset-policy")
+      .step({
+        content: "Content",
+        resetPropsOnEnter: false,
+        target: "#target",
+        title: "Title",
+      })
+      .build();
+
+    assert.equal(definition.steps[0].resetPropsOnEnter, false);
+    assert.equal("resetPropsOnEnter" in definition.steps[0].props, false);
   });
 
   test("does not retain former builder aliases", () => {
@@ -334,7 +437,12 @@ describe("StepBuilder lifecycle", () => {
 describe("StepBuilder.append", () => {
   test("appends an immutable workflow definition", () => {
     const reusable = new WorkflowBuilder<string>("reusable")
-      .step({ content: "Reusable", target: "#reusable", title: "Reusable" })
+      .step({
+        content: "Reusable",
+        resetPropsOnEnter: false,
+        target: "#reusable",
+        title: "Reusable",
+      })
       .build();
     const workflow = new WorkflowBuilder<string>("composed")
       .step({ content: "First", target: "#first", title: "First" })
@@ -345,6 +453,8 @@ describe("StepBuilder.append", () => {
       workflow.steps.map((step) => step.props.title),
       ["First", "Reusable"],
     );
+    assert.equal(workflow.steps[1].resetPropsOnEnter, false);
+    assert.equal("resetPropsOnEnter" in workflow.steps[1].props, false);
   });
 
   test("rejects an empty workflow definition", () => {

@@ -1,6 +1,5 @@
 import type {
   AnimationOptions,
-  DynamicStepProps,
   EventHandler,
   StartOptions,
   StepActionInstruction,
@@ -8,15 +7,17 @@ import type {
   StepTransitionAction,
 } from "../types";
 import { cloneStepProps, freezeStepProps } from "./step-props";
-import type { ReadonlyStartOptions, WorkflowDefinition, WorkflowStepDefinition } from "./types";
+import type {
+  ReadonlyStartOptions,
+  StepProps,
+  WorkflowDefinition,
+  WorkflowStepDefinition,
+} from "./types";
 
 export interface WorkflowStepDraft<T> {
   target: StepParameters<T>["target"];
-  props: DynamicStepProps<T>;
-  overlay?: StepParameters<T>["overlay"];
-  popover?: StepParameters<T>["popover"];
-  indicator?: StepParameters<T>["indicator"];
-  scroll?: StepParameters<T>["scroll"];
+  resetPropsOnEnter?: boolean;
+  props: StepProps<T>;
   behavior?: StepParameters<T>["behavior"];
   actions: StepActionInstruction<T>[];
   eventHandlers: EventHandler<T>[];
@@ -81,12 +82,14 @@ function freezeIndicator(options: StepParameters<unknown>["indicator"]) {
 function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
   return freezeRecord({
     target: draft.target,
+    resetPropsOnEnter: draft.resetPropsOnEnter,
     props: freezeStepProps(draft.props),
-    overlay: freezeOverlay(draft.overlay),
-    popover: freezePopover(draft.popover),
-    indicator: freezeIndicator(draft.indicator),
-    scroll: draft.scroll && freezeRecord({ ...draft.scroll }),
-    behavior: draft.behavior && freezeRecord({ ...draft.behavior }),
+    behavior:
+      draft.behavior &&
+      freezeRecord({
+        ...draft.behavior,
+        scroll: draft.behavior.scroll && freezeRecord({ ...draft.behavior.scroll }),
+      }),
     actions: freezeRecord(draft.actions.map((action) => action)),
     eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
     advanceAction: draft.advanceAction,
@@ -101,8 +104,12 @@ function freezeOptions(options: StartOptions): ReadonlyStartOptions {
     overlay: freezeOverlay(options.overlay),
     popover: freezePopover(options.popover),
     indicator: freezeIndicator(options.indicator),
-    scroll: options.scroll && freezeRecord({ ...options.scroll }),
-    behavior: options.behavior && freezeRecord({ ...options.behavior }),
+    behavior:
+      options.behavior &&
+      freezeRecord({
+        ...options.behavior,
+        scroll: options.behavior.scroll && freezeRecord({ ...options.behavior.scroll }),
+      }),
   });
 }
 

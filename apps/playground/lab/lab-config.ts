@@ -20,13 +20,12 @@ export const LAB_CONFIG = {
         animation: { duration: 220, easing: "ease-out" },
         placementTryOrder: ["bottom", "right", "top", "left"],
         arrow: {
-          color: "#ffffff",
+          color: "red",
           size: 12,
           borderWidth: 1,
           borderRadius: 3,
           edgePadding: 18,
         },
-        disableAutoFocus: false,
         gap: 14,
         keyboardShortcuts: {
           previous: ["ArrowLeft"],
@@ -41,8 +40,12 @@ export const LAB_CONFIG = {
         gap: 12,
         placementTryOrder: ["right", "bottom", "left", "top"],
       },
-      scroll: { behavior: "smooth", block: "center", inline: "nearest" },
-      behavior: { missingTargetStrategy: "error", targetTimeout: 3000 },
+      behavior: {
+        disableAutoFocus: false,
+        missingTargetStrategy: "error",
+        scroll: { behavior: "smooth", block: "center", inline: "nearest" },
+        targetTimeout: 3000,
+      },
     } satisfies StartOptions,
   },
   selectors: {
@@ -62,13 +65,13 @@ export const LAB_CONFIG = {
   timing: {
     conditionDelay: 650,
     focusWait: 80,
-    resolverWait: 450,
+    resolverWait: 5000,
     conditionAdvanceWait: 500,
     previousWait: 650,
     autoAdvanceWait: 650,
     pollingInterval: 25,
     elementPollingInterval: 20,
-    targetTimeout: 2000,
+    targetTimeout: 10_000,
   },
   event: {
     completion: "api-lab:complete",

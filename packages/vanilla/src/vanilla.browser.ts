@@ -294,7 +294,7 @@ describe("vanilla adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Two",
-      hideFooter: true,
+      popover: { hideFooter: true },
       title: "Updated",
     }));
     await settle();

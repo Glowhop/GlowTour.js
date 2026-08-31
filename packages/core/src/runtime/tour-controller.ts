@@ -7,6 +7,7 @@ import {
   type TourViewDriver,
 } from "../dom/tour-view-driver";
 import type {
+  BeforeActionStepContext,
   GlowTour,
   StartOptions,
   StepContext,
@@ -250,7 +251,7 @@ export class TourController<T> {
     this.assertCurrent(operation);
     const step = this.steps[index];
     if (!step) throw new Error(`Step index ${index} is out of bounds`);
-    if (step.initialProps.resetPropsOnEnter !== false) step.reset();
+    if (step.definition.resetPropsOnEnter !== false) step.reset();
     const target = await this.resolveTarget(step, operation);
     this.assertCurrent(operation);
     if (!target) {
@@ -287,7 +288,7 @@ export class TourController<T> {
     this.assertCurrent(operation);
     const hook =
       direction === "advance" ? step.definition.advanceAction : step.definition.previousAction;
-    await hook?.(this.createStepContext(step, operation));
+    await hook?.(this.createBeforeActionStepContext(step));
     this.assertCurrent(operation);
 
     if (destination !== undefined) {
@@ -360,7 +361,7 @@ export class TourController<T> {
   private async cancelCurrent(operation: number) {
     const step = this.currentStep();
     if (step?.definition.cancelAction) {
-      await step.definition.cancelAction(this.createStepContext(step, operation));
+      await step.definition.cancelAction(this.createBeforeActionStepContext(step));
     }
     this.assertCurrent(operation);
     await this.driver.clear(this.signalFor(operation));
@@ -421,6 +422,14 @@ export class TourController<T> {
     });
   }
 
+  private createBeforeActionStepContext(step: ActiveStep<T>): BeforeActionStepContext<T> {
+    if (!step.target) throw new Error("Cannot create a step context without a target");
+    return Object.freeze({
+      ...step.state.get(),
+      target: step.target,
+    });
+  }
+
   private invalidateOperation() {
     this.operationToken += 1;
     this.operation?.abort();
@@ -465,12 +474,12 @@ export class TourController<T> {
 
   private isAdvanceAvailable() {
     const props = this.currentStep()?.props.get();
-    return props !== undefined && props.disableAdvanceButton !== true;
+    return props !== undefined && props.popover?.disableAdvanceButton !== true;
   }
 
   private isPreviousAvailable() {
     const props = this.currentStep()?.props.get();
-    return props !== undefined && props.disablePreviousButton !== true && this.index > 0;
+    return props !== undefined && props.popover?.disablePreviousButton !== true && this.index > 0;
   }
 
   private isCancelAvailable() {

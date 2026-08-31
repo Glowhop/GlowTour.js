@@ -6,7 +6,7 @@ export {
 export type { GlowTourRootElement } from "./components/web-components";
 export { GLOW_TOUR_ELEMENT_NAMES, registerGlowTourElements } from "./components/web-components";
 export type {
-  DynamicStepProps,
+  StepPropsStore,
   Tour,
   TourState,
   VanillaGlowTour,

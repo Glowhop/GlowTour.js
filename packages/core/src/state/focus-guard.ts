@@ -1,4 +1,4 @@
-import { focusableElementsOwnedBy, focusableTourControls, isFocusable } from "./focusable";
+import { focusableTourControls, isFocusable } from "./focusable";
 
 type FocusDirection = "advance" | "previous";
 
@@ -139,20 +139,12 @@ export class FocusGuard {
 
   private findFocusable(root: HTMLElement, direction: FocusDirection) {
     const candidates = focusableTourControls(root);
-    const orderedSelectors =
+    const selector =
       direction === "advance"
-        ? ["[data-glow-tour-advance-trigger]", "[data-glow-tour-previous-trigger]"]
-        : ["[data-glow-tour-previous-trigger]", "[data-glow-tour-advance-trigger]"];
+        ? "[data-glow-tour-advance-trigger]"
+        : "[data-glow-tour-previous-trigger]";
 
-    for (const selector of orderedSelectors) {
-      for (const candidate of candidates) {
-        if (candidate.matches(selector) && isFocusable(candidate)) {
-          return candidate;
-        }
-      }
-    }
-
-    return candidates[0] ?? focusableElementsOwnedBy(root)[0] ?? null;
+    return candidates.find((candidate) => candidate.matches(selector)) ?? null;
   }
 }
 

@@ -149,7 +149,7 @@ export function Content(props: ContentProps) {
 export function Footer({ children, ...props }: ElementProps) {
   const { tour } = useTourContext();
   const step = useStep(useTourSnapshot(tour));
-  if (step?.hideFooter) return null;
+  if (step?.popover?.hideFooter) return null;
 
   return (
     <footer {...props} data-glow-tour-footer>
@@ -238,12 +238,12 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   const snapshot = useTourSnapshot(tour);
 
   const step = useStep(snapshot);
-  if (step?.hidePreviousButton) return null;
+  if (step?.popover?.hidePreviousButton) return null;
   const label = backLabel ?? "Back step";
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canPrevious || step?.disablePreviousButton === true}
+      capabilityDisabled={!snapshot.canPrevious || step?.popover?.disablePreviousButton === true}
       label={label}
       marker="previous"
     />
@@ -254,14 +254,14 @@ export function AdvanceTrigger({ finishLabel, advanceLabel, ...props }: AdvanceT
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
   const step = useStep(snapshot);
-  if (step?.hideAdvanceButton) return null;
+  if (step?.popover?.hideAdvanceButton) return null;
   const label = snapshot.isLastStep
     ? (finishLabel ?? "Finish tour")
     : (advanceLabel ?? "Advance step");
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canAdvance || step?.disableAdvanceButton === true}
+      capabilityDisabled={!snapshot.canAdvance || step?.popover?.disableAdvanceButton === true}
       label={label}
       marker="advance"
     />
@@ -273,12 +273,7 @@ export function CancelTrigger(props: CancelTriggerProps) {
   const snapshot = useTourSnapshot(tour);
   if (!snapshot.canCancel) return null;
   return (
-    <Trigger
-      {...props}
-      capabilityDisabled={!snapshot.canCancel}
-      label="Cancel tour"
-      marker="cancel"
-    />
+    <Trigger {...props} capabilityDisabled={!snapshot.canCancel} label="Skip" marker="cancel" />
   );
 }
 

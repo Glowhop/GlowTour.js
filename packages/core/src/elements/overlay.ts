@@ -4,7 +4,17 @@ import GlowTourElement, { type TourElementStep } from "./base";
 const DEFAULT_OVERLAY_PADDING = 16;
 const DEFAULT_OVERLAY_RADIUS = 12;
 
+interface OverlayVisualState {
+  color: string | undefined;
+  opacity: number | undefined;
+  padding: number | undefined;
+  radius: number | undefined;
+}
+
 export default class OverlayElement<T> extends GlowTourElement<T> {
+  private currentTransition: Animation | null = null;
+  private visualState: OverlayVisualState | null = null;
+
   setInteractionAllowed(allowed: boolean) {
     this.element.style.setProperty("pointer-events", allowed ? "none" : "auto");
     this.element.setAttribute("data-glow-tour-allow-interaction", String(allowed));
@@ -12,6 +22,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
 
   async moveToTarget(nextPosition: DOMRect, step: TourElementStep) {
     const keyframe = this._getNextStyles(nextPosition, step);
+    this.visualState = this._getVisualState(step);
 
     const path = this._getPathElement();
     if (!path) {
@@ -51,6 +62,28 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     });
 
     if (await this._waitForAnimation(animation)) animation.commitStyles();
+  }
+
+  async animateTo(position: DOMRect, step: TourElementStep) {
+    const path = this._getPathElement();
+    if (!path) return;
+
+    this.commitAndCancelCurrentTransition();
+
+    const from = this.getCurrentRenderedStyles(path);
+    const finalStyles = this._getNextStyles(position, step);
+    const renderedTarget = this.getRenderedTargetStyles(path, finalStyles);
+    const animation = path.animate([from, renderedTarget], {
+      ...this._getAnimationOptions(),
+      fill: "none",
+    });
+    this.currentTransition = animation;
+
+    const completed = await this._waitForAnimation(animation);
+    if (completed && this.currentTransition === animation) {
+      this.applyStyles(path, finalStyles);
+    }
+    if (this.currentTransition === animation) this.currentTransition = null;
   }
 
   _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
@@ -109,6 +142,8 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
   }
 
   protected _release() {
+    this.currentTransition = null;
+    this.visualState = null;
     const path = this._getPathElement();
     path?.style.removeProperty("d");
     path?.style.removeProperty("fill");
@@ -116,26 +151,94 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     this.element.style.setProperty("pointer-events", "none");
   }
 
-  updatePosition(nextPosition: DOMRect, step: TourElementStep) {
-    const { padding, radius } = step.overlay || {};
-    const pathValue = roundedRectPath(nextPosition, viewportDimensions(), {
-      padding: padding ?? DEFAULT_OVERLAY_PADDING,
-      radius: radius ?? DEFAULT_OVERLAY_RADIUS,
-    });
+  updatePosition(nextPosition: DOMRect, step: TourElementStep, animateChanges = false) {
     const path = this._getPathElement();
     if (!path) {
       console.warn("No overlay path element found");
       return;
     }
-    const pathStyle = `path("${pathValue}")`;
-    if (path.style.getPropertyValue("d") !== pathStyle) {
-      path.style.setProperty("d", pathStyle);
-    }
+
+    const nextVisualState = this._getVisualState(step);
+    const shouldAnimate =
+      animateChanges &&
+      this.visualState !== null &&
+      !this._isSameVisualState(this.visualState, nextVisualState);
+    this.visualState = nextVisualState;
+
+    if (shouldAnimate) void this.animateTo(nextPosition, step);
+    else this.applyStyles(path, this._getNextStyles(nextPosition, step));
+
     const viewport = viewportDimensions();
     const viewBox = `0 0 ${viewport.width} ${viewport.height}`;
     if (this.element.getAttribute("viewBox") !== viewBox) {
       this.element.setAttribute("viewBox", viewBox);
     }
+  }
+
+  override cancelAnimations() {
+    this.currentTransition = null;
+    super.cancelAnimations();
+  }
+
+  private applyStyles(path: SVGPathElement, styles: Keyframe) {
+    for (const [property, value] of Object.entries(styles)) {
+      if (value == null) {
+        if (path.style.getPropertyValue(property)) path.style.removeProperty(property);
+      } else if (path.style.getPropertyValue(property) !== String(value)) {
+        path.style.setProperty(property, String(value));
+      }
+    }
+  }
+
+  private commitAndCancelCurrentTransition() {
+    const animation = this.currentTransition;
+    if (!animation) return;
+
+    try {
+      animation.commitStyles();
+    } catch {
+      // The animation may no longer be replaceable when its target was detached.
+    }
+    this.currentTransition = null;
+    animation.cancel();
+  }
+
+  private getCurrentRenderedStyles(path: SVGPathElement): Keyframe {
+    const computed = window.getComputedStyle(path);
+    return {
+      d: computed.getPropertyValue("d") || path.style.getPropertyValue("d"),
+      fill: computed.getPropertyValue("fill") || path.style.getPropertyValue("fill"),
+      opacity: computed.getPropertyValue("opacity") || path.style.getPropertyValue("opacity"),
+    };
+  }
+
+  private getRenderedTargetStyles(path: SVGPathElement, styles: Keyframe): Keyframe {
+    if (styles.fill != null) return styles;
+
+    const inlineFill = path.style.getPropertyValue("fill");
+    path.style.removeProperty("fill");
+    const renderedFill = window.getComputedStyle(path).getPropertyValue("fill");
+    if (inlineFill) path.style.setProperty("fill", inlineFill);
+
+    return { ...styles, fill: renderedFill };
+  }
+
+  private _getVisualState(step: TourElementStep): OverlayVisualState {
+    return {
+      color: step.overlay?.color,
+      opacity: step.overlay?.opacity,
+      padding: step.overlay?.padding,
+      radius: step.overlay?.radius,
+    };
+  }
+
+  private _isSameVisualState(current: OverlayVisualState, next: OverlayVisualState) {
+    return (
+      current.color === next.color &&
+      current.opacity === next.opacity &&
+      current.padding === next.padding &&
+      current.radius === next.radius
+    );
   }
 
   async _appear(position: DOMRect, step: TourElementStep) {

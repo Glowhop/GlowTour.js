@@ -5,15 +5,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { renderToString } from "@vue/server-renderer";
 import { createSSRApp, h } from "vue";
-import type { DynamicStepProps, StartOptions, Tour, TourState, WorkflowDefinition } from "./index";
+import type { StartOptions, StepPropsStore, Tour, TourState, WorkflowDefinition } from "./index";
 import * as runtime from "./index";
 
 const tour: Tour = runtime.createGlowTour();
 const tourState: TourState | null = null;
-const dynamicStepProps: DynamicStepProps | null = null;
+const stepPropsStore: StepPropsStore | null = null;
 const workflowDefinition: WorkflowDefinition | null = null;
 const startOptions: StartOptions | null = null;
-void [tour, tourState, dynamicStepProps, workflowDefinition, startOptions];
+void [tour, tourState, stepPropsStore, workflowDefinition, startOptions];
 
 describe("vue adapter contract", () => {
   test("exports an instance factory and named native components without legacy runtime values", () => {
