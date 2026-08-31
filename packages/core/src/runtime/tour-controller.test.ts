@@ -1,7 +1,7 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import type { TourViewCommands, TourViewDriver } from "../dom/tour-view-driver";
-import type { StepContext } from "../types";
+import type { BeforeActionStepContext, StepContext } from "../types";
 import type { ActiveStep } from "./active-step";
 import { TourController } from "./tour-controller";
 
@@ -525,6 +525,69 @@ describe("instance-first TourController", () => {
     await assert.rejects(() => failingTour.advance(), /hook failed/);
     assert.equal(failingTour.state.get().status, "error");
     assert.equal(failingTour.state.get().error?.message, "hook failed");
+  });
+
+  test("passes frozen current step snapshots to every transition hook", async () => {
+    const contexts: BeforeActionStepContext<string>[] = [];
+    const tour = createGlowTour<string>();
+    const capture = async (context: BeforeActionStepContext<string>) => {
+      await Promise.resolve();
+      contexts.push(context);
+    };
+    const workflow = tour
+      .create("readonly-hook-contexts", { cancellable: true })
+      .step({
+        content: "first content",
+        data: { count: 1 },
+        overlay: { animation: { duration: 100, easing: "linear" }, color: "red" },
+        popover: { arrow: { color: "white" }, keyboardShortcuts: { advance: ["Enter"] } },
+        target: targetResolver,
+        title: "first title",
+      })
+      .do(({ props }) => {
+        props.set((current) => ({
+          ...current,
+          data: { count: 2 },
+          overlay: { ...current.overlay, color: "green" },
+          title: "current title",
+        }));
+      })
+      .beforeAdvance(capture)
+      .beforeCancel(capture)
+      .step({ content: "second content", target: targetResolver, title: "second title" })
+      .beforePrevious(capture)
+      .build();
+
+    await tour.run(workflow);
+    await tour.advance();
+    await tour.previous();
+    await tour.cancel();
+
+    assert.equal(contexts.length, 3);
+    assert.equal(contexts[0].title, "current title");
+    assert.deepEqual(contexts[0].data, { count: 2 });
+    assert.equal(contexts[0].overlay?.color, "green");
+    assert.equal(contexts[1].title, "second title");
+    assert.equal(contexts[2].title, "current title");
+    for (const context of contexts) {
+      assert.equal(context.target, target);
+      assert.equal(Object.isFrozen(context), true);
+      assert.equal("props" in context, false);
+      assert.equal("advance" in context, false);
+      assert.equal("previous" in context, false);
+      assert.equal("cancel" in context, false);
+      assert.equal("signal" in context, false);
+      assert.equal("resetPropsOnEnter" in context, false);
+      assert.equal("behavior" in context, false);
+    }
+    assert.equal(Object.isFrozen(contexts[0].data), true);
+    assert.equal(Object.isFrozen(contexts[0].overlay), true);
+    assert.equal(Object.isFrozen(contexts[0].overlay?.animation), true);
+    assert.equal(Object.isFrozen(contexts[0].popover), true);
+    assert.equal(Object.isFrozen(contexts[0].popover?.arrow), true);
+    assert.equal(Object.isFrozen(contexts[0].popover?.keyboardShortcuts), true);
+    assert.equal(Object.isFrozen(contexts[0].popover?.keyboardShortcuts?.advance), true);
+    assert.equal(Object.isFrozen(target), false);
   });
 
   test("ignores a second advance while the first transition is pending", async () => {

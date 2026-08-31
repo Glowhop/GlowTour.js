@@ -129,6 +129,12 @@ export interface StepContext<T> {
   readonly signal: AbortSignal;
 }
 
+export type BeforeActionStepContext<T> = Readonly<
+  ReadonlyStepProps<T> & {
+    readonly target: HTMLElement;
+  }
+>;
+
 export type StepEventContext<T> = StepContext<T>;
 
 export interface WaitUntilOptions {
@@ -152,7 +158,7 @@ export type StepWaitPredicate<T> = (
 
 export type StepActionInstruction<T> = StepAction<T> | number;
 
-export type StepTransitionAction<T> = (context: StepContext<T>) => void | Promise<void>;
+export type StepTransitionAction<T> = (context: BeforeActionStepContext<T>) => void | Promise<void>;
 
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   event: string;

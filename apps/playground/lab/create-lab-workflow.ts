@@ -42,13 +42,13 @@ export function createLabWorkflow<TContent>(
       popover: { hidePreviousButton: true },
       data: { api: "create", targetType: "selector" },
     })
-    .beforeAdvance(({ props }) => actions.log(`onAdvance — ${String(props.get().data?.api)}`))
+    .beforeAdvance(({ data }) => actions.log(`onAdvance — ${String(data?.api)}`))
     .beforeCancel(() => actions.log("onCancel — étape d’introduction"))
     .step({
       target: elements.focusInput,
       title: content.title("focusTarget() + exec()"),
       content: content.paragraph(copy.focus),
-      overlay: { color: "#241a70", opacity: 0.62, padding: 9, radius: 10 },
+      overlay: { color: "#241a70", opacity: 0.62, padding: 9, radius: 0 },
       popover: { placementTryOrder: ["right", "bottom"], gap: 18 },
       indicator: { disabled: false, placementTryOrder: ["left", "bottom"] },
       behavior: {
@@ -90,7 +90,23 @@ export function createLabWorkflow<TContent>(
       context.props.set((current) => ({
         ...current,
         popover: { ...current.popover, disableAdvanceButton: false },
+        overlay: {
+          ...current.overlay,
+          color: "red",
+          opacity: 0.68,
+        },
       }));
+
+      setTimeout(() => {
+        context.props.set((current) => ({
+          ...current,
+          overlay: {
+            ...current.overlay,
+            color: "green",
+            opacity: 0.68,
+          },
+        }));
+      }, 1000);
     })
     .step({
       target: async ({ signal }) => {

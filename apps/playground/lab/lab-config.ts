@@ -20,7 +20,7 @@ export const LAB_CONFIG = {
         animation: { duration: 220, easing: "ease-out" },
         placementTryOrder: ["bottom", "right", "top", "left"],
         arrow: {
-          color: "#ffffff",
+          color: "red",
           size: 12,
           borderWidth: 1,
           borderRadius: 3,

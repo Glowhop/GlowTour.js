@@ -7,6 +7,7 @@ import {
   type TourViewDriver,
 } from "../dom/tour-view-driver";
 import type {
+  BeforeActionStepContext,
   GlowTour,
   StartOptions,
   StepContext,
@@ -287,7 +288,7 @@ export class TourController<T> {
     this.assertCurrent(operation);
     const hook =
       direction === "advance" ? step.definition.advanceAction : step.definition.previousAction;
-    await hook?.(this.createStepContext(step, operation));
+    await hook?.(this.createBeforeActionStepContext(step));
     this.assertCurrent(operation);
 
     if (destination !== undefined) {
@@ -360,7 +361,7 @@ export class TourController<T> {
   private async cancelCurrent(operation: number) {
     const step = this.currentStep();
     if (step?.definition.cancelAction) {
-      await step.definition.cancelAction(this.createStepContext(step, operation));
+      await step.definition.cancelAction(this.createBeforeActionStepContext(step));
     }
     this.assertCurrent(operation);
     await this.driver.clear(this.signalFor(operation));
@@ -417,6 +418,14 @@ export class TourController<T> {
       },
       props: step.props,
       signal: this.signalFor(operation),
+      target: step.target,
+    });
+  }
+
+  private createBeforeActionStepContext(step: ActiveStep<T>): BeforeActionStepContext<T> {
+    if (!step.target) throw new Error("Cannot create a step context without a target");
+    return Object.freeze({
+      ...step.state.get(),
       target: step.target,
     });
   }

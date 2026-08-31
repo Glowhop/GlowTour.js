@@ -1,6 +1,7 @@
 // biome-ignore-all assist/source/organizeImports: The removed export needs its own expected-error import.
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
+import type { BeforeActionStepContext } from "../index";
 // @ts-expect-error DynamicStepProps is no longer part of the public type contract.
 import type { DynamicStepProps } from "../types";
 import type {
@@ -67,6 +68,35 @@ void removedStepScroll;
 void removedStartScroll;
 void (null as DynamicStepProps<string> | null);
 
+function assertBeforeActionContext(context: BeforeActionStepContext<string>) {
+  const target: HTMLElement = context.target;
+  const title: string = context.title;
+  const content: string = context.content;
+  const data: Readonly<Record<string, string | number | boolean | null>> | undefined = context.data;
+
+  // @ts-expect-error Transition hook snapshots must not be assignable.
+  context.title = "Changed";
+  // @ts-expect-error Nested transition hook options must be readonly.
+  if (context.popover) context.popover.hideFooter = true;
+  // @ts-expect-error Transition hooks must not expose the mutable props store.
+  context.props;
+  // @ts-expect-error Transition hooks must not expose action navigation commands.
+  context.advance;
+  // @ts-expect-error Transition hooks must not expose the action abort signal.
+  context.signal;
+  // @ts-expect-error Lifecycle configuration is not part of the hook snapshot.
+  context.resetPropsOnEnter;
+  // @ts-expect-error Static behavior is not part of the hook snapshot.
+  context.behavior;
+
+  void target;
+  void title;
+  void content;
+  void data;
+}
+
+void assertBeforeActionContext;
+
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
     content: "Content",
@@ -76,6 +106,14 @@ function workflow(name = "builder") {
 }
 
 describe("WorkflowBuilder public contract", () => {
+  test("types every transition hook with the readonly before-action context", () => {
+    const callback = (context: BeforeActionStepContext<string>) => {
+      assert.equal(typeof context.title, "string");
+    };
+
+    workflow().beforeAdvance(callback).beforePrevious(callback).beforeCancel(callback);
+  });
+
   test("builds a frozen definition through the canonical fluent methods", () => {
     const callback = () => {};
     const definition = workflow()

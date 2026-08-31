@@ -9,6 +9,7 @@ export { createGlowTour } from "./runtime/tour-controller";
 export type {
   AnimationOptions,
   BaseOptions,
+  BeforeActionStepContext,
   EventHandler,
   GlowTour,
   IndicatorOptions,

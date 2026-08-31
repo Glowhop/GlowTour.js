@@ -440,8 +440,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.pointer?.setAnimationOptions(animationOptions(step, step.indicator));
       this.syncControlState(step);
       this.syncShortcutLabels(step);
+      console.log(
+        "TourViewDriver: presentation changed, updated animation options and synced controls",
+      );
     }
-    this.overlay?.updatePosition(targetRect, step);
+    this.overlay?.updatePosition(targetRect, step, presentationChanged);
     const popoverPlacement = this.popover?.updatePosition(targetRect, step);
     if (presentationChanged) {
       this.pointer?.syncVisibility(this.isPointerEnabled(step), targetRect, step, popoverPlacement);
@@ -826,7 +829,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       timeout = setTimeout(complete, DEFAULT_SCROLL_END_TIMEOUT);
       try {
         target.scrollIntoView({
-          behavior: step.behavior?.scroll?.behavior ?? "smooth",
+          behavior: prefersReducedMotion()
+            ? "instant"
+            : (step.behavior?.scroll?.behavior ?? "smooth"),
           block: step.behavior?.scroll?.block ?? "center",
           inline: step.behavior?.scroll?.inline ?? "nearest",
         });
