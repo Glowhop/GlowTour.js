@@ -84,4 +84,16 @@ describe("ActiveStep presentation options", () => {
     assert.equal(step.props.get().popover?.disableAdvanceButton, true);
     assert.equal(step.props.get().popover?.hideFooter, false);
   });
+
+  test("resets from its immutable initial definition", () => {
+    const workflow = definition({});
+    const step = new ActiveStep(workflow.steps[0], workflow.options);
+
+    step.props.set((props) => ({ ...props, data: { version: 2 } }));
+    step.reset();
+
+    assert.equal(Object.isFrozen(step.initialProps), true);
+    assert.deepEqual(step.props.get().data, undefined);
+    assert.deepEqual(workflow.steps[0]?.props.data, undefined);
+  });
 });

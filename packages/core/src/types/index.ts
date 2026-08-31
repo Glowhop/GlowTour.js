@@ -1,4 +1,3 @@
-import type { Observable } from "@glowhop/observables";
 import type { WorkflowBuilder } from "../builder";
 import type { ReadonlyStepProps, WorkflowDefinition } from "../definition";
 
@@ -117,9 +116,15 @@ export interface ReadonlyStepState<T> {
   get(): ReadonlyStepProps<T>;
   subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
 }
-export type StepPropsStore<T> = Observable<
-  Omit<StepParameters<T>, "target" | "resetPropsOnEnter" | "behavior">
->;
+export type StepPropsUpdate<T> =
+  | ReadonlyStepProps<T>
+  | ((current: ReadonlyStepProps<T>) => ReadonlyStepProps<T>);
+
+export interface StepPropsStore<T> {
+  get(): ReadonlyStepProps<T>;
+  set(update: StepPropsUpdate<T>): void;
+  subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
+}
 export interface StepContext<T> {
   advance(): Promise<void>;
   cancel(): Promise<void>;
@@ -211,6 +216,10 @@ export interface GlowTour<T> {
   cancel(): Promise<void>;
   dispose(): void;
   readonly state: ReadonlyTourState<T>;
+}
+
+export interface GlowTourOptions {
+  onSubscriberError?: (error: Error) => void | Promise<void>;
 }
 
 export type StepParameters<T> = {

@@ -1611,4 +1611,86 @@ describe("instance-first TourController", () => {
     assert.equal(disposedSubscriptionCalls, 0);
     assert.equal(driver.disposeCalls, 1);
   });
+
+  test("isolates state listener failures during initial and run publications", async () => {
+    const errors: Error[] = [];
+    const tour = new TourController<string>(undefined, {
+      onSubscriberError: (error) => {
+        errors.push(error);
+      },
+    });
+    const workflow = tour
+      .create("state-listeners")
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .build();
+    tour.state.subscribe(() => {
+      throw "state subscriber failure";
+    });
+
+    await tour.run(workflow);
+
+    assert.equal(tour.state.get().status, "active");
+    assert.ok(errors.length >= 2);
+    assert.ok(errors.every((error) => error instanceof Error));
+    assert.ok(errors.every((error) => error.message === "state subscriber failure"));
+  });
+
+  test("isolates props listener failures during actions", async () => {
+    const errors: Error[] = [];
+    const tour = new TourController<string>(undefined, {
+      onSubscriberError: (error) => {
+        errors.push(error);
+      },
+    });
+    const workflow = tour
+      .create("props-listeners")
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .do(({ props }) => {
+        props.subscribe(() => {
+          throw "props subscriber failure";
+        });
+        props.set((current) => ({ ...current, content: "updated" }));
+      })
+      .build();
+
+    await tour.run(workflow);
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStep?.currentProps.content, "updated");
+    assert.equal(errors.length, 2);
+    assert.ok(errors.every((error) => error.message === "props subscriber failure"));
+  });
+
+  test("sends sync and async subscriber error hook failures to the unhandled reporter", async () => {
+    const unhandled: Error[] = [];
+    const sync = new TourController<string>(undefined, {
+      onSubscriberError: () => {
+        throw new Error("sync hook failure");
+      },
+      reportUnhandledError: (error) => {
+        unhandled.push(error);
+      },
+    });
+    sync.state.subscribe(() => {
+      throw new Error("subscriber failure");
+    });
+
+    const asynchronous = new TourController<string>(undefined, {
+      onSubscriberError: async () => {
+        throw new Error("async hook failure");
+      },
+      reportUnhandledError: (error) => {
+        unhandled.push(error);
+      },
+    });
+    asynchronous.state.subscribe(() => {
+      throw new Error("subscriber failure");
+    });
+    await flushMicrotasks();
+
+    assert.deepEqual(
+      unhandled.map((error) => error.message).sort(),
+      ["async hook failure", "sync hook failure"],
+    );
+  });
 });
