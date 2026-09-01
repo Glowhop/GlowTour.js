@@ -443,7 +443,7 @@ describe("instance-first TourController", () => {
         canCancel: tour.state.get().canCancel,
         canPrevious: tour.state.get().canPrevious,
       },
-      { canAdvance: true, canCancel: true, canPrevious: false },
+      { canAdvance: false, canCancel: true, canPrevious: false },
     );
 
     await driver.commitContent();
@@ -454,11 +454,94 @@ describe("instance-first TourController", () => {
         canCancel: tour.state.get().canCancel,
         canPrevious: tour.state.get().canPrevious,
       },
-      { canAdvance: false, canCancel: true, canPrevious: true },
+      { canAdvance: false, canCancel: true, canPrevious: false },
     );
 
     driver.finishShow();
     await navigation;
+    assert.deepEqual(
+      {
+        canAdvance: tour.state.get().canAdvance,
+        canCancel: tour.state.get().canCancel,
+        canPrevious: tour.state.get().canPrevious,
+      },
+      { canAdvance: true, canCancel: true, canPrevious: true },
+    );
+  });
+
+  test("allows public navigation when matching popover controls are disabled", async () => {
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("programmatic-navigation")
+      .step({
+        content: "zero",
+        popover: { disableAdvanceButton: true },
+        target: targetResolver,
+        title: "zero",
+      })
+      .step({
+        content: "one",
+        popover: { disablePreviousButton: true },
+        target: targetResolver,
+        title: "one",
+      })
+      .step({ content: "two", target: targetResolver, title: "two" })
+      .build();
+
+    await tour.run(workflow);
+    assert.deepEqual(
+      { canAdvance: tour.state.get().canAdvance, canPrevious: tour.state.get().canPrevious },
+      { canAdvance: true, canPrevious: false },
+    );
+
+    await tour.advance();
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.deepEqual(
+      { canAdvance: tour.state.get().canAdvance, canPrevious: tour.state.get().canPrevious },
+      { canAdvance: true, canPrevious: true },
+    );
+
+    await tour.previous();
+    assert.equal(tour.state.get().currentStepIndex, 0);
+
+    await tour.goToStep(2);
+    assert.equal(tour.state.get().currentStepIndex, 2);
+  });
+
+  test("allows action contexts to navigate when matching popover controls are disabled", async () => {
+    const tour = createGlowTour<string>();
+    let advanceContext!: StepContext<string>;
+    let previousContext!: StepContext<string>;
+    const workflow = tour
+      .create("action-context-navigation")
+      .step({
+        content: "zero",
+        popover: { disableAdvanceButton: true },
+        target: targetResolver,
+        title: "zero",
+      })
+      .do((context) => {
+        advanceContext = context;
+        return false;
+      })
+      .step({
+        content: "one",
+        popover: { disablePreviousButton: true },
+        target: targetResolver,
+        title: "one",
+      })
+      .do((context) => {
+        previousContext = context;
+        return false;
+      })
+      .build();
+
+    await tour.run(workflow);
+    await advanceContext.advance();
+    assert.equal(tour.state.get().currentStepIndex, 1);
+
+    await previousContext.previous();
+    assert.equal(tour.state.get().currentStepIndex, 0);
   });
 
   test("keeps the active workflow presentation until its replacement commits", async () => {
@@ -490,7 +573,7 @@ describe("instance-first TourController", () => {
         canCancel: tour.state.get().canCancel,
         canPrevious: tour.state.get().canPrevious,
       },
-      { canAdvance: true, canCancel: true, canPrevious: false },
+      { canAdvance: false, canCancel: true, canPrevious: false },
     );
 
     await driver.commitContent();
@@ -506,6 +589,7 @@ describe("instance-first TourController", () => {
 
     driver.finishShow();
     await replacing;
+    assert.equal(tour.state.get().canAdvance, true);
   });
 
   test("keeps the committed presentation through a reentrant starting replacement", async () => {
@@ -536,7 +620,7 @@ describe("instance-first TourController", () => {
     assert.equal(tour.state.get().name, "final");
     assert.equal(tour.state.get().status, "transitioning");
     assert.equal(tour.state.get().currentStep?.currentProps.content, "active");
-    assert.equal(tour.state.get().canAdvance, true);
+    assert.equal(tour.state.get().canAdvance, false);
 
     await driver.commitContent();
     assert.equal(tour.state.get().currentStep?.currentProps.content, "final");
@@ -1072,7 +1156,7 @@ describe("instance-first TourController", () => {
     assert.equal(driver.clearCalls, 1);
   });
 
-  test("honors disabled navigation props in state and commands", async () => {
+  test("keeps disabled navigation props presentation-only in public state", async () => {
     const tour = createGlowTour<string>();
     let firstStepProps!: StepContext<string>["props"];
     const workflow = tour
@@ -1095,19 +1179,17 @@ describe("instance-first TourController", () => {
       .build();
 
     await tour.run(workflow);
-    assert.equal(tour.state.get().canAdvance, false);
+    assert.equal(tour.state.get().canAdvance, true);
     await tour.advance();
-    assert.equal(tour.state.get().currentStepIndex, 0);
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().canPrevious, true);
 
     firstStepProps.set((props) => ({
       ...props,
       popover: { ...props.popover, disableAdvanceButton: false },
     }));
-    await tour.advance();
-    assert.equal(tour.state.get().currentStepIndex, 1);
-    assert.equal(tour.state.get().canPrevious, false);
     await tour.previous();
-    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().currentStepIndex, 0);
   });
 
   test("awaits the directional hook before goToStep navigation", async () => {

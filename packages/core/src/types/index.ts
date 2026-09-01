@@ -67,8 +67,16 @@ export interface PopoverOptions extends BaseOptions {
   placementTryOrder?: readonly TryOrderOptions[];
   arrow?: PopoverArrowOptions;
   hideFooter?: boolean;
+  /**
+   * Disables only previous-button and previous-keyboard controls. Programmatic
+   * navigation through the tour API and step context remains available.
+   */
   disablePreviousButton?: boolean;
   hidePreviousButton?: boolean;
+  /**
+   * Disables only advance-button and advance-keyboard controls. Programmatic
+   * navigation through the tour API and step context remains available.
+   */
   disableAdvanceButton?: boolean;
   hideAdvanceButton?: boolean;
   gap?: number;

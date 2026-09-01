@@ -60,15 +60,11 @@ interface TourControllerOptions<T> extends GlowTourOptions {
 
 type TourPresentation<T> = Pick<
   TourState<T>,
-  | "canAdvance"
-  | "canCancel"
-  | "canPrevious"
-  | "currentStep"
-  | "currentStepIndex"
-  | "isFirstStep"
-  | "isLastStep"
-  | "totalSteps"
->;
+  "canCancel" | "currentStep" | "currentStepIndex" | "isFirstStep" | "isLastStep" | "totalSteps"
+> & {
+  readonly advanceButtonAvailable: boolean;
+  readonly previousButtonAvailable: boolean;
+};
 
 export class TourController<T> {
   private snapshot: TourState<T>;
@@ -178,24 +174,12 @@ export class TourController<T> {
 
   async advance() {
     this.assertNotDisposed();
-    if (!this.canNavigate("advance")) return;
-    const operation = this.beginOperation();
-    try {
-      await this.navigate("advance", operation);
-    } catch (error) {
-      await this.handleFailure(error, operation);
-    }
+    await this.transitionFromPublic("advance");
   }
 
   async previous() {
     this.assertNotDisposed();
-    if (!this.canNavigate("previous")) return;
-    const operation = this.beginOperation();
-    try {
-      await this.navigate("previous", operation);
-    } catch (error) {
-      await this.handleFailure(error, operation);
-    }
+    await this.transitionFromPublic("previous");
   }
 
   async goToStep(index: number) {
@@ -204,15 +188,8 @@ export class TourController<T> {
     if (index < 0 || index >= this.steps.length) {
       throw new Error(`Step index ${index} is out of bounds`);
     }
-    if (this.status !== "active" || index === this.index) return;
     const direction = index > this.index ? "advance" : "previous";
-    if (!this.canNavigate(direction)) return;
-    const operation = this.beginOperation();
-    try {
-      await this.navigate(direction, operation, index);
-    } catch (error) {
-      await this.handleFailure(error, operation);
-    }
+    await this.transitionFromPublic(direction, index);
   }
 
   async cancel() {
@@ -299,7 +276,18 @@ export class TourController<T> {
     await this.runActions(operation);
   }
 
-  private async navigate(direction: TourDirection, operation: number, destination?: number) {
+  private async transitionFromPublic(direction: TourDirection, destination?: number) {
+    if (!this.canNavigate(direction, destination)) return;
+    const operation = this.beginOperation();
+    try {
+      await this.transition(direction, operation, destination);
+    } catch (error) {
+      await this.handleFailure(error, operation);
+    }
+  }
+
+  private async transition(direction: TourDirection, operation: number, destination?: number) {
+    if (!this.canNavigate(direction, destination)) return;
     const step = this.currentStep();
     if (!step) return;
     this.setStatus("transitioning");
@@ -422,7 +410,7 @@ export class TourController<T> {
       advance: async () => {
         onControl?.();
         this.assertCurrent(operation);
-        await this.navigate("advance", operation);
+        await this.transition("advance", operation);
       },
       cancel: async () => {
         onControl?.();
@@ -432,7 +420,7 @@ export class TourController<T> {
       previous: async () => {
         onControl?.();
         this.assertCurrent(operation);
-        await this.navigate("previous", operation);
+        await this.transition("previous", operation);
       },
       props: step.props,
       signal: this.signalFor(operation),
@@ -485,17 +473,20 @@ export class TourController<T> {
     for (const unsubscribe of this.stepPropsSubscriptions.splice(0)) unsubscribe();
   }
 
-  private canNavigate(direction: TourDirection) {
-    if (this.status !== "active") return false;
-    return direction === "advance" ? this.isAdvanceAvailable() : this.isPreviousAvailable();
+  private canNavigate(direction: TourDirection, destination?: number) {
+    if (this.status !== "active" || !this.currentStep()) return false;
+    if (destination !== undefined) {
+      return destination >= 0 && destination < this.steps.length && destination !== this.index;
+    }
+    return direction === "advance" || this.index > 0;
   }
 
-  private isAdvanceAvailable() {
+  private isAdvanceButtonAvailable() {
     const props = this.currentStep()?.props.get();
     return props !== undefined && props.popover?.disableAdvanceButton !== true;
   }
 
-  private isPreviousAvailable() {
+  private isPreviousButtonAvailable() {
     const props = this.currentStep()?.props.get();
     return props !== undefined && props.popover?.disablePreviousButton !== true && this.index > 0;
   }
@@ -506,14 +497,14 @@ export class TourController<T> {
 
   private isPresentedAdvanceAvailable() {
     return this.currentStep()
-      ? this.isAdvanceAvailable()
-      : (this.retainedPresentation?.canAdvance ?? false);
+      ? this.isAdvanceButtonAvailable()
+      : (this.retainedPresentation?.advanceButtonAvailable ?? false);
   }
 
   private isPresentedPreviousAvailable() {
     return this.currentStep()
-      ? this.isPreviousAvailable()
-      : (this.retainedPresentation?.canPrevious ?? false);
+      ? this.isPreviousButtonAvailable()
+      : (this.retainedPresentation?.previousButtonAvailable ?? false);
   }
 
   private isPresentedCancelAvailable() {
@@ -594,8 +585,8 @@ export class TourController<T> {
       currentStepIndex,
       currentStep: currentStep?.snapshot() ?? retained?.currentStep ?? null,
       direction: this.direction,
-      canAdvance: this.isPresentedAdvanceAvailable(),
-      canPrevious: this.isPresentedPreviousAvailable(),
+      canAdvance: this.canNavigate("advance"),
+      canPrevious: this.canNavigate("previous"),
       canCancel: this.isPresentedCancelAvailable(),
       isFirstStep,
       isLastStep,
@@ -610,13 +601,13 @@ export class TourController<T> {
     const state = this.createSnapshot();
     if (!state.currentStep) return null;
     return {
-      canAdvance: state.canAdvance,
+      advanceButtonAvailable: this.isAdvanceButtonAvailable(),
       canCancel: state.canCancel,
-      canPrevious: state.canPrevious,
       currentStep: state.currentStep,
       currentStepIndex: state.currentStepIndex,
       isFirstStep: state.isFirstStep,
       isLastStep: state.isLastStep,
+      previousButtonAvailable: this.isPreviousButtonAvailable(),
       totalSteps: state.totalSteps,
     };
   }
