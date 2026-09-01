@@ -20,7 +20,7 @@ Baseline: 260 Core tests passing on commit `eb8f5b4`.
 | Task | Description | Status | Commits | Review |
 | ---: | --- | --- | --- | --- |
 | 1 | Runtime option validation | Complete | `c412b3f` | Approved, no findings |
-| 2 | Root-document target resolution | Pending | — | — |
+| 2 | Root-document target resolution | Complete | `6fcc08c` | Approved; 2 minor coverage notes |
 | 3 | Realm-aware DOM driver | Pending | — | — |
 | 4 | Presentation-only button disabling | Pending | — | — |
 | 5 | Active target disconnection recovery | Pending | — | — |
@@ -68,3 +68,4 @@ Run `bun test packages/core/src`, `bunx tsc -p packages/core/tsconfig.json --noE
 ## Review Notes
 
 - Task 1: independent review approved with no findings.
+- Task 2: independent review approved. Final review should triage two minor coverage gaps: a resolver returning a non-HTMLElement/same-realm foreign-document element, and direct coverage of the real root-bridge document return path.
