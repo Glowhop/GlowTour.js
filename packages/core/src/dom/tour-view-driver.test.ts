@@ -599,6 +599,50 @@ describe("DomTourViewDriver", () => {
     assert.equal(updates.pointerVisibility.count, 0);
     assert.equal(animationFrames.length, 1);
   });
+  test("synchronizes stable geometry after the root-realm viewport changes", async () => {
+    Object.defineProperty(document, "defaultView", { configurable: true, value: window });
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const before = elements.popover.style.transform;
+
+    window.innerWidth = 180;
+    window.innerHeight = 60;
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.equal(elements.overlay.getAttribute("viewBox"), "0 0 180 60");
+    assert.notEqual(elements.popover.style.transform, before);
+    assert.equal(elements.popover.getAttribute("data-glow-tour-placement"), "center");
+  });
+  test("does not synchronize the immediate identical props subscription", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const updates = countDriverPositionUpdates(driver);
+
+    flushFrame();
+
+    assert.equal(updates.overlay.count, 0);
+    assert.equal(updates.popover.count, 0);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 0);
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "rgb(12, 34, 56)" },
+    }));
+    flushFrame();
+    flushFrame();
+
+    assert.equal(updates.overlay.count, 1);
+    assert.equal(updates.popover.count, 1);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 1);
+  });
   test("synchronizes every renderer once when the target rectangle changes", async () => {
     const { driver } = installDriver();
     const step = createStep({ allowInteraction: true });

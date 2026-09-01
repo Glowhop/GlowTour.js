@@ -5,7 +5,13 @@ import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
 import { focusableElementsOwnedBy } from "../state/focusable";
 import type { TourDirection } from "../types";
-import { isElement, isHTMLElement, isInViewport, ownerWindow } from "../utils/utils";
+import {
+  isElement,
+  isHTMLElement,
+  isInViewport,
+  ownerWindow,
+  viewportDimensions,
+} from "../utils/utils";
 
 const DEFAULT_SCROLL_END_TIMEOUT = 1000;
 const ACTIVE_MODAL_BY_DOCUMENT = new WeakMap<Document, object>();
@@ -79,6 +85,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private generation = 0;
   private active = false;
   private lastTargetRect: RectSnapshot | null = null;
+  private lastViewport: ViewportSnapshot | null = null;
   private inertBranches: InertBranch[] = [];
   private modalDocument: Document | null = null;
   private modalRoot: HTMLElement | null = null;
@@ -158,6 +165,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.currentSignal = signal;
       this.direction = direction;
       this.lastTargetRect = null;
+      this.lastViewport = null;
       this.presentationDirty = false;
       if (replaceVisiblePopover) {
         const listener = (event: Event) =>
@@ -179,6 +187,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       await this.appear(targetRect, step, !replaceVisiblePopover, onBeforePopoverAppear);
       this.throwIfStale(generation, signal);
       this.lastTargetRect = snapshotRect(targetRect);
+      this.lastViewport = snapshotViewport(target);
       this.active = true;
       this.activateFocus(step, target, direction, generation);
       this.throwIfStale(generation, signal);
@@ -208,6 +217,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.currentStep = null;
       this.currentSignal = null;
       this.lastTargetRect = null;
+      this.lastViewport = null;
       this.popover?.getElement()?.removeAttribute("aria-modal");
       await Promise.allSettled([
         this.overlay?.disappear() ?? Promise.resolve(),
@@ -374,9 +384,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
     signal: AbortSignal,
   ) {
+    let initialPropsNotification = true;
     this.stepCleanups.push(
       step.props.subscribe(() => {
         if (!this.isCurrentGeneration(generation)) return;
+        if (initialPropsNotification) {
+          initialPropsNotification = false;
+          return;
+        }
         this.presentationDirty = true;
       }),
     );
@@ -465,8 +480,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
     const targetRect = target.getBoundingClientRect();
     const targetSnapshot = snapshotRect(targetRect);
+    const viewportSnapshot = snapshotViewport(target);
     const presentationChanged = this.presentationDirty;
-    if (!presentationChanged && sameRect(targetSnapshot, this.lastTargetRect)) return;
+    if (
+      !presentationChanged &&
+      sameRect(targetSnapshot, this.lastTargetRect) &&
+      sameViewport(viewportSnapshot, this.lastViewport)
+    )
+      return;
     if (presentationChanged) {
       this.overlay?.setAnimationOptions(
         animationOptions(step, step.overlay, this.overlay.getElement()),
@@ -505,6 +526,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.observeDynamicOperation(this.pointer?.disappear(), generation);
     }
     this.lastTargetRect = targetSnapshot;
+    this.lastViewport = viewportSnapshot;
     if (presentationChanged) this.presentationDirty = false;
   }
 
@@ -853,6 +875,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.currentSignal = null;
     this.currentStep = null;
     this.lastTargetRect = null;
+    this.lastViewport = null;
     void Promise.resolve(this.commands?.targetDisconnected(target)).catch((error) => {
       void this.commands?.reportError(error).catch(() => {});
     });
@@ -972,6 +995,11 @@ interface RectSnapshot {
   y: number;
 }
 
+interface ViewportSnapshot {
+  height: number;
+  width: number;
+}
+
 function snapshotRect(rect: DOMRect): RectSnapshot {
   const left = finite(rect.left);
   const top = finite(rect.top);
@@ -989,6 +1017,14 @@ function snapshotRect(rect: DOMRect): RectSnapshot {
   };
 }
 
+function snapshotViewport(context: Node): ViewportSnapshot {
+  const viewport = viewportDimensions(context);
+  return {
+    height: finite(viewport.height),
+    width: finite(viewport.width),
+  };
+}
+
 function sameRect(left: RectSnapshot, right: RectSnapshot | null) {
   return (
     right !== null &&
@@ -1001,6 +1037,10 @@ function sameRect(left: RectSnapshot, right: RectSnapshot | null) {
     left.x === right.x &&
     left.y === right.y
   );
+}
+
+function sameViewport(left: ViewportSnapshot, right: ViewportSnapshot | null) {
+  return right !== null && left.height === right.height && left.width === right.width;
 }
 
 function finite(value: number, fallback = 0) {
