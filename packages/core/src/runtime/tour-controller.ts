@@ -52,7 +52,8 @@ function waitForTimer(delay: number, signal: AbortSignal) {
 }
 
 interface TourControllerOptions<T> extends GlowTourOptions {
-  assertCanRun?: (workflow: WorkflowDefinition<T>) => void;
+  // biome-ignore lint/suspicious/noConfusingVoidType: unit-test controllers may use a guard without a DOM document.
+  assertCanRun?: (workflow: WorkflowDefinition<T>) => Document | void;
   onDispose?: () => void;
   reportUnhandledError?: (error: Error) => void;
 }
@@ -134,7 +135,7 @@ export class TourController<T> {
   async run(workflow: WorkflowDefinition<T>) {
     this.assertNotDisposed();
     validateWorkflowOptions(workflow);
-    this.options.assertCanRun?.(workflow);
+    const rootDocument = this.options.assertCanRun?.(workflow) ?? undefined;
     const retainedPresentation = this.capturePresentation();
     const operation = this.beginOperation();
     this.workflow = workflow;
@@ -146,6 +147,7 @@ export class TourController<T> {
           workflow.options,
           (error) => this.reportSubscriberError(error),
           `steps[${index}]`,
+          rootDocument,
         ),
     );
     for (const step of this.steps) {

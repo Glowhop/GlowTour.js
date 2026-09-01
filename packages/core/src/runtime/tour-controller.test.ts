@@ -54,6 +54,29 @@ function trackAbortListeners(
 const target = {} as HTMLElement;
 const targetResolver = () => target;
 
+function createRealmDocument() {
+  let selected: HTMLElement | null = null;
+
+  class RealmElement {
+    isConnected = true;
+
+    constructor(readonly ownerDocument: Document) {}
+  }
+
+  const document = {
+    defaultView: { HTMLElement: RealmElement },
+    querySelector: () => selected,
+  } as unknown as Document;
+
+  return {
+    document,
+    element: () => new RealmElement(document) as unknown as HTMLElement,
+    select(element: HTMLElement | null) {
+      selected = element;
+    },
+  };
+}
+
 function createGlowTour<T>() {
   return new TourController<T>();
 }
@@ -130,6 +153,23 @@ async function flushMicrotasks() {
 }
 
 describe("instance-first TourController", () => {
+  test("uses the document returned by assertCanRun for selector targets", async () => {
+    const realm = createRealmDocument();
+    const element = realm.element();
+    realm.select(element);
+    const tour = new TourController<string>(undefined, {
+      assertCanRun: () => realm.document,
+    });
+    const workflow = tour
+      .create("root-document")
+      .step({ content: "one", target: "#root-only", title: "one" })
+      .build();
+
+    await tour.run(workflow);
+
+    assert.equal(tour.state.get().currentStep?.target, element);
+  });
+
   test("rejects invalid workflow options before mutating lifecycle state", async () => {
     const tour = createGlowTour<string>();
     const workflow = tour
@@ -1410,31 +1450,22 @@ describe("instance-first TourController", () => {
   });
 
   test("polls waitForElement until the selector appears", async () => {
-    const originalDocument = globalThis.document;
     let available = false;
-    Object.defineProperty(globalThis, "document", {
-      configurable: true,
-      value: { querySelector: () => (available ? target : null) },
-    });
+    const target = {
+      ownerDocument: { querySelector: () => (available ? target : null) },
+    } as unknown as HTMLElement;
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("wait-element")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ content: "one", target: () => target, title: "one" })
       .waitUntilElement("#ready", { interval: 1, timeout: 100 })
       .build();
 
-    try {
-      setTimeout(() => {
-        available = true;
-      }, 2);
-      await tour.run(workflow);
-      assert.equal(tour.state.get().status, "active");
-    } finally {
-      Object.defineProperty(globalThis, "document", {
-        configurable: true,
-        value: originalDocument,
-      });
-    }
+    setTimeout(() => {
+      available = true;
+    }, 2);
+    await tour.run(workflow);
+    assert.equal(tour.state.get().status, "active");
   });
 
   test("turns a wait timeout into a terminal public error and cleans the view", async () => {

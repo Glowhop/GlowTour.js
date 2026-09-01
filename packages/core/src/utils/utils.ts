@@ -70,14 +70,40 @@ export function toggleElementAttribute(element: Element, name: string, enabled: 
 
 export async function resolveTargetElement(
   target: TargetResolver,
-  signal = new AbortController().signal,
+  options: { readonly document?: Document; readonly signal: AbortSignal },
+  path = "target",
 ): Promise<HTMLElement | null> {
+  const rootDocument = options.document;
   if (typeof target === "string") {
-    return typeof document === "undefined" ? null : document.querySelector<HTMLElement>(target);
-  } else if (typeof HTMLElement !== "undefined" && target instanceof HTMLElement) {
-    return target;
+    const element = rootDocument
+      ? rootDocument.querySelector<HTMLElement>(target)
+      : typeof document === "undefined"
+        ? null
+        : document.querySelector<HTMLElement>(target);
+    return rootDocument ? validateTargetElement(element, rootDocument, path) : element;
   } else if (typeof target === "function") {
-    return await target({ signal });
+    const element = await target({ signal: options.signal });
+    return rootDocument ? validateTargetElement(element, rootDocument, path) : element;
   }
-  return null;
+  if (rootDocument) return validateTargetElement(target, rootDocument, path);
+  return typeof HTMLElement !== "undefined" && target instanceof HTMLElement ? target : null;
+}
+
+function validateTargetElement(
+  candidate: HTMLElement | null,
+  rootDocument: Document,
+  path: string,
+): HTMLElement | null {
+  if (candidate === null) return null;
+  const HTMLElement = rootDocument.defaultView?.HTMLElement;
+  if (
+    typeof HTMLElement !== "function" ||
+    !(candidate instanceof HTMLElement) ||
+    candidate.ownerDocument !== rootDocument
+  ) {
+    throw new TypeError(
+      `Invalid target: ${path} must resolve to an HTMLElement in the root document`,
+    );
+  }
+  return candidate.isConnected ? candidate : null;
 }

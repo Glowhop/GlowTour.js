@@ -247,7 +247,7 @@ export class WorkflowStepBuilder<T> {
   waitUntilElement(selector: string, options?: WaitUntilOptions): this {
     if (selector.length === 0) throw new TypeError("selector must not be empty");
     return this.waitUntil(
-      () => typeof document !== "undefined" && document.querySelector(selector) !== null,
+      (context) => context.target.ownerDocument.querySelector(selector) !== null,
       options,
     );
   }

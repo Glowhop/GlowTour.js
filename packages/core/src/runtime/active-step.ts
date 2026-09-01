@@ -26,7 +26,8 @@ export class ActiveStep<T> {
     readonly definition: WorkflowStepDefinition<T>,
     defaults: ReadonlyStartOptions,
     reportSubscriberError: (error: unknown) => void = () => {},
-    path = "steps[0]",
+    private readonly path = "steps[0]",
+    private readonly rootDocument?: Document,
   ) {
     this.initialProps = freezeStepProps({
       title: definition.props.title,
@@ -63,7 +64,11 @@ export class ActiveStep<T> {
   }
 
   async resolveTarget(signal: AbortSignal) {
-    return await resolveTargetElement(this.definition.target, signal);
+    return await resolveTargetElement(
+      this.definition.target,
+      { document: this.rootDocument, signal },
+      this.path,
+    );
   }
 
   snapshot() {

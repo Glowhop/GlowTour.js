@@ -177,14 +177,17 @@ describe("WorkflowBuilder public contract", () => {
   });
 });
 
-function createContext(signal = new AbortController().signal): StepContext<string> {
+function createContext(
+  signal = new AbortController().signal,
+  target = {} as HTMLElement,
+): StepContext<string> {
   return {
     advance: async () => {},
     cancel: async () => {},
     previous: async () => {},
     props: {} as StepContext<string>["props"],
     signal,
-    target: {} as HTMLElement,
+    target,
   };
 }
 
@@ -321,40 +324,26 @@ describe("StepBuilder action contract", () => {
     await assert.rejects(async () => action(createContext()), /waitUntil timed out after 0ms/);
   });
 
-  test("waitUntilElement polls the document until the selector resolves", async () => {
-    const previousDocument = globalThis.document;
+  test("waitUntilElement polls its target owner document until the selector resolves", async () => {
     let queries = 0;
-    Object.defineProperty(globalThis, "document", {
-      configurable: true,
-      value: {
+    const target = {
+      ownerDocument: {
         querySelector: () => {
           queries += 1;
           return queries === 2 ? {} : null;
         },
       },
-    });
+    } as unknown as HTMLElement;
+    const workflow = new WorkflowBuilder<string>("wait-until-element")
+      .step({ content: "Content", target: "#target", title: "Title" })
+      .waitUntilElement("#ready", { interval: 1, timeout: 100 })
+      .build();
+    const action = workflow.steps[0].actions[0];
+    assert.equal(typeof action, "function");
+    if (typeof action !== "function") return;
 
-    try {
-      const workflow = new WorkflowBuilder<string>("wait-until-element")
-        .step({ content: "Content", target: "#target", title: "Title" })
-        .waitUntilElement("#ready", { interval: 1, timeout: 100 })
-        .build();
-      const action = workflow.steps[0].actions[0];
-      assert.equal(typeof action, "function");
-      if (typeof action !== "function") return;
-
-      assert.equal(await action(createContext()), true);
-      assert.equal(queries, 2);
-    } finally {
-      if (previousDocument) {
-        Object.defineProperty(globalThis, "document", {
-          configurable: true,
-          value: previousDocument,
-        });
-      } else {
-        Reflect.deleteProperty(globalThis, "document");
-      }
-    }
+    assert.equal(await action(createContext(undefined, target)), true);
+    assert.equal(queries, 2);
   });
 
   test("validates timing values when defining the workflow", () => {
