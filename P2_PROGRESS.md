@@ -19,7 +19,7 @@ Baseline: 260 Core tests passing on commit `eb8f5b4`.
 
 | Task | Description | Status | Commits | Review |
 | ---: | --- | --- | --- | --- |
-| 1 | Runtime option validation | Pending | — | — |
+| 1 | Runtime option validation | Complete | `c412b3f` | Approved, no findings |
 | 2 | Root-document target resolution | Pending | — | — |
 | 3 | Realm-aware DOM driver | Pending | — | — |
 | 4 | Presentation-only button disabling | Pending | — | — |
@@ -67,4 +67,4 @@ Run `bun test packages/core/src`, `bunx tsc -p packages/core/tsconfig.json --noE
 
 ## Review Notes
 
-No findings recorded yet.
+- Task 1: independent review approved with no findings.
