@@ -33,6 +33,7 @@ export interface TourViewCommands {
   previous(): Promise<void>;
   cancel(): Promise<void>;
   reportError(error: unknown): Promise<void>;
+  targetDisconnected(target: HTMLElement): Promise<void>;
   subscribeCapabilities?(listener: (active: boolean) => void): () => void;
 }
 
@@ -458,6 +459,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const step = this.currentStep;
     const target = step?.target;
     if (!this.isCurrentGeneration(generation) || !step || !target) return;
+    if (!this.isCurrentTargetAvailable(target)) {
+      this.stopForDisconnectedTarget(target, generation);
+      return;
+    }
     const targetRect = target.getBoundingClientRect();
     const presentationChanged = this.presentationDirty;
     if (presentationChanged) {
@@ -829,6 +834,26 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.rafId = null;
     this.rafCancel = null;
     for (const cleanup of this.stepCleanups.splice(0)) cleanup();
+  }
+
+  private isCurrentTargetAvailable(target: HTMLElement) {
+    const rootDocument = this.root?.ownerDocument;
+    return target.isConnected && (!rootDocument || target.ownerDocument === rootDocument);
+  }
+
+  private stopForDisconnectedTarget(target: HTMLElement, generation: number) {
+    if (!this.isCurrentGeneration(generation)) return;
+    this.beginGeneration();
+    this.cleanupStepResources();
+    this.releaseModality();
+    this.focusGuard.deactivate();
+    this.active = false;
+    this.currentSignal = null;
+    this.currentStep = null;
+    this.lastTargetRect = null;
+    void Promise.resolve(this.commands?.targetDisconnected(target)).catch((error) => {
+      void this.commands?.reportError(error).catch(() => {});
+    });
   }
 
   private beginGeneration() {

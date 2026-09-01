@@ -119,6 +119,9 @@ export class TourController<T> {
           // The failure is exposed through the public state.
         }
       },
+      targetDisconnected: async (target) => {
+        await this.recoverDisconnectedTarget(target);
+      },
       subscribeCapabilities: (listener) =>
         this.state.subscribe((state) => listener(state.status === "active")),
     });
@@ -250,12 +253,7 @@ export class TourController<T> {
     const target = await this.resolveTarget(step, operation);
     this.assertCurrent(operation);
     if (!target) {
-      const nextIndex = direction === "advance" ? index + 1 : index - 1;
-      if (nextIndex >= this.steps.length) await this.finish(operation);
-      else if (nextIndex < 0) {
-        if (this.canCancel()) await this.cancelCurrent(operation);
-        else this.setStatus("active");
-      } else await this.enter(nextIndex, direction, operation);
+      await this.advancePastMissingTarget(index, direction, operation);
       return;
     }
     step.target = target;
@@ -347,11 +345,55 @@ export class TourController<T> {
       if (target) return target;
       if (strategy === "skip") return null;
       if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
-        throw new Error(`Missing target: ${String(step.definition.target)}`);
+        throw new Error(`Missing target at ${step.path}: ${String(step.definition.target)}`);
       }
       await waitForTimer(16, signal);
       this.assertCurrent(operation);
     }
+  }
+
+  private async recoverDisconnectedTarget(target: HTMLElement) {
+    if (this.disposed || this.status !== "active") return;
+    const step = this.currentStep();
+    if (!step || step.target !== target) return;
+    const index = this.index;
+    const direction = this.direction;
+    const operation = this.beginOperation();
+    try {
+      this.setStatus("transitioning");
+      this.assertCurrent(operation);
+      await this.driver.clear(this.signalFor(operation));
+      this.assertCurrent(operation);
+      const recoveredTarget = await this.resolveTarget(step, operation);
+      this.assertCurrent(operation);
+      if (!recoveredTarget) {
+        await this.advancePastMissingTarget(index, direction, operation);
+        return;
+      }
+      step.target = recoveredTarget;
+      await this.driver.show(step, direction, this.signalFor(operation));
+      this.assertCurrent(operation);
+      this.setStatus("active");
+    } catch (error) {
+      try {
+        await this.handleFailure(error, operation);
+      } catch {
+        // The failure is exposed through the public state.
+      }
+    }
+  }
+
+  private async advancePastMissingTarget(
+    index: number,
+    direction: TourDirection,
+    operation: number,
+  ) {
+    const nextIndex = direction === "advance" ? index + 1 : index - 1;
+    if (nextIndex >= this.steps.length) await this.finish(operation);
+    else if (nextIndex < 0) {
+      if (this.canCancel()) await this.cancelCurrent(operation);
+      else this.setStatus("active");
+    } else await this.enter(nextIndex, direction, operation);
   }
 
   private async finish(operation: number) {

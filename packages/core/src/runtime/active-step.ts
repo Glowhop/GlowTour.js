@@ -26,7 +26,7 @@ export class ActiveStep<T> {
     readonly definition: WorkflowStepDefinition<T>,
     defaults: ReadonlyStartOptions,
     reportSubscriberError: (error: unknown) => void = () => {},
-    private readonly path = "steps[0]",
+    readonly path = "steps[0]",
     private readonly rootDocument?: Document,
   ) {
     this.initialProps = freezeStepProps({

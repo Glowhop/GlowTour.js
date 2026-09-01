@@ -1156,6 +1156,266 @@ describe("instance-first TourController", () => {
     assert.equal(driver.clearCalls, 1);
   });
 
+  test("recovers a disconnected target by waiting for its replacement without resetting props or replaying actions", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const initialTarget = {} as HTMLElement;
+    const replacementTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = initialTarget;
+    let actions = 0;
+    const workflow = tour
+      .create("recover-wait")
+      .step({
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "initial",
+      })
+      .do(({ props }) => {
+        actions += 1;
+        props.set((current) => ({ ...current, title: "dynamic" }));
+      })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    const recovery = driver.commands.targetDisconnected(initialTarget);
+    await flushMicrotasks();
+    assert.equal(tour.state.get().status, "transitioning");
+    assert.equal(driver.clearCalls, 1);
+    await driver.commands.targetDisconnected(initialTarget);
+    assert.equal(driver.clearCalls, 1);
+
+    resolvedTarget = replacementTarget;
+    await recovery;
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStep?.target, replacementTarget);
+    assert.equal(tour.state.get().currentStep?.currentProps.title, "dynamic");
+    assert.equal(actions, 1);
+    assert.equal(driver.showCalls, 2);
+  });
+
+  test("recovers a direct element after it reconnects", async () => {
+    const driver = new RecordingDriver();
+    const realm = createRealmDocument();
+    const directTarget = realm.element();
+    const tour = new TourController<string>(driver, { assertCanRun: () => realm.document });
+    const workflow = tour
+      .create("recover-direct")
+      .step({
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+        content: "one",
+        target: directTarget,
+        title: "one",
+      })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+
+    (directTarget as unknown as { isConnected: boolean }).isConnected = false;
+    const recovery = driver.commands.targetDisconnected(directTarget);
+    await flushMicrotasks();
+    (directTarget as unknown as { isConnected: boolean }).isConnected = true;
+    await recovery;
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStep?.target, directTarget);
+    assert.equal(driver.showCalls, 2);
+  });
+
+  test("skips a disconnected target in the current direction", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const firstTarget = {} as HTMLElement;
+    const secondTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = firstTarget;
+    const workflow = tour
+      .create("recover-skip")
+      .step({
+        behavior: { missingTargetStrategy: "skip" },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "one",
+      })
+      .step({ content: "two", target: () => secondTarget, title: "two" })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    await driver.commands.targetDisconnected(firstTarget);
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().currentStep?.target, secondTarget);
+  });
+
+  test("uses the normal cancellation boundary after skipping a disconnected target backwards", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const firstTarget = {} as HTMLElement;
+    const secondTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = firstTarget;
+    let cancelTarget: HTMLElement | null = null;
+    const workflow = tour
+      .create("recover-reverse-skip", { cancellable: true })
+      .step({
+        behavior: { missingTargetStrategy: "skip" },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "one",
+      })
+      .beforeCancel(({ target }) => {
+        cancelTarget = target;
+      })
+      .step({ content: "two", target: () => secondTarget, title: "two" })
+      .build();
+    await tour.run(workflow);
+    await tour.advance();
+    await tour.previous();
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    await driver.commands.targetDisconnected(firstTarget);
+
+    assert.equal(tour.state.get().status, "cancelled");
+    assert.equal(cancelTarget, firstTarget);
+  });
+
+  test("keeps a non-cancellable backward skip at the initial traversal boundary", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const firstTarget = {} as HTMLElement;
+    const secondTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = firstTarget;
+    const workflow = tour
+      .create("recover-reverse-fixed", { cancellable: false })
+      .step({
+        behavior: { missingTargetStrategy: "skip" },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "one",
+      })
+      .step({ content: "two", target: () => secondTarget, title: "two" })
+      .build();
+    await tour.run(workflow);
+    await tour.advance();
+    await tour.previous();
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    await driver.commands.targetDisconnected(firstTarget);
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 0);
+    await tour.advance();
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().status, "active");
+  });
+
+  test("reports an indexed error when active target recovery uses the error strategy", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const initialTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = initialTarget;
+    const workflow = tour
+      .create("recover-error")
+      .step({ content: "one", target: () => resolvedTarget, title: "one" })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    await driver.commands.targetDisconnected(initialTarget);
+
+    assert.equal(tour.state.get().status, "error");
+    assert.match(tour.state.get().error?.message ?? "", /Missing target at steps\[0\]/);
+    assert.equal(driver.clearCalls, 2);
+  });
+
+  test("reports an indexed error when active target recovery wait times out", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const initialTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = initialTarget;
+    const workflow = tour
+      .create("recover-timeout")
+      .step({
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 0 },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "one",
+      })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    await driver.commands.targetDisconnected(initialTarget);
+
+    assert.equal(tour.state.get().status, "error");
+    assert.match(tour.state.get().error?.message ?? "", /Missing target at steps\[0\]/);
+  });
+
+  test("ignores stale and repeated target-disconnected notifications", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const firstTarget = {} as HTMLElement;
+    const secondTarget = {} as HTMLElement;
+    const workflow = tour
+      .create("recover-stale")
+      .step({ content: "one", target: () => firstTarget, title: "one" })
+      .step({ content: "two", target: () => secondTarget, title: "two" })
+      .build();
+    await tour.run(workflow);
+    await tour.advance();
+    assert.ok(driver.commands);
+
+    await driver.commands.targetDisconnected(firstTarget);
+    await driver.commands.targetDisconnected(firstTarget);
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(driver.clearCalls, 0);
+  });
+
+  test("does not let a superseded target recovery commit after a new run", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const initialTarget = {} as HTMLElement;
+    const recoveredTarget = {} as HTMLElement;
+    const replacementWorkflowTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = initialTarget;
+    const oldWorkflow = tour
+      .create("recover-old")
+      .step({
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "one",
+      })
+      .build();
+    const replacementWorkflow = tour
+      .create("recover-new")
+      .step({ content: "two", target: () => replacementWorkflowTarget, title: "two" })
+      .build();
+    await tour.run(oldWorkflow);
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    const recovery = driver.commands.targetDisconnected(initialTarget);
+    await flushMicrotasks();
+    await tour.run(replacementWorkflow);
+    resolvedTarget = recoveredTarget;
+    await recovery;
+
+    assert.equal(tour.state.get().name, "recover-new");
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStep?.target, replacementWorkflowTarget);
+  });
+
   test("keeps disabled navigation props presentation-only in public state", async () => {
     const tour = createGlowTour<string>();
     let firstStepProps!: StepContext<string>["props"];

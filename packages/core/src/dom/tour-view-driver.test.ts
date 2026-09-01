@@ -374,6 +374,7 @@ function createCommands(): { commands: TourViewCommands; calls: string[] } {
       previous: async () => void calls.push("previous"),
       reportError: async (error) =>
         void calls.push(`error:${error instanceof Error ? error.message : String(error)}`),
+      targetDisconnected: async () => void calls.push("targetDisconnected"),
     },
   };
 }
@@ -396,6 +397,7 @@ function createToggleableCommands() {
       previous: async () => void calls.push("previous"),
       reportError: async (error) =>
         void calls.push(`error:${error instanceof Error ? error.message : String(error)}`),
+      targetDisconnected: async () => void calls.push("targetDisconnected"),
       subscribeCapabilities: (listener: (active: boolean) => void) => {
         listener(active);
         listeners.add(listener);
@@ -506,6 +508,67 @@ describe("DomTourViewDriver", () => {
     flushFrame();
     assert.equal(animationFrames.length, 1);
     assert.equal(TestResizeObserver.instances.length, 0);
+  });
+  test("notifies once and stops the active generation before reading disconnected target geometry", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    let geometryReads = 0;
+    const getBoundingClientRect = target.getBoundingClientRect.bind(target);
+    Object.defineProperty(target, "getBoundingClientRect", {
+      value: () => {
+        geometryReads += 1;
+        return getBoundingClientRect();
+      },
+    });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    geometryReads = 0;
+    const overlayPath = elements.overlay.querySelector("path");
+    assert.ok(overlayPath);
+    const initialPath = overlayPath.style.getPropertyValue("d");
+
+    target.isConnected = false;
+    target.setRect({ height: 40, left: 100, top: 100, width: 40 });
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["targetDisconnected"]);
+    assert.equal(geometryReads, 0);
+    assert.equal(overlayPath.style.getPropertyValue("d"), initialPath);
+    assert.equal(animationFrames.length, 0);
+    assert.deepEqual(cancelledFrames, []);
+
+    flushFrame();
+    await flushMicrotasks();
+    assert.deepEqual(calls, ["targetDisconnected"]);
+  });
+  test("notifies once before geometry when the active target changes root documents", async () => {
+    const { calls, driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    let geometryReads = 0;
+    const getBoundingClientRect = target.getBoundingClientRect.bind(target);
+    Object.defineProperty(target, "getBoundingClientRect", {
+      value: () => {
+        geometryReads += 1;
+        return getBoundingClientRect();
+      },
+    });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    geometryReads = 0;
+
+    Object.defineProperty(target, "ownerDocument", {
+      configurable: true,
+      value: new MockDocument(),
+    });
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["targetDisconnected"]);
+    assert.equal(geometryReads, 0);
+    assert.equal(animationFrames.length, 0);
   });
   test("does not schedule a realm frame without that realm's cancellation", async () => {
     const { driver } = installDriver();
