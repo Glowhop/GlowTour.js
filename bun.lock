@@ -69,6 +69,9 @@
     "packages/core": {
       "name": "@glowhop/core-tour",
       "version": "0.1.0",
+      "devDependencies": {
+        "happy-dom": "^18.0.1",
+      },
     },
     "packages/react": {
       "name": "@glowhop/react-tour",

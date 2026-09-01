@@ -374,6 +374,7 @@ function createCommands(): { commands: TourViewCommands; calls: string[] } {
       previous: async () => void calls.push("previous"),
       reportError: async (error) =>
         void calls.push(`error:${error instanceof Error ? error.message : String(error)}`),
+      targetDisconnected: async () => void calls.push("targetDisconnected"),
     },
   };
 }
@@ -396,6 +397,7 @@ function createToggleableCommands() {
       previous: async () => void calls.push("previous"),
       reportError: async (error) =>
         void calls.push(`error:${error instanceof Error ? error.message : String(error)}`),
+      targetDisconnected: async () => void calls.push("targetDisconnected"),
       subscribeCapabilities: (listener: (active: boolean) => void) => {
         listener(active);
         listeners.add(listener);
@@ -475,6 +477,77 @@ function createTarget() {
   return target;
 }
 
+interface PositionUpdater {
+  updatePosition(...args: unknown[]): unknown;
+}
+
+function countPositionUpdates(element: unknown) {
+  const updater = element as PositionUpdater;
+  const updatePosition = updater.updatePosition.bind(updater);
+  let updates = 0;
+  updater.updatePosition = (...args: unknown[]) => {
+    updates += 1;
+    return updatePosition(...args);
+  };
+  return {
+    get count() {
+      return updates;
+    },
+  };
+}
+
+interface PointerVisibilitySynchronizer {
+  syncVisibility(...args: unknown[]): unknown;
+}
+
+function countVisibilitySynchronizations(element: unknown) {
+  const synchronizer = element as PointerVisibilitySynchronizer;
+  const syncVisibility = synchronizer.syncVisibility.bind(synchronizer);
+  let synchronizations = 0;
+  synchronizer.syncVisibility = (...args: unknown[]) => {
+    synchronizations += 1;
+    return syncVisibility(...args);
+  };
+  return {
+    get count() {
+      return synchronizations;
+    },
+  };
+}
+
+function countDriverPositionUpdates(driver: DomTourViewDriver<string>) {
+  const internals = driver as unknown as {
+    overlay: unknown;
+    pointer: unknown;
+    popover: unknown;
+  };
+  assert.ok(internals.overlay);
+  assert.ok(internals.popover);
+  assert.ok(internals.pointer);
+  return {
+    overlay: countPositionUpdates(internals.overlay),
+    pointer: countPositionUpdates(internals.pointer),
+    pointerVisibility: countVisibilitySynchronizations(internals.pointer),
+    popover: countPositionUpdates(internals.popover),
+  };
+}
+
+function countBoundingRectReads(element: MockElement) {
+  const getBoundingClientRect = element.getBoundingClientRect.bind(element);
+  let reads = 0;
+  Object.defineProperty(element, "getBoundingClientRect", {
+    value: () => {
+      reads += 1;
+      return getBoundingClientRect();
+    },
+  });
+  return {
+    get count() {
+      return reads;
+    },
+  };
+}
+
 describe("DomTourViewDriver", () => {
   test("fades in the initial overlay without animating from an empty path", async () => {
     animationMode = "controlled";
@@ -506,6 +579,236 @@ describe("DomTourViewDriver", () => {
     flushFrame();
     assert.equal(animationFrames.length, 1);
     assert.equal(TestResizeObserver.instances.length, 0);
+  });
+  test("skips overlay, popover, and pointer synchronization for stable frames", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const updates = countDriverPositionUpdates(driver);
+    const targetReads = countBoundingRectReads(step.target as unknown as MockElement);
+
+    flushFrame();
+    flushFrame();
+
+    assert.equal(targetReads.count, 2);
+    assert.equal(updates.overlay.count, 0);
+    assert.equal(updates.popover.count, 0);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 0);
+    assert.equal(animationFrames.length, 1);
+  });
+  test("synchronizes stable geometry after the root-realm viewport changes", async () => {
+    Object.defineProperty(document, "defaultView", { configurable: true, value: window });
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const before = elements.popover.style.transform;
+
+    window.innerWidth = 180;
+    window.innerHeight = 60;
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.equal(elements.overlay.getAttribute("viewBox"), "0 0 180 60");
+    assert.notEqual(elements.popover.style.transform, before);
+    assert.equal(elements.popover.getAttribute("data-glow-tour-placement"), "center");
+  });
+  test("does not synchronize the immediate identical props subscription", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const updates = countDriverPositionUpdates(driver);
+
+    flushFrame();
+
+    assert.equal(updates.overlay.count, 0);
+    assert.equal(updates.popover.count, 0);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 0);
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "rgb(12, 34, 56)" },
+    }));
+    flushFrame();
+    flushFrame();
+
+    assert.equal(updates.overlay.count, 1);
+    assert.equal(updates.popover.count, 1);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 1);
+  });
+  test("synchronizes every renderer once when the target rectangle changes", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    const target = createTarget();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const updates = countDriverPositionUpdates(driver);
+    const targetReads = countBoundingRectReads(target);
+
+    target.setRect({ height: 30, left: 40, top: 50, width: 30 });
+    flushFrame();
+    flushFrame();
+
+    assert.equal(targetReads.count, 2);
+    assert.equal(updates.overlay.count, 1);
+    assert.equal(updates.popover.count, 1);
+    assert.equal(updates.pointer.count, 1);
+    assert.equal(updates.pointerVisibility.count, 0);
+  });
+  test("synchronizes every renderer once after a presentation props change", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const updates = countDriverPositionUpdates(driver);
+    const targetReads = countBoundingRectReads(step.target as unknown as MockElement);
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "rgb(12, 34, 56)" },
+    }));
+    flushFrame();
+    flushFrame();
+
+    assert.equal(targetReads.count, 2);
+    assert.equal(updates.overlay.count, 1);
+    assert.equal(updates.popover.count, 1);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 1);
+  });
+  test("detects a lost target after a stable frame without rendering or rearming", async () => {
+    const { calls, driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    const target = createTarget();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const updates = countDriverPositionUpdates(driver);
+    const targetReads = countBoundingRectReads(target);
+
+    flushFrame();
+    target.isConnected = false;
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.equal(targetReads.count, 1);
+    assert.equal(updates.overlay.count, 0);
+    assert.equal(updates.popover.count, 0);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 0);
+    assert.deepEqual(calls, ["targetDisconnected"]);
+    assert.equal(animationFrames.length, 0);
+  });
+  test("notifies once and stops the active generation before reading disconnected target geometry", async () => {
+    const { calls, driver, elements } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    let geometryReads = 0;
+    const getBoundingClientRect = target.getBoundingClientRect.bind(target);
+    Object.defineProperty(target, "getBoundingClientRect", {
+      value: () => {
+        geometryReads += 1;
+        return getBoundingClientRect();
+      },
+    });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    geometryReads = 0;
+    const overlayPath = elements.overlay.querySelector("path");
+    assert.ok(overlayPath);
+    const initialPath = overlayPath.style.getPropertyValue("d");
+
+    target.isConnected = false;
+    target.setRect({ height: 40, left: 100, top: 100, width: 40 });
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["targetDisconnected"]);
+    assert.equal(geometryReads, 0);
+    assert.equal(overlayPath.style.getPropertyValue("d"), initialPath);
+    assert.equal(animationFrames.length, 0);
+    assert.deepEqual(cancelledFrames, []);
+
+    flushFrame();
+    await flushMicrotasks();
+    assert.deepEqual(calls, ["targetDisconnected"]);
+  });
+  test("notifies once before geometry when the active target changes root documents", async () => {
+    const { calls, driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    let geometryReads = 0;
+    const getBoundingClientRect = target.getBoundingClientRect.bind(target);
+    Object.defineProperty(target, "getBoundingClientRect", {
+      value: () => {
+        geometryReads += 1;
+        return getBoundingClientRect();
+      },
+    });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    geometryReads = 0;
+
+    Object.defineProperty(target, "ownerDocument", {
+      configurable: true,
+      value: new MockDocument(),
+    });
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["targetDisconnected"]);
+    assert.equal(geometryReads, 0);
+    assert.equal(animationFrames.length, 0);
+  });
+  test("does not schedule a realm frame without that realm's cancellation", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    const requestedFrames: number[] = [];
+    Object.defineProperty(document, "defaultView", {
+      configurable: true,
+      value: {
+        requestAnimationFrame: () => {
+          requestedFrames.push(1);
+          return 1;
+        },
+      },
+    });
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    driver.dispose();
+
+    assert.deepEqual(requestedFrames, []);
+    assert.deepEqual(cancelledFrames, []);
+  });
+  test("does not schedule a realm frame without that realm's request", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    const cancelledOwnerFrames: number[] = [];
+    Object.defineProperty(document, "defaultView", {
+      configurable: true,
+      value: {
+        cancelAnimationFrame: (id: number) => void cancelledOwnerFrames.push(id),
+      },
+    });
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    driver.dispose();
+
+    assert.deepEqual(animationFrames, []);
+    assert.deepEqual(cancelledOwnerFrames, []);
   });
   test("coalesces dynamic presentation changes onto the next animation frame", async () => {
     const { driver, elements } = installDriver();

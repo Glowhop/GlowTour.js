@@ -36,13 +36,9 @@ export function mergeIndicatorOptions(
   return {
     ...mergeBaseOptions(defaults, overrides),
     disabled: overrides?.disabled ?? defaults?.disabled,
-    gap: normalizeGap(overrides?.gap ?? defaults?.gap),
+    gap: overrides?.gap ?? defaults?.gap,
     placementTryOrder: cloneArray(overrides?.placementTryOrder ?? defaults?.placementTryOrder),
   };
-}
-
-function normalizeGap(value?: number) {
-  return value === undefined ? undefined : Math.max(0, value);
 }
 
 export function mergePopoverOptions(
@@ -63,12 +59,10 @@ export function mergePopoverOptions(
       ? {
           disabled: overrides?.arrow?.disabled ?? defaults?.arrow?.disabled,
           color: overrides?.arrow?.color ?? defaults?.arrow?.color,
-          size: normalizeGap(overrides?.arrow?.size ?? defaults?.arrow?.size),
-          borderWidth: normalizeGap(overrides?.arrow?.borderWidth ?? defaults?.arrow?.borderWidth),
-          borderRadius: normalizeGap(
-            overrides?.arrow?.borderRadius ?? defaults?.arrow?.borderRadius,
-          ),
-          edgePadding: normalizeGap(overrides?.arrow?.edgePadding ?? defaults?.arrow?.edgePadding),
+          size: overrides?.arrow?.size ?? defaults?.arrow?.size,
+          borderWidth: overrides?.arrow?.borderWidth ?? defaults?.arrow?.borderWidth,
+          borderRadius: overrides?.arrow?.borderRadius ?? defaults?.arrow?.borderRadius,
+          edgePadding: overrides?.arrow?.edgePadding ?? defaults?.arrow?.edgePadding,
         }
       : undefined,
     disableAdvanceButton: overrides?.disableAdvanceButton ?? defaults?.disableAdvanceButton,

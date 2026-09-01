@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { FocusGuard } from "./focus-guard";
+import { isFocusable } from "./focusable";
 
 class MockNode {
   parent: MockElement | null = null;
@@ -159,6 +160,26 @@ function createScope() {
 }
 
 describe("FocusGuard", () => {
+  test("treats an owner realm without computed styles as not focusable", () => {
+    const element = new MockElement("advance");
+    Object.defineProperty(element, "ownerDocument", {
+      configurable: true,
+      value: { defaultView: {} },
+    });
+
+    assert.equal(isFocusable(element as unknown as HTMLElement), false);
+  });
+
+  test("does not use a global style API when the owner window is unavailable", () => {
+    const element = new MockElement("advance");
+    Object.defineProperty(element, "ownerDocument", {
+      configurable: true,
+      value: { defaultView: null },
+    });
+
+    assert.equal(isFocusable(element as unknown as HTMLElement), false);
+  });
+
   test("focuses advance when entering a step in the advance direction", () => {
     const guard = new FocusGuard();
     const { advance, popover } = createScope();

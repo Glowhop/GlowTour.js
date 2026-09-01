@@ -113,6 +113,7 @@ class MockElement {
 
 class MockDocument {
   readonly body = this.createElement("body");
+  readonly defaultView = { HTMLElement: MockElement };
   activeElement: MockElement | null = null;
 
   createElement(tagName: string) {

@@ -40,6 +40,34 @@ describe("step props store", () => {
     assert.notEqual(store.get(), value);
   });
 
+  test("rejects invalid dynamic props before replacing the current snapshot", () => {
+    const store = createStepPropsStore(initialProps, () => {});
+    const current = store.get();
+    const received: ReadonlyStepProps<string>[] = [];
+    store.subscribe((props) => received.push(props));
+
+    assert.throws(() => store.set({ ...initialProps, overlay: { opacity: -0.1 } }), {
+      message: "Invalid option: steps[0].overlay.opacity",
+      name: "TypeError",
+    });
+
+    assert.equal(store.get(), current);
+    assert.deepEqual(received, [current]);
+  });
+
+  test("rejects a dynamic animation without a duration at its step index", () => {
+    const store = createStepPropsStore(initialProps, () => {}, "steps[2]");
+    const update = {
+      ...initialProps,
+      popover: { animation: { easing: "linear" } },
+    } as unknown as ReadonlyStepProps<string>;
+
+    assert.throws(() => store.set(update), {
+      message: "Invalid option: steps[2].popover.animation.duration",
+      name: "TypeError",
+    });
+  });
+
   test("preserves listener order and makes unsubscribe idempotent", () => {
     const store = createStepPropsStore(initialProps, () => {});
     const calls: string[] = [];

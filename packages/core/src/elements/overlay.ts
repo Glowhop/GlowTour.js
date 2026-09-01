@@ -1,4 +1,4 @@
-import { roundedRectPath, viewportDimensions } from "../utils/utils";
+import { ownerWindow, roundedRectPath, viewportDimensions } from "../utils/utils";
 import GlowTourElement, { type TourElementStep } from "./base";
 
 const DEFAULT_OVERLAY_PADDING = 16;
@@ -107,10 +107,15 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
   _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
     const { padding, radius, color, opacity } = step.overlay || {};
 
-    const path = roundedRectPath(position, viewportDimensions(), {
-      padding: padding ?? DEFAULT_OVERLAY_PADDING,
-      radius: radius ?? DEFAULT_OVERLAY_RADIUS,
-    });
+    const path = roundedRectPath(
+      position,
+      viewportDimensions(this.element),
+      {
+        padding: padding ?? DEFAULT_OVERLAY_PADDING,
+        radius: radius ?? DEFAULT_OVERLAY_RADIUS,
+      },
+      this.element,
+    );
 
     return {
       d: `path("${path}")`,
@@ -125,7 +130,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       console.warn("No overlay element found");
       return;
     }
-    const viewport = viewportDimensions();
+    const viewport = viewportDimensions(el);
 
     el.style.setProperty("position", "fixed");
     el.style.setProperty("z-index", "10000");
@@ -198,7 +203,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       );
     this.visualState = nextVisualState;
 
-    const viewport = viewportDimensions();
+    const viewport = viewportDimensions(this.element);
     const viewBox = `0 0 ${viewport.width} ${viewport.height}`;
     if (this.element.getAttribute("viewBox") !== viewBox) {
       this.element.setAttribute("viewBox", viewBox);
@@ -230,11 +235,11 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
   }
 
   private getCurrentRenderedStyles(path: SVGPathElement): Keyframe {
-    const computed = window.getComputedStyle(path);
+    const computed = computedStyle(path);
     return {
-      d: computed.getPropertyValue("d") || path.style.getPropertyValue("d"),
-      fill: computed.getPropertyValue("fill") || path.style.getPropertyValue("fill"),
-      opacity: computed.getPropertyValue("opacity") || path.style.getPropertyValue("opacity"),
+      d: computed?.getPropertyValue("d") || path.style.getPropertyValue("d"),
+      fill: computed?.getPropertyValue("fill") || path.style.getPropertyValue("fill"),
+      opacity: computed?.getPropertyValue("opacity") || path.style.getPropertyValue("opacity"),
     };
   }
 
@@ -246,10 +251,10 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       return { ...styles, fill: inlineFill };
     }
     path.style.removeProperty("fill");
-    const renderedFill = window.getComputedStyle(path).getPropertyValue("fill");
+    const renderedFill = computedStyle(path)?.getPropertyValue("fill");
     if (inlineFill) path.style.setProperty("fill", inlineFill);
 
-    return { ...styles, fill: renderedFill };
+    return { ...styles, fill: renderedFill ?? "" };
   }
 
   private _getVisualState(step: TourElementStep): OverlayVisualState {
@@ -315,4 +320,13 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     path.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
   }
+}
+
+function computedStyle(element: Element): CSSStyleDeclaration | null {
+  const document = element.ownerDocument;
+  const currentWindow =
+    document && "defaultView" in document ? document.defaultView : ownerWindow(element);
+  return typeof currentWindow?.getComputedStyle === "function"
+    ? currentWindow.getComputedStyle(element)
+    : null;
 }

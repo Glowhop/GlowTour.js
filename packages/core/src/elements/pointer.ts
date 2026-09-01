@@ -38,8 +38,8 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     this.element.setAttribute("data-glow-tour-placement", nextPosition.placement);
 
     return {
-      left: `${roundByDPR(nextPosition.x)}px`,
-      top: `${roundByDPR(nextPosition.y)}px`,
+      left: `${roundByDPR(nextPosition.x, this.element)}px`,
+      top: `${roundByDPR(nextPosition.y, this.element)}px`,
     };
   }
 
@@ -65,8 +65,8 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     const currentPlacement = this.element.getAttribute("data-glow-tour-placement");
     const nextPositionState = this._resolvePosition(nextPosition, step);
     const nextPlacement = nextPositionState.placement;
-    const left = `${roundByDPR(nextPositionState.x)}px`;
-    const top = `${roundByDPR(nextPositionState.y)}px`;
+    const left = `${roundByDPR(nextPositionState.x, this.element)}px`;
+    const top = `${roundByDPR(nextPositionState.y, this.element)}px`;
     if (this.element.style.getPropertyValue("left") !== left) {
       this.element.style.setProperty("left", left);
     }
@@ -162,12 +162,15 @@ export default class PointerElement<T> extends GlowTourElement<T> {
     for (const placement of tryOrder) {
       const candidate = candidates[placement];
       if (
-        isInViewport({
-          left: candidate.x,
-          top: candidate.y,
-          right: candidate.x + pointerPosition.width,
-          bottom: candidate.y + pointerPosition.height,
-        })
+        isInViewport(
+          {
+            left: candidate.x,
+            top: candidate.y,
+            right: candidate.x + pointerPosition.width,
+            bottom: candidate.y + pointerPosition.height,
+          },
+          this.element,
+        )
       ) {
         return { ...candidate, placement };
       }
@@ -175,7 +178,7 @@ export default class PointerElement<T> extends GlowTourElement<T> {
 
     const placement = tryOrder[0] ?? DEFAULT_TRY_ORDER[0];
     const candidate = candidates[placement];
-    const viewport = viewportDimensions();
+    const viewport = viewportDimensions(this.element);
 
     return {
       placement,

@@ -1,14 +1,41 @@
 import type { TargetResolver } from "../types";
 
-export function viewportDimensions() {
+export function ownerWindow(element?: Node | null): (Window & typeof globalThis) | null {
+  return element?.ownerDocument?.defaultView ?? (typeof window === "undefined" ? null : window);
+}
+
+export function ownerDocument(element?: Node | null): Document | null {
+  return element?.ownerDocument ?? (typeof document === "undefined" ? null : document);
+}
+
+export function isHTMLElement(value: unknown, context?: Node | null): value is HTMLElement {
+  const HTMLElement = ownerWindow(context)?.HTMLElement ?? globalThis.HTMLElement;
+  return typeof HTMLElement === "function" && value instanceof HTMLElement;
+}
+
+export function isElement(value: unknown, context?: Node | null): value is Element {
+  const Element = ownerWindow(context)?.Element ?? globalThis.Element;
+  return typeof Element === "function" && value instanceof Element;
+}
+
+export function isNode(value: unknown, context?: Node | null): value is Node {
+  const Node = ownerWindow(context)?.Node ?? globalThis.Node;
+  return typeof Node === "function" && value instanceof Node;
+}
+
+export function viewportDimensions(context?: Node | null) {
+  const currentWindow = ownerWindow(context);
   return {
-    width: typeof window === "undefined" ? 1024 : window.innerWidth,
-    height: typeof window === "undefined" ? 768 : window.innerHeight,
+    width: currentWindow?.innerWidth ?? 1024,
+    height: currentWindow?.innerHeight ?? 768,
   };
 }
 
-export function isInViewport(rect: { left: number; top: number; right: number; bottom: number }) {
-  const viewport = viewportDimensions();
+export function isInViewport(
+  rect: { left: number; top: number; right: number; bottom: number },
+  context?: Node | null,
+) {
+  const viewport = viewportDimensions(context);
 
   return (
     rect.left >= 0 &&
@@ -18,8 +45,8 @@ export function isInViewport(rect: { left: number; top: number; right: number; b
   );
 }
 
-export function roundByDPR(value: number) {
-  const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+export function roundByDPR(value: number, context?: Node | null) {
+  const dpr = ownerWindow(context)?.devicePixelRatio || 1;
   return Math.round(value * dpr) / dpr;
 }
 
@@ -27,19 +54,20 @@ export function roundedRectPath(
   rect: DOMRect,
   viewport: { width: number; height: number },
   options: { padding: number; radius: number },
+  context?: Node | null,
 ) {
   const padding = options.padding;
   const radius = options.radius;
-  const x = roundByDPR(rect.left - padding);
-  const y = roundByDPR(rect.top - padding);
+  const x = roundByDPR(rect.left - padding, context);
+  const y = roundByDPR(rect.top - padding, context);
   const width = rect.width + padding * 2;
   const height = rect.height + padding * 2;
-  const right = roundByDPR(rect.left + rect.width + padding);
-  const bottom = roundByDPR(rect.top + rect.height + padding);
-  const corner = roundByDPR(Math.max(0, Math.min(radius, width / 2, height / 2)));
+  const right = roundByDPR(rect.left + rect.width + padding, context);
+  const bottom = roundByDPR(rect.top + rect.height + padding, context);
+  const corner = roundByDPR(Math.max(0, Math.min(radius, width / 2, height / 2)), context);
 
   return [
-    `M0,0 H${roundByDPR(viewport.width)} V${roundByDPR(viewport.height)} H0 Z`,
+    `M0,0 H${roundByDPR(viewport.width, context)} V${roundByDPR(viewport.height, context)} H0 Z`,
     `M${x},${y + corner}`,
     `Q${x},${y} ${x + corner},${y}`,
     `H${right - corner}`,
@@ -70,14 +98,40 @@ export function toggleElementAttribute(element: Element, name: string, enabled: 
 
 export async function resolveTargetElement(
   target: TargetResolver,
-  signal = new AbortController().signal,
+  options: { readonly document?: Document; readonly signal: AbortSignal },
+  path = "target",
 ): Promise<HTMLElement | null> {
+  const rootDocument = options.document;
   if (typeof target === "string") {
-    return typeof document === "undefined" ? null : document.querySelector<HTMLElement>(target);
-  } else if (typeof HTMLElement !== "undefined" && target instanceof HTMLElement) {
-    return target;
+    const element = rootDocument
+      ? rootDocument.querySelector<HTMLElement>(target)
+      : typeof document === "undefined"
+        ? null
+        : document.querySelector<HTMLElement>(target);
+    return rootDocument ? validateTargetElement(element, rootDocument, path) : element;
   } else if (typeof target === "function") {
-    return await target({ signal });
+    const element = await target({ signal: options.signal });
+    return rootDocument ? validateTargetElement(element, rootDocument, path) : element;
   }
-  return null;
+  if (rootDocument) return validateTargetElement(target, rootDocument, path);
+  return typeof HTMLElement !== "undefined" && target instanceof HTMLElement ? target : null;
+}
+
+function validateTargetElement(
+  candidate: HTMLElement | null,
+  rootDocument: Document,
+  path: string,
+): HTMLElement | null {
+  if (candidate === null) return null;
+  const HTMLElement = rootDocument.defaultView?.HTMLElement;
+  if (
+    typeof HTMLElement !== "function" ||
+    !(candidate instanceof HTMLElement) ||
+    candidate.ownerDocument !== rootDocument
+  ) {
+    throw new TypeError(
+      `Invalid target: ${path} must resolve to an HTMLElement in the root document`,
+    );
+  }
+  return candidate.isConnected ? candidate : null;
 }
