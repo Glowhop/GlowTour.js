@@ -130,6 +130,52 @@ async function flushMicrotasks() {
 }
 
 describe("instance-first TourController", () => {
+  test("rejects invalid workflow options before mutating lifecycle state", async () => {
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("invalid", { overlay: { opacity: 1.1 } })
+      .step({ content: "one", target: targetResolver, title: "one" })
+      .build();
+
+    await assert.rejects(() => tour.run(workflow), {
+      message: "Invalid option: options.overlay.opacity",
+      name: "TypeError",
+    });
+
+    assert.deepEqual(tour.state.get(), {
+      canAdvance: false,
+      canCancel: false,
+      canPrevious: false,
+      currentStep: null,
+      currentStepIndex: -1,
+      direction: "advance",
+      error: null,
+      isFirstStep: false,
+      isLastStep: false,
+      name: "",
+      status: "idle",
+      totalSteps: 0,
+    });
+  });
+
+  test("identifies invalid step behavior by its workflow index", async () => {
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("invalid")
+      .step({
+        behavior: { targetTimeout: Number.NaN },
+        content: "one",
+        target: targetResolver,
+        title: "one",
+      })
+      .build();
+
+    await assert.rejects(() => tour.run(workflow), {
+      message: "Invalid option: steps[0].behavior.targetTimeout",
+      name: "TypeError",
+    });
+  });
+
   test("passes the workflow to assertCanRun before lifecycle state changes", async () => {
     let onStartCalls = 0;
     const tour = new TourController<string>(undefined, {

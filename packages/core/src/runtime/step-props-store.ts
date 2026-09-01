@@ -1,9 +1,11 @@
 import { freezeStepProps, type ReadonlyStepProps } from "../definition";
+import { validateStepProps } from "../options/validation";
 import type { StepPropsStore, StepPropsUpdate } from "../types";
 
 export function createStepPropsStore<T>(
   initialProps: ReadonlyStepProps<T>,
   reportListenerError: (error: unknown) => void,
+  path = "steps[0]",
 ): StepPropsStore<T> {
   let current = freezeStepProps(initialProps);
   const listeners = new Set<(props: ReadonlyStepProps<T>) => void>();
@@ -24,6 +26,7 @@ export function createStepPropsStore<T>(
     get: () => current,
     set: (update: StepPropsUpdate<T>) => {
       const next = typeof update === "function" ? update(current) : update;
+      validateStepProps(path, next);
       current = freezeStepProps(next);
       const published = current;
       for (const listener of Array.from(listeners)) notify(listener, published);

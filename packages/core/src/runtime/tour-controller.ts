@@ -5,6 +5,7 @@ import {
   NoopTourViewDriver,
   type TourViewDriver,
 } from "../dom/tour-view-driver";
+import { validateWorkflowOptions } from "../options/validation";
 import type {
   BeforeActionStepContext,
   GlowTour,
@@ -132,14 +133,20 @@ export class TourController<T> {
 
   async run(workflow: WorkflowDefinition<T>) {
     this.assertNotDisposed();
+    validateWorkflowOptions(workflow);
     this.options.assertCanRun?.(workflow);
     const retainedPresentation = this.capturePresentation();
     const operation = this.beginOperation();
     this.workflow = workflow;
     this.releaseStepPropsSubscriptions();
     this.steps = workflow.steps.map(
-      (step) =>
-        new ActiveStep(step, workflow.options, (error) => this.reportSubscriberError(error)),
+      (step, index) =>
+        new ActiveStep(
+          step,
+          workflow.options,
+          (error) => this.reportSubscriberError(error),
+          `steps[${index}]`,
+        ),
     );
     for (const step of this.steps) {
       this.stepPropsSubscriptions.push(

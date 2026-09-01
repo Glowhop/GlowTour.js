@@ -26,6 +26,7 @@ export class ActiveStep<T> {
     readonly definition: WorkflowStepDefinition<T>,
     defaults: ReadonlyStartOptions,
     reportSubscriberError: (error: unknown) => void = () => {},
+    path = "steps[0]",
   ) {
     this.initialProps = freezeStepProps({
       title: definition.props.title,
@@ -35,7 +36,7 @@ export class ActiveStep<T> {
       popover: mergePopoverOptions(defaults.popover, definition.props.popover),
       indicator: mergeIndicatorOptions(defaults.indicator, definition.props.indicator),
     });
-    this.props = createStepPropsStore(this.initialProps, reportSubscriberError);
+    this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
     this.state = Object.freeze({
       get: () => this.props.get(),
       subscribe: (listener: (props: ReadonlyStepProps<T>) => void) =>
