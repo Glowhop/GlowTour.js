@@ -464,9 +464,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     }
     const targetRect = target.getBoundingClientRect();
+    const targetSnapshot = snapshotRect(targetRect);
     const presentationChanged = this.presentationDirty;
+    if (!presentationChanged && sameRect(targetSnapshot, this.lastTargetRect)) return;
     if (presentationChanged) {
-      this.presentationDirty = false;
       this.overlay?.setAnimationOptions(
         animationOptions(step, step.overlay, this.overlay.getElement()),
       );
@@ -503,7 +504,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     } else if (this.pointer?.getElement()?.getAttribute("aria-hidden") !== "true") {
       this.observeDynamicOperation(this.pointer?.disappear(), generation);
     }
-    this.lastTargetRect = snapshotRect(targetRect);
+    this.lastTargetRect = targetSnapshot;
+    if (presentationChanged) this.presentationDirty = false;
   }
 
   private observeDynamicOperation(operation: Promise<void> | undefined, generation: number) {
@@ -985,6 +987,20 @@ function snapshotRect(rect: DOMRect): RectSnapshot {
     x: finite(rect.x, left),
     y: finite(rect.y, top),
   };
+}
+
+function sameRect(left: RectSnapshot, right: RectSnapshot | null) {
+  return (
+    right !== null &&
+    left.bottom === right.bottom &&
+    left.height === right.height &&
+    left.left === right.left &&
+    left.right === right.right &&
+    left.top === right.top &&
+    left.width === right.width &&
+    left.x === right.x &&
+    left.y === right.y
+  );
 }
 
 function finite(value: number, fallback = 0) {

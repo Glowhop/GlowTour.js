@@ -477,6 +477,77 @@ function createTarget() {
   return target;
 }
 
+interface PositionUpdater {
+  updatePosition(...args: unknown[]): unknown;
+}
+
+function countPositionUpdates(element: unknown) {
+  const updater = element as PositionUpdater;
+  const updatePosition = updater.updatePosition.bind(updater);
+  let updates = 0;
+  updater.updatePosition = (...args: unknown[]) => {
+    updates += 1;
+    return updatePosition(...args);
+  };
+  return {
+    get count() {
+      return updates;
+    },
+  };
+}
+
+interface PointerVisibilitySynchronizer {
+  syncVisibility(...args: unknown[]): unknown;
+}
+
+function countVisibilitySynchronizations(element: unknown) {
+  const synchronizer = element as PointerVisibilitySynchronizer;
+  const syncVisibility = synchronizer.syncVisibility.bind(synchronizer);
+  let synchronizations = 0;
+  synchronizer.syncVisibility = (...args: unknown[]) => {
+    synchronizations += 1;
+    return syncVisibility(...args);
+  };
+  return {
+    get count() {
+      return synchronizations;
+    },
+  };
+}
+
+function countDriverPositionUpdates(driver: DomTourViewDriver<string>) {
+  const internals = driver as unknown as {
+    overlay: unknown;
+    pointer: unknown;
+    popover: unknown;
+  };
+  assert.ok(internals.overlay);
+  assert.ok(internals.popover);
+  assert.ok(internals.pointer);
+  return {
+    overlay: countPositionUpdates(internals.overlay),
+    pointer: countPositionUpdates(internals.pointer),
+    pointerVisibility: countVisibilitySynchronizations(internals.pointer),
+    popover: countPositionUpdates(internals.popover),
+  };
+}
+
+function countBoundingRectReads(element: MockElement) {
+  const getBoundingClientRect = element.getBoundingClientRect.bind(element);
+  let reads = 0;
+  Object.defineProperty(element, "getBoundingClientRect", {
+    value: () => {
+      reads += 1;
+      return getBoundingClientRect();
+    },
+  });
+  return {
+    get count() {
+      return reads;
+    },
+  };
+}
+
 describe("DomTourViewDriver", () => {
   test("fades in the initial overlay without animating from an empty path", async () => {
     animationMode = "controlled";
@@ -508,6 +579,90 @@ describe("DomTourViewDriver", () => {
     flushFrame();
     assert.equal(animationFrames.length, 1);
     assert.equal(TestResizeObserver.instances.length, 0);
+  });
+  test("skips overlay, popover, and pointer synchronization for stable frames", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const updates = countDriverPositionUpdates(driver);
+    const targetReads = countBoundingRectReads(step.target as unknown as MockElement);
+
+    flushFrame();
+    flushFrame();
+
+    assert.equal(targetReads.count, 2);
+    assert.equal(updates.overlay.count, 0);
+    assert.equal(updates.popover.count, 0);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 0);
+    assert.equal(animationFrames.length, 1);
+  });
+  test("synchronizes every renderer once when the target rectangle changes", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    const target = createTarget();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const updates = countDriverPositionUpdates(driver);
+    const targetReads = countBoundingRectReads(target);
+
+    target.setRect({ height: 30, left: 40, top: 50, width: 30 });
+    flushFrame();
+    flushFrame();
+
+    assert.equal(targetReads.count, 2);
+    assert.equal(updates.overlay.count, 1);
+    assert.equal(updates.popover.count, 1);
+    assert.equal(updates.pointer.count, 1);
+    assert.equal(updates.pointerVisibility.count, 0);
+  });
+  test("synchronizes every renderer once after a presentation props change", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const updates = countDriverPositionUpdates(driver);
+    const targetReads = countBoundingRectReads(step.target as unknown as MockElement);
+
+    step.props.set((props) => ({
+      ...props,
+      overlay: { ...props.overlay, color: "rgb(12, 34, 56)" },
+    }));
+    flushFrame();
+    flushFrame();
+
+    assert.equal(targetReads.count, 2);
+    assert.equal(updates.overlay.count, 1);
+    assert.equal(updates.popover.count, 1);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 1);
+  });
+  test("detects a lost target after a stable frame without rendering or rearming", async () => {
+    const { calls, driver } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    const target = createTarget();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    const updates = countDriverPositionUpdates(driver);
+    const targetReads = countBoundingRectReads(target);
+
+    flushFrame();
+    target.isConnected = false;
+    flushFrame();
+    await flushMicrotasks();
+
+    assert.equal(targetReads.count, 1);
+    assert.equal(updates.overlay.count, 0);
+    assert.equal(updates.popover.count, 0);
+    assert.equal(updates.pointer.count, 0);
+    assert.equal(updates.pointerVisibility.count, 0);
+    assert.deepEqual(calls, ["targetDisconnected"]);
+    assert.equal(animationFrames.length, 0);
   });
   test("notifies once and stops the active generation before reading disconnected target geometry", async () => {
     const { calls, driver, elements } = installDriver();
