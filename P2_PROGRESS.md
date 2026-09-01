@@ -23,7 +23,7 @@ Baseline: 260 Core tests passing on commit `eb8f5b4`.
 | 2 | Root-document target resolution | Complete | `6fcc08c` | Approved; 2 minor coverage notes |
 | 3 | Realm-aware DOM driver | Complete | `1d5b333`, `3a718af` | Approved after fixes |
 | 4 | Presentation-only button disabling | Complete | `1236a0a` | Approved, no findings |
-| 5 | Active target disconnection recovery | Pending | — | — |
+| 5 | Active target disconnection recovery | Complete | `52c112d`, `58466af` | Approved after fix |
 | 6 | Stable positioning short-circuit | Pending | — | — |
 | 7 | Final verification | Pending | — | — |
 
@@ -71,3 +71,4 @@ Run `bun test packages/core/src`, `bunx tsc -p packages/core/tsconfig.json --noE
 - Task 2: independent review approved. Final review should triage two minor coverage gaps: a resolver returning a non-HTMLElement/same-realm foreign-document element, and direct coverage of the real root-bridge document return path.
 - Task 3: initial review found capability-gating and split-realm RAF defects; both were fixed in `3a718af`. Re-review approved with no remaining findings. Native iframe E2E remains outside scope; two-realm Happy DOM coverage passes.
 - Task 4: independent review approved with no findings; programmatic and action-context navigation remain available while disabled DOM controls stay inert.
+- Task 5: review found a stranded non-cancellable backward-skip boundary; `58466af` now fails that recovery with an indexed missing-target error. Re-review approved.
