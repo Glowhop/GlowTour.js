@@ -97,6 +97,60 @@ describe("OverlayElement animation fallbacks", () => {
     assert.equal(element.path.styles.get("fill"), "rgb(0, 0, 0)");
   });
 
+  test("uses an empty fill when the owner realm cannot compute styles", async () => {
+    const element = new MockOverlay();
+    const ownerDocument = { defaultView: {} };
+    Object.defineProperty(element, "ownerDocument", {
+      configurable: true,
+      value: ownerDocument,
+    });
+    Object.defineProperty(element.path, "ownerDocument", {
+      configurable: true,
+      value: ownerDocument,
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        devicePixelRatio: 1,
+        getComputedStyle: () => ({ getPropertyValue: () => "foreign-fill" }),
+        innerHeight: 600,
+        innerWidth: 800,
+      },
+    });
+    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+
+    assert.equal(element.path.styles.get("fill"), "");
+  });
+
+  test("does not use a global fill when the owner window is unavailable", async () => {
+    const element = new MockOverlay();
+    const ownerDocument = { defaultView: null };
+    Object.defineProperty(element, "ownerDocument", {
+      configurable: true,
+      value: ownerDocument,
+    });
+    Object.defineProperty(element.path, "ownerDocument", {
+      configurable: true,
+      value: ownerDocument,
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        devicePixelRatio: 1,
+        getComputedStyle: () => ({ getPropertyValue: () => "foreign-fill" }),
+        innerHeight: 600,
+        innerWidth: 800,
+      },
+    });
+    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+
+    assert.equal(element.path.styles.get("fill"), "");
+  });
+
   test("resolves the computed fill after a previous step supplied an explicit color", async () => {
     const element = new MockOverlay();
     Object.defineProperty(globalThis, "window", {

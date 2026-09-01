@@ -235,7 +235,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
   }
 
   private getCurrentRenderedStyles(path: SVGPathElement): Keyframe {
-    const computed = ownerWindow(path)?.getComputedStyle(path);
+    const computed = computedStyle(path);
     return {
       d: computed?.getPropertyValue("d") || path.style.getPropertyValue("d"),
       fill: computed?.getPropertyValue("fill") || path.style.getPropertyValue("fill"),
@@ -251,7 +251,7 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
       return { ...styles, fill: inlineFill };
     }
     path.style.removeProperty("fill");
-    const renderedFill = ownerWindow(path)?.getComputedStyle(path).getPropertyValue("fill");
+    const renderedFill = computedStyle(path)?.getPropertyValue("fill");
     if (inlineFill) path.style.setProperty("fill", inlineFill);
 
     return { ...styles, fill: renderedFill ?? "" };
@@ -320,4 +320,13 @@ export default class OverlayElement<T> extends GlowTourElement<T> {
     path.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
   }
+}
+
+function computedStyle(element: Element): CSSStyleDeclaration | null {
+  const document = element.ownerDocument;
+  const currentWindow =
+    document && "defaultView" in document ? document.defaultView : ownerWindow(element);
+  return typeof currentWindow?.getComputedStyle === "function"
+    ? currentWindow.getComputedStyle(element)
+    : null;
 }

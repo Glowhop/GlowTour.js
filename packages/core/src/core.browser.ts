@@ -7,6 +7,17 @@ import { createGlowTour } from "./index";
 let foreignWindow: Window;
 let rootWindow: Window;
 
+type WindowAddEventListener = (
+  type: string,
+  listener: EventListenerOrEventListenerObject,
+  options?: boolean | AddEventListenerOptions,
+) => void;
+type WindowRemoveEventListener = (
+  type: string,
+  listener: EventListenerOrEventListenerObject,
+  options?: boolean | EventListenerOptions,
+) => void;
+
 beforeEach(() => {
   foreignWindow = new Window();
   rootWindow = new Window();
@@ -63,6 +74,68 @@ async function waitFor(condition: () => boolean, description: string): Promise<v
 
 describe("core browser realm isolation", () => {
   test("runs a tour entirely in the registered root realm", async () => {
+    const scheduledFrames: number[] = [];
+    const cancelledFrames: number[] = [];
+    let disconnectedObservers = 0;
+    let observedControls = 0;
+    let rootKeydownAdds = 0;
+    let rootKeydownRemovals = 0;
+    const rootAddEventListener = rootWindow.addEventListener.bind(
+      rootWindow,
+    ) as unknown as WindowAddEventListener;
+    const rootRemoveEventListener = rootWindow.removeEventListener.bind(
+      rootWindow,
+    ) as unknown as WindowRemoveEventListener;
+    Object.defineProperties(rootWindow, {
+      MutationObserver: {
+        configurable: true,
+        value: class {
+          constructor(_callback: MutationCallback) {
+            observedControls += 1;
+          }
+
+          disconnect() {
+            disconnectedObservers += 1;
+          }
+
+          observe(_target: Node, _options: MutationObserverInit) {}
+        },
+      },
+      addEventListener: {
+        configurable: true,
+        value: (
+          type: string,
+          listener: EventListenerOrEventListenerObject,
+          options?: boolean | AddEventListenerOptions,
+        ) => {
+          if (type === "keydown") rootKeydownAdds += 1;
+          rootAddEventListener(type, listener, options);
+        },
+      },
+      cancelAnimationFrame: {
+        configurable: true,
+        value: (id: number) => void cancelledFrames.push(id),
+      },
+      removeEventListener: {
+        configurable: true,
+        value: (
+          type: string,
+          listener: EventListenerOrEventListenerObject,
+          options?: boolean | EventListenerOptions,
+        ) => {
+          if (type === "keydown") rootKeydownRemovals += 1;
+          rootRemoveEventListener(type, listener, options);
+        },
+      },
+      requestAnimationFrame: {
+        configurable: true,
+        value: () => {
+          const id = scheduledFrames.length + 1;
+          scheduledFrames.push(id);
+          return id;
+        },
+      },
+    });
     const tour = createGlowTour<string>();
     const document = rootWindow.document as unknown as Document;
     const foreignDocument = foreignWindow.document as unknown as Document;
@@ -100,11 +173,19 @@ describe("core browser realm isolation", () => {
     assert.equal(document.activeElement, advance);
     assert.equal(overlay.getAttribute("viewBox"), "0 0 640 360");
     assert.match(path.style.getPropertyValue("d"), /H640 V360/);
+    assert.match(path.style.getPropertyValue("d"), /M-5\.5,16\.5/);
 
     rootWindow.dispatchEvent(new rootWindow.KeyboardEvent("keydown", { key: "Enter" }));
     await waitFor(() => tour.state.get().currentStepIndex === 1, "keyboard navigation");
     assert.equal(tour.state.get().status, "active");
 
     binding.release();
+
+    assert.ok(rootKeydownAdds > 0);
+    assert.equal(rootKeydownRemovals, rootKeydownAdds);
+    assert.ok(scheduledFrames.length > 0);
+    assert.deepEqual(cancelledFrames, scheduledFrames);
+    assert.ok(observedControls > 0);
+    assert.equal(disconnectedObservers, observedControls);
   });
 });

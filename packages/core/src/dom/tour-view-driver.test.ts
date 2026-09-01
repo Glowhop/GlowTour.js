@@ -507,6 +507,47 @@ describe("DomTourViewDriver", () => {
     assert.equal(animationFrames.length, 1);
     assert.equal(TestResizeObserver.instances.length, 0);
   });
+  test("does not schedule a realm frame without that realm's cancellation", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    const requestedFrames: number[] = [];
+    Object.defineProperty(document, "defaultView", {
+      configurable: true,
+      value: {
+        requestAnimationFrame: () => {
+          requestedFrames.push(1);
+          return 1;
+        },
+      },
+    });
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    driver.dispose();
+
+    assert.deepEqual(requestedFrames, []);
+    assert.deepEqual(cancelledFrames, []);
+  });
+  test("does not schedule a realm frame without that realm's request", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    const cancelledOwnerFrames: number[] = [];
+    Object.defineProperty(document, "defaultView", {
+      configurable: true,
+      value: {
+        cancelAnimationFrame: (id: number) => void cancelledOwnerFrames.push(id),
+      },
+    });
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    driver.dispose();
+
+    assert.deepEqual(animationFrames, []);
+    assert.deepEqual(cancelledOwnerFrames, []);
+  });
   test("coalesces dynamic presentation changes onto the next animation frame", async () => {
     const { driver, elements } = installDriver();
     const step = createStep({ allowInteraction: true });

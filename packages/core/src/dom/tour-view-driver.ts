@@ -435,14 +435,17 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private schedulePosition(generation = this.generation) {
     if (!this.isCurrentGeneration(generation) || !this.currentStep || this.rafId !== null) return;
-    const currentWindow = this.getWindow(this.currentStep.target);
-    const request =
-      currentWindow?.requestAnimationFrame?.bind(currentWindow) ?? globalThis.requestAnimationFrame;
-    const cancel =
-      currentWindow?.cancelAnimationFrame?.bind(currentWindow) ?? globalThis.cancelAnimationFrame;
+    const owner = this.currentStep.target?.ownerDocument?.defaultView;
+    const ownerRequest = owner?.requestAnimationFrame;
+    const ownerCancel = owner?.cancelAnimationFrame;
+    const ownerHasFrameCapability =
+      typeof ownerRequest === "function" || typeof ownerCancel === "function";
+    const request = ownerHasFrameCapability ? ownerRequest : globalThis.requestAnimationFrame;
+    const cancel = ownerHasFrameCapability ? ownerCancel : globalThis.cancelAnimationFrame;
     if (typeof request !== "function" || typeof cancel !== "function") return;
-    this.rafCancel = cancel;
-    this.rafId = request(() => {
+    const frameWindow = ownerHasFrameCapability && owner ? owner : globalThis;
+    this.rafCancel = (id) => cancel.call(frameWindow, id);
+    this.rafId = request.call(frameWindow, () => {
       this.rafId = null;
       this.rafCancel = null;
       if (!this.isCurrentGeneration(generation)) return;

@@ -45,7 +45,13 @@ export function isFocusable(element: HTMLElement) {
     return false;
 
   for (let current: HTMLElement | null = element; current; current = current.parentElement) {
-    const style = ownerWindow(current)?.getComputedStyle(current);
+    const document = current.ownerDocument;
+    const currentWindow =
+      document && "defaultView" in document ? document.defaultView : ownerWindow(current);
+    const style =
+      typeof currentWindow?.getComputedStyle === "function"
+        ? currentWindow.getComputedStyle(current)
+        : null;
     if (!style) return false;
     if (style.display === "none" || style.visibility === "hidden") return false;
   }
