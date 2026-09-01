@@ -25,7 +25,7 @@ Baseline: 260 Core tests passing on commit `eb8f5b4`.
 | 4 | Presentation-only button disabling | Complete | `1236a0a` | Approved, no findings |
 | 5 | Active target disconnection recovery | Complete | `52c112d`, `58466af` | Approved after fix |
 | 6 | Stable positioning short-circuit | Complete | `0ba0cbd` | Approved; process artifact removed |
-| 7 | Final verification | Pending | — | — |
+| 7 | Final verification | Complete | `2013675` | 311 Core + 67 browser tests; final review approved |
 
 ## Decisions
 
@@ -73,3 +73,12 @@ Run `bun test packages/core/src`, `bunx tsc -p packages/core/tsconfig.json --noE
 - Task 4: independent review approved with no findings; programmatic and action-context navigation remain available while disabled DOM controls stay inert.
 - Task 5: review found a stranded non-cancellable backward-skip boundary; `58466af` now fails that recovery with an indexed missing-target error. Re-review approved.
 - Task 6: stable RAF frames now skip all layer updates; movement, props changes, and target loss remain covered. The accidentally committed internal report was removed.
+- Task 7: final review found and fixed viewport invalidation plus the false initial dirty frame. Final whole-branch re-review reports no findings and marks the branch ready to merge.
+
+## Final Verification
+
+- Core tests: 311 passed, 0 failed.
+- Browser tests: 67 passed, 0 failed.
+- Core TypeScript: passed.
+- Biome: 121 files checked, clean.
+- `git diff --check`: clean.
