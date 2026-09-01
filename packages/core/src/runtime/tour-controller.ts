@@ -345,7 +345,7 @@ export class TourController<T> {
       if (target) return target;
       if (strategy === "skip") return null;
       if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
-        throw new Error(`Missing target at ${step.path}: ${String(step.definition.target)}`);
+        throw this.missingTargetError(step);
       }
       await waitForTimer(16, signal);
       this.assertCurrent(operation);
@@ -367,7 +367,7 @@ export class TourController<T> {
       const recoveredTarget = await this.resolveTarget(step, operation);
       this.assertCurrent(operation);
       if (!recoveredTarget) {
-        await this.advancePastMissingTarget(index, direction, operation);
+        await this.advancePastRecoveryMissingTarget(step, index, direction, operation);
         return;
       }
       step.target = recoveredTarget;
@@ -394,6 +394,24 @@ export class TourController<T> {
       if (this.canCancel()) await this.cancelCurrent(operation);
       else this.setStatus("active");
     } else await this.enter(nextIndex, direction, operation);
+  }
+
+  private async advancePastRecoveryMissingTarget(
+    step: ActiveStep<T>,
+    index: number,
+    direction: TourDirection,
+    operation: number,
+  ) {
+    const nextIndex = direction === "advance" ? index + 1 : index - 1;
+    if (nextIndex >= this.steps.length) await this.finish(operation);
+    else if (nextIndex < 0) {
+      if (this.canCancel()) await this.cancelCurrent(operation);
+      else throw this.missingTargetError(step);
+    } else await this.enter(nextIndex, direction, operation);
+  }
+
+  private missingTargetError(step: ActiveStep<T>) {
+    return new Error(`Missing target at ${step.path}: ${String(step.definition.target)}`);
   }
 
   private async finish(operation: number) {

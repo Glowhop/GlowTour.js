@@ -1284,7 +1284,7 @@ describe("instance-first TourController", () => {
     assert.equal(cancelTarget, firstTarget);
   });
 
-  test("keeps a non-cancellable backward skip at the initial traversal boundary", async () => {
+  test("turns a non-cancellable backward recovery skip boundary into an indexed error", async () => {
     const driver = new RecordingDriver();
     const tour = new TourController<string>(driver);
     const firstTarget = {} as HTMLElement;
@@ -1308,11 +1308,11 @@ describe("instance-first TourController", () => {
     resolvedTarget = null;
     await driver.commands.targetDisconnected(firstTarget);
 
-    assert.equal(tour.state.get().status, "active");
-    assert.equal(tour.state.get().currentStepIndex, 0);
-    await tour.advance();
-    assert.equal(tour.state.get().currentStepIndex, 1);
-    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().status, "error");
+    assert.match(tour.state.get().error?.message ?? "", /Missing target at steps\[0\]/);
+    assert.equal(tour.state.get().canAdvance, false);
+    assert.equal(tour.state.get().canCancel, false);
+    assert.equal(driver.clearCalls, 2);
   });
 
   test("reports an indexed error when active target recovery uses the error strategy", async () => {
