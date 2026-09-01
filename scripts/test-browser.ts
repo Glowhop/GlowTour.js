@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "..");
 const browserSuites = [
+  "./packages/core/src/core.browser.ts",
   "./packages/react/src/react.browser.ts",
   "./packages/solid/src/solid.browser.ts",
   "./packages/vue/src/vue.browser.ts",

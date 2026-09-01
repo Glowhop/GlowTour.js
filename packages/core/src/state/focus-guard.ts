@@ -1,3 +1,4 @@
+import { isHTMLElement, isNode, ownerDocument } from "../utils/utils";
 import { focusableTourControls, isFocusable } from "./focusable";
 
 type FocusDirection = "advance" | "previous";
@@ -13,6 +14,7 @@ export interface FocusGuardScope {
 
 export class FocusGuard {
   private initialFocus: HTMLElement | null = null;
+  private document: Document | null = null;
   private popover: HTMLElement | null = null;
   private allowedTarget: HTMLElement | null = null;
   private allowTargetInteraction = false;
@@ -28,7 +30,7 @@ export class FocusGuard {
     }
 
     const target = event.target;
-    if (!(target instanceof Node) || this.isAllowed(target)) {
+    if (!isNode(target, this.popover) || this.isAllowed(target)) {
       return;
     }
 
@@ -36,18 +38,23 @@ export class FocusGuard {
   };
 
   activate(scope: FocusGuardScope) {
+    const document = ownerDocument(scope.popover);
+    if (!document) return;
+    if (this.active && this.document !== document) this.deactivate();
     if (!this.active) {
-      this.initialFocus =
-        document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      document.addEventListener("focusin", this.handleFocusIn, true);
+      this.document = document;
+      this.initialFocus = isHTMLElement(this.document.activeElement, scope.popover)
+        ? this.document.activeElement
+        : null;
+      this.document.addEventListener("focusin", this.handleFocusIn, true);
       this.active = true;
     }
 
     this.update(scope);
-    const currentFocus = document.activeElement;
+    const currentFocus = this.document?.activeElement;
     if (
       scope.autoFocus !== false ||
-      !(currentFocus instanceof Node) ||
+      !isNode(currentFocus, scope.popover) ||
       !this.isAllowed(currentFocus)
     ) {
       this.focusFallback();
@@ -71,7 +78,8 @@ export class FocusGuard {
       return;
     }
 
-    document.removeEventListener("focusin", this.handleFocusIn, true);
+    this.document?.removeEventListener("focusin", this.handleFocusIn, true);
+    this.document = null;
     this.active = false;
     this.popover = null;
     this.allowedTarget = null;
@@ -150,7 +158,7 @@ export class FocusGuard {
 
 function belongsToScope(target: Node, scope: HTMLElement) {
   if (!scope.contains(target)) return false;
-  const element = target instanceof HTMLElement ? target : target.parentElement;
+  const element = isHTMLElement(target, scope) ? target : target.parentElement;
   if (!element) return target === scope;
   return (
     element.closest<HTMLElement>("[data-glow-tour-root]") ===

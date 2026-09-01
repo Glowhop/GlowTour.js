@@ -47,7 +47,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     this.appliedPosition = nextPosition;
 
     return {
-      transform: `translate(${roundByDPR(nextPosition.x)}px, ${roundByDPR(nextPosition.y)}px)`,
+      transform: `translate(${roundByDPR(nextPosition.x, this.element)}px, ${roundByDPR(nextPosition.y, this.element)}px)`,
     };
   }
 
@@ -67,7 +67,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
     const arrowEdgePadding = step.popover?.arrow?.edgePadding ?? DEFAULT_ARROW_EDGE_PADDING;
 
     const popoverPosition = currentElement.getBoundingClientRect();
-    const viewport = viewportDimensions();
+    const viewport = viewportDimensions(currentElement);
     const minX = gap;
     const maxX = viewport.width - gap - popoverPosition.width;
     const minY = gap;
@@ -162,7 +162,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
         this.element.style.removeProperty("--glow-tour-arrow-offset");
       }
     } else {
-      const arrowOffset = `${roundByDPR(position.arrowOffset)}px`;
+      const arrowOffset = `${roundByDPR(position.arrowOffset, this.element)}px`;
       if (this.element.style.getPropertyValue("--glow-tour-arrow-offset") !== arrowOffset) {
         this.element.style.setProperty("--glow-tour-arrow-offset", arrowOffset);
       }
@@ -278,7 +278,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
   }
 
   private _applyTransform(position: PopoverPosition) {
-    const transform = `translate(${roundByDPR(position.x)}px, ${roundByDPR(position.y)}px)`;
+    const transform = `translate(${roundByDPR(position.x, this.element)}px, ${roundByDPR(position.y, this.element)}px)`;
     if (this.element.style.transform !== transform) {
       this.element.style.setProperty("transform", transform);
     }

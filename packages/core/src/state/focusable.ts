@@ -1,3 +1,5 @@
+import { ownerWindow } from "../utils/utils";
+
 export const FOCUSABLE_SELECTOR = [
   "a[href]",
   "button:not([disabled])",
@@ -43,7 +45,8 @@ export function isFocusable(element: HTMLElement) {
     return false;
 
   for (let current: HTMLElement | null = element; current; current = current.parentElement) {
-    const style = window.getComputedStyle(current);
+    const style = ownerWindow(current)?.getComputedStyle(current);
+    if (!style) return false;
     if (style.display === "none" || style.visibility === "hidden") return false;
   }
   return true;

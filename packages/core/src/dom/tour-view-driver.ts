@@ -5,7 +5,7 @@ import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
 import { focusableElementsOwnedBy } from "../state/focusable";
 import type { TourDirection } from "../types";
-import { isInViewport } from "../utils/utils";
+import { isElement, isHTMLElement, isInViewport, ownerWindow } from "../utils/utils";
 
 const DEFAULT_SCROLL_END_TIMEOUT = 1000;
 const ACTIVE_MODAL_BY_DOCUMENT = new WeakMap<Document, object>();
@@ -88,6 +88,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private popover: PopoverElement<T> | null = null;
   private presentationDirty = false;
   private rafId: number | null = null;
+  private rafCancel: ((id: number) => void) | null = null;
   private root: HTMLElement | null = null;
   private scrollAbort: AbortController | null = null;
 
@@ -160,8 +161,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (replaceVisiblePopover) {
         const listener = (event: Event) =>
           this.queueTransitionKeydown(event as KeyboardEvent, step, generation);
-        window.addEventListener("keydown", listener);
-        removeTransitionKeydown = () => window.removeEventListener("keydown", listener);
+        const currentWindow = this.getWindow();
+        if (typeof currentWindow?.addEventListener === "function") {
+          currentWindow.addEventListener("keydown", listener);
+          removeTransitionKeydown = () => currentWindow.removeEventListener("keydown", listener);
+        }
       }
       const target = step.target;
       if (!target) return;
@@ -267,15 +271,21 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private initializeElements(step: ActiveStep<T>) {
     const interactionAllowed = step.behavior?.allowInteraction === true;
     this.overlay?.initializeProps();
-    this.overlay?.setAnimationOptions(animationOptions(step, step.overlay));
+    this.overlay?.setAnimationOptions(
+      animationOptions(step, step.overlay, this.overlay.getElement()),
+    );
     this.overlay?.setInteractionAllowed(interactionAllowed);
     this.popover?.initializeProps();
-    this.popover?.setAnimationOptions(animationOptions(step, step.popover));
+    this.popover?.setAnimationOptions(
+      animationOptions(step, step.popover, this.popover.getElement()),
+    );
     const popover = this.popover?.getElement();
-    if (popover instanceof HTMLElement && !interactionAllowed)
+    if (isHTMLElement(popover, this.root ?? popover) && !interactionAllowed)
       popover.setAttribute("aria-modal", "true");
     this.pointer?.initializeProps();
-    this.pointer?.setAnimationOptions(animationOptions(step, step.indicator));
+    this.pointer?.setAnimationOptions(
+      animationOptions(step, step.indicator, this.pointer.getElement()),
+    );
   }
 
   private syncModality(interactionAllowed: boolean) {
@@ -302,7 +312,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       const parent = branch.parentElement;
       if (!parent) break;
       for (const sibling of Array.from(parent.children)) {
-        if (!(sibling instanceof HTMLElement) || sibling === branch) continue;
+        if (!isHTMLElement(sibling, root) || sibling === branch) continue;
         this.inertBranches.push({ element: sibling, previous: sibling.getAttribute("inert") });
         sibling.setAttribute("inert", "");
       }
@@ -400,9 +410,12 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       };
       this.listen(target, handler.event, listener);
     }
-    this.listen(window, "keydown", (event) => {
-      if (this.isCurrentGeneration(generation)) this.handleKeydown(event as KeyboardEvent);
-    });
+    const currentWindow = this.getWindow(target);
+    if (typeof currentWindow?.addEventListener === "function") {
+      this.listen(currentWindow, "keydown", (event) => {
+        if (this.isCurrentGeneration(generation)) this.handleKeydown(event as KeyboardEvent);
+      });
+    }
     this.attachButtonHandlers(step);
     this.observeControls(step, generation);
     this.syncControlState(step);
@@ -422,8 +435,16 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private schedulePosition(generation = this.generation) {
     if (!this.isCurrentGeneration(generation) || !this.currentStep || this.rafId !== null) return;
-    this.rafId = requestAnimationFrame(() => {
+    const currentWindow = this.getWindow(this.currentStep.target);
+    const request =
+      currentWindow?.requestAnimationFrame?.bind(currentWindow) ?? globalThis.requestAnimationFrame;
+    const cancel =
+      currentWindow?.cancelAnimationFrame?.bind(currentWindow) ?? globalThis.cancelAnimationFrame;
+    if (typeof request !== "function" || typeof cancel !== "function") return;
+    this.rafCancel = cancel;
+    this.rafId = request(() => {
       this.rafId = null;
+      this.rafCancel = null;
       if (!this.isCurrentGeneration(generation)) return;
       this.updatePosition(generation);
       this.schedulePosition(generation);
@@ -438,9 +459,15 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const presentationChanged = this.presentationDirty;
     if (presentationChanged) {
       this.presentationDirty = false;
-      this.overlay?.setAnimationOptions(animationOptions(step, step.overlay));
-      this.popover?.setAnimationOptions(animationOptions(step, step.popover));
-      this.pointer?.setAnimationOptions(animationOptions(step, step.indicator));
+      this.overlay?.setAnimationOptions(
+        animationOptions(step, step.overlay, this.overlay.getElement()),
+      );
+      this.popover?.setAnimationOptions(
+        animationOptions(step, step.popover, this.popover.getElement()),
+      );
+      this.pointer?.setAnimationOptions(
+        animationOptions(step, step.indicator, this.pointer.getElement()),
+      );
       this.syncControlState(step);
       this.syncShortcutLabels(step);
       console.log(
@@ -506,7 +533,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       void this.command("cancel");
       return;
     }
-    if (isEditable(event.target)) return;
+    if (isEditable(event.target, this.root)) return;
     if (
       (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
       this.canCommand("advance", step)
@@ -535,7 +562,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const shortcuts = step.popover?.keyboardShortcuts;
     let command: TourViewCommand | null = null;
     if ((shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key)) command = "cancel";
-    else if (!isEditable(event.target)) {
+    else if (!isEditable(event.target, this.root)) {
       if (
         (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
         step.props.get().popover?.disableAdvanceButton !== true
@@ -569,15 +596,15 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private loopFocus(event: KeyboardEvent) {
     const popover = this.popover?.getElement();
-    if (!(popover instanceof HTMLElement)) return;
+    if (!isHTMLElement(popover, this.root ?? popover)) return;
     const focusable = focusableElementsOwnedBy(popover);
     if (focusable.length === 0) {
       event.preventDefault();
       popover.focus();
       return;
     }
-    const current = document.activeElement;
-    const index = current instanceof HTMLElement ? focusable.indexOf(current) : -1;
+    const current = popover.ownerDocument.activeElement;
+    const index = isHTMLElement(current, popover) ? focusable.indexOf(current) : -1;
     if (event.shiftKey && (index <= 0 || !popover.contains(current))) {
       event.preventDefault();
       focusable.at(-1)?.focus();
@@ -594,7 +621,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
   ) {
     const popover = this.popover?.getElement();
-    if (!(popover instanceof HTMLElement)) return;
+    if (!isHTMLElement(popover, this.root ?? popover)) return;
     const autoFocus = step.behavior?.disableAutoFocus !== true;
     const deferFocus = autoFocus && this.commands?.subscribeCapabilities !== undefined;
     if (deferFocus) this.pendingFocusGeneration = generation;
@@ -626,9 +653,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private attachButtonHandlers(step: ActiveStep<T>) {
     const generation = this.generation;
     const scope = this.root ?? this.popover?.getElement();
-    if (!(scope instanceof HTMLElement) || typeof scope.addEventListener !== "function") return;
+    if (!isHTMLElement(scope, scope) || typeof scope.addEventListener !== "function") return;
     this.listen(scope, "click", (event) => {
-      if (!(event.target instanceof Element)) return;
+      if (!isElement(event.target, scope)) return;
       const match = this.findClickedTrigger(event.target, scope);
       if (!match) return;
       this.deferTriggerCommand(match.command, event, step, generation, match.trigger);
@@ -651,7 +678,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private observeControls(step: ActiveStep<T>, generation: number) {
     const scope = this.root ?? this.popover?.getElement();
-    if (!(scope instanceof HTMLElement) || typeof MutationObserver === "undefined") return;
+    if (!isHTMLElement(scope, scope)) return;
+    const MutationObserver = this.getWindow(scope)?.MutationObserver ?? globalThis.MutationObserver;
+    if (typeof MutationObserver !== "function") return;
     let queued = false;
     const observer = new MutationObserver(() => {
       if (queued) return;
@@ -715,7 +744,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private findTriggers(direction: TourViewCommand) {
     const scope = this.root ?? this.popover?.getElement();
-    if (!(scope instanceof HTMLElement) || typeof scope.querySelectorAll !== "function") return [];
+    if (!isHTMLElement(scope, scope) || typeof scope.querySelectorAll !== "function") return [];
     return Array.from(
       scope.querySelectorAll<HTMLButtonElement>(`[data-glow-tour-${direction}-trigger]`),
     ).filter((trigger) => this.ownsTrigger(trigger, scope));
@@ -793,8 +822,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.scrollAbort?.abort();
     this.scrollAbort = null;
     this.presentationDirty = false;
-    if (this.rafId !== null) cancelAnimationFrame(this.rafId);
+    if (this.rafId !== null) this.rafCancel?.(this.rafId);
     this.rafId = null;
+    this.rafCancel = null;
     for (const cleanup of this.stepCleanups.splice(0)) cleanup();
   }
 
@@ -828,14 +858,17 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     signal: AbortSignal,
   ) {
     this.throwIfAborted(signal);
-    if (step.behavior?.disableAutoScroll || isInViewport(target.getBoundingClientRect())) return;
+    if (step.behavior?.disableAutoScroll || isInViewport(target.getBoundingClientRect(), target))
+      return;
+    const currentWindow = this.getWindow(target);
+    if (!currentWindow) return;
     const controller = new AbortController();
     this.scrollAbort = controller;
     await new Promise<void>((resolve, reject) => {
       let timeout: ReturnType<typeof setTimeout> | null = null;
       const abort = () => finish(abortError());
       const finish = (error?: Error) => {
-        window.removeEventListener("scrollend", complete);
+        currentWindow.removeEventListener("scrollend", complete);
         signal.removeEventListener("abort", abort);
         controller.signal.removeEventListener("abort", abort);
         if (timeout !== null) clearTimeout(timeout);
@@ -844,13 +877,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         else resolve();
       };
       const complete = () => finish();
-      window.addEventListener("scrollend", complete, { once: true });
+      currentWindow.addEventListener("scrollend", complete, { once: true });
       signal.addEventListener("abort", abort, { once: true });
       controller.signal.addEventListener("abort", abort, { once: true });
       timeout = setTimeout(complete, DEFAULT_SCROLL_END_TIMEOUT);
       try {
         target.scrollIntoView({
-          behavior: prefersReducedMotion()
+          behavior: prefersReducedMotion(target)
             ? "instant"
             : (step.behavior?.scroll?.behavior ?? "smooth"),
           block: step.behavior?.scroll?.block ?? "center",
@@ -869,14 +902,26 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private throwIfStale(generation: number, signal?: AbortSignal) {
     if (!this.isCurrentGeneration(generation) || signal?.aborted) throw abortError();
   }
+
+  private getWindow(element?: Node | null) {
+    return ownerWindow(
+      element ??
+        this.root ??
+        this.popover?.getElement() ??
+        this.pointer?.getElement() ??
+        this.overlay?.getElement(),
+    );
+  }
 }
 
 function animationOptions(
   step: { readonly animated: boolean | undefined },
   options: { animated?: boolean; animation?: { duration?: number; easing?: string } } | undefined,
+  element?: Node | null,
 ) {
   return {
-    disabled: step.animated === false || options?.animated === false || prefersReducedMotion(),
+    disabled:
+      step.animated === false || options?.animated === false || prefersReducedMotion(element),
     duration: options?.animation?.duration,
     easing: options?.animation?.easing,
   };
@@ -918,8 +963,8 @@ function finite(value: number, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
 }
 
-function isEditable(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
+function isEditable(target: EventTarget | null, context?: Node | null) {
+  if (!isHTMLElement(target, context)) return false;
   if (target.matches("input, textarea, select")) return true;
   let current: HTMLElement | null = target;
   while (current) {
@@ -930,10 +975,11 @@ function isEditable(target: EventTarget | null) {
   return false;
 }
 
-function prefersReducedMotion() {
+function prefersReducedMotion(context?: Node | null) {
+  const currentWindow = ownerWindow(context);
   return (
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    typeof currentWindow?.matchMedia === "function" &&
+    currentWindow.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 }
 
