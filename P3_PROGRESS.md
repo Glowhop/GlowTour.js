@@ -7,7 +7,7 @@ Source: `AUDIT_CORE.md`, section “Constats P3”
 | --- | --- | --- | --- |
 | P3 #8 | Terminal state after `dispose()` | Done | `bun test packages/core/src/runtime/tour-controller.test.ts` (74 pass); `bunx tsc -p packages/core/tsconfig.json --noEmit` (pass); `git diff --check` (pass) |
 | P3 #9 | Executable Core adoption guide | Not started | — |
-| P3 #11 | DOM ownership and CSP nonce | In progress | DOM lease/root/focus migration complete; popover ownership and CSP nonce remain |
+| P3 #11 | DOM ownership and CSP nonce | In progress | DOM lease/root/focus/popover migrations complete; CSP nonce remains |
 
 ## Excluded
 
@@ -41,3 +41,6 @@ P3 #10 is already implemented: `StepPropsStore` is a local public interface back
 - P3 #11 rejected declaration GREEN: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 10 passed, 0 failed.
 - P3 #11 first rejected write RED: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 10 passed, 1 failed; a rejected first declaration created an ownership record that restored a consumer removal.
 - P3 #11 first rejected write GREEN: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 11 passed, 0 failed.
+- P3 #11 popover lease RED: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 11 passed, 3 failed because `releaseStyle()` did not exist; `bun test packages/core/src/elements/popover.test.ts` — 23 passed, 4 failed because release and arrow cleanup wrote consumer state directly.
+- P3 #11 popover lease GREEN: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 14 passed, 0 failed; `bun test packages/core/src/elements/popover.test.ts` — 27 passed, 0 failed; `bun test packages/core/src/dom/tour-view-driver.test.ts` — 92 passed, 0 failed.
+- P3 #11 popover lease verification: `bunx tsc -p packages/core/tsconfig.json --noEmit` — passed; `git diff --check` — passed. The popover mutation scan finds only `mutationLease.setAttribute()` calls and no direct element mutation calls.

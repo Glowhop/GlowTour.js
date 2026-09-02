@@ -1,5 +1,6 @@
 import type { ResolvedPlacement, TryOrderOptions } from "../types";
-import { roundByDPR, toggleElementAttribute, viewportDimensions } from "../utils/utils";
+import { DomMutationLease } from "../dom/dom-mutation-lease";
+import { roundByDPR, viewportDimensions } from "../utils/utils";
 import GlowTourElement, { type TourElementStep } from "./base";
 import { ensurePopoverArrowStyles } from "./popover-arrow-styles";
 
@@ -20,11 +21,6 @@ interface PendingReposition {
   readonly step: TourElementStep;
 }
 
-interface InlineStyleSnapshot {
-  readonly priority: string;
-  readonly value: string;
-}
-
 const ARROW_STYLE_PROPERTIES = {
   borderRadius: "--glow-tour-arrow-border-radius",
   borderWidth: "--glow-tour-arrow-border-width",
@@ -37,8 +33,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
   private pendingReposition: PendingReposition | null = null;
   private repositionPhase: "idle" | "fading-out" | "fading-in" = "idle";
   private repositionGeneration = 0;
-  private readonly originalArrowStyles = new Map<string, InlineStyleSnapshot>();
-  private readonly overriddenArrowStyles = new Set<string>();
+  private readonly mutationLease = new DomMutationLease(this.element);
 
   protected _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
     this._applyArrowStyles(step);
@@ -151,20 +146,20 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
 
   private _applyPositionState(position: PopoverPosition) {
     if (this.element.getAttribute("data-glow-tour-placement") !== position.placement) {
-      this.element.setAttribute("data-glow-tour-placement", position.placement);
+      this.mutationLease.setAttribute("data-glow-tour-placement", position.placement);
     }
     const arrowHidden = position.arrowOffset === null;
     if (this.element.hasAttribute("data-glow-tour-arrow-hidden") !== arrowHidden) {
-      toggleElementAttribute(this.element, "data-glow-tour-arrow-hidden", arrowHidden);
+      this.mutationLease.setAttribute("data-glow-tour-arrow-hidden", arrowHidden ? "" : null);
     }
     if (position.arrowOffset === null) {
       if (this.element.style.getPropertyValue("--glow-tour-arrow-offset")) {
-        this.element.style.removeProperty("--glow-tour-arrow-offset");
+        this.mutationLease.setStyle("--glow-tour-arrow-offset", null);
       }
     } else {
       const arrowOffset = `${roundByDPR(position.arrowOffset, this.element)}px`;
       if (this.element.style.getPropertyValue("--glow-tour-arrow-offset") !== arrowOffset) {
-        this.element.style.setProperty("--glow-tour-arrow-offset", arrowOffset);
+        this.mutationLease.setStyle("--glow-tour-arrow-offset", arrowOffset);
       }
     }
   }
@@ -193,18 +188,17 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
 
     ensurePopoverArrowStyles(el);
 
-    el.style.setProperty("position", "fixed");
-    el.style.setProperty("z-index", "10001");
-    el.style.setProperty("top", "0px");
-    el.style.setProperty("left", "0px");
-    el.style.setProperty("opacity", "0");
-    el.style.setProperty("transform-origin", "center center");
+    this.mutationLease.setStyle("position", "fixed");
+    this.mutationLease.setStyle("z-index", "10001");
+    this.mutationLease.setStyle("top", "0px");
+    this.mutationLease.setStyle("left", "0px");
+    this.mutationLease.setStyle("opacity", "0");
+    this.mutationLease.setStyle("transform-origin", "center center");
     if (!el.hasAttribute("tabindex")) {
-      el.setAttribute("tabindex", "-1");
+      this.mutationLease.setAttribute("tabindex", "-1");
     }
-    el.setAttribute("aria-hidden", "true");
-    el.setAttribute("inert", "true");
-    // el.style.setProperty("transform", "translate(0px, 0px)");
+    this.mutationLease.setAttribute("aria-hidden", "true");
+    this.mutationLease.setAttribute("inert", "true");
   }
 
   updatePosition(
@@ -280,7 +274,7 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
   private _applyTransform(position: PopoverPosition) {
     const transform = `translate(${roundByDPR(position.x, this.element)}px, ${roundByDPR(position.y, this.element)}px)`;
     if (this.element.style.transform !== transform) {
-      this.element.style.setProperty("transform", transform);
+      this.mutationLease.setStyle("transform", transform);
     }
   }
 
@@ -322,44 +316,22 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
 
   private _applyArrowStyle(property: string, value: string | undefined) {
     if (value === undefined) {
-      this._restoreArrowStyle(property);
+      this.mutationLease.releaseStyle(property);
       return;
-    }
-    if (!this.overriddenArrowStyles.has(property)) {
-      this.originalArrowStyles.set(property, {
-        priority: this.element.style.getPropertyPriority(property),
-        value: this.element.style.getPropertyValue(property),
-      });
-      this.overriddenArrowStyles.add(property);
     }
     if (
       this.element.style.getPropertyValue(property) !== value ||
       this.element.style.getPropertyPriority(property)
     ) {
-      this.element.style.setProperty(property, value);
+      this.mutationLease.setStyle(property, value);
     }
-  }
-
-  private _restoreArrowStyle(property: string) {
-    if (!this.overriddenArrowStyles.delete(property)) return;
-    const original = this.originalArrowStyles.get(property);
-    this.originalArrowStyles.delete(property);
-    if (original?.value) {
-      this.element.style.setProperty(property, original.value, original.priority);
-    } else {
-      this.element.style.removeProperty(property);
-    }
-  }
-
-  private _restoreArrowStyles() {
-    for (const property of [...this.overriddenArrowStyles]) this._restoreArrowStyle(property);
   }
 
   async _appear(position: DOMRect, step: TourElementStep) {
     const defaultStyles = this._getNextStyles(position, step);
 
     for (const [key, value] of Object.entries(defaultStyles)) {
-      value != null && this.element.style.setProperty(key, String(value));
+      if (value != null) this.mutationLease.setStyle(key, String(value));
     }
 
     const animation = this._startAnimation(
@@ -389,21 +361,20 @@ export default class PopoverElement<T> extends GlowTourElement<T> {
   }
 
   protected _release() {
-    this._restoreArrowStyles();
-    this._applyHiddenState();
+    this.mutationLease.release();
   }
 
   private _applyVisibleState() {
-    this.element.style.setProperty("opacity", "1");
-    this.element.removeAttribute("aria-hidden");
-    this.element.removeAttribute("inert");
+    this.mutationLease.setStyle("opacity", "1");
+    this.mutationLease.setAttribute("aria-hidden", null);
+    this.mutationLease.setAttribute("inert", null);
   }
 
   private _applyHiddenState() {
-    this.element.style.setProperty("opacity", "0");
-    this.element.setAttribute("aria-hidden", "true");
-    this.element.setAttribute("inert", "true");
-    this.element.style.removeProperty("transform");
+    this.mutationLease.setStyle("opacity", "0");
+    this.mutationLease.setAttribute("aria-hidden", "true");
+    this.mutationLease.setAttribute("inert", "true");
+    this.mutationLease.setStyle("transform", null);
   }
 }
 

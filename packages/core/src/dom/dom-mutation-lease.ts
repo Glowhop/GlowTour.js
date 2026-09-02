@@ -63,6 +63,18 @@ export class DomMutationLease {
     this.styles.set(name, firstMutation);
   }
 
+  releaseStyle(name: string) {
+    if (this.released) return;
+    const mutation = this.styles.get(name);
+    if (!mutation) return;
+
+    try {
+      this.restoreStyle(name, mutation);
+    } finally {
+      this.styles.delete(name);
+    }
+  }
+
   release() {
     if (this.released) return;
     this.released = true;
@@ -84,14 +96,7 @@ export class DomMutationLease {
 
     for (const [name, mutation] of this.styles) {
       try {
-        if (
-          this.element.style.getPropertyValue(name) !== (mutation.value ?? "") ||
-          this.element.style.getPropertyPriority(name) !== mutation.priority
-        ) {
-          continue;
-        }
-        if (mutation.original === null) this.element.style.removeProperty(name);
-        else this.element.style.setProperty(name, mutation.original, mutation.originalPriority);
+        this.restoreStyle(name, mutation);
       } catch (error) {
         if (!failed) {
           failed = true;
@@ -111,6 +116,17 @@ export class DomMutationLease {
       priority: this.element.style.getPropertyPriority(name),
       value: original,
     };
+  }
+
+  private restoreStyle(name: string, mutation: StyleMutation) {
+    if (
+      this.element.style.getPropertyValue(name) !== (mutation.value ?? "") ||
+      this.element.style.getPropertyPriority(name) !== mutation.priority
+    ) {
+      return;
+    }
+    if (mutation.original === null) this.element.style.removeProperty(name);
+    else this.element.style.setProperty(name, mutation.original, mutation.originalPriority);
   }
 }
 

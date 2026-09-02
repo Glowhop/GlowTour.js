@@ -140,6 +140,45 @@ describe("DomMutationLease", () => {
     assert.equal(target.style.getPropertyValue("color"), "");
   });
 
+  test("restores an owned style when it is released individually", () => {
+    const target = element();
+    target.style.setProperty("--arrow-color", "var(--consumer-arrow)", "important");
+    const lease = new DomMutationLease(target);
+
+    lease.setStyle("--arrow-color", "#4c35fd");
+    lease.releaseStyle("--arrow-color");
+
+    assert.equal(target.style.getPropertyValue("--arrow-color"), "var(--consumer-arrow)");
+    assert.equal(target.style.getPropertyPriority("--arrow-color"), "important");
+  });
+
+  test("preserves a consumer style when it is released individually", () => {
+    const target = element();
+    target.style.setProperty("--arrow-color", "var(--consumer-arrow)");
+    const lease = new DomMutationLease(target);
+
+    lease.setStyle("--arrow-color", "#4c35fd");
+    target.style.setProperty("--arrow-color", "var(--later-consumer-arrow)");
+    lease.releaseStyle("--arrow-color");
+
+    assert.equal(target.style.getPropertyValue("--arrow-color"), "var(--later-consumer-arrow)");
+  });
+
+  test("snapshots the current consumer style when it is claimed after an individual release", () => {
+    const target = element();
+    target.style.setProperty("--arrow-color", "var(--first-consumer-arrow)");
+    const lease = new DomMutationLease(target);
+
+    lease.setStyle("--arrow-color", "#4c35fd");
+    lease.releaseStyle("--arrow-color");
+    target.style.setProperty("--arrow-color", "var(--second-consumer-arrow)", "important");
+    lease.setStyle("--arrow-color", "#5b46fd");
+    lease.release();
+
+    assert.equal(target.style.getPropertyValue("--arrow-color"), "var(--second-consumer-arrow)");
+    assert.equal(target.style.getPropertyPriority("--arrow-color"), "important");
+  });
+
   test("continues restoring later mutations when one restoration throws", () => {
     const target = element();
     target.setAttribute("aria-label", "Original label");
