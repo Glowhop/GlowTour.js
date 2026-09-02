@@ -1516,25 +1516,65 @@ describe("instance-first TourController", () => {
     assert.equal(statuses.includes("active"), false);
   });
 
-  test("disposes the driver and subscriptions exactly once and rejects commands", async () => {
+  test("publishes one terminal disposed state and stops a stale reentrant publication", async () => {
     const driver = new RecordingDriver();
     const tour = new TourController<string>(driver);
-    let notifications = 0;
-    tour.state.subscribe(() => {
-      notifications += 1;
+    const firstSubscriberStatuses: string[] = [];
+    const secondSubscriberStatuses: string[] = [];
+    let disposeDuringPublication = false;
+    tour.state.subscribe((state) => {
+      firstSubscriberStatuses.push(state.status);
+      if (disposeDuringPublication && state.status === "transitioning") tour.dispose();
+    });
+    tour.state.subscribe((state) => {
+      secondSubscriberStatuses.push(state.status);
     });
     const workflow = tour
       .create("dispose")
       .step({ content: "one", target: targetResolver, title: "one" })
       .build();
     await tour.run(workflow);
-    const notificationsBeforeDispose = notifications;
 
-    tour.dispose();
+    assert.ok(firstSubscriberStatuses.includes("active"));
+    assert.ok(secondSubscriberStatuses.includes("active"));
+    firstSubscriberStatuses.length = 0;
+    secondSubscriberStatuses.length = 0;
+
+    disposeDuringPublication = true;
+    await tour.advance();
     tour.dispose();
 
+    assert.deepEqual(firstSubscriberStatuses, ["transitioning", "disposed"]);
+    assert.deepEqual(secondSubscriberStatuses, ["disposed"]);
+    assert.equal(
+      firstSubscriberStatuses.filter((status) => status === "disposed").length +
+        secondSubscriberStatuses.filter((status) => status === "disposed").length,
+      2,
+    );
+    assert.deepEqual(tour.state.get(), {
+      canAdvance: false,
+      canCancel: false,
+      canPrevious: false,
+      currentStep: null,
+      currentStepIndex: -1,
+      direction: "advance",
+      error: null,
+      isFirstStep: false,
+      isLastStep: false,
+      name: "",
+      status: "disposed",
+      totalSteps: 0,
+    });
+
+    let lateSubscriptionNotifications = 0;
+    const unsubscribe = tour.state.subscribe(() => {
+      lateSubscriptionNotifications += 1;
+    });
+    unsubscribe();
+    unsubscribe();
+
+    assert.equal(lateSubscriptionNotifications, 0);
     assert.equal(driver.disposeCalls, 1);
-    assert.equal(notifications, notificationsBeforeDispose);
     await assert.rejects(() => tour.run(workflow), /disposed/);
     await assert.rejects(() => tour.advance(), /disposed/);
     await assert.rejects(() => tour.previous(), /disposed/);
@@ -2167,7 +2207,7 @@ describe("instance-first TourController", () => {
 
     assert.deepEqual(
       errors.map((error) => error.message),
-      ["public subscriber failure"],
+      ["public subscriber failure", "public subscriber failure"],
     );
   });
 

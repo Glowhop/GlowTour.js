@@ -214,7 +214,11 @@ export class TourController<T> {
     this.steps = [];
     this.workflow = null;
     this.index = -1;
+    this.direction = "advance";
+    this.error = null;
     this.retainedPresentation = null;
+    this.status = "disposed";
+    this.publish(true);
     this.stateListeners.clear();
     this.options.onDispose?.();
     this.driver.dispose();
@@ -587,14 +591,14 @@ export class TourController<T> {
     this.publish();
   }
 
-  private publish() {
+  private publish(allowDisposed = false) {
     const revision = ++this.publicationRevision;
     const state = this.createSnapshot();
     this.snapshot = state;
     for (const listener of Array.from(this.stateListeners)) {
-      if (this.disposed || revision !== this.publicationRevision) break;
+      if ((!allowDisposed && this.disposed) || revision !== this.publicationRevision) break;
       this.notifyStateListener(listener, state);
-      if (this.disposed || revision !== this.publicationRevision) break;
+      if ((!allowDisposed && this.disposed) || revision !== this.publicationRevision) break;
     }
   }
 

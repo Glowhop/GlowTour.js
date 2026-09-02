@@ -185,7 +185,8 @@ export type TourStatus =
   | "active"
   | "finished"
   | "cancelled"
-  | "error";
+  | "error"
+  | "disposed";
 
 export type TourDirection = "advance" | "previous";
 
