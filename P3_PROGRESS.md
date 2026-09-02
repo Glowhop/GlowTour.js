@@ -37,3 +37,5 @@ P3 #10 is already implemented: `StepPropsStore` is a local public interface back
 - P3 #11: `git diff --check` — passed (exit 0).
 - P3 #11 review RED: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 6 passed, 2 failed; CSSOM normalization and later cleanup after a restoration failure were not yet handled.
 - P3 #11 review GREEN: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 8 passed, 0 failed.
+- P3 #11 rejected declaration RED: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 8 passed, 2 failed; rejected invalid priorities and values overwrote the last Core-owned style state.
+- P3 #11 rejected declaration GREEN: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 10 passed, 0 failed.

@@ -41,8 +41,13 @@ export class DomMutationLease {
       this.styles.set(name, mutation);
     }
 
-    if (value === null) this.element.style.removeProperty(name);
-    else this.element.style.setProperty(name, value, priority);
+    if (value === null) {
+      this.element.style.removeProperty(name);
+    } else {
+      const accepted = isStyleDeclarationAccepted(this.element, name, value, priority);
+      this.element.style.setProperty(name, value, priority);
+      if (!accepted) return;
+    }
     mutation.value = this.element.style.getPropertyValue(name);
     mutation.priority = this.element.style.getPropertyPriority(name);
   }
@@ -86,4 +91,15 @@ export class DomMutationLease {
 
     if (failed) throw failure;
   }
+}
+
+function isStyleDeclarationAccepted(
+  element: HTMLElement | SVGElement,
+  name: string,
+  value: string,
+  priority: string,
+) {
+  const probe = element.ownerDocument.createElement("div");
+  probe.style.setProperty(name, value, priority);
+  return value === "" || probe.style.getPropertyValue(name) !== "";
 }

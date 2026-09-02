@@ -99,6 +99,34 @@ describe("DomMutationLease", () => {
     assert.equal(target.style.getPropertyPriority("color"), "");
   });
 
+  test("preserves a consumer style after Core writes with an invalid priority", () => {
+    const target = element();
+    target.style.setProperty("color", "red");
+    const lease = new DomMutationLease(target);
+
+    lease.setStyle("color", "blue");
+    target.style.setProperty("color", "green");
+    lease.setStyle("color", "yellow", "bogus");
+    assert.equal(target.style.getPropertyValue("color"), "green");
+    lease.release();
+
+    assert.equal(target.style.getPropertyValue("color"), "green");
+  });
+
+  test("preserves a consumer style after Core writes an invalid value", () => {
+    const target = element();
+    target.style.setProperty("color", "red");
+    const lease = new DomMutationLease(target);
+
+    lease.setStyle("color", "blue");
+    target.style.setProperty("color", "green");
+    lease.setStyle("color", "not-a-color");
+    assert.equal(target.style.getPropertyValue("color"), "green");
+    lease.release();
+
+    assert.equal(target.style.getPropertyValue("color"), "green");
+  });
+
   test("continues restoring later mutations when one restoration throws", () => {
     const target = element();
     target.setAttribute("aria-label", "Original label");
