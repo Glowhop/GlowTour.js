@@ -554,8 +554,13 @@ describe("private root bridge", () => {
       /idPrefix/i,
     );
     explicitRoot.setAttribute("id", "changed-by-host");
+    explicitRoot.setAttribute("data-glow-tour-id-prefix", "changed-prefix-by-host");
     explicit.release();
     assert.equal(explicitRoot.getAttribute("id"), "changed-by-host");
+    assert.equal(
+      explicitRoot.getAttribute("data-glow-tour-id-prefix"),
+      "changed-prefix-by-host",
+    );
   });
 
   test("allows an explicit prefix when matching authored IDs are contained by its root", () => {

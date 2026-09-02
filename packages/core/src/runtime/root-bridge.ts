@@ -1,4 +1,5 @@
 import type { WorkflowDefinition } from "../definition";
+import { DomMutationLease } from "../dom/dom-mutation-lease";
 import type { DomTourViewDriver } from "../dom/tour-view-driver";
 import {
   ADAPTER_BRIDGE_SYMBOL,
@@ -18,12 +19,6 @@ interface RootLease {
   release(): void;
 }
 
-interface AttributeClaim {
-  readonly name: string;
-  readonly previous: string | null;
-  readonly value: string;
-}
-
 class TourRootBinding<T> implements AdapterRootBinding {
   private released = false;
   private overlay: SVGSVGElement | null = null;
@@ -35,7 +30,7 @@ class TourRootBinding<T> implements AdapterRootBinding {
     private readonly root: HTMLElement,
     readonly ids: AdapterRootIds,
     private readonly reservation: object,
-    private readonly attributes: readonly AttributeClaim[],
+    private readonly mutations: DomMutationLease,
     private readonly onMountReleaseStart: () => void,
     private readonly onMountReleaseComplete: () => void,
     private readonly onRelease: (binding: TourRootBinding<T>) => void,
@@ -92,7 +87,7 @@ class TourRootBinding<T> implements AdapterRootBinding {
       runCleanup([
         this.onMountReleaseStart,
         () => this.driver.releaseMount(),
-        () => releaseAttributes(this.root, this.attributes),
+        () => this.mutations.release(),
         () => releaseRootOwner(this.root, this.reservation),
         () =>
           releasePrefix(
@@ -138,7 +133,7 @@ export function attachRootBridge<T>(
         throw new Error("Glow tour root is already owned by another tour");
       }
       const reservation = {};
-      const attributes: AttributeClaim[] = [];
+      const mutations = new DomMutationLease(root);
       let prefix: string | null = null;
       let ids: AdapterRootIds | null = null;
       let ownsPrefix = false;
@@ -153,7 +148,7 @@ export function attachRootBridge<T>(
             registeredRoot = false;
             driver.releaseMount();
           },
-          () => releaseAttributes(root, attributes),
+          () => mutations.release(),
           () => {
             if (!ownsRoot) return;
             ownsRoot = false;
@@ -187,14 +182,8 @@ export function attachRootBridge<T>(
         reservePrefixOwnership(root.ownerDocument, prefix, reservation);
         ownsPrefix = true;
         ids = idsFor(prefix);
-        claimAttributes(
-          root,
-          [
-            ["id", ids.root],
-            ["data-glow-tour-id-prefix", prefix],
-          ],
-          attributes,
-        );
+        mutations.setAttribute("id", ids.root);
+        mutations.setAttribute("data-glow-tour-id-prefix", prefix);
         registeredRoot = true;
         driver.registerRoot(root);
         if (isDisposed()) throw new Error("Cannot connect a root to a disposed glow tour");
@@ -205,7 +194,7 @@ export function attachRootBridge<T>(
           root,
           ids,
           reservation,
-          attributes,
+          mutations,
           onMountReleaseStart,
           onMountReleaseComplete,
           (released) => {
@@ -245,28 +234,6 @@ export function attachRootBridge<T>(
       pending?.release();
     },
   };
-}
-
-function claimAttributes(
-  root: HTMLElement,
-  entries: readonly (readonly [name: string, value: string])[],
-  attributes: AttributeClaim[],
-) {
-  for (const [name, value] of entries) {
-    const claim = { name, previous: root.getAttribute(name), value };
-    attributes.push(claim);
-    root.setAttribute(name, value);
-  }
-}
-
-function releaseAttributes(root: HTMLElement, attributes: readonly AttributeClaim[]) {
-  runCleanup(
-    attributes.map((attribute) => () => {
-      if (root.getAttribute(attribute.name) !== attribute.value) return;
-      if (attribute.previous === null) root.removeAttribute(attribute.name);
-      else root.setAttribute(attribute.name, attribute.previous);
-    }),
-  );
 }
 
 function runCleanup(cleanups: readonly (() => void)[]) {
