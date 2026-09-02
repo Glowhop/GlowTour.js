@@ -29,27 +29,38 @@ export class DomMutationLease {
 
   setStyle(name: string, value: string | null, priority = "") {
     if (this.released) return;
-    let mutation = this.styles.get(name);
-    if (!mutation) {
-      const original = this.element.style.getPropertyValue(name);
-      mutation = {
-        original: original === "" ? null : original,
-        originalPriority: this.element.style.getPropertyPriority(name),
-        priority: "",
-        value: null,
-      };
-      this.styles.set(name, mutation);
-    }
+    const mutation = this.styles.get(name);
 
     if (value === null) {
-      this.element.style.removeProperty(name);
-    } else {
-      const accepted = isStyleDeclarationAccepted(this.element, name, value, priority);
+      if (mutation) {
+        this.element.style.removeProperty(name);
+        mutation.value = this.element.style.getPropertyValue(name);
+        mutation.priority = this.element.style.getPropertyPriority(name);
+      } else {
+        const firstMutation = this.styleMutation(name);
+        this.element.style.removeProperty(name);
+        firstMutation.value = this.element.style.getPropertyValue(name);
+        firstMutation.priority = this.element.style.getPropertyPriority(name);
+        this.styles.set(name, firstMutation);
+      }
+      return;
+    }
+
+    const accepted = isStyleDeclarationAccepted(this.element, name, value, priority);
+    if (mutation) {
       this.element.style.setProperty(name, value, priority);
       if (!accepted) return;
+      mutation.value = this.element.style.getPropertyValue(name);
+      mutation.priority = this.element.style.getPropertyPriority(name);
+      return;
     }
-    mutation.value = this.element.style.getPropertyValue(name);
-    mutation.priority = this.element.style.getPropertyPriority(name);
+
+    const firstMutation = this.styleMutation(name);
+    this.element.style.setProperty(name, value, priority);
+    if (!accepted) return;
+    firstMutation.value = this.element.style.getPropertyValue(name);
+    firstMutation.priority = this.element.style.getPropertyPriority(name);
+    this.styles.set(name, firstMutation);
   }
 
   release() {
@@ -90,6 +101,16 @@ export class DomMutationLease {
     }
 
     if (failed) throw failure;
+  }
+
+  private styleMutation(name: string): StyleMutation {
+    const original = this.element.style.getPropertyValue(name);
+    return {
+      original: original === "" ? null : original,
+      originalPriority: this.element.style.getPropertyPriority(name),
+      priority: this.element.style.getPropertyPriority(name),
+      value: original,
+    };
   }
 }
 

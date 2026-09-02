@@ -127,6 +127,19 @@ describe("DomMutationLease", () => {
     assert.equal(target.style.getPropertyValue("color"), "green");
   });
 
+  test("does not claim a style after its first Core write is rejected", () => {
+    const target = element();
+    target.style.setProperty("color", "red");
+    const lease = new DomMutationLease(target);
+
+    lease.setStyle("color", "not-a-color");
+    assert.equal(target.style.getPropertyValue("color"), "red");
+    target.style.removeProperty("color");
+    lease.release();
+
+    assert.equal(target.style.getPropertyValue("color"), "");
+  });
+
   test("continues restoring later mutations when one restoration throws", () => {
     const target = element();
     target.setAttribute("aria-label", "Original label");

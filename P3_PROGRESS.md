@@ -39,3 +39,5 @@ P3 #10 is already implemented: `StepPropsStore` is a local public interface back
 - P3 #11 review GREEN: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 8 passed, 0 failed.
 - P3 #11 rejected declaration RED: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 8 passed, 2 failed; rejected invalid priorities and values overwrote the last Core-owned style state.
 - P3 #11 rejected declaration GREEN: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 10 passed, 0 failed.
+- P3 #11 first rejected write RED: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 10 passed, 1 failed; a rejected first declaration created an ownership record that restored a consumer removal.
+- P3 #11 first rejected write GREEN: `bun test packages/core/src/dom/dom-mutation-lease.test.ts` — 11 passed, 0 failed.
