@@ -1,0 +1,6 @@
+interface:
+  display_name: "Design Spec Writer"
+  short_description: "Write or update a frontend-ready DESIGN.md"
+  default_prompt: "Use $design-spec-writer to turn the available brief, screenshots, or references into a frontend-ready DESIGN.md."
+policy:
+  allow_implicit_invocation: false

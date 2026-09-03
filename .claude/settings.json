@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "ask": [
+      "mcp__heroui-react__get_component_docs",
+      "mcp__next-devtools__browser_eval"
+    ]
+  }
+}

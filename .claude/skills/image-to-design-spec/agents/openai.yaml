@@ -1,0 +1,6 @@
+interface:
+  display_name: "Image To Design Spec"
+  short_description: "Extract design evidence from screenshots or mockups"
+  default_prompt: "Use $image-to-design-spec to analyze screenshots or mockups and extract the layout, tokens, components, and states needed for a DESIGN.md."
+policy:
+  allow_implicit_invocation: false
