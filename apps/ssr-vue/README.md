@@ -10,7 +10,7 @@ The single page (`app/app.vue`) renders a target element, a trigger button, and 
 
 ## What the test verifies
 
-`tests/ssr-hydration.spec.ts` (Playwright) checks, against a production build:
+`tests/ssr-hydration.pw.ts` (Playwright) checks, against a production build:
 
 1. **SSR**: fetching `/` directly (no JS execution) returns HTML that already contains the
    target/trigger markup and the tour's (inert, disabled) popover markup.

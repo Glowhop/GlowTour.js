@@ -4,6 +4,9 @@ const PORT = 4173;
 
 export default defineConfig({
   testDir: "./tests",
+  // Named `.pw.ts` rather than `.spec.ts` so `bun test` (root workspace default patterns match
+  // `.spec.`/`.test.`) never tries to load and execute these Playwright-only files itself.
+  testMatch: "**/*.pw.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: "list",

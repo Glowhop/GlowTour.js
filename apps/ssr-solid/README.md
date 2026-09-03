@@ -38,7 +38,7 @@ The Playwright config's `webServer` builds the app in production mode
 (`vite build`) and serves it (`vite preview`) before running the tests, so this
 exercises the real production SSR + hydration path, not the dev server.
 
-The test suite (`tests/ssr-hydration.spec.ts`) checks:
+The test suite (`tests/ssr-hydration.pw.ts`) checks:
 
 1. The raw SSR HTML response (fetched directly, before any client JS runs) contains
    the target/trigger markup and the packaged tour root/popover markup.

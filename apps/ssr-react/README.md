@@ -16,7 +16,7 @@ UI.
   elements.
 - `next build && next start` runs the app in production mode, the same way a
   real deployment would.
-- `tests/ssr-hydration.spec.ts` (Playwright) proves three things end-to-end:
+- `tests/ssr-hydration.pw.ts` (Playwright) proves three things end-to-end:
   1. **SSR**: fetching the page HTML directly (no JS execution) already
      contains the trigger, both step targets, and the `DefaultTour` markup
      (`data-glow-tour-root`, `data-glow-tour-popover`).

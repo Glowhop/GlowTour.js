@@ -12,7 +12,7 @@
     "check:write": "biome check --write .",
     "format": "biome format --write .",
     "lint": "biome lint .",
-    "test": "bun test --path-ignore-patterns='apps/ssr-*/**'",
+    "test": "bun test",
     "test:browser": "bun scripts/test-browser.ts",
     "typecheck": "bunx tsc -p tsconfig.json --noEmit",
     "playground": "bun run --cwd apps/playground dev",
