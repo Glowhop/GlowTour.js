@@ -31,26 +31,31 @@ The private `apps/playground` exercises the adapters but is not a published comp
 
 ## SSR and hydration
 
-React, Vue, and Solid have real automated coverage for both server rendering and hydration
-(`renderToString`/equivalent plus a hydration pass, asserting no mismatch and that the hydrated
-tour stays interactive). Angular and Vanilla remain unverified beyond DOM-free import, for the
-reasons below.
+React, Vue, and Solid have real automated coverage for both server rendering and hydration, at two
+levels: package-level tests (`renderToString`/equivalent plus a hydration pass against the adapter
+directly) and full real-app tests (`apps/ssr-react` on Next.js, `apps/ssr-vue` on Nuxt,
+`apps/ssr-solid` on SolidStart — each does a production build, boots the built server, and drives
+it with a headless browser via Playwright: fetches the raw SSR HTML, then loads it in-browser and
+asserts zero hydration-mismatch/console errors and a working, interactive tour). Angular and
+Vanilla remain unverified beyond DOM-free import, for the reasons below.
 
 | Adapter | Verified SSR fact | Verified hydration fact |
 | --- | --- | --- |
-| React | Packaged `DefaultTour` renders via `react-dom/server`'s `renderToString` with no DOM globals present. | `react-dom/client`'s `hydrateRoot` hydrates that markup with zero console errors, and the hydrated tour is interactive (workflow advances on trigger click). |
-| Vue | The packaged root renders via `@vue/server-renderer`'s `renderToString`. | `createSSRApp(...).mount()` hydrates that markup with no hydration-mismatch warnings, and the hydrated tour is interactive. |
-| Solid | The packaged root renders via `solid-js/web`'s server build (`renderToString` + `generateHydrationScript`). | The browser build's `hydrate()` attaches to that markup without throwing and without duplicating nodes. Not chained through a full `tour.run()`/click interaction check, unlike React/Vue — see the constraint below. |
-| Angular | Importing the package is DOM-free. | Not tested: `@angular/platform-server` isn't a dependency anywhere in the workspace, and adding it (plus the DOM shim it needs) is out of scope for a lightweight sanity test. |
+| React | Packaged `DefaultTour` renders via `react-dom/server`'s `renderToString` with no DOM globals present (package-level), and a real `next build` + `next start` app serves the same markup before any client JS runs (`apps/ssr-react`). | `react-dom/client`'s `hydrateRoot` hydrates that markup with zero console errors and an interactive tour (package-level); the real Next.js app hydrates cleanly and is interactive end to end (`apps/ssr-react`). |
+| Vue | The packaged root renders via `@vue/server-renderer`'s `renderToString` (package-level), and a real Nuxt production build serves the same markup (`apps/ssr-vue`). | `createSSRApp(...).mount()` hydrates that markup with no hydration-mismatch warnings and an interactive tour (package-level); the real Nuxt app hydrates cleanly and is interactive end to end (`apps/ssr-vue`). |
+| Solid | The packaged root renders via `solid-js/web`'s server build (package-level), and a real SolidStart production build serves the same markup (`apps/ssr-solid`). | The browser build's `hydrate()` attaches without throwing or duplicating nodes (package-level); the real SolidStart app hydrates cleanly and is interactive end to end (`apps/ssr-solid`) — see the hydration-key constraint below, which this app confirms does **not** affect real consumers. |
+| Angular | Importing the package is DOM-free. | Not tested: `@angular/platform-server` isn't a dependency anywhere in the workspace, and adding it (plus the DOM shim it needs) is out of scope for a lightweight sanity test. No real-app Angular Universal test exists either. |
 | Vanilla | Importing the package is DOM-free; custom-element mounting is browser-only. | Not applicable in the string-SSR sense — there's no component tree to hydrate, only custom elements upgrading once connected to a document that already contains their tags. |
 
-**Solid hydration-key constraint:** Solid's hydration key numbering is sensitive to whether
-components are invoked as plain functions or wrapped in `createComponent(...)`. Mixing the two
-between the server render pass and the client hydrate pass causes a Solid-internal crash. Any real
-SSR integration (e.g. a SolidStart app) must invoke the exported components identically on both
-server and client.
+**Solid hydration-key constraint (package-level test only, not a real-world risk):** the
+package-level test in `packages/solid/src/solid.browser.ts` deliberately invokes components as
+plain functions on both the server and client passes, which is sensitive to Solid's hydration key
+numbering and causes a Solid-internal crash if the two passes don't match. This is an artificial
+scenario built to document the constraint, not a bug: `apps/ssr-solid` proves that the packaged
+`DefaultTour` (which already invokes every child consistently through `createComponent(...)`), used
+the normal way in a real SolidStart app whose own JSX compiler invokes components consistently on
+both sides, hydrates without any crash.
 
-Full app-level SSR/hydration testing through Next.js (React), Nuxt (Vue), or SolidStart (Solid) has
-not been done — none of those frameworks are present in this workspace. The package-level tests
-above validate the adapters' own SSR/hydration behavior in isolation; wiring a real framework app
-is a separate, larger follow-up.
+Each `apps/ssr-*` app has its own README explaining what it demonstrates and how to run its
+Playwright suite (`bunx playwright test`, scoped to that app — these are excluded from the root
+`bun test`/`bunx tsc` runs since they're full framework apps with their own build/type toolchain).

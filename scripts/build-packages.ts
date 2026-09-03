@@ -2,6 +2,18 @@ import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writ
 import { join, resolve } from "node:path";
 import { buildPublishedManifest, type PackageManifest } from "./package-manifests";
 
+// Bun's automatic JSX transform selects `react/jsx-dev-runtime` (`jsxDEV`) unless NODE_ENV is
+// "production" *when the Bun process starts* — setting `process.env.NODE_ENV` mid-script has no
+// effect on the bundler. Without this, published dist output ships jsxDEV calls, which crash in
+// any consumer's production build (e.g. `next build`) that doesn't also provide the dev runtime.
+if (process.env.NODE_ENV !== "production") {
+  const result = Bun.spawnSync([process.execPath, ...process.argv.slice(1)], {
+    env: { ...process.env, NODE_ENV: "production" },
+    stdio: ["inherit", "inherit", "inherit"],
+  });
+  process.exit(result.exitCode ?? 1);
+}
+
 type PackageId = "core" | "react" | "vue" | "solid" | "vanilla";
 
 type PackageBuild = {
@@ -95,6 +107,10 @@ async function buildPackage(build: PackageBuild) {
     ],
     format: "esm",
     ignoreDCEAnnotations: true,
+    // Explicit `jsx.development: false` — otherwise Bun's automatic JSX transform compiles to
+    // `react/jsx-dev-runtime`'s `jsxDEV()`, which crashes in any consumer's production build
+    // (e.g. `next build`) that doesn't also ship the dev runtime.
+    jsx: { development: false },
     outdir: distDirectory,
     target: "browser",
   });
