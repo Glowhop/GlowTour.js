@@ -12,8 +12,8 @@ import type {
   TourState,
   TourStatus,
 } from "../types";
-import { ActiveStep } from "./active-step";
 import { abortableDelay, abortError } from "./abort";
+import { ActiveStep } from "./active-step";
 import { attachRootBridge } from "./root-bridge";
 
 const DEFAULT_TARGET_TIMEOUT = 3000;

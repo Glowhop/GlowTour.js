@@ -1,5 +1,5 @@
-import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { DomMutationLease } from "../dom/dom-mutation-lease";
+import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { roundByDPR, viewportDimensions } from "../utils/utils";
 import GlowTourElement, { type TourElementStep } from "./base";
 import { ensurePopoverArrowStyles } from "./popover-arrow-styles";

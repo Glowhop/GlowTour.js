@@ -5,6 +5,7 @@ import {
   type WorkflowDefinition,
   type WorkflowStepDraft,
 } from "../definition";
+import { abortableDelay, abortError } from "../runtime/abort";
 import type {
   EventHandler,
   StartOptions,
@@ -14,7 +15,6 @@ import type {
   StepTransitionAction,
   WaitUntilOptions,
 } from "../types";
-import { abortableDelay, abortError } from "../runtime/abort";
 
 const DEFAULT_WAIT_INTERVAL = 16;
 const DEFAULT_WAIT_TIMEOUT = 3000;

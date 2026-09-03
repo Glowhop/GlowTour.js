@@ -1,6 +1,10 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { NoopTourViewDriver, type TourViewCommands, type TourViewDriver } from "../dom/tour-view-driver";
+import {
+  NoopTourViewDriver,
+  type TourViewCommands,
+  type TourViewDriver,
+} from "../dom/tour-view-driver";
 import type { BeforeActionStepContext, StepContext } from "../types";
 import type { ActiveStep } from "./active-step";
 import { createGlowTour as createPublicGlowTour, TourController } from "./tour-controller";

@@ -229,9 +229,7 @@ describe("PopoverElement positioning", () => {
 
   for (const scenario of positionCases) {
     test(`positions ${scenario.name} and keeps the arrow anchored`, () => {
-      const popover = new PopoverElement(
-        new MockElement(100, 60) as unknown as HTMLElement,
-      );
+      const popover = new PopoverElement(new MockElement(100, 60) as unknown as HTMLElement);
 
       const position = popover.resolvePosition(
         scenario.target,
@@ -412,7 +410,11 @@ describe("PopoverElement positioning", () => {
     );
     element.setAttribute("aria-hidden", "consumer-hidden");
     element.style.setProperty("position", "relative", "important");
-    element.style.setProperty("--glow-tour-arrow-color", "var(--later-consumer-arrow)", "important");
+    element.style.setProperty(
+      "--glow-tour-arrow-color",
+      "var(--later-consumer-arrow)",
+      "important",
+    );
     popover.release();
 
     assert.equal(element.getAttribute("aria-hidden"), "consumer-hidden");
@@ -471,7 +473,11 @@ describe("PopoverElement positioning", () => {
       rect(20, 80, 20, 20),
       createStep(["bottom"], { arrow: { color: "#4c35fd" } }),
     );
-    element.style.setProperty("--glow-tour-arrow-color", "var(--later-consumer-arrow)", "important");
+    element.style.setProperty(
+      "--glow-tour-arrow-color",
+      "var(--later-consumer-arrow)",
+      "important",
+    );
     popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"]));
 
     assert.equal(
