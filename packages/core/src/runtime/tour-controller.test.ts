@@ -1,6 +1,6 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import type { TourViewCommands, TourViewDriver } from "../dom/tour-view-driver";
+import { NoopTourViewDriver, type TourViewCommands, type TourViewDriver } from "../dom/tour-view-driver";
 import type { BeforeActionStepContext, StepContext } from "../types";
 import type { ActiveStep } from "./active-step";
 import { createGlowTour as createPublicGlowTour, TourController } from "./tour-controller";
@@ -78,7 +78,7 @@ function createRealmDocument() {
 }
 
 function createGlowTour<T>() {
-  return new TourController<T>();
+  return new TourController<T>(new NoopTourViewDriver());
 }
 
 class RecordingDriver implements TourViewDriver<string> {
@@ -157,7 +157,7 @@ describe("instance-first TourController", () => {
     const realm = createRealmDocument();
     const element = realm.element();
     realm.select(element);
-    const tour = new TourController<string>(undefined, {
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
       assertCanRun: () => realm.document,
     });
     const workflow = tour
@@ -218,7 +218,7 @@ describe("instance-first TourController", () => {
 
   test("passes the workflow to assertCanRun before lifecycle state changes", async () => {
     let onStartCalls = 0;
-    const tour = new TourController<string>(undefined, {
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
       assertCanRun: (workflow) => {
         if (workflow.steps.length > 0) throw new Error("presentation unavailable");
       },
@@ -240,7 +240,7 @@ describe("instance-first TourController", () => {
   });
 
   test("does not expose the removed updateCurrentStep command", () => {
-    const tour = new TourController<string>();
+    const tour = new TourController<string>(new NoopTourViewDriver());
 
     assert.equal("updateCurrentStep" in tour, false);
   });
@@ -2100,7 +2100,7 @@ describe("instance-first TourController", () => {
   test("isolates state listener failures during initial and run publications", async () => {
     const errors: Error[] = [];
     const healthyListenerStatuses: string[] = [];
-    const tour = new TourController<string>(undefined, {
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
       onSubscriberError: (error) => {
         errors.push(error);
       },
@@ -2128,7 +2128,7 @@ describe("instance-first TourController", () => {
 
   test("isolates props listener failures during actions", async () => {
     const errors: Error[] = [];
-    const tour = new TourController<string>(undefined, {
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
       onSubscriberError: (error) => {
         errors.push(error);
       },
@@ -2154,7 +2154,7 @@ describe("instance-first TourController", () => {
 
   test("normalizes subscriber failures whose string coercion throws", () => {
     const errors: Error[] = [];
-    const tour = new TourController<string>(undefined, {
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
       onSubscriberError: (error) => {
         errors.push(error);
       },
@@ -2175,7 +2175,7 @@ describe("instance-first TourController", () => {
 
   test("routes subscriber failures to the injected unhandled reporter when no hook is configured", async () => {
     const unhandled: Error[] = [];
-    const tour = new TourController<string>(undefined, {
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
       reportUnhandledError: (error) => {
         unhandled.push(error);
       },
@@ -2213,7 +2213,7 @@ describe("instance-first TourController", () => {
 
   test("sends sync and async subscriber error hook failures to the unhandled reporter", async () => {
     const unhandled: Error[] = [];
-    const sync = new TourController<string>(undefined, {
+    const sync = new TourController<string>(new NoopTourViewDriver(), {
       onSubscriberError: () => {
         throw new Error("sync hook failure");
       },
@@ -2225,7 +2225,7 @@ describe("instance-first TourController", () => {
       throw new Error("subscriber failure");
     });
 
-    const asynchronous = new TourController<string>(undefined, {
+    const asynchronous = new TourController<string>(new NoopTourViewDriver(), {
       onSubscriberError: async () => {
         throw new Error("async hook failure");
       },

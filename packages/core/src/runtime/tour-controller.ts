@@ -1,10 +1,6 @@
 import { WorkflowBuilder } from "../builder";
 import type { WorkflowDefinition } from "../definition";
-import {
-  DomTourViewDriver,
-  NoopTourViewDriver,
-  type TourViewDriver,
-} from "../dom/tour-view-driver";
+import { DomTourViewDriver, type TourViewDriver } from "../dom/tour-view-driver";
 import { validateWorkflowOptions } from "../options/validation";
 import type {
   BeforeActionStepContext,
@@ -77,7 +73,7 @@ export class TourController<T> {
   });
 
   constructor(
-    private readonly driver: TourViewDriver<T> = new NoopTourViewDriver<T>(),
+    private readonly driver: TourViewDriver<T>,
     private readonly options: TourControllerOptions<T> = {},
   ) {
     this.snapshot = this.createSnapshot();
