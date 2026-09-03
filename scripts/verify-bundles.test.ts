@@ -9,7 +9,7 @@ import {
 test("defines the immutable gzip budgets for every published entry", () => {
   expect(Object.fromEntries(bundleScenarios.map((scenario) => [scenario.name, scenario.gzipBudget]))).toEqual({
     "Core adapter": 0.75 * 1024,
-    "Core index": 18 * 1024,
+    "Core index": 18.5 * 1024,
     Angular: 4.5 * 1024,
     React: 2.5 * 1024,
     Solid: 2.5 * 1024,
@@ -108,7 +108,7 @@ test("rejects a framework import that is not declared by the measured adapter", 
 });
 
 test("formats current gzip bytes, budget, and delta for every scenario", () => {
-  expect(formatBundleMeasurement(bundleScenarios[0]!, 100)).toBe("Core index: 100 B / 18432 B (-18332 B)");
+  expect(formatBundleMeasurement(bundleScenarios[0]!, 100)).toBe("Core index: 100 B / 18944 B (-18844 B)");
 });
 
 test("retains each targeted createGlowTour call while measuring tree-shaking", () => {

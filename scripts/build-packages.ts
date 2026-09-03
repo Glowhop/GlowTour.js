@@ -94,6 +94,7 @@ async function buildPackage(build: PackageBuild) {
       ...(build.preserveModules ? ["./*", "../*"] : []),
     ],
     format: "esm",
+    ignoreDCEAnnotations: true,
     outdir: distDirectory,
     target: "browser",
   });

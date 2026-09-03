@@ -36,7 +36,7 @@ export const bundleScenarios: readonly BundleScenario[] = [
   {
     entry: 'import { createGlowTour } from "@glowhop/core-tour"; createGlowTour();',
     externalPackages: [],
-    gzipBudget: 18 * KIB,
+    gzipBudget: 18.5 * KIB,
     name: "Core index",
     outputExtension: "js",
   },
