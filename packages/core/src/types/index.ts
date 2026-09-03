@@ -115,10 +115,6 @@ export interface StartOptions {
   onFinish?: () => void | Promise<void>;
 }
 
-export interface ReadonlyStepState<T> {
-  get(): ReadonlyStepProps<T>;
-  subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
-}
 export type StepPropsUpdate<T> =
   | ReadonlyStepProps<T>
   | ((current: ReadonlyStepProps<T>) => ReadonlyStepProps<T>);
@@ -158,11 +154,6 @@ export type StepActionResult = boolean | void;
 export type StepAction<T> = (
   context: StepContext<T>,
 ) => Promise<StepActionResult> | StepActionResult;
-
-export type StepWaitPredicate<T> = (
-  element: HTMLElement | null,
-  stepState: ReadonlyStepState<T>,
-) => Promise<boolean> | boolean;
 
 export type StepActionInstruction<T> = StepAction<T> | number;
 

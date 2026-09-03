@@ -495,7 +495,7 @@ export class TourController<T> {
   private createBeforeActionStepContext(step: ActiveStep<T>): BeforeActionStepContext<T> {
     if (!step.target) throw new Error("Cannot create a step context without a target");
     return Object.freeze({
-      ...step.state.get(),
+      ...step.props.get(),
       target: step.target,
     });
   }

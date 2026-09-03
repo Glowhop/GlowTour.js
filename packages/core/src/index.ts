@@ -18,7 +18,6 @@ export type {
   PopoverArrowOptions,
   PopoverOptions,
   PrimitiveValue,
-  ReadonlyStepState,
   ReadonlyTourState,
   ResolvedPlacement,
   ScrollOptions,
