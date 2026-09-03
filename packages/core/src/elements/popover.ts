@@ -182,7 +182,6 @@ export default class PopoverElement extends GlowTourElement {
   initializeProps() {
     const el = this.getElement();
     if (!el) {
-      console.warn("No popover element found");
       return;
     }
 
