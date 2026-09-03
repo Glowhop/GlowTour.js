@@ -37,9 +37,11 @@ describe("mergePopoverOptions", () => {
       borderRadius: 4,
       borderWidth: 2,
       color: "#4c35fd",
+      disableAutoStyles: undefined,
       disabled: false,
       edgePadding: -8,
       size: 20,
+      styleNonce: undefined,
     });
   });
 });

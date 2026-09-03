@@ -56,6 +56,18 @@ export interface PopoverArrowOptions {
   borderWidth?: number;
   borderRadius?: number;
   edgePadding?: number;
+  /**
+   * CSP nonce applied to the `<style>` element Glow Tour injects for the
+   * arrow's pseudo-element rules. Required when the page's Content-Security-Policy
+   * blocks unnonced inline styles.
+   */
+  styleNonce?: string;
+  /**
+   * Skip injecting the built-in arrow `<style>` element entirely. Provide the
+   * equivalent rules yourself through whatever channel your CSP allows, such
+   * as an external stylesheet.
+   */
+  disableAutoStyles?: boolean;
 }
 
 export interface PopoverOptions extends BaseOptions {

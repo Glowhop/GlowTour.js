@@ -91,6 +91,7 @@ class MockElement {
 class MockStyleElement {
   readonly attributes = new Map<string, string>();
   textContent = "";
+  nonce = "";
 
   setAttribute(name: string, value: string) {
     this.attributes.set(name, value);
@@ -487,8 +488,14 @@ describe("PopoverElement arrow stylesheet", () => {
     const firstElement = new MockElement(100, 60, document);
     const secondElement = new MockElement(100, 60, document);
 
-    new PopoverElement(firstElement as unknown as HTMLElement).initializeProps();
-    new PopoverElement(secondElement as unknown as HTMLElement).initializeProps();
+    new TestPopoverElement(firstElement as unknown as HTMLElement).getStyles(
+      rect(20, 80, 20, 20),
+      createStep(["bottom"]),
+    );
+    new TestPopoverElement(secondElement as unknown as HTMLElement).getStyles(
+      rect(20, 80, 20, 20),
+      createStep(["bottom"]),
+    );
 
     assert.equal(document.styles.length, 1);
     assert.match(
@@ -504,9 +511,37 @@ describe("PopoverElement arrow stylesheet", () => {
     const root = new MockStyleRoot(11, document);
     const element = new MockElement(100, 60, root);
 
-    new PopoverElement(element as unknown as HTMLElement).initializeProps();
+    new TestPopoverElement(element as unknown as HTMLElement).getStyles(
+      rect(20, 80, 20, 20),
+      createStep(["bottom"]),
+    );
 
     assert.equal(root.styles.length, 1);
+  });
+
+  test("applies a CSP nonce to the injected style element", () => {
+    const document = new MockStyleRoot(9);
+    const element = new MockElement(100, 60, document);
+
+    new TestPopoverElement(element as unknown as HTMLElement).getStyles(
+      rect(20, 80, 20, 20),
+      createStep(["bottom"], { arrow: { styleNonce: "csp-nonce-123" } }),
+    );
+
+    assert.equal(document.styles.length, 1);
+    assert.equal(document.styles[0]?.nonce, "csp-nonce-123");
+  });
+
+  test("skips injection when disableAutoStyles is set", () => {
+    const document = new MockStyleRoot(9);
+    const element = new MockElement(100, 60, document);
+
+    new TestPopoverElement(element as unknown as HTMLElement).getStyles(
+      rect(20, 80, 20, 20),
+      createStep(["bottom"], { arrow: { disableAutoStyles: true } }),
+    );
+
+    assert.equal(document.styles.length, 0);
   });
 });
 

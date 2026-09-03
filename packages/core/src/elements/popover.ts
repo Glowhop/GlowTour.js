@@ -186,8 +186,6 @@ export default class PopoverElement extends GlowTourElement {
       return;
     }
 
-    ensurePopoverArrowStyles(el);
-
     this.mutationLease.setStyle("position", "fixed");
     this.mutationLease.setStyle("z-index", "10001");
     this.mutationLease.setStyle("top", "0px");
@@ -308,6 +306,10 @@ export default class PopoverElement extends GlowTourElement {
 
   private _applyArrowStyles(step: TourElementStep) {
     const arrow = step.popover?.arrow;
+    ensurePopoverArrowStyles(this.element, {
+      disabled: arrow?.disableAutoStyles,
+      nonce: arrow?.styleNonce,
+    });
     this._applyArrowStyle(ARROW_STYLE_PROPERTIES.color, arrow?.color);
     this._applyArrowStyle(ARROW_STYLE_PROPERTIES.size, toPixels(arrow?.size));
     this._applyArrowStyle(ARROW_STYLE_PROPERTIES.borderWidth, toPixels(arrow?.borderWidth));

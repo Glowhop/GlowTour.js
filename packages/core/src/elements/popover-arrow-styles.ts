@@ -50,7 +50,13 @@ const ARROW_STYLES = `
 }
 `;
 
-export function ensurePopoverArrowStyles(element: Element) {
+export interface PopoverArrowStylesOptions {
+  readonly nonce?: string;
+  readonly disabled?: boolean;
+}
+
+export function ensurePopoverArrowStyles(element: Element, options?: PopoverArrowStylesOptions) {
+  if (options?.disabled) return;
   if (typeof element.getRootNode !== "function") return;
   const root = element.getRootNode();
   if (root.nodeType !== 9 && root.nodeType !== 11) return;
@@ -60,6 +66,7 @@ export function ensurePopoverArrowStyles(element: Element) {
   const ownerDocument = root.nodeType === 9 ? (root as Document) : element.ownerDocument;
   const style = ownerDocument.createElement("style");
   style.setAttribute("data-glow-tour-core-arrow-styles", "");
+  if (options?.nonce) style.nonce = options.nonce;
   style.textContent = ARROW_STYLES;
 
   if (root.nodeType === 9) {
