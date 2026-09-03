@@ -1,0 +1,19 @@
+{
+  "name": "@glowhop/example-vanilla",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@glowhop/styles-tour": "workspace:*",
+    "@glowhop/vanilla-tour": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}

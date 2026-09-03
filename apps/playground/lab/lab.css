@@ -202,7 +202,7 @@
 }
 
 .lab-card-number {
-  color: #948ba9;
+  color: #6e677d;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   font-weight: 800;
@@ -261,7 +261,7 @@
 }
 
 .lab-inspector-list dt {
-  color: #8b829e;
+  color: #7a728b;
   font-size: 10px;
 }
 
@@ -273,7 +273,7 @@
 }
 
 .lab-empty-log {
-  color: #847c95;
+  color: #797289;
   font-size: 13px;
   line-height: 1.5;
   margin-top: 18px;

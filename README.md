@@ -18,8 +18,7 @@ import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 const workflow = tour.create("welcome").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build();
-createRoot(document.getElementById("app")!).render(<DefaultTour tour={tour} />);
-document.getElementById("start")?.addEventListener("click", () => void tour.run(workflow));
+createRoot(document.getElementById("app")!).render(<><button id="welcome">Welcome</button><button type="button" onClick={() => void tour.run(workflow)}>Start tour</button><DefaultTour tour={tour} /></>);
 ```
 
 Import the stylesheet once. Core owns workflow state, navigation, and DOM-level tour behavior, but nothing renders until an adapter connects a root and a popover; `@glowhop/core-tour/adapter` is the entry point for writing a new adapter (see [`packages/core/README.md`](https://github.com/Glowhop/glow-tour/blob/main/packages/core/README.md)). All published packages are ESM-only.

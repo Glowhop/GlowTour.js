@@ -9,6 +9,7 @@
     "ignoreUnknown": false,
     "includes": [
       "apps/**",
+      "examples/**",
       "packages/**",
       "biome.json",
       "package.json",
@@ -17,6 +18,8 @@
       "!!apps/**/dist",
       "!!apps/**/coverage",
       "!!.artifacts",
+      "!!examples/**/dist",
+      "!!examples/**/node_modules",
       "!!packages/**/dist",
       "!!packages/**/coverage"
     ]

@@ -46,18 +46,38 @@ function useTourSnapshot(tour: Tour): TourState<ReactTourContent> {
   return React.useSyncExternalStore(tour.state.subscribe, tour.state.get, tour.state.get);
 }
 
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
+/**
+ * React 18/19-compatible stand-in for the experimental `React.useEffectEvent`.
+ *
+ * Keeps the latest `fn` in a ref (updated via a layout effect, so it is current
+ * before any effect that reads it can run) and returns a stable callback that
+ * always dispatches to that latest closure. The returned function's identity
+ * never changes, so it is safe to omit from dependency arrays without causing
+ * the effect to see a stale closure or to re-run when `fn` changes identity.
+ */
+function useEffectEvent<T extends (...args: never[]) => unknown>(fn: T): T {
+  const ref = React.useRef(fn);
+  useIsomorphicLayoutEffect(() => {
+    ref.current = fn;
+  });
+  return React.useCallback((...args: Parameters<T>) => ref.current(...args), []) as T;
+}
+
 function useBoundElement<T extends Element>(
   bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
   const { binding } = useTourContext();
   const [element, setElement] = React.useState<T | null>(null);
 
-  const binder = React.useEffectEvent(bind);
+  const binder = useEffectEvent(bind);
 
   React.useEffect(() => {
     if (!binding || !element) return;
     return binder(binding, element);
-  }, [binding, element]);
+  }, [binding, element, binder]);
 
   return setElement;
 }
