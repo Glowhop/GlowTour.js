@@ -14,6 +14,7 @@ import type {
   StepTransitionAction,
   WaitUntilOptions,
 } from "../types";
+import { abortableDelay, abortError } from "../runtime/abort";
 
 const DEFAULT_WAIT_INTERVAL = 16;
 const DEFAULT_WAIT_TIMEOUT = 3000;
@@ -24,10 +25,6 @@ export type EventName = keyof HTMLElementEventMap;
 
 type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
 type WaitUntilPredicate<T> = (context: StepContext<T>) => Promise<boolean> | boolean;
-
-function abortError(): DOMException {
-  return new DOMException("The operation was aborted", "AbortError");
-}
 
 function assertTimingValue(name: string, value: number): void {
   if (!Number.isFinite(value) || value < 0) {
@@ -41,23 +38,6 @@ function throwIfAborted(signal: AbortSignal): void {
 
 function waitTimeoutError(timeout: number): Error {
   return new Error(`waitUntil timed out after ${timeout}ms`);
-}
-
-function waitForDelay(delay: number, signal: AbortSignal): Promise<void> {
-  throwIfAborted(signal);
-  return new Promise((resolve, reject) => {
-    const cleanup = () => signal.removeEventListener("abort", onAbort);
-    const onAbort = () => {
-      clearTimeout(timeoutId);
-      cleanup();
-      reject(abortError());
-    };
-    const timeoutId = setTimeout(() => {
-      cleanup();
-      resolve();
-    }, delay);
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
 }
 
 function waitForPredicate(
@@ -237,7 +217,7 @@ export class WorkflowStepBuilder<T> {
           return true;
         const remainingTime = timeout - (Date.now() - startedAt);
         if (remainingTime <= 0) throw waitTimeoutError(timeout);
-        await waitForDelay(Math.min(interval, remainingTime), context.signal);
+        await abortableDelay(Math.min(interval, remainingTime), context.signal);
       }
     });
     return this;

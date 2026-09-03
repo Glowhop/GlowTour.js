@@ -17,14 +17,11 @@ import type {
   TourStatus,
 } from "../types";
 import { ActiveStep } from "./active-step";
+import { abortableDelay, abortError } from "./abort";
 import { attachRootBridge } from "./root-bridge";
 
 const DEFAULT_TARGET_TIMEOUT = 3000;
 const DISPOSED_ERROR_MESSAGE = "Tour controller is disposed";
-
-function abortError() {
-  return new DOMException("The operation was aborted", "AbortError");
-}
 
 function normalizedError(error: unknown) {
   if (error instanceof Error) return error;
@@ -33,22 +30,6 @@ function normalizedError(error: unknown) {
   } catch {
     return new Error("Unknown error");
   }
-}
-
-function waitForTimer(delay: number, signal: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
-    const cleanup = () => signal.removeEventListener("abort", onAbort);
-    const onAbort = () => {
-      clearTimeout(timeout);
-      cleanup();
-      reject(abortError());
-    };
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve();
-    }, delay);
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
 }
 
 interface TourControllerOptions<T> extends GlowTourOptions {
@@ -323,7 +304,7 @@ export class TourController<T> {
     for (const action of step.definition.actions) {
       this.assertCurrent(operation);
       if (typeof action === "number") {
-        await waitForTimer(action, this.signalFor(operation));
+        await abortableDelay(action, this.signalFor(operation));
         this.assertCurrent(operation);
         continue;
       }
@@ -351,7 +332,7 @@ export class TourController<T> {
       if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
         throw this.missingTargetError(step);
       }
-      await waitForTimer(16, signal);
+      await abortableDelay(16, signal);
       this.assertCurrent(operation);
     }
   }
