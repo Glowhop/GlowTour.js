@@ -80,22 +80,6 @@ export function roundedRectPath(
   ].join(" ");
 }
 
-export function toggleElementAttribute(element: Element, name: string, enabled: boolean) {
-  if (typeof element.toggleAttribute === "function") {
-    element.toggleAttribute(name, enabled);
-    return;
-  }
-
-  if (enabled) {
-    element.setAttribute(name, "");
-    return;
-  }
-
-  if (typeof element.removeAttribute === "function") {
-    element.removeAttribute(name);
-  }
-}
-
 export async function resolveTargetElement(
   target: TargetResolver,
   options: { readonly document?: Document; readonly signal: AbortSignal },
