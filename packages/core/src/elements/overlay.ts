@@ -26,7 +26,6 @@ export default class OverlayElement extends GlowTourElement {
     const path = this._getPathElement();
     if (!path) {
       this.visualState = nextVisualState;
-      console.warn("No overlay path element found");
       return;
     }
     const keyframe = this.getRenderedTargetStyles(path, this._getNextStyles(nextPosition, step));
@@ -127,7 +126,6 @@ export default class OverlayElement extends GlowTourElement {
   initializeProps() {
     const el = this.getElement();
     if (!el) {
-      console.warn("No overlay element found");
       return;
     }
     const viewport = viewportDimensions(el);
@@ -151,7 +149,6 @@ export default class OverlayElement extends GlowTourElement {
 
     const path = el.querySelector("path");
     if (!path) {
-      console.warn("No overlay path element found");
       return;
     }
 
@@ -182,7 +179,6 @@ export default class OverlayElement extends GlowTourElement {
   ) {
     const path = this._getPathElement();
     if (!path) {
-      console.warn("No overlay path element found");
       return;
     }
 
@@ -278,7 +274,6 @@ export default class OverlayElement extends GlowTourElement {
   async _appear(position: DOMRect, step: TourElementStep) {
     const path = this._getPathElement();
     if (!path) {
-      console.warn("No overlay path element found");
       return Promise.resolve();
     }
 
@@ -301,7 +296,6 @@ export default class OverlayElement extends GlowTourElement {
   async _disappear() {
     const path = this._getPathElement();
     if (!path) {
-      console.warn("No overlay path element found");
       return Promise.resolve();
     }
 

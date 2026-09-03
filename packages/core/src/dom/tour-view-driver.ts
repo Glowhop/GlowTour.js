@@ -500,9 +500,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       );
       this.syncControlState(step);
       this.syncShortcutLabels(step);
-      console.log(
-        "TourViewDriver: presentation changed, updated animation options and synced controls",
-      );
     }
     this.overlay?.updatePosition(targetRect, step, presentationChanged, (transition) =>
       this.observeDynamicOperation(transition, generation),
