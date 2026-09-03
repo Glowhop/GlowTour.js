@@ -69,7 +69,7 @@ afterEach(() => {
 describe("OverlayElement animation fallbacks", () => {
   test("applies final geometry when Web Animations are unavailable", async () => {
     const element = new MockOverlay();
-    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
     const step = { overlay: { color: "#111", opacity: 0.5 } } satisfies TourElementStep;
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), step);
@@ -90,7 +90,7 @@ describe("OverlayElement animation fallbacks", () => {
         innerWidth: 800,
       },
     });
-    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), {});
 
@@ -117,7 +117,7 @@ describe("OverlayElement animation fallbacks", () => {
         innerWidth: 800,
       },
     });
-    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), {});
 
@@ -144,7 +144,7 @@ describe("OverlayElement animation fallbacks", () => {
         innerWidth: 800,
       },
     });
-    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), {});
 
@@ -162,7 +162,7 @@ describe("OverlayElement animation fallbacks", () => {
         innerWidth: 800,
       },
     });
-    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), { overlay: { color: "red" } });
     await overlay.moveToTarget(rect(200, 200, 40, 20), {});
@@ -177,7 +177,7 @@ describe("OverlayElement animation fallbacks", () => {
     element.path.animate = () => {
       throw new Error("unsupported animation");
     };
-    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
 
     await overlay.disappear();
 
@@ -222,7 +222,7 @@ describe("OverlayElement animation fallbacks", () => {
         innerWidth: 800,
       },
     });
-    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
     const step = { overlay: { color: "#111" } } satisfies TourElementStep;
 
     void overlay.animateTo(rect(100, 100, 40, 20), step);
@@ -270,7 +270,7 @@ describe("OverlayElement animation fallbacks", () => {
       }
       return { cancel() {}, finished: Promise.resolve() } as unknown as Animation;
     };
-    const overlay = new OverlayElement<string>(element as unknown as SVGSVGElement);
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
     const failure = new Error("animation failed");
 
     const firstAnimation = overlay.animateTo(rect(100, 100, 40, 20), {});

@@ -89,11 +89,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private inertBranches: InertBranch[] = [];
   private modalDocument: Document | null = null;
   private modalRoot: HTMLElement | null = null;
-  private overlay: OverlayElement<T> | null = null;
+  private overlay: OverlayElement | null = null;
   private pendingKeyboardCommand: { command: TourViewCommand; generation: number } | null = null;
-  private pointer: PointerElement<T> | null = null;
+  private pointer: PointerElement | null = null;
   private pendingFocusGeneration: number | null = null;
-  private popover: PopoverElement<T> | null = null;
+  private popover: PopoverElement | null = null;
   private presentationDirty = false;
   private rafId: number | null = null;
   private rafCancel: ((id: number) => void) | null = null;
@@ -119,7 +119,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (this.disposed) return;
     if (this.overlay?.getElement() === element) return;
     this.overlay?.release();
-    this.overlay = element ? new OverlayElement<T>(element) : null;
+    this.overlay = element ? new OverlayElement(element) : null;
     this.overlay?.initializeProps();
     this.refreshRegisteredElements();
   }
@@ -132,7 +132,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.focusGuard.deactivate();
     }
     this.popover?.release();
-    this.popover = element ? new PopoverElement<T>(element) : null;
+    this.popover = element ? new PopoverElement(element) : null;
     this.popover?.initializeProps();
     if (element) this.refreshRegisteredElements();
   }
@@ -141,7 +141,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (this.disposed) return;
     if (this.pointer?.getElement() === element) return;
     this.pointer?.release();
-    this.pointer = element ? new PointerElement<T>(element) : null;
+    this.pointer = element ? new PointerElement(element) : null;
     this.pointer?.initializeProps();
     this.refreshRegisteredElements();
   }

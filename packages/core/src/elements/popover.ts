@@ -28,7 +28,7 @@ const ARROW_STYLE_PROPERTIES = {
   size: "--glow-tour-arrow-size",
 } as const;
 
-export default class PopoverElement<T> extends GlowTourElement<T> {
+export default class PopoverElement extends GlowTourElement {
   private appliedPosition: PopoverPosition | null = null;
   private pendingReposition: PendingReposition | null = null;
   private repositionPhase: "idle" | "fading-out" | "fading-in" = "idle";

@@ -11,7 +11,7 @@ interface OverlayVisualState {
   radius: number | undefined;
 }
 
-export default class OverlayElement<T> extends GlowTourElement<T> {
+export default class OverlayElement extends GlowTourElement {
   private currentTransition: Animation | null = null;
   private visualState: OverlayVisualState | null = null;
 
