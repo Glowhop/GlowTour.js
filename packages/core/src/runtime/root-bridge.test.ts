@@ -35,13 +35,24 @@ function rootBridge(tour: object): RootBridge {
 
 class MockStyle {
   readonly values = new Map<string, string>();
+  private readonly priorities = new Map<string, string>();
+
+  getPropertyPriority(name: string) {
+    return this.priorities.get(name) ?? "";
+  }
+
+  getPropertyValue(name: string) {
+    return this.values.get(name) ?? "";
+  }
 
   removeProperty(name: string) {
     this.values.delete(name);
+    this.priorities.delete(name);
   }
 
-  setProperty(name: string, value: string) {
+  setProperty(name: string, value: string, priority = "") {
     this.values.set(name, value);
+    this.priorities.set(name, priority);
   }
 }
 
