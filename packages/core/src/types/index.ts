@@ -19,11 +19,6 @@ export interface TargetResolverContext {
   signal: AbortSignal;
 }
 
-export interface WaitOptions {
-  timeout?: number;
-  interval?: number;
-}
-
 export interface StepBehavior {
   allowInteraction?: boolean;
   disableAutoFocus?: boolean;

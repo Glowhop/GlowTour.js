@@ -12,7 +12,6 @@ import type {
   StepContext,
   StepParameters,
   StepTransitionAction,
-  WaitOptions,
   WaitUntilOptions,
 } from "../types";
 
@@ -95,7 +94,7 @@ function waitForPredicate(
   });
 }
 
-function waitOptions(options: WaitOptions = {}) {
+function waitOptions(options: WaitUntilOptions = {}) {
   const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
   if (!Number.isFinite(timeout) || timeout < 0) {

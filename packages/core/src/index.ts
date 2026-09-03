@@ -40,6 +40,5 @@ export type {
   TourState,
   TourStatus,
   TryOrderOptions,
-  WaitOptions,
   WaitUntilOptions,
 } from "./types";
