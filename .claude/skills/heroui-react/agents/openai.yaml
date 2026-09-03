@@ -1,0 +1,6 @@
+interface:
+  display_name: "HeroUI React"
+  short_description: "Build React UIs with HeroUI v3 and Tailwind CSS v4"
+  default_prompt: "Use $heroui-react for HeroUI v3 React work, including component usage, setup, theming, and documentation lookup."
+policy:
+  allow_implicit_invocation: false

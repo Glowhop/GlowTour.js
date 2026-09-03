@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["chrome-devtools-mcp@latest"]
+    },
+    "next-devtools": {
+      "command": "npx",
+      "args": ["next-devtools-mcp@latest"]
+    },
+    "heroui-react": {
+      "command": "npx",
+      "args": ["@heroui/react-mcp@latest"]
+    }
+  }
+}

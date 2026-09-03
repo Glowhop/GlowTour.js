@@ -1,0 +1,6 @@
+interface:
+  display_name: "Get Context"
+  short_description: "Confirm a concise brief before design, planning, or build work"
+  default_prompt: "Clarify the brief for this request before moving into design, planning, or implementation."
+policy:
+  allow_implicit_invocation: true

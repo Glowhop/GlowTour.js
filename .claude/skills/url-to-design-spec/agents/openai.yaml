@@ -1,0 +1,6 @@
+interface:
+  display_name: "URL To Design Spec"
+  short_description: "Extract design evidence from a live URL"
+  default_prompt: "Use $url-to-design-spec to inspect a live page and extract the layout, components, responsive behavior, and visible interactions needed for a DESIGN.md."
+policy:
+  allow_implicit_invocation: false
