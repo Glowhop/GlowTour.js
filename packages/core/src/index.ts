@@ -18,7 +18,6 @@ export type {
   PopoverArrowOptions,
   PopoverOptions,
   PrimitiveValue,
-  ReadonlyStepState,
   ReadonlyTourState,
   ResolvedPlacement,
   ScrollOptions,
@@ -40,6 +39,5 @@ export type {
   TourState,
   TourStatus,
   TryOrderOptions,
-  WaitOptions,
   WaitUntilOptions,
 } from "./types";

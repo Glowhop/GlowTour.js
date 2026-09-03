@@ -63,6 +63,9 @@ export function mergePopoverOptions(
           borderWidth: overrides?.arrow?.borderWidth ?? defaults?.arrow?.borderWidth,
           borderRadius: overrides?.arrow?.borderRadius ?? defaults?.arrow?.borderRadius,
           edgePadding: overrides?.arrow?.edgePadding ?? defaults?.arrow?.edgePadding,
+          styleNonce: overrides?.arrow?.styleNonce ?? defaults?.arrow?.styleNonce,
+          disableAutoStyles:
+            overrides?.arrow?.disableAutoStyles ?? defaults?.arrow?.disableAutoStyles,
         }
       : undefined,
     disableAdvanceButton: overrides?.disableAdvanceButton ?? defaults?.disableAdvanceButton,

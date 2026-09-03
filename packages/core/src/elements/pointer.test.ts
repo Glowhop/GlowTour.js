@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { TourElementStep } from "./base";
 import PointerElement from "./pointer";
 
-class TestPointerElement<T> extends PointerElement<T> {
+class TestPointerElement extends PointerElement {
   getStyles(position: DOMRect, step: TourElementStep) {
     return this._getNextStyles(position, step);
   }
@@ -89,7 +89,7 @@ describe("PointerElement", () => {
 
     for (const placement of ["top", "bottom", "left", "right"] as const) {
       const element = new MockElement();
-      const pointer = new TestPointerElement<string>(element as unknown as HTMLElement);
+      const pointer = new TestPointerElement(element as unknown as HTMLElement);
 
       const styles = pointer.getStyles(target, createStep(placement, 24));
 
@@ -100,10 +100,8 @@ describe("PointerElement", () => {
 
   test("defaults to 16px and clamps negative gaps to zero", () => {
     const target = rect(100, 100, 40, 20);
-    const defaultPointer = new TestPointerElement<string>(
-      new MockElement() as unknown as HTMLElement,
-    );
-    const zeroPointer = new TestPointerElement<string>(new MockElement() as unknown as HTMLElement);
+    const defaultPointer = new TestPointerElement(new MockElement() as unknown as HTMLElement);
+    const zeroPointer = new TestPointerElement(new MockElement() as unknown as HTMLElement);
 
     assert.equal(defaultPointer.getStyles(target, createStep("bottom")).top, "136px");
     assert.equal(zeroPointer.getStyles(target, createStep("bottom", -10)).top, "120px");
@@ -111,7 +109,7 @@ describe("PointerElement", () => {
 
   test("does not invoke Web Animations and applies the visible final state when duration is zero", async () => {
     const element = new MockElement();
-    const pointer = new PointerElement<string>(element as unknown as HTMLElement);
+    const pointer = new PointerElement(element as unknown as HTMLElement);
     pointer.setAnimationOptions({ duration: 0 });
 
     await pointer.moveToTarget(rect(100, 100, 40, 20), createStep("bottom"), true);
@@ -124,7 +122,7 @@ describe("PointerElement", () => {
 
   test("applies the hidden final state when Web Animations are unavailable", async () => {
     const element = new MockElement();
-    const pointer = new PointerElement<string>(element as unknown as HTMLElement);
+    const pointer = new PointerElement(element as unknown as HTMLElement);
 
     await pointer.moveToTarget(rect(100, 100, 40, 20), createStep("bottom"), true);
     (element as { animate?: unknown }).animate = undefined;
@@ -137,7 +135,7 @@ describe("PointerElement", () => {
 
   test("cancels the continuous pointer animation when its owner is invalidated", async () => {
     const element = new MockElement();
-    const pointer = new PointerElement<string>(element as unknown as HTMLElement);
+    const pointer = new PointerElement(element as unknown as HTMLElement);
 
     await pointer.moveToTarget(rect(100, 100, 40, 20), createStep("bottom"), true);
     pointer.cancelAnimations();

@@ -93,6 +93,7 @@ If an existing project already uses another coherent stack, preserve the existin
 - Do not treat every bug as a security issue.
 - Do not treat every design question as a code problem.
 - Escalate uncertainty instead of hiding it behind confident prose.
+- Do not add tests for playground and styles packages
 
 ## Project goal
 - current project status : "dev"

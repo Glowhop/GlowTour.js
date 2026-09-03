@@ -384,4 +384,21 @@ describe("FocusGuard", () => {
     guard.deactivate();
     assert.equal(fallback.getAttribute("tabindex"), "0");
   });
+
+  test("preserves a consumer fallback tabindex change when deactivated", () => {
+    const fallback = new MockElement("fallback");
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+
+    guard.activate({
+      direction: "advance",
+      fallback: fallback as unknown as HTMLElement,
+      popover: popover as unknown as HTMLElement,
+    });
+    assert.equal(fallback.getAttribute("tabindex"), "-1");
+
+    fallback.setAttribute("tabindex", "0");
+    guard.deactivate();
+    assert.equal(fallback.getAttribute("tabindex"), "0");
+  });
 });

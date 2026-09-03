@@ -69,13 +69,16 @@ class MockStyle {
   get transform() {
     return this.values.get("transform") ?? "";
   }
+  getPropertyPriority() {
+    return "";
+  }
   getPropertyValue(name: string) {
     return this.values.get(name) ?? "";
   }
   removeProperty(name: string) {
     this.values.delete(name);
   }
-  setProperty(name: string, value: string) {
+  setProperty(name: string, value: string, _priority = "") {
     this.values.set(name, value);
   }
 }
@@ -1392,7 +1395,7 @@ describe("DomTourViewDriver", () => {
     reposition.resolve();
     await flushMicrotasks();
     assert.equal(elements.popover.style.transform, "");
-    assert.equal(elements.popover.getAttribute("aria-hidden"), "true");
+    assert.equal(elements.popover.getAttribute("aria-hidden"), null);
     assert.equal(createdAnimations.length, animationStart + 1);
   });
   test("updates viewport geometry and fades on a placement change below fifty pixels", async () => {
@@ -2064,8 +2067,8 @@ describe("DomTourViewDriver", () => {
     await Promise.resolve();
     assert.deepEqual(calls, ["advance"]);
     assert.equal(TestResizeObserver.instances.length, 0);
-    assert.equal(elements.popover.getAttribute("aria-hidden"), "true");
-    assert.equal(elements.popover.getAttribute("inert"), "true");
+    assert.equal(elements.popover.getAttribute("aria-hidden"), null);
+    assert.equal(elements.popover.getAttribute("inert"), null);
     assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
     assert.equal(document.activeElement, replacementAdvance);
   });
@@ -2514,7 +2517,7 @@ describe("DomTourViewDriver", () => {
     await assert.rejects(() => shown, { name: "AbortError" });
     assert.equal(TestResizeObserver.instances.length, 0);
     assert.equal(window.listeners.get("keydown")?.size ?? 0, 0);
-    assert.equal(elements.popover.getAttribute("aria-hidden"), "true");
+    assert.equal(elements.popover.getAttribute("aria-hidden"), null);
     assert.equal(
       createdAnimations.some((animation) => animation.cancelled),
       true,

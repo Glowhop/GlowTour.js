@@ -19,11 +19,6 @@ export interface TargetResolverContext {
   signal: AbortSignal;
 }
 
-export interface WaitOptions {
-  timeout?: number;
-  interval?: number;
-}
-
 export interface StepBehavior {
   allowInteraction?: boolean;
   disableAutoFocus?: boolean;
@@ -61,6 +56,18 @@ export interface PopoverArrowOptions {
   borderWidth?: number;
   borderRadius?: number;
   edgePadding?: number;
+  /**
+   * CSP nonce applied to the `<style>` element Glow Tour injects for the
+   * arrow's pseudo-element rules. Required when the page's Content-Security-Policy
+   * blocks unnonced inline styles.
+   */
+  styleNonce?: string;
+  /**
+   * Skip injecting the built-in arrow `<style>` element entirely. Provide the
+   * equivalent rules yourself through whatever channel your CSP allows, such
+   * as an external stylesheet.
+   */
+  disableAutoStyles?: boolean;
 }
 
 export interface PopoverOptions extends BaseOptions {
@@ -120,10 +127,6 @@ export interface StartOptions {
   onFinish?: () => void | Promise<void>;
 }
 
-export interface ReadonlyStepState<T> {
-  get(): ReadonlyStepProps<T>;
-  subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
-}
 export type StepPropsUpdate<T> =
   | ReadonlyStepProps<T>
   | ((current: ReadonlyStepProps<T>) => ReadonlyStepProps<T>);
@@ -164,11 +167,6 @@ export type StepAction<T> = (
   context: StepContext<T>,
 ) => Promise<StepActionResult> | StepActionResult;
 
-export type StepWaitPredicate<T> = (
-  element: HTMLElement | null,
-  stepState: ReadonlyStepState<T>,
-) => Promise<boolean> | boolean;
-
 export type StepActionInstruction<T> = StepAction<T> | number;
 
 export type StepTransitionAction<T> = (context: BeforeActionStepContext<T>) => void | Promise<void>;
@@ -185,7 +183,8 @@ export type TourStatus =
   | "active"
   | "finished"
   | "cancelled"
-  | "error";
+  | "error"
+  | "disposed";
 
 export type TourDirection = "advance" | "previous";
 

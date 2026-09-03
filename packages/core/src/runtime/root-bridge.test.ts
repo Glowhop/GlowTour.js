@@ -35,13 +35,24 @@ function rootBridge(tour: object): RootBridge {
 
 class MockStyle {
   readonly values = new Map<string, string>();
+  private readonly priorities = new Map<string, string>();
+
+  getPropertyPriority(name: string) {
+    return this.priorities.get(name) ?? "";
+  }
+
+  getPropertyValue(name: string) {
+    return this.values.get(name) ?? "";
+  }
 
   removeProperty(name: string) {
     this.values.delete(name);
+    this.priorities.delete(name);
   }
 
-  setProperty(name: string, value: string) {
+  setProperty(name: string, value: string, priority = "") {
     this.values.set(name, value);
+    this.priorities.set(name, priority);
   }
 }
 
@@ -554,8 +565,10 @@ describe("private root bridge", () => {
       /idPrefix/i,
     );
     explicitRoot.setAttribute("id", "changed-by-host");
+    explicitRoot.setAttribute("data-glow-tour-id-prefix", "changed-prefix-by-host");
     explicit.release();
     assert.equal(explicitRoot.getAttribute("id"), "changed-by-host");
+    assert.equal(explicitRoot.getAttribute("data-glow-tour-id-prefix"), "changed-prefix-by-host");
   });
 
   test("allows an explicit prefix when matching authored IDs are contained by its root", () => {

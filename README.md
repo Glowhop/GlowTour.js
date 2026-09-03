@@ -4,7 +4,7 @@ Glow Tour is a cross-framework guided-tour package inspired by Driver.js. The pr
 
 ## Choose a package
 
-- [`@glowhop/core-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/core): workflow and controller; it provides no presentation.
+- [`@glowhop/core-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/core): workflow controller and DOM driver; it renders through whichever adapter connects a root, so it isn't used standalone.
 - [`@glowhop/styles-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/styles): scoped light theme.
 - [`@glowhop/react-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/react), [`@glowhop/solid-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/solid), [`@glowhop/vue-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/vue), [`@glowhop/angular-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/angular): native framework adapters.
 - [`@glowhop/vanilla-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/vanilla): browser custom elements.
@@ -22,7 +22,7 @@ createRoot(document.getElementById("app")!).render(<DefaultTour tour={tour} />);
 document.getElementById("start")?.addEventListener("click", () => void tour.run(workflow));
 ```
 
-Import the stylesheet once. Core alone provides no presentation; `@glowhop/core-tour/adapter` is for adapter authors. All published packages are ESM-only.
+Import the stylesheet once. Core owns workflow state, navigation, and DOM-level tour behavior, but nothing renders until an adapter connects a root and a popover; `@glowhop/core-tour/adapter` is the entry point for writing a new adapter (see [`packages/core/README.md`](https://github.com/Glowhop/glow-tour/blob/main/packages/core/README.md)). All published packages are ESM-only.
 
 See [`docs/compatibility.md`](https://github.com/Glowhop/glow-tour/blob/main/docs/compatibility.md) for framework versions and verified SSR facts.
 

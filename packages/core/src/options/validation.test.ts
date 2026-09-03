@@ -1,5 +1,6 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
+import { NoopTourViewDriver } from "../dom/tour-view-driver";
 import { TourController } from "../runtime/tour-controller";
 import type { StartOptions } from "../types";
 import { validateWorkflowOptions } from "./validation";
@@ -7,7 +8,7 @@ import { validateWorkflowOptions } from "./validation";
 const target = {} as HTMLElement;
 
 function workflow(options: StartOptions = {}) {
-  return new TourController<string>()
+  return new TourController<string>(new NoopTourViewDriver())
     .create("validation", options)
     .step({ content: "content", target, title: "title" })
     .build();
@@ -92,7 +93,7 @@ describe("runtime option validation", () => {
   });
 
   test("identifies invalid props at their nonzero step index", () => {
-    const definition = new TourController<string>()
+    const definition = new TourController<string>(new NoopTourViewDriver())
       .create("validation")
       .step({ content: "first", target, title: "first" })
       .step({ content: "second", popover: { arrow: { size: -1 } }, target, title: "second" })

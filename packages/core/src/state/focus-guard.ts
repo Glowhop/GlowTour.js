@@ -1,3 +1,4 @@
+import { DomMutationLease } from "../dom/dom-mutation-lease";
 import { isHTMLElement, isNode, ownerDocument } from "../utils/utils";
 import { focusableTourControls, isFocusable } from "./focusable";
 
@@ -19,7 +20,7 @@ export class FocusGuard {
   private allowedTarget: HTMLElement | null = null;
   private allowTargetInteraction = false;
   private fallback: HTMLElement | null = null;
-  private fallbackTabIndex: string | null = null;
+  private fallbackLease: DomMutationLease | null = null;
   private direction: FocusDirection = "advance";
   private active = false;
   private redirecting = false;
@@ -132,17 +133,14 @@ export class FocusGuard {
     this.restoreFallback();
     this.fallback = fallback;
     if (!fallback) return;
-    this.fallbackTabIndex = fallback.getAttribute("tabindex");
-    fallback.setAttribute("tabindex", "-1");
+    this.fallbackLease = new DomMutationLease(fallback);
+    this.fallbackLease.setAttribute("tabindex", "-1");
   }
 
   private restoreFallback() {
-    const fallback = this.fallback;
-    if (!fallback) return;
-    if (this.fallbackTabIndex === null) fallback.removeAttribute("tabindex");
-    else fallback.setAttribute("tabindex", this.fallbackTabIndex);
+    this.fallbackLease?.release();
+    this.fallbackLease = null;
     this.fallback = null;
-    this.fallbackTabIndex = null;
   }
 
   private findFocusable(root: HTMLElement, direction: FocusDirection) {

@@ -9,7 +9,7 @@ export interface TourElementStep {
 const DEFAULT_ANIMATION_DURATION = 180;
 const DEFAULT_ANIMATION_EASING = "ease-out";
 
-export default abstract class GlowTourElement<_T> {
+export default abstract class GlowTourElement {
   private readonly animations = new Set<Animation>();
   private readonly cancelledAnimations = new WeakSet<Animation>();
   private released = false;

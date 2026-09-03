@@ -18,7 +18,7 @@ interface PointerPosition {
   y: number;
 }
 
-export default class PointerElement<T> extends GlowTourElement<T> {
+export default class PointerElement extends GlowTourElement {
   private animation: Animation | null = null;
   private popoverPlacement?: ResolvedPlacement;
 

@@ -2,7 +2,7 @@ import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import GlowTourElement, { type TourElementStep } from "./base";
 
-class TestElement extends GlowTourElement<never> {
+class TestElement extends GlowTourElement {
   start(keyframes: Keyframe[] | PropertyIndexedKeyframes, options?: KeyframeAnimationOptions) {
     return this._startAnimation(keyframes, options);
   }

@@ -4,7 +4,7 @@ import {
   type ReadonlyStepProps,
   type WorkflowStepDefinition,
 } from "../definition";
-import type { ReadonlyStepState, StepPropsStore } from "../types";
+import type { StepPropsStore } from "../types";
 import {
   mergeIndicatorOptions,
   mergeOverlayOptions,
@@ -17,7 +17,6 @@ import { createStepPropsStore } from "./step-props-store";
 export class ActiveStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
   readonly props: StepPropsStore<T>;
-  readonly state: ReadonlyStepState<T>;
   readonly behavior;
   readonly animated: boolean | undefined;
   target: HTMLElement | null = null;
@@ -38,11 +37,6 @@ export class ActiveStep<T> {
       indicator: mergeIndicatorOptions(defaults.indicator, definition.props.indicator),
     });
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
-    this.state = Object.freeze({
-      get: () => this.props.get(),
-      subscribe: (listener: (props: ReadonlyStepProps<T>) => void) =>
-        this.props.subscribe(listener),
-    });
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
   }

@@ -5,6 +5,7 @@ import {
   type WorkflowDefinition,
   type WorkflowStepDraft,
 } from "../definition";
+import { abortableDelay, abortError } from "../runtime/abort";
 import type {
   EventHandler,
   StartOptions,
@@ -12,7 +13,6 @@ import type {
   StepContext,
   StepParameters,
   StepTransitionAction,
-  WaitOptions,
   WaitUntilOptions,
 } from "../types";
 
@@ -26,10 +26,6 @@ export type EventName = keyof HTMLElementEventMap;
 type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
 type WaitUntilPredicate<T> = (context: StepContext<T>) => Promise<boolean> | boolean;
 
-function abortError(): DOMException {
-  return new DOMException("The operation was aborted", "AbortError");
-}
-
 function assertTimingValue(name: string, value: number): void {
   if (!Number.isFinite(value) || value < 0) {
     throw new TypeError(`${name} must be a finite non-negative number`);
@@ -42,23 +38,6 @@ function throwIfAborted(signal: AbortSignal): void {
 
 function waitTimeoutError(timeout: number): Error {
   return new Error(`waitUntil timed out after ${timeout}ms`);
-}
-
-function waitForDelay(delay: number, signal: AbortSignal): Promise<void> {
-  throwIfAborted(signal);
-  return new Promise((resolve, reject) => {
-    const cleanup = () => signal.removeEventListener("abort", onAbort);
-    const onAbort = () => {
-      clearTimeout(timeoutId);
-      cleanup();
-      reject(abortError());
-    };
-    const timeoutId = setTimeout(() => {
-      cleanup();
-      resolve();
-    }, delay);
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
 }
 
 function waitForPredicate(
@@ -95,7 +74,7 @@ function waitForPredicate(
   });
 }
 
-function waitOptions(options: WaitOptions = {}) {
+function waitOptions(options: WaitUntilOptions = {}) {
   const timeout = options.timeout ?? DEFAULT_WAIT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_WAIT_INTERVAL;
   if (!Number.isFinite(timeout) || timeout < 0) {
@@ -238,7 +217,7 @@ export class WorkflowStepBuilder<T> {
           return true;
         const remainingTime = timeout - (Date.now() - startedAt);
         if (remainingTime <= 0) throw waitTimeoutError(timeout);
-        await waitForDelay(Math.min(interval, remainingTime), context.signal);
+        await abortableDelay(Math.min(interval, remainingTime), context.signal);
       }
     });
     return this;

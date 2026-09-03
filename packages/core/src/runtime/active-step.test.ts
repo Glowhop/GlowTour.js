@@ -78,9 +78,11 @@ describe("ActiveStep presentation options", () => {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "var(--workflow-arrow)",
+      disableAutoStyles: undefined,
       disabled: true,
       edgePadding: 18,
       size: 12,
+      styleNonce: undefined,
     });
   });
 
@@ -97,9 +99,11 @@ describe("ActiveStep presentation options", () => {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "#4c35fd",
+      disableAutoStyles: undefined,
       disabled: false,
       edgePadding: 18,
       size: 20,
+      styleNonce: undefined,
     });
   });
 

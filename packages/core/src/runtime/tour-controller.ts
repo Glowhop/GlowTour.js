@@ -1,10 +1,6 @@
 import { WorkflowBuilder } from "../builder";
 import type { WorkflowDefinition } from "../definition";
-import {
-  DomTourViewDriver,
-  NoopTourViewDriver,
-  type TourViewDriver,
-} from "../dom/tour-view-driver";
+import { DomTourViewDriver, type TourViewDriver } from "../dom/tour-view-driver";
 import { validateWorkflowOptions } from "../options/validation";
 import type {
   BeforeActionStepContext,
@@ -16,15 +12,12 @@ import type {
   TourState,
   TourStatus,
 } from "../types";
+import { abortableDelay, abortError } from "./abort";
 import { ActiveStep } from "./active-step";
 import { attachRootBridge } from "./root-bridge";
 
 const DEFAULT_TARGET_TIMEOUT = 3000;
 const DISPOSED_ERROR_MESSAGE = "Tour controller is disposed";
-
-function abortError() {
-  return new DOMException("The operation was aborted", "AbortError");
-}
 
 function normalizedError(error: unknown) {
   if (error instanceof Error) return error;
@@ -33,22 +26,6 @@ function normalizedError(error: unknown) {
   } catch {
     return new Error("Unknown error");
   }
-}
-
-function waitForTimer(delay: number, signal: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
-    const cleanup = () => signal.removeEventListener("abort", onAbort);
-    const onAbort = () => {
-      clearTimeout(timeout);
-      cleanup();
-      reject(abortError());
-    };
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve();
-    }, delay);
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
 }
 
 interface TourControllerOptions<T> extends GlowTourOptions {
@@ -96,7 +73,7 @@ export class TourController<T> {
   });
 
   constructor(
-    private readonly driver: TourViewDriver<T> = new NoopTourViewDriver<T>(),
+    private readonly driver: TourViewDriver<T>,
     private readonly options: TourControllerOptions<T> = {},
   ) {
     this.snapshot = this.createSnapshot();
@@ -214,7 +191,11 @@ export class TourController<T> {
     this.steps = [];
     this.workflow = null;
     this.index = -1;
+    this.direction = "advance";
+    this.error = null;
     this.retainedPresentation = null;
+    this.status = "disposed";
+    this.publish(true);
     this.stateListeners.clear();
     this.options.onDispose?.();
     this.driver.dispose();
@@ -319,7 +300,7 @@ export class TourController<T> {
     for (const action of step.definition.actions) {
       this.assertCurrent(operation);
       if (typeof action === "number") {
-        await waitForTimer(action, this.signalFor(operation));
+        await abortableDelay(action, this.signalFor(operation));
         this.assertCurrent(operation);
         continue;
       }
@@ -347,7 +328,7 @@ export class TourController<T> {
       if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
         throw this.missingTargetError(step);
       }
-      await waitForTimer(16, signal);
+      await abortableDelay(16, signal);
       this.assertCurrent(operation);
     }
   }
@@ -491,7 +472,7 @@ export class TourController<T> {
   private createBeforeActionStepContext(step: ActiveStep<T>): BeforeActionStepContext<T> {
     if (!step.target) throw new Error("Cannot create a step context without a target");
     return Object.freeze({
-      ...step.state.get(),
+      ...step.props.get(),
       target: step.target,
     });
   }
@@ -587,14 +568,14 @@ export class TourController<T> {
     this.publish();
   }
 
-  private publish() {
+  private publish(allowDisposed = false) {
     const revision = ++this.publicationRevision;
     const state = this.createSnapshot();
     this.snapshot = state;
     for (const listener of Array.from(this.stateListeners)) {
-      if (this.disposed || revision !== this.publicationRevision) break;
+      if ((!allowDisposed && this.disposed) || revision !== this.publicationRevision) break;
       this.notifyStateListener(listener, state);
-      if (this.disposed || revision !== this.publicationRevision) break;
+      if ((!allowDisposed && this.disposed) || revision !== this.publicationRevision) break;
     }
   }
 
