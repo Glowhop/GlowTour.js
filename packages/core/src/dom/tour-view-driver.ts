@@ -4,6 +4,7 @@ import PopoverElement from "../elements/popover";
 import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
 import { focusableElementsOwnedBy } from "../state/focusable";
+import { ScrollLock } from "../state/scroll-lock";
 import type { TourDirection } from "../types";
 import {
   isElement,
@@ -75,6 +76,7 @@ export class NoopTourViewDriver<T> implements TourViewDriver<T> {
 
 export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private readonly focusGuard = new FocusGuard();
+  private readonly scrollLock = new ScrollLock();
   private readonly modalToken = {};
   private readonly stepCleanups: Array<() => void> = [];
   private commands: TourViewCommands | null;
@@ -130,6 +132,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (!element && this.active) {
       this.releaseModality();
       this.focusGuard.deactivate();
+      this.scrollLock.deactivate();
     }
     this.popover?.release();
     this.popover = element ? new PopoverElement(element) : null;
@@ -190,6 +193,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.lastViewport = snapshotViewport(target);
       this.active = true;
       this.activateFocus(step, target, direction, generation);
+      this.syncScrollLock(step);
       this.throwIfStale(generation, signal);
       removeTransitionKeydown();
       removeTransitionKeydown = () => {};
@@ -212,6 +216,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.cleanupStepResources();
       this.releaseModality();
       this.focusGuard.deactivate();
+      this.scrollLock.deactivate();
       this.throwIfStale(generation, signal);
       this.active = false;
       this.currentStep = null;
@@ -236,6 +241,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.cleanupStepResources();
     this.releaseModality();
     this.focusGuard.deactivate();
+    this.scrollLock.deactivate();
     this.active = false;
     this.currentStep = null;
     this.currentSignal = null;
@@ -275,6 +281,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     await this.appear(targetRect as DOMRect, step);
     this.throwIfStale(generation);
     this.activateFocus(step, target, this.direction, generation);
+    this.syncScrollLock(step);
     this.throwIfStale(generation);
     this.attachStepResources(step, target, generation, signal);
   }
@@ -689,6 +696,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     });
   }
 
+  private syncScrollLock(step: ActiveStep<T>) {
+    if (step.allowScroll) {
+      this.scrollLock.deactivate();
+      return;
+    }
+    this.scrollLock.activate(this.root?.ownerDocument ?? this.popover?.getElement()?.ownerDocument);
+  }
+
   private syncShortcutLabels(step: ActiveStep<T>) {
     for (const advance of this.findTriggers("advance")) {
       syncKeyShortcuts(
@@ -893,6 +908,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.cleanupStepResources();
     this.releaseModality();
     this.focusGuard.deactivate();
+    this.scrollLock.deactivate();
     this.active = false;
     this.currentSignal = null;
     this.currentStep = null;

@@ -19,6 +19,7 @@ export class ActiveStep<T> {
   readonly props: StepPropsStore<T>;
   readonly behavior;
   readonly animated: boolean | undefined;
+  readonly allowScroll: boolean;
   target: HTMLElement | null = null;
 
   constructor(
@@ -39,6 +40,7 @@ export class ActiveStep<T> {
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
+    this.allowScroll = defaults.allowScroll === true;
   }
 
   reset() {
