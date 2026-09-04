@@ -12,10 +12,11 @@ import {
   Pointer,
   Popover,
   Root,
+  useTour,
 } from "@glowhop/react-tour";
-import { Bell, Search, Settings, Trash2, UserPlus } from "lucide-react";
+import { Bell, Rocket, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { Avatar, DecorativeIconButton, DemoCard, FakeField, SkeletonLine } from "./demo-ui";
+import { Avatar, DemoCard, FakeField, SkeletonLine } from "./demo-ui";
 
 const targetButtonClass =
   "rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-text)]";
@@ -24,222 +25,64 @@ const runButtonClass =
 const primaryButtonClass =
   "rounded-[var(--radius-glow)] bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]";
 
-const singleTour = createGlowTour();
-const singleWorkflow = singleTour
-  .create("hero-single")
+// 1. Non-interactive, 3 steps ------------------------------------------------
+
+const nonInteractiveTour = createGlowTour();
+const nonInteractiveWorkflow = nonInteractiveTour
+  .create("hero-non-interactive")
   .step({
-    target: "#hero-single-field-name",
+    target: "#hero-non-interactive-field-name",
     title: "Start with the workspace name",
     content: "A step can target any element — this one points at a plain field.",
   })
   .step({
-    target: "#hero-single-field-timezone",
+    target: "#hero-non-interactive-field-timezone",
     title: "Then the timezone",
     content: "Chain as many .step() calls as the tour needs.",
   })
   .step({
-    target: "#hero-single-target",
-    title: "One step, zero setup",
-    content: "Point at an element, describe it, and build. That's the whole tour.",
+    target: "#hero-non-interactive-target",
+    title: "A plain, non-interactive walkthrough",
+    content: "No special options here — no allowInteraction, no custom behavior. Just steps.",
   })
   .build();
 
-export function SingleStepDemo() {
+export function NonInteractiveDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-5">
         <h4 className="text-sm font-semibold text-[var(--color-text)]">Workspace settings</h4>
         <div className="mt-4 space-y-3">
-          <FakeField id="hero-single-field-name" label="Workspace name" value="Acme Inc." />
-          <FakeField id="hero-single-field-timezone" label="Timezone" value="UTC-08:00 Pacific" />
+          <FakeField
+            id="hero-non-interactive-field-name"
+            label="Workspace name"
+            value="Acme Inc."
+          />
+          <FakeField
+            id="hero-non-interactive-field-timezone"
+            label="Timezone"
+            value="UTC-08:00 Pacific"
+          />
         </div>
         <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
-          <button id="hero-single-target" type="button" className={primaryButtonClass}>
+          <button id="hero-non-interactive-target" type="button" className={primaryButtonClass}>
             Save changes
           </button>
         </div>
       </DemoCard>
       <button
         type="button"
-        onClick={() => void singleTour.run(singleWorkflow)}
+        onClick={() => void nonInteractiveTour.run(nonInteractiveWorkflow)}
         className={runButtonClass}
       >
         Run this demo
       </button>
-      <DefaultTour tour={singleTour} />
+      <DefaultTour tour={nonInteractiveTour} />
     </div>
   );
 }
 
-const multiTour = createGlowTour();
-const multiWorkflow = multiTour
-  .create("hero-multi")
-  .step({
-    target: "#hero-multi-search",
-    title: "A normal element works too",
-    content: "The tour can point at any element — no special markup needed.",
-  })
-  .step({
-    target: "#hero-multi-target-1",
-    title: "Placement tries top first",
-    content: "This step's popover.placementTryOrder starts with top.",
-    popover: { placementTryOrder: ["top", "bottom"] },
-  })
-  .step({
-    target: "#hero-multi-target-2",
-    title: "Then falls back automatically",
-    content: "If there's no room, Glow Tour walks the list until one fits.",
-    popover: { placementTryOrder: ["right", "left", "bottom"] },
-  })
-  .build();
-
-export function MultiStepDemo() {
-  return (
-    <div className="flex w-full flex-col items-center gap-4">
-      <DemoCard className="p-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-[var(--color-text)]">Invoices</h4>
-          <div className="flex items-center gap-2">
-            <DecorativeIconButton>
-              <Bell className="h-4 w-4" />
-            </DecorativeIconButton>
-            <DecorativeIconButton>
-              <Settings className="h-4 w-4" />
-            </DecorativeIconButton>
-          </div>
-        </div>
-        <div
-          id="hero-multi-search"
-          className="mt-3 flex items-center gap-2 rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[var(--color-text-muted)]"
-        >
-          <Search className="h-4 w-4" aria-hidden="true" />
-          <span className="text-sm">Search invoices…</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button id="hero-multi-target-1" type="button" className={targetButtonClass}>
-            Filters
-          </button>
-          <button id="hero-multi-target-2" type="button" className={targetButtonClass}>
-            Export
-          </button>
-        </div>
-      </DemoCard>
-      <button
-        type="button"
-        onClick={() => void multiTour.run(multiWorkflow)}
-        className={runButtonClass}
-      >
-        Run this demo
-      </button>
-      <DefaultTour tour={multiTour} />
-    </div>
-  );
-}
-
-const programmaticTour = createGlowTour();
-const programmaticWorkflow = programmaticTour
-  .create("hero-programmatic", {
-    onStart: () => console.log("[glow-tour demo] onStart"),
-    onFinish: () => console.log("[glow-tour demo] onFinish"),
-  })
-  .step({
-    target: "#hero-programmatic-title",
-    title: "This doc has a title",
-    content: "A quick step on the title before we get to the code.",
-  })
-  .step({
-    target: "#hero-programmatic-target",
-    title: "Steps can run code",
-    content: "This step waits, then runs a callback before it's considered ready.",
-  })
-  .wait(300)
-  .do(() => console.log("[glow-tour demo] do() ran after the wait"))
-  .build();
-
-export function ProgrammaticDemo() {
-  return (
-    <div className="flex w-full flex-col items-center gap-4">
-      <DemoCard className="p-4">
-        <div className="flex items-center justify-between gap-3">
-          <SkeletonLine id="hero-programmatic-title" width="55%" className="h-3" />
-          <button id="hero-programmatic-target" type="button" className={primaryButtonClass}>
-            Publish
-          </button>
-        </div>
-        <div className="mt-4 space-y-2">
-          <SkeletonLine width="95%" />
-          <SkeletonLine width="88%" />
-          <SkeletonLine width="60%" />
-        </div>
-      </DemoCard>
-      <button
-        type="button"
-        onClick={() => void programmaticTour.run(programmaticWorkflow)}
-        className={runButtonClass}
-      >
-        Run this demo
-      </button>
-      <DefaultTour tour={programmaticTour} />
-    </div>
-  );
-}
-
-const interactionTour = createGlowTour();
-const interactionWorkflow = interactionTour
-  .create("hero-interaction")
-  .step({
-    target: "#hero-interaction-avatar",
-    title: "Riley Martin's post",
-    content: "This tour walks through a single post in the feed.",
-  })
-  .step({
-    target: "#hero-interaction-target",
-    title: "The target stays clickable",
-    content:
-      "behavior.allowInteraction lets pointer events pass through the overlay. Try clicking the counter.",
-    behavior: { allowInteraction: true },
-  })
-  .build();
-
-export function InteractionAllowedDemo() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <div className="flex w-full flex-col items-center gap-4">
-      <DemoCard className="p-4">
-        <div className="flex items-start gap-3">
-          <Avatar id="hero-interaction-avatar" initials="RM" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-[var(--color-text)]">Riley Martin</p>
-            <p className="text-xs text-[var(--color-text-muted)]">2 hours ago</p>
-            <div className="mt-2 space-y-2">
-              <SkeletonLine width="100%" />
-              <SkeletonLine width="70%" />
-            </div>
-          </div>
-        </div>
-        <div className="mt-3 flex justify-end border-t border-[var(--color-border)] pt-3">
-          <button
-            id="hero-interaction-target"
-            type="button"
-            onClick={() => setCount((value) => value + 1)}
-            className={targetButtonClass}
-          >
-            ♥ Liked {count}
-          </button>
-        </div>
-      </DemoCard>
-      <button
-        type="button"
-        onClick={() => void interactionTour.run(interactionWorkflow)}
-        className={runButtonClass}
-      >
-        Run this demo
-      </button>
-      <DefaultTour tour={interactionTour} />
-    </div>
-  );
-}
+// 2. Interactive: click target to advance ------------------------------------
 
 const advanceOnClickTour = createGlowTour();
 const advanceOnClickWorkflow = advanceOnClickTour
@@ -298,118 +141,74 @@ export function AdvanceOnClickDemo() {
   );
 }
 
-const cancellableTour = createGlowTour();
-const cancellableWorkflow = cancellableTour
-  .create("hero-cancellable", {
-    cancellable: false,
+// 3. 4 steps, each a different popover.placementTryOrder --------------------
+
+const placementOrderTour = createGlowTour();
+const placementOrderWorkflow = placementOrderTour
+  .create("hero-placement-order")
+  .step({
+    target: "#hero-placement-target-top",
+    title: "Forcing placement: top",
+    content: "popover.placementTryOrder: ['top'] pins this popover above its target.",
+    popover: { placementTryOrder: ["top"] },
   })
   .step({
-    target: "#hero-cancellable-warning",
-    title: "Read this carefully",
-    content: "A warning is a good place for a tour step too.",
+    target: "#hero-placement-target-bottom",
+    title: "Forcing placement: bottom",
+    content: "popover.placementTryOrder: ['bottom'] pins this popover below its target.",
+    popover: { placementTryOrder: ["bottom"] },
   })
   .step({
-    target: "#hero-cancellable-target",
-    title: "This step can't be skipped",
-    content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
+    target: "#hero-placement-target-left",
+    title: "Forcing placement: left",
+    content: "popover.placementTryOrder: ['left'] pins this popover to the left of its target.",
+    popover: { placementTryOrder: ["left"] },
+  })
+  .step({
+    target: "#hero-placement-target-right",
+    title: "Forcing placement: right",
+    content: "popover.placementTryOrder: ['right'] pins this popover to the right of its target.",
+    popover: { placementTryOrder: ["right"] },
   })
   .build();
 
-export function CancellableDemo() {
+export function PlacementOrderDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
-      <DemoCard className="p-4">
-        <div className="rounded-[var(--radius-glow)] border border-red-600/30 bg-red-600/5 p-4">
-          <h4 className="flex items-center gap-2 text-sm font-semibold text-red-600">
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Danger zone
-          </h4>
-          <p id="hero-cancellable-warning" className="mt-1 text-xs text-[var(--color-text-muted)]">
-            This permanently deletes your account and all of its data.
-          </p>
-          <button
-            id="hero-cancellable-target"
-            type="button"
-            className="mt-3 rounded-[var(--radius-glow)] border border-red-600 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-600/10"
-          >
-            Delete account
-          </button>
+      <DemoCard className="p-6">
+        <h4 className="text-sm font-semibold text-[var(--color-text)]">Dashboard</h4>
+        <div className="mt-6 flex h-36 flex-col justify-between">
+          <div className="flex justify-between">
+            <button id="hero-placement-target-top" type="button" className={targetButtonClass}>
+              Widget A
+            </button>
+            <button id="hero-placement-target-bottom" type="button" className={targetButtonClass}>
+              Widget B
+            </button>
+          </div>
+          <div className="flex justify-between">
+            <button id="hero-placement-target-left" type="button" className={targetButtonClass}>
+              Widget C
+            </button>
+            <button id="hero-placement-target-right" type="button" className={targetButtonClass}>
+              Widget D
+            </button>
+          </div>
         </div>
       </DemoCard>
       <button
         type="button"
-        onClick={() => void cancellableTour.run(cancellableWorkflow)}
+        onClick={() => void placementOrderTour.run(placementOrderWorkflow)}
         className={runButtonClass}
       >
         Run this demo
       </button>
-      <DefaultTour tour={cancellableTour} />
+      <DefaultTour tour={placementOrderTour} />
     </div>
   );
 }
 
-const customStylingTour = createGlowTour();
-const customStylingWorkflow = customStylingTour
-  .create("hero-custom-styling")
-  .step({
-    target: "#hero-custom-styling-member",
-    title: "This step looks normal",
-    content: "Default overlay and popover styling — no overrides here.",
-  })
-  .step({
-    target: "#hero-custom-styling-target",
-    title: "Same tour, different skin",
-    content:
-      "overlay.color/opacity and popover.arrow/hideFooter are real per-workflow overrides, not just theme CSS.",
-    overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true }, hideFooter: true },
-  })
-  .build();
-
-const teamMembers = [
-  { initials: "AK", name: "Ava Kim" },
-  { initials: "JD", name: "Jordan Diaz" },
-  { initials: "SP", name: "Sam Patel" },
-];
-
-export function CustomStylingDemo() {
-  return (
-    <div className="flex w-full flex-col items-center gap-4">
-      <DemoCard className="p-4">
-        <div className="flex items-center justify-between">
-          <h4 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
-            <UserPlus className="h-4 w-4" aria-hidden="true" />
-            Team members
-          </h4>
-          <button id="hero-custom-styling-target" type="button" className={primaryButtonClass}>
-            Invite teammates
-          </button>
-        </div>
-        <ul className="mt-4 space-y-3">
-          {teamMembers.map((member, index) => (
-            <li
-              key={member.initials}
-              id={index === 0 ? "hero-custom-styling-member" : undefined}
-              className="flex items-center gap-3"
-            >
-              <Avatar initials={member.initials} />
-              <SkeletonLine width="45%" />
-              <span className="sr-only">{member.name}</span>
-            </li>
-          ))}
-        </ul>
-      </DemoCard>
-      <button
-        type="button"
-        onClick={() => void customStylingTour.run(customStylingWorkflow)}
-        className={runButtonClass}
-      >
-        Run this demo
-      </button>
-      <DefaultTour tour={customStylingTour} />
-    </div>
-  );
-}
+// 4. Async element wait -------------------------------------------------------
 
 const waitForAsyncTour = createGlowTour();
 const waitForAsyncWorkflow = waitForAsyncTour
@@ -489,45 +288,310 @@ export function WaitForAsyncDemo() {
   );
 }
 
-const customIndicatorTour = createGlowTour();
-const customIndicatorWorkflow = customIndicatorTour
-  .create("hero-custom-indicator")
+// 5. cancellable: false --------------------------------------------------------
+
+const cancellableTour = createGlowTour();
+const cancellableWorkflow = cancellableTour
+  .create("hero-cancellable", {
+    cancellable: false,
+  })
   .step({
-    target: "#hero-custom-indicator-target",
-    title: "A custom indicator",
-    content:
-      "This tour composes Root/Overlay/Pointer/Popover directly and gives Pointer its own children instead of the default glyph. The indicator only renders when behavior.allowInteraction is true.",
-    behavior: { allowInteraction: true },
+    target: "#hero-cancellable-warning",
+    title: "Read this carefully",
+    content: "A warning is a good place for a tour step too.",
+  })
+  .step({
+    target: "#hero-cancellable-target",
+    title: "This step can't be skipped",
+    content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
   })
   .build();
 
-export function CustomIndicatorDemo() {
+export function CancellableDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-[var(--color-text)]">Plan</h4>
-          <span className="text-xs text-[var(--color-text-muted)]">Free tier</span>
-        </div>
-        <div className="mt-3 flex items-center justify-between rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2">
-          <span className="text-sm text-[var(--color-text)]">3 of 3 projects used</span>
-          <button id="hero-custom-indicator-target" type="button" className={primaryButtonClass}>
-            Upgrade plan
+        <div className="rounded-[var(--radius-glow)] border border-red-600/30 bg-red-600/5 p-4">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-red-600">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            Danger zone
+          </h4>
+          <p id="hero-cancellable-warning" className="mt-1 text-xs text-[var(--color-text-muted)]">
+            This permanently deletes your account and all of its data.
+          </p>
+          <button
+            id="hero-cancellable-target"
+            type="button"
+            className="mt-3 rounded-[var(--radius-glow)] border border-red-600 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-600/10"
+          >
+            Delete account
           </button>
         </div>
       </DemoCard>
       <button
         type="button"
-        onClick={() => void customIndicatorTour.run(customIndicatorWorkflow)}
+        onClick={() => void cancellableTour.run(cancellableWorkflow)}
         className={runButtonClass}
       >
         Run this demo
       </button>
-      <Root tour={customIndicatorTour}>
+      <DefaultTour tour={cancellableTour} />
+    </div>
+  );
+}
+
+// 6. Prevent cancel via onCancel + confirm() ----------------------------------
+
+const confirmCancelTour = createGlowTour();
+const confirmCancelWorkflow = confirmCancelTour
+  .create("hero-confirm-cancel", {
+    cancellable: true,
+    onCancel: (context) => {
+      if (!window.confirm("Cancel this tour?")) {
+        context.abort();
+      }
+    },
+  })
+  .step({
+    target: "#hero-confirm-cancel-field",
+    title: "Name your project",
+    content: "Try pressing Escape, or clicking Cancel below, at any point in this tour.",
+  })
+  .step({
+    target: "#hero-confirm-cancel-target",
+    title: "Confirm before you leave",
+    content:
+      "onCancel opens a real window.confirm() dialog. Choosing Cancel there calls context.abort(), which keeps this tour open instead of closing it.",
+  })
+  .build();
+
+export function ConfirmCancelDemo() {
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <DemoCard className="p-5">
+        <h4 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+          <Rocket className="h-4 w-4" aria-hidden="true" />
+          New project
+        </h4>
+        <div className="mt-4 space-y-3">
+          <FakeField id="hero-confirm-cancel-field" label="Project name" value="Untitled project" />
+        </div>
+        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+          <button id="hero-confirm-cancel-target" type="button" className={primaryButtonClass}>
+            Create project
+          </button>
+        </div>
+      </DemoCard>
+      <button
+        type="button"
+        onClick={() => void confirmCancelTour.run(confirmCancelWorkflow)}
+        className={runButtonClass}
+      >
+        Run this demo
+      </button>
+      <DefaultTour tour={confirmCancelTour} />
+    </div>
+  );
+}
+
+// 7. overlayClick behaviour ----------------------------------------------------
+
+const overlayClickTour = createGlowTour();
+const overlayClickWorkflow = overlayClickTour
+  .create("hero-overlay-click")
+  .step({
+    target: "#hero-overlay-click-target-1",
+    title: "Click the overlay to advance",
+    content:
+      "behavior.overlayClick: 'advance' — click anywhere on the dimmed backdrop (not this card) to move to the next step.",
+    behavior: { overlayClick: "advance" },
+  })
+  .step({
+    target: "#hero-overlay-click-target-2",
+    title: "Now it cancels instead",
+    content:
+      "This step sets behavior.overlayClick: 'cancel' — clicking the backdrop now cancels the tour instead of advancing it.",
+    behavior: { overlayClick: "cancel" },
+  })
+  .build();
+
+export function OverlayClickDemo() {
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <DemoCard className="p-5">
+        <h4 className="text-sm font-semibold text-[var(--color-text)]">Notification preferences</h4>
+        <div className="mt-4 space-y-3">
+          <div
+            id="hero-overlay-click-target-1"
+            className="flex items-center justify-between rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2"
+          >
+            <span className="text-sm text-[var(--color-text)]">Email notifications</span>
+            <Bell className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden="true" />
+          </div>
+          <div
+            id="hero-overlay-click-target-2"
+            className="flex items-center justify-between rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2"
+          >
+            <span className="text-sm text-[var(--color-text)]">Push notifications</span>
+            <Bell className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden="true" />
+          </div>
+        </div>
+      </DemoCard>
+      <button
+        type="button"
+        onClick={() => void overlayClickTour.run(overlayClickWorkflow)}
+        className={runButtonClass}
+      >
+        Run this demo
+      </button>
+      <DefaultTour tour={overlayClickTour} />
+    </div>
+  );
+}
+
+// 8. Custom popover CSS + custom indicator, with an allowInteraction step ----
+
+const customStyledIndicatorTour = createGlowTour();
+const customStyledIndicatorWorkflow = customStyledIndicatorTour
+  .create("hero-custom-styled-indicator")
+  .step({
+    target: "#hero-custom-styled-member",
+    title: "This step looks normal",
+    content: "Default overlay, popover, and pointer — no overrides here.",
+  })
+  .step({
+    target: "#hero-custom-styled-target",
+    title: "Same tour, fully customized",
+    content:
+      "overlay.color/opacity, popover.arrow/hideFooter, a custom <Pointer> glyph, and behavior.allowInteraction, all at once.",
+    overlay: { color: "#0ea5e9", opacity: 0.35 },
+    popover: { arrow: { disabled: true }, hideFooter: true },
+    behavior: { allowInteraction: true },
+  })
+  .build();
+
+const customStyledTeamMembers = [
+  { initials: "AK", name: "Ava Kim" },
+  { initials: "JD", name: "Jordan Diaz" },
+  { initials: "SP", name: "Sam Patel" },
+];
+
+export function CustomStyledIndicatorDemo() {
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <DemoCard className="p-4">
+        <div className="flex items-center justify-between">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+            <UserPlus className="h-4 w-4" aria-hidden="true" />
+            Team members
+          </h4>
+          <button id="hero-custom-styled-target" type="button" className={primaryButtonClass}>
+            Invite teammates
+          </button>
+        </div>
+        <ul className="mt-4 space-y-3">
+          {customStyledTeamMembers.map((member, index) => (
+            <li
+              key={member.initials}
+              id={index === 0 ? "hero-custom-styled-member" : undefined}
+              className="flex items-center gap-3"
+            >
+              <Avatar initials={member.initials} />
+              <SkeletonLine width="45%" />
+              <span className="sr-only">{member.name}</span>
+            </li>
+          ))}
+        </ul>
+      </DemoCard>
+      <button
+        type="button"
+        onClick={() => void customStyledIndicatorTour.run(customStyledIndicatorWorkflow)}
+        className={runButtonClass}
+      >
+        Run this demo
+      </button>
+      <Root tour={customStyledIndicatorTour}>
         <Overlay />
-        <Pointer>⭐</Pointer>
+        <Pointer directionContent={{ top: "🎯", bottom: "🎯", left: "🎯", right: "🎯" }} />
         <Popover>
           <Header />
+          <Content />
+          <Footer>
+            <CancelTrigger />
+            <BackTrigger />
+            <AdvanceTrigger />
+          </Footer>
+        </Popover>
+      </Root>
+    </div>
+  );
+}
+
+// 9. Custom popover component showing live progress --------------------------
+
+const liveProgressTour = createGlowTour();
+const liveProgressWorkflow = liveProgressTour
+  .create("hero-live-progress")
+  .step({
+    target: "#hero-live-progress-field-1",
+    title: "Company name",
+    content: "The counter above this title is real state from useTour(), not a hardcoded label.",
+  })
+  .step({
+    target: "#hero-live-progress-field-2",
+    title: "Industry",
+    content: "Advance again — the counter updates because it reads useTour().currentStepIndex.",
+  })
+  .step({
+    target: "#hero-live-progress-field-3",
+    title: "Team size",
+    content: "Same custom popover component, still driven by live tour state.",
+  })
+  .step({
+    target: "#hero-live-progress-target",
+    title: "Finish setup",
+    content: "Last step — the counter now reads the final index.",
+  })
+  .build();
+
+function LiveProgress() {
+  const state = useTour();
+  return (
+    <p className="px-4 pt-3 text-xs font-semibold text-[var(--color-accent)]">
+      Step {state.currentStepIndex + 1} of {state.totalSteps}
+    </p>
+  );
+}
+
+export function LiveProgressDemo() {
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <DemoCard className="p-5">
+        <h4 className="text-sm font-semibold text-[var(--color-text)]">Account setup</h4>
+        <div className="mt-4 space-y-3">
+          <FakeField id="hero-live-progress-field-1" label="Company name" value="Acme Inc." />
+          <FakeField id="hero-live-progress-field-2" label="Industry" value="Software" />
+          <FakeField id="hero-live-progress-field-3" label="Team size" value="11–50 people" />
+        </div>
+        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+          <button id="hero-live-progress-target" type="button" className={primaryButtonClass}>
+            Finish setup
+          </button>
+        </div>
+      </DemoCard>
+      <button
+        type="button"
+        onClick={() => void liveProgressTour.run(liveProgressWorkflow)}
+        className={runButtonClass}
+      >
+        Run this demo
+      </button>
+      <Root tour={liveProgressTour}>
+        <Overlay />
+        <Pointer />
+        <Popover>
+          <Header />
+          <LiveProgress />
           <Content />
           <Footer>
             <CancelTrigger />

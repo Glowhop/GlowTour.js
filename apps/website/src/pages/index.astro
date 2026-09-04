@@ -10,12 +10,12 @@ import MarketingLayout from "../layouts/MarketingLayout.astro";
 import {
   advanceOnClickSource,
   cancellableSource,
-  customIndicatorSource,
-  customStylingSource,
-  interactionAllowedSource,
-  multiStepSource,
-  programmaticSource,
-  singleStepSource,
+  confirmCancelSource,
+  customStyledIndicatorSource,
+  liveProgressSource,
+  nonInteractiveSource,
+  overlayClickSource,
+  placementOrderSource,
   waitForAsyncSource,
 } from "../lib/hero-demo-sources";
 
@@ -26,15 +26,15 @@ import {
 // island as static strings — the island just swaps which one is visible.
 const container = await AstroContainer.create();
 const exampleSources = [
-  singleStepSource,
-  multiStepSource,
-  programmaticSource,
-  interactionAllowedSource,
+  nonInteractiveSource,
   advanceOnClickSource,
-  cancellableSource,
-  customStylingSource,
+  placementOrderSource,
   waitForAsyncSource,
-  customIndicatorSource,
+  cancellableSource,
+  confirmCancelSource,
+  overlayClickSource,
+  customStyledIndicatorSource,
+  liveProgressSource,
 ];
 const exampleCodeHtml = await Promise.all(
   exampleSources.map((code) =>

@@ -60,7 +60,51 @@ interface ComponentProps {
 }
 ```
 
-**Usage**:
+### `GlowTour.Pointer` (detailed)
+
+Customizes the directional content (emoji or custom content) of the pointer indicator.
+
+**Props**:
+```typescript
+interface PointerProps extends ComponentProps {
+  as?: React.ElementType
+  directionContent?: {
+    top?: React.ReactNode
+    bottom?: React.ReactNode
+    left?: React.ReactNode
+    right?: React.ReactNode
+  }
+}
+```
+
+**Default glyphs** (when `directionContent` is not set):
+- `top`: `👆`
+- `bottom`: `👇`
+- `left`: `👈`
+- `right`: `👉`
+
+**Usage** (with custom content):
+```tsx
+<GlowTour.Pointer
+  directionContent={{
+    top: "⬆️",
+    bottom: "⬇️",
+    left: "⬅️",
+    right: "➡️"
+  }}
+/>
+```
+
+**Usage** (with custom element):
+```tsx
+<GlowTour.Pointer
+  directionContent={{
+    bottom: <svg>...</svg>
+  }}
+/>
+```
+
+**Usage** (default pointers):
 ```tsx
 <GlowTour.Root tour={tour}>
   <GlowTour.Overlay />
@@ -120,6 +164,7 @@ return (
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
 - `ReactTourContent` - React content type
+- `PointerDirectionContent` - Content configuration for `Pointer` component directions
 - `GlowTourOptions` - Options for `createGlowTour`
 - `StartOptions` - Options for `tour.create`
 

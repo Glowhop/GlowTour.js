@@ -104,9 +104,43 @@ Footer area containing navigation buttons.
 
 Decorative indicator/arrow pointing to the target.
 
-**Usage**:
+**Properties**:
+- `directionContent: PointerDirectionContent` - Custom content for pointer directions
+
+**Default glyphs** (when `directionContent` is not set):
+- `top`: `👆`
+- `bottom`: `👇`
+- `left`: `👈`
+- `right`: `👉`
+
+**Usage** (default pointers):
 ```typescript
 const pointer = document.createElement("glow-tour-pointer");
+root.append(pointer);
+```
+
+**Usage** (with custom string content):
+```typescript
+const pointer = document.createElement("glow-tour-pointer");
+pointer.directionContent = {
+  top: "⬆️",
+  bottom: "⬇️",
+  left: "⬅️",
+  right: "➡️"
+};
+root.append(pointer);
+```
+
+**Usage** (with custom DOM nodes):
+```typescript
+const pointer = document.createElement("glow-tour-pointer");
+const customArrow = document.createElement("span");
+customArrow.textContent = "↓";
+customArrow.style.fontSize = "2em";
+
+pointer.directionContent = {
+  bottom: customArrow
+};
 root.append(pointer);
 ```
 
@@ -221,4 +255,7 @@ await tour.run(workflow);
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
 - `GlowTourRootElement` - Root element type
+- `GlowTourPointerElement` - Pointer element type
+- `PointerDirectionValue` - Value type for pointer directions (`string | Node`)
+- `PointerDirectionContent` - Content configuration for pointer directions
 - `CreateDefaultTourElementOptions` - Options for `createDefaultTourElement`

@@ -2,12 +2,12 @@ import { useState } from "react";
 import {
   AdvanceOnClickDemo,
   CancellableDemo,
-  CustomIndicatorDemo,
-  CustomStylingDemo,
-  InteractionAllowedDemo,
-  MultiStepDemo,
-  ProgrammaticDemo,
-  SingleStepDemo,
+  ConfirmCancelDemo,
+  CustomStyledIndicatorDemo,
+  LiveProgressDemo,
+  NonInteractiveDemo,
+  OverlayClickDemo,
+  PlacementOrderDemo,
   WaitForAsyncDemo,
 } from "./HeroDemos";
 
@@ -20,60 +20,60 @@ interface Example {
 
 const examples: Example[] = [
   {
-    label: "Single step",
-    title: "Single step",
-    description: "The minimal builder: one target, one popover.",
-    Demo: SingleStepDemo,
+    label: "Simple walkthrough",
+    title: "Simple walkthrough",
+    description: "A plain, 3-step walkthrough — no special options, just steps.",
+    Demo: NonInteractiveDemo,
   },
   {
-    label: "Placement fallback",
-    title: "Placement fallback",
-    description:
-      "A multi-step tour using popover.placementTryOrder to walk placements until one fits.",
-    Demo: MultiStepDemo,
-  },
-  {
-    label: "Programmatic",
-    title: "Programmatic",
-    description:
-      ".do() and .wait() sequence work between steps; onStart/onFinish observe the whole run.",
-    Demo: ProgrammaticDemo,
-  },
-  {
-    label: "Interaction allowed",
-    title: "Interaction allowed",
-    description: "behavior.allowInteraction keeps the target clickable through the overlay.",
-    Demo: InteractionAllowedDemo,
-  },
-  {
-    label: "Advance on click",
-    title: "Advance on click",
+    label: "Click to continue",
+    title: "Click to continue",
     description: "onTargetEvent('click', ...) advances the tour from a real click on the target.",
     Demo: AdvanceOnClickDemo,
   },
   {
-    label: "Cancellable",
-    title: "Cancellable",
-    description: "cancellable: false locks a step so Escape and Cancel can't skip it.",
-    Demo: CancellableDemo,
+    label: "Popover placement",
+    title: "Popover placement",
+    description:
+      "Four steps, each pinning a single popover.placementTryOrder — top, bottom, left, right.",
+    Demo: PlacementOrderDemo,
   },
   {
-    label: "Custom styling",
-    title: "Custom styling",
-    description: "overlay and popover options are real per-workflow overrides, not just theme CSS.",
-    Demo: CustomStylingDemo,
-  },
-  {
-    label: "Wait for async content",
-    title: "Wait for async content",
+    label: "Wait for data",
+    title: "Wait for data",
     description: "waitUntilElement(selector) holds the tour until a late-arriving element exists.",
     Demo: WaitForAsyncDemo,
   },
   {
-    label: "Custom indicator",
-    title: "Custom indicator",
-    description: "Compose Root/Overlay/Pointer/Popover directly to swap the pointer's own content.",
-    Demo: CustomIndicatorDemo,
+    label: "Can't be skipped",
+    title: "Can't be skipped",
+    description: "cancellable: false locks a tour so Escape and Cancel can't skip it.",
+    Demo: CancellableDemo,
+  },
+  {
+    label: "Confirm before leaving",
+    title: "Confirm before leaving",
+    description: "onCancel opens window.confirm() and calls context.abort() to keep the tour open.",
+    Demo: ConfirmCancelDemo,
+  },
+  {
+    label: "Click outside to continue",
+    title: "Click outside to continue",
+    description: "behavior.overlayClick controls what a click on the dimmed backdrop does.",
+    Demo: OverlayClickDemo,
+  },
+  {
+    label: "Custom look",
+    title: "Custom look",
+    description:
+      "overlay/popover overrides and a custom <Pointer> glyph, composed directly with Root/Overlay/Popover.",
+    Demo: CustomStyledIndicatorDemo,
+  },
+  {
+    label: "Live step counter",
+    title: "Live step counter",
+    description: "A custom popover subcomponent reads useTour() to show real step progress.",
+    Demo: LiveProgressDemo,
   },
 ];
 
@@ -102,7 +102,7 @@ export function ExamplesGallery({ codeHtml }: ExamplesGalleryProps) {
                 : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-surface-muted)]"
             }`}
           >
-            {index + 1}. {example.label}
+            {example.label}
           </button>
         ))}
       </div>

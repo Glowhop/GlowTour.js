@@ -58,6 +58,13 @@ body {
   font-family: var(--font-sans);
 }
 
+a,
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"] {
+  cursor: pointer;
+}
+
 /*
  * Astro's <Code> component (astro:components) is set to theme="css-variables" everywhere on
  * this site: Shiki's bundled named themes load via per-theme dynamic imports that don't resolve

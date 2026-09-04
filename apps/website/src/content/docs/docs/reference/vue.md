@@ -60,7 +60,52 @@ interface GlowTourRootProps {
 }
 ```
 
-**Usage**:
+### `GlowTourPointer` (detailed)
+
+Customizes the directional content (emoji or custom content) of the pointer indicator.
+
+**Props**:
+```typescript
+interface GlowTourPointerProps {
+  directionContent?: {
+    top?: VNodeChild
+    bottom?: VNodeChild
+    left?: VNodeChild
+    right?: VNodeChild
+  }
+  class?: string
+  style?: CSSProperties
+}
+```
+
+**Default glyphs** (when `directionContent` is not set):
+- `top`: `👆`
+- `bottom`: `👇`
+- `left`: `👈`
+- `right`: `👉`
+
+**Usage** (with custom content):
+```vue
+<GlowTourPointer
+  :direction-content="{
+    top: '⬆️',
+    bottom: '⬇️',
+    left: '⬅️',
+    right: '➡️'
+  }"
+/>
+```
+
+**Usage** (with custom component):
+```vue
+<GlowTourPointer
+  :direction-content="{
+    bottom: SomeCustomComponent
+  }"
+/>
+```
+
+**Usage** (default pointers):
 ```vue
 <GlowTourRoot :tour="tour">
   <GlowTourOverlay />
@@ -124,6 +169,7 @@ const state = useTour(tour);
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
 - `VueTourContent` - Vue content type
+- `PointerDirectionContent` - Content configuration for `GlowTourPointer` component directions
 - `GlowTourOptions` - Options for `createGlowTour`
 - `StartOptions` - Options for `tour.create`
 

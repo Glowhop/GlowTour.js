@@ -2,7 +2,7 @@
 // src/components/HeroDemos.tsx — these are display copies, not imports, so the code shown to
 // visitors reads as a clean, standalone example rather than the wired-up demo internals.
 
-export const singleStepSource = `const tour = createGlowTour();
+export const nonInteractiveSource = `const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome")
@@ -18,52 +18,8 @@ const workflow = tour
   })
   .step({
     target: "#save-button",
-    title: "One step, zero setup",
-    content: "Point at an element, describe it, and build.",
-  })
-  .build();
-
-tour.run(workflow);`;
-
-export const multiStepSource = `const tour = createGlowTour();
-
-const workflow = tour
-  .create("welcome")
-  .step({
-    target: "#search",
-    title: "A normal element works too",
-    content: "The tour can point at any element — no special markup needed.",
-  })
-  .step({
-    target: "#filters",
-    title: "Placement tries top first",
-    content: "This step's popover.placementTryOrder starts with top.",
-    popover: { placementTryOrder: ["top", "bottom"] },
-  })
-  .step({
-    target: "#export",
-    title: "Then falls back automatically",
-    content: "If there's no room, Glow Tour walks the list until one fits.",
-    popover: { placementTryOrder: ["right", "left", "bottom"] },
-  })
-  .build();
-
-tour.run(workflow);`;
-
-export const interactionAllowedSource = `const tour = createGlowTour();
-
-const workflow = tour
-  .create("welcome")
-  .step({
-    target: "#avatar",
-    title: "Riley Martin's post",
-    content: "This tour walks through a single post in the feed.",
-  })
-  .step({
-    target: "#counter",
-    title: "The target stays clickable",
-    content: "behavior.allowInteraction lets pointer events pass through the overlay.",
-    behavior: { allowInteraction: true },
+    title: "A plain, non-interactive walkthrough",
+    content: "No special options here — no allowInteraction, no custom behavior.",
   })
   .build();
 
@@ -95,41 +51,33 @@ const workflow = tour
 
 tour.run(workflow);`;
 
-export const cancellableSource = `const tour = createGlowTour();
-
-const workflow = tour
-  .create("welcome", {
-    cancellable: false,
-  })
-  .step({
-    target: "#warning",
-    title: "Read this carefully",
-    content: "A warning is a good place for a tour step too.",
-  })
-  .step({
-    target: "#delete-account",
-    title: "This step can't be skipped",
-    content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
-  })
-  .build();
-
-tour.run(workflow);`;
-
-export const customStylingSource = `const tour = createGlowTour();
+export const placementOrderSource = `const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome")
   .step({
-    target: "#first-member",
-    title: "This step looks normal",
-    content: "Default overlay and popover styling — no overrides here.",
+    target: "#widget-a",
+    title: "Forcing placement: top",
+    content: "popover.placementTryOrder: ['top'] pins this popover above its target.",
+    popover: { placementTryOrder: ["top"] },
   })
   .step({
-    target: "#invite",
-    title: "Same tour, different skin",
-    content: "overlay and popover options are real per-workflow overrides.",
-    overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true }, hideFooter: true },
+    target: "#widget-b",
+    title: "Forcing placement: bottom",
+    content: "popover.placementTryOrder: ['bottom'] pins this popover below its target.",
+    popover: { placementTryOrder: ["bottom"] },
+  })
+  .step({
+    target: "#widget-c",
+    title: "Forcing placement: left",
+    content: "popover.placementTryOrder: ['left'] pins this popover to the left of its target.",
+    popover: { placementTryOrder: ["left"] },
+  })
+  .step({
+    target: "#widget-d",
+    title: "Forcing placement: right",
+    content: "popover.placementTryOrder: ['right'] pins this popover to the right of its target.",
+    popover: { placementTryOrder: ["right"] },
   })
   .build();
 
@@ -160,49 +108,139 @@ const workflow = tour
 
 tour.run(workflow);`;
 
-export const programmaticSource = `const tour = createGlowTour();
+export const cancellableSource = `const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome", {
-    onStart: () => console.log("started"),
-    onFinish: () => console.log("finished"),
+    cancellable: false,
   })
   .step({
-    target: "#doc-title",
-    title: "This doc has a title",
-    content: "A quick step on the title before we get to the code.",
+    target: "#warning",
+    title: "Read this carefully",
+    content: "A warning is a good place for a tour step too.",
   })
   .step({
-    target: "#publish",
-    title: "Steps can run code",
-    content: "This step waits, then runs a callback before it's ready.",
+    target: "#delete-account",
+    title: "This step can't be skipped",
+    content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
   })
-  .wait(300)
-  .do(() => console.log("do() ran after the wait"))
   .build();
 
 tour.run(workflow);`;
 
-export const customIndicatorSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger } from "@glowhop/react-tour";
+export const confirmCancelSource = `const tour = createGlowTour();
+
+const workflow = tour
+  .create("welcome", {
+    cancellable: true,
+    onCancel: (context) => {
+      if (!window.confirm("Cancel this tour?")) {
+        // Prevents the cancellation — the tour stays open on its current step.
+        context.abort();
+      }
+    },
+  })
+  .step({
+    target: "#project-name",
+    title: "Name your project",
+    content: "Try pressing Escape, or clicking Cancel below, at any point in this tour.",
+  })
+  .step({
+    target: "#create-project",
+    title: "Confirm before you leave",
+    content: "Cancelling now opens a real confirm() dialog before the tour actually closes.",
+  })
+  .build();
+
+tour.run(workflow);`;
+
+export const overlayClickSource = `const tour = createGlowTour();
+
+const workflow = tour
+  .create("welcome")
+  .step({
+    target: "#email-notifications",
+    title: "Click the overlay to advance",
+    content: "behavior.overlayClick: 'advance' — clicking the dimmed backdrop moves forward.",
+    behavior: { overlayClick: "advance" },
+  })
+  .step({
+    target: "#push-notifications",
+    title: "Now it cancels instead",
+    content: "behavior.overlayClick: 'cancel' — clicking the backdrop now cancels the tour.",
+    behavior: { overlayClick: "cancel" },
+  })
+  .build();
+
+tour.run(workflow);`;
+
+export const customStyledIndicatorSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome")
   .step({
-    target: "#upgrade-plan",
-    title: "A custom indicator",
-    content: "Pointer takes its own children instead of the default glyph.",
+    target: "#first-member",
+    title: "This step looks normal",
+    content: "Default overlay, popover, and pointer — no overrides here.",
+  })
+  .step({
+    target: "#invite",
+    title: "Same tour, fully customized",
+    content: "overlay/popover overrides, a custom pointer glyph, and allowInteraction, all at once.",
+    overlay: { color: "#0ea5e9", opacity: 0.35 },
+    popover: { arrow: { disabled: true }, hideFooter: true },
     behavior: { allowInteraction: true },
   })
   .build();
 
-// Instead of <DefaultTour tour={tour} />, compose the pieces directly:
+// Instead of <DefaultTour tour={tour} />, compose the pieces directly. Pointer takes
+// per-direction content, not children, so it can show a distinct glyph for each placement:
 <Root tour={tour}>
   <Overlay />
-  <Pointer>⭐</Pointer>
+  <Pointer directionContent={{ top: "🎯", bottom: "🎯", left: "🎯", right: "🎯" }} />
   <Popover>
     <Header />
+    <Content />
+    <Footer>
+      <CancelTrigger />
+      <BackTrigger />
+      <AdvanceTrigger />
+    </Footer>
+  </Popover>
+</Root>;
+
+tour.run(workflow);`;
+
+export const liveProgressSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger, useTour } from "@glowhop/react-tour";
+
+const tour = createGlowTour();
+
+const workflow = tour
+  .create("welcome")
+  .step({ target: "#company-name", title: "Company name", content: "Step 1." })
+  .step({ target: "#industry", title: "Industry", content: "Step 2." })
+  .step({ target: "#team-size", title: "Team size", content: "Step 3." })
+  .step({ target: "#finish-setup", title: "Finish setup", content: "Step 4." })
+  .build();
+
+// A custom popover subcomponent, wired to real tour state:
+function LiveProgress() {
+  const state = useTour();
+  return (
+    <p>
+      Step {state.currentStepIndex + 1} of {state.totalSteps}
+    </p>
+  );
+}
+
+<Root tour={tour}>
+  <Overlay />
+  <Pointer />
+  <Popover>
+    <Header />
+    <LiveProgress />
     <Content />
     <Footer>
       <CancelTrigger />

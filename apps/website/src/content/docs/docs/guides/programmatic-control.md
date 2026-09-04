@@ -93,14 +93,14 @@ React to tour events at the workflow level:
 ```typescript
 const workflow = tour
   .create("my-tour", {
-    onStart() {
-      console.log("Tour started");
+    onStart(context) {
+      console.log("Tour started on step:", context.step?.initialProps.title);
     },
-    onCancel() {
-      console.log("Tour cancelled by user");
+    onCancel(context) {
+      console.log("Tour cancelled by user at step:", context.step?.initialProps.title);
     },
-    onFinish() {
-      console.log("Tour completed all steps");
+    onFinish(context) {
+      console.log("Tour completed all steps, last step:", context.step?.initialProps.title);
     },
   })
   .step({ /* ... */ })
@@ -233,10 +233,10 @@ Here's a tour that combines multiple features:
 
 ```typescript
 const tour = createGlowTour({
-  onStart() {
+  onStart(context) {
     analytics.track("tour_started");
   },
-  onFinish() {
+  onFinish(context) {
     analytics.track("tour_completed");
   },
   onSubscriberError(error) {
@@ -246,7 +246,7 @@ const tour = createGlowTour({
 
 const workflow = tour
   .create("onboarding", {
-    onCancel() {
+    onCancel(context) {
       analytics.track("tour_cancelled");
     },
   })

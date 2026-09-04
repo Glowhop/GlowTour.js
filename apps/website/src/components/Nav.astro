@@ -1,5 +1,5 @@
 ---
-import { Icon } from "astro-icon/components";
+import GithubIcon from "./GithubIcon.astro";
 import LogoMark from "./LogoMark.astro";
 ---
 
@@ -14,10 +14,10 @@ import LogoMark from "./LogoMark.astro";
     <div class="flex items-center gap-3">
       <a
         href="https://github.com/Glowhop/glow-tour"
-        class="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+        aria-label="GitHub"
+        class="flex h-9 w-9 items-center justify-center rounded-[var(--radius-glow)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text)]"
       >
-        <Icon name="logos:github-icon" class="h-4 w-4" />
-        GitHub
+        <GithubIcon class="h-5 w-5" />
       </a>
       <a
         href="/docs/getting-started"

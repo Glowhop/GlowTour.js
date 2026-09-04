@@ -262,9 +262,10 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 | `popover` | PopoverOptions | — | Popover appearance (see [Popover options](#popover-options)) |
 | `indicator` | IndicatorOptions | — | Indicator appearance (see [Indicator options](#indicator-options)) |
 | `behavior` | StepBehavior | — | Step behavior (see [Behavior options](#behavior-options)) |
-| `onStart` | `() => void \| Promise<void>` | — | Called when the tour starts |
-| `onCancel` | `() => void \| Promise<void>` | — | Called when the tour is cancelled |
-| `onFinish` | `() => void \| Promise<void>` | — | Called when the tour completes |
+| `allowScroll` | boolean | `false` | Page scroll is locked by default while the tour is active (restored on finish/cancel/error/dispose); set `true` to let the page scroll during the tour |
+| `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour starts |
+| `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour is cancelled |
+| `onFinish` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour completes |
 
 *Animations automatically disable when the browser detects `prefers-reduced-motion`.
 
@@ -384,6 +385,7 @@ Control step interaction and scrolling behavior.
 | `disableAutoFocus` | boolean | `false` | Skip auto-focusing the target element |
 | `disableAutoScroll` | boolean | `false` | Skip auto-scrolling to the target |
 | `missingTargetStrategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found |
+| `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
 | `targetTimeout` | number | `3000` | Time to wait for target (in milliseconds) |
 | `scroll` | ScrollOptions | — | Scroll behavior (see [Scroll options](#scroll-options)) |
 
@@ -398,6 +400,29 @@ behavior: {
     behavior: "smooth",
     block: "center",
     inline: "nearest"
+  }
+}
+```
+
+### Lifecycle hook context
+
+The `onStart`, `onCancel`, and `onFinish` callbacks receive a `LifecycleHookContext` object:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `step` | `TourCurrentStep \| null` | The step associated with this transition (see JSDoc for per-hook semantics) |
+| `abort()` | function | Call synchronously (or before the hook's promise resolves) to prevent the transition |
+
+**Transition semantics**:
+- `onStart`: `step` is the first step about to be entered, or `null` if the workflow has no steps. Calling `abort()` prevents the tour from starting.
+- `onCancel`: `step` is always the current step (never `null` at cancellation time). Calling `abort()` prevents cancellation and keeps the tour active.
+- `onFinish`: `step` is the last step the tour was on, or `null` only for zero-step workflows. Calling `abort()` prevents completion and keeps the tour in its current state.
+
+**Usage** (example: confirm before cancelling):
+```typescript
+onCancel: (context) => {
+  if (!window.confirm("Are you sure you want to exit the tour?")) {
+    context.abort();
   }
 }
 ```
@@ -468,6 +493,7 @@ Builder-related type exports for TypeScript users:
 - `WorkflowDefinition` - Immutable compiled workflow
 - `StepParameters` - Parameters for `.step()`
 - `StartOptions` - Options for `tour.create()`
+- `LifecycleHookContext` - Context passed to `onStart`, `onCancel`, `onFinish` callbacks
 - `StepBehavior` - Behavior options
 - `OverlayOptions` - Overlay options
 - `PopoverOptions` - Popover options

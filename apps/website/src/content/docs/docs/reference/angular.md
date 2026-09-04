@@ -89,9 +89,39 @@ Backdrop overlay component. Selector: `glow-tour-overlay`.
 
 Decorative indicator/arrow pointing to the target. Selector: `glow-tour-pointer`.
 
-**Usage**:
+**Input**:
+```typescript
+@Input() directionContent?: {
+  top?: string | TemplateRef<unknown>
+  bottom?: string | TemplateRef<unknown>
+  left?: string | TemplateRef<unknown>
+  right?: string | TemplateRef<unknown>
+}
+```
+
+**Default glyphs** (when `directionContent` is not set):
+- `top`: `👆`
+- `bottom`: `👇`
+- `left`: `👈`
+- `right`: `👉`
+
+**Usage** (default pointers):
 ```html
 <glow-tour-pointer />
+```
+
+**Usage** (with custom string content):
+```html
+<glow-tour-pointer [directionContent]="{ top: '⬆️', bottom: '⬇️' }" />
+```
+
+**Usage** (with template references):
+```html
+<ng-template #customPointer>
+  <span class="custom-arrow">↓</span>
+</ng-template>
+
+<glow-tour-pointer [directionContent]="{ bottom: customPointer }" />
 ```
 
 ### `GlowTourPopover`
@@ -213,5 +243,7 @@ export class MyComponent {}
 - `TourState` - Tour state
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
+- `PointerDirectionValue` - Value type for pointer directions (`string | TemplateRef<unknown>`)
+- `PointerDirectionContent` - Content configuration for `GlowTourPointer` component directions
 - `GlowTourOptions` - Options for `createGlowTour`
 - `StartOptions` - Options for `tour.create`
