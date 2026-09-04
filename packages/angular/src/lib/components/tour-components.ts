@@ -26,6 +26,24 @@ import type { AngularTourContent } from "../glow-tour";
 
 type Tour = CoreGlowTour<AngularTourContent>;
 
+export type PointerDirectionValue = string | TemplateRef<unknown>;
+
+export interface PointerDirectionContent {
+  readonly top?: PointerDirectionValue;
+  readonly bottom?: PointerDirectionValue;
+  readonly left?: PointerDirectionValue;
+  readonly right?: PointerDirectionValue;
+}
+
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
+const POINTER_DIRECTIONS = ["top", "bottom", "left", "right"] as const;
+
 interface ActiveRootBinding {
   readonly binding: AdapterRootBinding;
   readonly idPrefix: string | undefined;
@@ -243,12 +261,38 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
 @Component({
   selector: "glow-tour-pointer",
   standalone: true,
+  imports: [NgTemplateOutlet],
   template: `
-    <div #tourElement data-glow-tour-pointer aria-hidden="true"><div data-glow-tour-pointer-content><ng-content /></div></div>
+    <div #tourElement data-glow-tour-pointer aria-hidden="true">
+      @for (direction of directions; track direction) {
+        <div [attr.data-glow-tour-pointer-direction]="direction">
+          @if (asTemplate(content()[direction]); as template) {
+            <ng-container [ngTemplateOutlet]="template" />
+          } @else {
+            {{ content()[direction] }}
+          }
+        </div>
+      }
+    </div>
   `,
 })
 export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<HTMLElement>;
+  private readonly directionContentValue = signal<PointerDirectionContent | undefined>(undefined);
+
+  protected readonly directions = POINTER_DIRECTIONS;
+  readonly content = computed(() => ({
+    ...DEFAULT_POINTER_DIRECTION_CONTENT,
+    ...this.directionContentValue(),
+  }));
+
+  @Input() set directionContent(value: PointerDirectionContent | undefined) {
+    this.directionContentValue.set(value);
+  }
+
+  protected asTemplate(value: PointerDirectionValue): TemplateRef<unknown> | null {
+    return value instanceof TemplateRef ? value : null;
+  }
 
   ngOnInit() {
     this.bind(this.element.nativeElement, (binding, element) => binding.bindPointer(element));

@@ -31,9 +31,24 @@ type ElementProps = ParentProps<
 >;
 type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = ParentProps<Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "ref">>;
-type PointerProps = ParentProps<
-  Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden" | "ref"> & { as?: ValidComponent }
->;
+export interface PointerDirectionContent {
+  readonly top?: JSX.Element;
+  readonly bottom?: JSX.Element;
+  readonly left?: JSX.Element;
+  readonly right?: JSX.Element;
+}
+
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
+type PointerProps = Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
+  as?: ValidComponent;
+  directionContent?: PointerDirectionContent;
+};
 type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
   children?: (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => JSX.Element;
   disabled?: boolean;
@@ -251,15 +266,19 @@ export function Overlay(props: OverlayProps): JSX.Element {
 }
 
 export function Pointer(props: PointerProps): JSX.Element {
-  const [local, other] = splitProps(props, ["as", "children"]);
+  const [local, other] = splitProps(props, ["as", "directionContent"]);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
-  const content = createComponent(Dynamic, {
-    component: "div",
-    "data-glow-tour-pointer-content": "",
-    get children() {
-      return local.children;
-    },
-  });
+  const directions = (
+    Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
+  ).map((direction) =>
+    createComponent(Dynamic, {
+      component: "div",
+      "data-glow-tour-pointer-direction": direction,
+      get children() {
+        return local.directionContent?.[direction] ?? DEFAULT_POINTER_DIRECTION_CONTENT[direction];
+      },
+    }),
+  );
 
   return createComponent(
     Dynamic,
@@ -270,7 +289,7 @@ export function Pointer(props: PointerProps): JSX.Element {
       },
       "data-glow-tour-pointer": "",
       ref,
-      children: content,
+      children: directions,
     }),
   );
 }
