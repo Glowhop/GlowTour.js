@@ -1,0 +1,21 @@
+{
+  "name": "@glowhop/ssr-vue-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "start": "node .output/server/index.mjs",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "@glowhop/styles-tour": "workspace:*",
+    "@glowhop/vue-tour": "workspace:*",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "nuxt": "^4.5.2"
+  }
+}

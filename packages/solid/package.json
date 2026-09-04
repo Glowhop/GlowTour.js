@@ -39,7 +39,7 @@
     "@glowhop/core-tour": "workspace:*"
   },
   "peerDependencies": {
-    "solid-js": "^1.9.14"
+    "solid-js": "^1.8.0"
   },
   "devDependencies": {
     "happy-dom": "^18.0.1",

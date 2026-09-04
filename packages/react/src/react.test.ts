@@ -75,6 +75,36 @@ describe("react adapter contract", () => {
     assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
   });
 
+  test("renders the packaged DefaultTour to a string without DOM globals", () => {
+    // Runs out-of-process (like the import test above) so this test proves
+    // `react-dom/server`'s renderToString genuinely never touches `document`/
+    // `window`, rather than merely running in the same jsdom-free bun:test
+    // process where those globals happen to already be undefined.
+    const script = [
+      "delete globalThis.document;",
+      "delete globalThis.window;",
+      "delete globalThis.HTMLElement;",
+      "const { renderToString } = await import('react-dom/server');",
+      "const React = await import('react');",
+      "const runtime = await import('./index.ts');",
+      "const tour = runtime.createGlowTour();",
+      "const html = renderToString(React.createElement(runtime.DefaultTour, { idPrefix: 'react-ssr', tour }));",
+      "process.stdout.write(html);",
+    ].join("\n");
+    const result = Bun.spawnSync({
+      cmd: ["bun", "-e", script],
+      cwd: import.meta.dir,
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+
+    assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
+    const html = new TextDecoder().decode(result.stdout);
+    assert.match(html, /data-glow-tour-root/);
+    assert.match(html, /data-glow-tour-popover/);
+    assert.doesNotMatch(html, /id="glow-tour/);
+  });
+
   test("forwards subscriber error handlers to the core tour", () => {
     const errors: Error[] = [];
     const tour = runtime.createGlowTour({

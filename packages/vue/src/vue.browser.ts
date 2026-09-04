@@ -32,6 +32,61 @@ afterEach(() => {
 });
 
 describe("vue adapter browser behavior", () => {
+  test("hydrates server-rendered DefaultTour markup without a mismatch and stays interactive", async () => {
+    const [{ createSSRApp, h }, { renderToString }, runtime] = await Promise.all([
+      import("vue"),
+      import("@vue/server-renderer"),
+      import("./index"),
+    ]);
+    const ssrTour = runtime.createGlowTour();
+    const html = await renderToString(
+      createSSRApp({
+        render: () => h(runtime.GlowTourDefault, { idPrefix: "vue-hydrate", tour: ssrTour }),
+      }),
+    );
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    const target = document.createElement("button");
+    document.body.append(target);
+    const tour = runtime.createGlowTour();
+
+    const consoleWarnings: unknown[][] = [];
+    const originalConsoleWarn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      consoleWarnings.push(args);
+    };
+    const app = createSSRApp({
+      render: () => h(runtime.GlowTourDefault, { idPrefix: "vue-hydrate", tour }),
+    });
+    try {
+      app.mount(container);
+    } finally {
+      console.warn = originalConsoleWarn;
+    }
+    assert.deepEqual(
+      consoleWarnings.filter((entry) => String(entry[0]).includes("Hydration")),
+      [],
+    );
+
+    const workflow = tour
+      .create("hydrated")
+      .step({ content: "First", target, title: "First" })
+      .build();
+    await tour.run(workflow);
+    assert.equal(container.querySelector("[data-glow-tour-content]")?.textContent, "First");
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(advance?.disabled, false);
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    assert.equal(tour.state.get().status, "finished");
+
+    app.unmount();
+    container.remove();
+    target.remove();
+  });
+
   test("passes the shared default-tour acceptance contract", async () => {
     const [{ createApp, h, nextTick }, runtime] = await Promise.all([
       import("vue"),

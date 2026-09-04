@@ -40,25 +40,25 @@ Issu de l'étude comparative vs Driver.js / Shepherd.js / Intro.js / React Joyri
 
 ## Compatibilité framework (priorité haute)
 
-- [ ] Élargir la peer dep React au-delà de `^19.2.0` (couvrir React 18) dans `packages/react/package.json`
-- [ ] Élargir la peer dep Vue au-delà de `^3.5.0` (couvrir 3.3/3.4) dans `packages/vue/package.json`
-- [ ] Élargir la peer dep Angular au-delà de `^18.2.0` (évaluer support 17) dans `packages/angular/package.json`
-- [ ] Élargir la peer dep Solid au-delà de `^1.9.14` dans `packages/solid/package.json`
-- [ ] Documenter la matrice de compat élargie dans [docs/compatibility.md](docs/compatibility.md)
+- [x] Élargir la peer dep React au-delà de `^19.2.0` (couvrir React 18) dans `packages/react/package.json`
+- [x] Élargir la peer dep Vue au-delà de `^3.5.0` (couvrir 3.3/3.4) dans `packages/vue/package.json`
+- [x] Élargir la peer dep Angular au-delà de `^18.2.0` (évaluer support 17) dans `packages/angular/package.json` — évalué, gardé à `^18.0.0` (les blocs `@if`/`@for` ne sont stables qu'à partir d'Angular 18, 17 non garanti sans test d'install réel)
+- [x] Élargir la peer dep Solid au-delà de `^1.9.14` dans `packages/solid/package.json`
+- [x] Documenter la matrice de compat élargie dans [docs/compatibility.md](docs/compatibility.md)
 
 ## Accessibilité (priorité haute)
 
 ARIA de base déjà en place par adaptateur (`role="dialog"`, `aria-labelledby`/`aria-describedby`, `aria-live="polite"`, `aria-controls`/`aria-disabled`/`aria-label` — voir `tour-components.ts(x)` de chaque package). Reste à vérifier/compléter :
 
-- [ ] Vérifier que le focus trap ([packages/core/src/state/focus-guard.ts](packages/core/src/state/focus-guard.ts)) restaure bien le focus à l'élément déclencheur en fin de tour
-- [ ] Vérifier/documenter les raccourcis clavier standards : `Esc` annule, flèches gauche/droite naviguent (cohérence entre adaptateurs)
-- [ ] Passer un audit axe-core/Lighthouse sur `apps/playground` et corriger les violations restantes
-- [ ] Documenter le comportement a11y dans le guide transverse "accessibilité" prévu au-dessus (section Documentation)
+- [x] Vérifier que le focus trap ([packages/core/src/state/focus-guard.ts](packages/core/src/state/focus-guard.ts)) restaure bien le focus à l'élément déclencheur en fin de tour — déjà correct sur toutes les sorties (finish/cancel/erreur)
+- [x] Vérifier/documenter les raccourcis clavier standards : `Esc` annule, flèches gauche/droite naviguent (cohérence entre adaptateurs) — géré une seule fois côté core, aucune divergence adaptateur
+- [x] Passer un audit axe-core/Lighthouse sur `apps/playground` et corriger les violations restantes — 3 violations de contraste corrigées dans `apps/playground/lab/lab.css`
+- [x] Documenter le comportement a11y dans le guide transverse "accessibilité" prévu au-dessus (section Documentation) — [docs/accessibility.md](docs/accessibility.md)
 
 ## SSR / Hydration
 
-- [ ] Vérifier et documenter le comportement d'hydratation réel pour chaque adapter (actuellement "non vérifié" dans [docs/compatibility.md](docs/compatibility.md))
-- [ ] Ajouter un test SSR + hydration par adapter (Next.js pour React, Nuxt pour Vue, SolidStart pour Solid)
+- [x] Vérifier et documenter le comportement d'hydratation réel pour chaque adapter (actuellement "non vérifié" dans [docs/compatibility.md](docs/compatibility.md)) — React/Vue/Solid vérifiés (SSR + hydration réels), Angular/Solid limites documentées explicitement
+- [x] Ajouter un test SSR + hydration par adapter (Next.js pour React, Nuxt pour Vue, SolidStart pour Solid) — `apps/ssr-react`, `apps/ssr-vue`, `apps/ssr-solid` : vraies apps avec build de prod + tests Playwright (SSR + hydration + interactivité), tous verts. A aussi révélé et corrigé un vrai bug de build (`scripts/build-packages.ts` ne forçait pas `NODE_ENV=production`, donc le dist publié de `@glowhop/react-tour` embarquait `jsxDEV`, cassant tout build de prod consommateur type `next build`)
 
 ## Publication & mesurabilité
 
@@ -68,6 +68,6 @@ ARIA de base déjà en place par adaptateur (`role="dialog"`, `aria-labelledby`/
 
 ## Exemples & onboarding développeur
 
-- [ ] Dossier `examples/` public (au moins un exemple minimal par framework, en dehors de `apps/playground` qui reste privé)
+- [x] Dossier `examples/` public (au moins un exemple minimal par framework, en dehors de `apps/playground` qui reste privé)
 - [ ] Sandbox StackBlitz/CodeSandbox liée depuis le README pour chaque adapter
-- [ ] Vérifier que le quick start du README principal fonctionne tel quel en copier-coller (test manuel ou script de vérification)
+- [x] Vérifier que le quick start du README principal fonctionne tel quel en copier-coller (test manuel ou script de vérification) — snippet React cassé (éléments DOM manquants) corrigé

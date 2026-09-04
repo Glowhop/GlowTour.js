@@ -43,6 +43,79 @@ async function waitForCondition(condition: () => boolean, description: string, t
 }
 
 describe("react adapter browser behavior", () => {
+  test("hydrates server-rendered DefaultTour markup without console errors and stays interactive", async () => {
+    // The SSR markup has to come from a real `react-dom/server` pass, produced
+    // out-of-process (like the SSR string test in react.test.ts) so this exercises
+    // an actual server-render -> client-hydrate handoff instead of only mounting
+    // fresh markup into an empty container.
+    const script = [
+      "const { renderToString } = await import('react-dom/server');",
+      "const React = await import('react');",
+      "const runtime = await import('./index.ts');",
+      "const tour = runtime.createGlowTour();",
+      "const html = renderToString(React.createElement(runtime.DefaultTour, { idPrefix: 'react-hydrate', tour }));",
+      "process.stdout.write(html);",
+    ].join("\n");
+    const result = Bun.spawnSync({
+      cmd: ["bun", "-e", script],
+      cwd: import.meta.dir,
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+    assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
+    const html = new TextDecoder().decode(result.stdout);
+
+    const [React, { hydrateRoot }, { createGlowTour, DefaultTour }] = await Promise.all([
+      import("react"),
+      import("react-dom/client"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    const tour = createGlowTour();
+
+    const consoleErrors: unknown[][] = [];
+    const originalConsoleError = console.error;
+    console.error = (...args: unknown[]) => {
+      consoleErrors.push(args);
+    };
+    let root: ReturnType<typeof hydrateRoot>;
+    try {
+      await React.act(async () => {
+        root = hydrateRoot(
+          container,
+          React.createElement(DefaultTour, { idPrefix: "react-hydrate", tour }),
+        );
+      });
+    } finally {
+      console.error = originalConsoleError;
+    }
+    assert.deepEqual(consoleErrors, []);
+
+    const target = document.createElement("button");
+    document.body.append(target);
+    const workflow = tour
+      .create("hydrated")
+      .step({ content: "First", target, title: "First" })
+      .build();
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    assert.equal(container.querySelector("[data-glow-tour-content]")?.textContent, "First");
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(advance?.disabled, false);
+    await React.act(async () => {
+      advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    assert.equal(tour.state.get().status, "finished");
+
+    await React.act(async () => root.unmount());
+    container.remove();
+    target.remove();
+  });
+
   test("passes the shared default-tour acceptance contract", async () => {
     const [React, { createRoot }, { createGlowTour, DefaultTour }] = await Promise.all([
       import("react"),

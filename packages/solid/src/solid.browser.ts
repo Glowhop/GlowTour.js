@@ -66,6 +66,78 @@ afterEach(() => {
 });
 
 describe("solid adapter browser behavior", () => {
+  test("hydrates server-rendered markup without throwing or duplicating content", async () => {
+    // Solid's SSR (`renderToString`) and hydration (`hydrate`) resolve to different
+    // builds of `solid-js/web` depending on the "browser" export condition, so the
+    // server markup has to be produced out-of-process under the default (server)
+    // conditions before it can be hydrated here under `--conditions=browser`.
+    const script = `
+      import { renderToString, generateHydrationScript } from "solid-js/web";
+      import * as runtime from "./index.ts";
+      const tour = runtime.createGlowTour();
+      const html = renderToString(() =>
+        runtime.GlowTour.Root({
+          tour,
+          get children() {
+            return runtime.GlowTour.Popover({ children: "Hello" });
+          },
+        }),
+      );
+      process.stdout.write(JSON.stringify({ html, hydrationScript: generateHydrationScript() }));
+    `;
+    const result = Bun.spawnSync({
+      cmd: ["bun", "-e", script],
+      cwd: import.meta.dir,
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+    assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
+    const { html, hydrationScript } = JSON.parse(new TextDecoder().decode(result.stdout)) as {
+      html: string;
+      hydrationScript: string;
+    };
+
+    // Replays the inline hydration-marker bootstrap that `<HydrationScript />`
+    // renders on a real SSR page (it just seeds `globalThis._$HY`).
+    const inlineScript = hydrationScript.replace(/^<script>|<\/script>.*$/gs, "");
+    new Function(inlineScript)();
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    assert.ok(container.querySelector("[data-glow-tour-root]"));
+
+    const [{ hydrate }, { createGlowTour, GlowTour }] = await Promise.all([
+      import("solid-js/web"),
+      import("./index"),
+    ]);
+    const tour = createGlowTour();
+    assert.doesNotThrow(() => {
+      // Calls the components as plain functions (matching how the SSR script above
+      // called them) rather than through `createComponent`: the extra component
+      // boundary `createComponent` introduces shifts Solid's hydration-key
+      // numbering, which would desync client hydration from the server markup.
+      hydrate(
+        () =>
+          GlowTour.Root({
+            tour,
+            get children() {
+              return GlowTour.Popover({ children: "Hello" });
+            },
+          }),
+        container,
+      );
+    });
+
+    // Hydration must attach to the existing server-rendered nodes rather than
+    // re-creating them.
+    assert.equal(container.querySelectorAll("[data-glow-tour-root]").length, 1);
+    assert.equal(container.querySelectorAll("[data-glow-tour-popover]").length, 1);
+    assert.equal(container.textContent, "Hello");
+
+    container.remove();
+  });
+
   test("passes the shared default-tour acceptance contract", async () => {
     const [{ createComponent }, { render }, { createGlowTour, DefaultTour }] = await Promise.all([
       import("solid-js"),

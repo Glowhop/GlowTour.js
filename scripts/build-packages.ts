@@ -1,6 +1,28 @@
-import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { buildPublishedManifest, type PackageManifest } from "./package-manifests";
+
+// Bun's automatic JSX transform selects `react/jsx-dev-runtime` (`jsxDEV`) unless NODE_ENV is
+// "production" *when the Bun process starts* — setting `process.env.NODE_ENV` mid-script has no
+// effect on the bundler. Without this, published dist output ships jsxDEV calls, which crash in
+// any consumer's production build (e.g. `next build`) that doesn't also provide the dev runtime.
+if (process.env.NODE_ENV !== "production") {
+  const result = Bun.spawnSync([process.execPath, ...process.argv.slice(1)], {
+    env: { ...process.env, NODE_ENV: "production" },
+    stdio: ["inherit", "inherit", "inherit"],
+  });
+  process.exit(result.exitCode ?? 1);
+}
 
 type PackageId = "core" | "react" | "vue" | "solid" | "vanilla";
 
@@ -87,19 +109,58 @@ async function buildPackage(build: PackageBuild) {
   rmSync(distDirectory, { force: true, recursive: true });
   mkdirSync(distDirectory, { recursive: true });
 
-  const result = await Bun.build({
-    entrypoints: build.entrypoints.map((entrypoint) => join(directory, entrypoint)),
-    external: [
-      ...externalPackages,
-      ...(build.preserveModules ? ["./*", "../*"] : []),
-    ],
-    format: "esm",
+  const external = [...externalPackages, ...(build.preserveModules ? ["./*", "../*"] : [])];
+  const sharedBuildOptions = {
+    external,
+    format: "esm" as const,
     ignoreDCEAnnotations: true,
+    // Explicit `jsx.development: false` — otherwise Bun's automatic JSX transform compiles to
+    // `react/jsx-dev-runtime`'s `jsxDEV()`, which crashes in any consumer's production build
+    // (e.g. `next build`) that doesn't also ship the dev runtime.
+    jsx: { development: false },
     outdir: distDirectory,
-    target: "browser",
-  });
-  if (!result.success) {
-    throw new Error(`Bun build failed for @glowhop/${build.id}-tour`);
+    target: "browser" as const,
+  };
+
+  if (build.preserveModules) {
+    const result = await Bun.build({
+      ...sharedBuildOptions,
+      entrypoints: build.entrypoints.map((entrypoint) => join(directory, entrypoint)),
+    });
+    if (!result.success) {
+      throw new Error(`Bun build failed for @glowhop/${build.id}-tour`);
+    }
+  } else {
+    // Bun.build (1.3.12) has a bug where bundling a package entrypoint that lives inside a
+    // package.json declaring an explicit "sideEffects" list (e.g. packages/vanilla, whose
+    // sideEffects only names "./dist/auto.js") drops the ENTIRE re-exported implementation of
+    // any *other* entrypoint in that package (e.g. src/index.ts), leaving only an empty,
+    // undeclared `export { ... };` shell — reproducible even with `ignoreDCEAnnotations: true`
+    // and `treeShaking: false`, so neither suppresses it. The bundler applies the package's
+    // consumer-facing sideEffects metadata to the entry file itself, as if nothing in *this*
+    // bundle uses its own top-level exports.
+    //
+    // Workaround: build each entrypoint through a synthetic `export * from "<entry>"` wrapper
+    // placed outside the package directory (a temp dir with no package.json of its own), so Bun
+    // never attributes the source package's sideEffects list to the file it's actually bundling.
+    // The wrapper itself doesn't appear in the output — the re-exported implementation does.
+    for (const entrypoint of build.entrypoints) {
+      const entryPath = join(directory, entrypoint);
+      const entryWithoutExtension = entryPath.replace(/\.tsx?$/, "");
+      const outputName = entrypoint.replace(/^src\//, "").replace(/\.tsx?$/, "");
+      const wrapperDirectory = mkdtempSync(join(tmpdir(), "glow-tour-build-"));
+      const wrapperFile = join(wrapperDirectory, "entry.ts");
+      writeFileSync(wrapperFile, `export * from ${JSON.stringify(entryWithoutExtension)};\n`);
+      const result = await Bun.build({
+        ...sharedBuildOptions,
+        entrypoints: [wrapperFile],
+        naming: { entry: `${outputName}.js` },
+      });
+      rmSync(wrapperDirectory, { recursive: true, force: true });
+      if (!result.success) {
+        throw new Error(`Bun build failed for @glowhop/${build.id}-tour (${entrypoint})`);
+      }
+    }
   }
 
   run("bunx", ["tsc", "--project", join("packages", build.id, "tsconfig.build.json")]);
