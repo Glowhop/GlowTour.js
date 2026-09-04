@@ -5,7 +5,7 @@ import {
   type TourViewCommands,
   type TourViewDriver,
 } from "../dom/tour-view-driver";
-import type { BeforeActionStepContext, StepContext } from "../types";
+import type { BeforeActionStepContext, StepContext, TourCurrentStep } from "../types";
 import type { ActiveStep } from "./active-step";
 import { createGlowTour as createPublicGlowTour, TourController } from "./tour-controller";
 
@@ -241,6 +241,273 @@ describe("instance-first TourController", () => {
     assert.equal(onStartCalls, 0);
     assert.equal(tour.state.get().status, "idle");
     assert.equal(tour.state.get().error, null);
+  });
+
+  describe("lifecycle hook context and abort", () => {
+    test("onStart receives the first step for a non-empty workflow and null for an empty workflow", async () => {
+      let receivedStep: TourCurrentStep<string> | null | undefined;
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onstart-step", {
+          onStart: (context) => {
+            receivedStep = context.step;
+          },
+        })
+        .step({ content: "content-one", target: targetResolver, title: "title-one" })
+        .build();
+
+      await tour.run(workflow);
+
+      assert.ok(receivedStep);
+      assert.equal(receivedStep?.initialProps.title, "title-one");
+      assert.equal(receivedStep?.target, null);
+
+      let receivedEmptyStep: TourCurrentStep<string> | null | undefined;
+      const emptyTour = createGlowTour<string>();
+      const emptyWorkflow = emptyTour
+        .create("onstart-empty", {
+          onStart: (context) => {
+            receivedEmptyStep = context.step;
+          },
+        })
+        .build();
+
+      await emptyTour.run(emptyWorkflow);
+
+      assert.equal(receivedEmptyStep, null);
+    });
+
+    test("aborting onStart prevents the tour from entering step 0", async () => {
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onstart-abort", {
+          onStart: (context) => {
+            context.abort();
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "title" })
+        .build();
+
+      await tour.run(workflow);
+
+      assert.equal(tour.state.get().status, "idle");
+      assert.equal(tour.state.get().currentStep, null);
+    });
+
+    test("aborting onStart for an empty workflow prevents onFinish from firing", async () => {
+      let finishCalls = 0;
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onstart-abort-empty", {
+          onFinish: () => {
+            finishCalls += 1;
+          },
+          onStart: (context) => {
+            context.abort();
+          },
+        })
+        .build();
+
+      await tour.run(workflow);
+
+      assert.equal(finishCalls, 0);
+      assert.notEqual(tour.state.get().status, "finished");
+    });
+
+    test("aborting onFinish for a zero-step workflow resets the controller to idle instead of wedging it", async () => {
+      let onFinishCalls = 0;
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onfinish-abort-empty", {
+          onFinish: (context) => {
+            onFinishCalls += 1;
+            context.abort();
+          },
+        })
+        .build();
+
+      await tour.run(workflow);
+
+      assert.equal(onFinishCalls, 1);
+      assert.equal(tour.state.get().status, "idle");
+      assert.equal(tour.state.get().currentStep, null);
+
+      let secondRunFinishes = 0;
+      const secondWorkflow = tour
+        .create("onfinish-abort-empty-followup", {
+          onFinish: () => {
+            secondRunFinishes += 1;
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "title" })
+        .build();
+
+      await tour.run(secondWorkflow);
+
+      assert.equal(tour.state.get().status, "active");
+      assert.equal(tour.state.get().name, "onfinish-abort-empty-followup");
+      assert.equal(tour.state.get().currentStep?.currentProps.title, "title");
+
+      await tour.advance();
+      assert.equal(secondRunFinishes, 1);
+      assert.equal(tour.state.get().status, "finished");
+    });
+
+    test("aborting onStart asynchronously (before the returned promise resolves) also blocks the start", async () => {
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onstart-abort-async", {
+          onStart: async (context) => {
+            context.abort();
+            await Promise.resolve();
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "title" })
+        .build();
+
+      await tour.run(workflow);
+
+      assert.equal(tour.state.get().status, "idle");
+      assert.equal(tour.state.get().currentStep, null);
+    });
+
+    test("non-aborting onStart preserves existing start behavior", async () => {
+      let calls = 0;
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onstart-noop", {
+          onStart: () => {
+            calls += 1;
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "title" })
+        .build();
+
+      await tour.run(workflow);
+
+      assert.equal(calls, 1);
+      assert.equal(tour.state.get().status, "active");
+      assert.equal(tour.state.get().currentStep?.currentProps.title, "title");
+    });
+
+    test("onCancel receives the actual current step and aborting prevents cancellation", async () => {
+      let receivedTitle: string | undefined;
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("oncancel-abort", {
+          cancellable: true,
+          onCancel: (context) => {
+            receivedTitle = context.step?.currentProps.title;
+            context.abort();
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "cancel-title" })
+        .build();
+
+      await tour.run(workflow);
+      await tour.cancel();
+
+      assert.equal(receivedTitle, "cancel-title");
+      assert.equal(tour.state.get().status, "active");
+      assert.equal(tour.state.get().currentStep?.currentProps.title, "cancel-title");
+    });
+
+    test("non-aborting onCancel preserves existing cancel behavior", async () => {
+      let calls = 0;
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("oncancel-noop", {
+          cancellable: true,
+          onCancel: () => {
+            calls += 1;
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "title" })
+        .build();
+
+      await tour.run(workflow);
+      await tour.cancel();
+
+      assert.equal(calls, 1);
+      assert.equal(tour.state.get().status, "cancelled");
+    });
+
+    test("aborting onCancel asynchronously also blocks cancellation", async () => {
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("oncancel-abort-async", {
+          cancellable: true,
+          onCancel: async (context) => {
+            context.abort();
+            await Promise.resolve();
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "title" })
+        .build();
+
+      await tour.run(workflow);
+      await tour.cancel();
+
+      assert.equal(tour.state.get().status, "active");
+    });
+
+    test("onFinish receives the last step and aborting prevents completion", async () => {
+      let receivedTitle: string | undefined;
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onfinish-abort", {
+          onFinish: (context) => {
+            receivedTitle = context.step?.currentProps.title;
+            context.abort();
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "last-title" })
+        .build();
+
+      await tour.run(workflow);
+      await tour.advance();
+
+      assert.equal(receivedTitle, "last-title");
+      assert.notEqual(tour.state.get().status, "finished");
+      assert.equal(tour.state.get().currentStep?.currentProps.title, "last-title");
+    });
+
+    test("non-aborting onFinish preserves existing finish behavior", async () => {
+      let calls = 0;
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onfinish-noop", {
+          onFinish: () => {
+            calls += 1;
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "title" })
+        .build();
+
+      await tour.run(workflow);
+      await tour.advance();
+
+      assert.equal(calls, 1);
+      assert.equal(tour.state.get().status, "finished");
+    });
+
+    test("aborting onFinish asynchronously also blocks completion", async () => {
+      const tour = createGlowTour<string>();
+      const workflow = tour
+        .create("onfinish-abort-async", {
+          onFinish: async (context) => {
+            context.abort();
+            await Promise.resolve();
+          },
+        })
+        .step({ content: "content", target: targetResolver, title: "title" })
+        .build();
+
+      await tour.run(workflow);
+      await tour.advance();
+
+      assert.notEqual(tour.state.get().status, "finished");
+    });
   });
 
   test("does not expose the removed updateCurrentStep command", () => {

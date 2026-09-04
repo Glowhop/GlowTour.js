@@ -19,6 +19,21 @@ import type { VueTourContent } from "../glow-tour.js";
 
 type Tour = CoreGlowTour<VueTourContent>;
 
+/** Pointer direction content configuration for custom pointer content. */
+export interface PointerDirectionContent {
+  readonly top?: VNodeChild;
+  readonly bottom?: VNodeChild;
+  readonly left?: VNodeChild;
+  readonly right?: VNodeChild;
+}
+
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
 interface TourContextValue {
   readonly binding: Ref<AdapterRootBinding | null>;
   readonly tour: Ref<Tour>;
@@ -51,6 +66,11 @@ function useTourSnapshot(tour: Ref<Tour>) {
   return snapshot;
 }
 
+/**
+ * Retrieves the current tour state snapshot.
+ * Must be called within a GlowTourRoot component context.
+ * @returns A reactive shallow ref containing the current tour state.
+ */
 export function useTour(): ShallowRef<TourState<VueTourContent>> {
   const { tour } = useTourContext();
   return useTourSnapshot(tour);
@@ -82,6 +102,7 @@ function isConsumerDisabled(attrs: Record<string, unknown>) {
   return attrs.disabled === "" || attrs.disabled === true;
 }
 
+/** Root container component for Glow Tour. Provides tour context and manages the root binding. */
 export const GlowTourRoot = /* @__PURE__ */ defineComponent({
   name: componentName("Root"),
   inheritAttrs: false,
@@ -141,6 +162,7 @@ export const GlowTourRoot = /* @__PURE__ */ defineComponent({
   },
 });
 
+/** Header component displaying the current step's title. */
 export const GlowTourHeader = /* @__PURE__ */ defineComponent({
   name: componentName("Header"),
   inheritAttrs: false,
@@ -156,6 +178,7 @@ export const GlowTourHeader = /* @__PURE__ */ defineComponent({
   },
 });
 
+/** Content component displaying the current step's content with live region. */
 export const GlowTourContent = /* @__PURE__ */ defineComponent({
   name: componentName("Content"),
   inheritAttrs: false,
@@ -176,6 +199,7 @@ export const GlowTourContent = /* @__PURE__ */ defineComponent({
   },
 });
 
+/** Footer component containing action buttons. Conditionally rendered based on tour step configuration. */
 export const GlowTourFooter = /* @__PURE__ */ defineComponent({
   name: componentName("Footer"),
   inheritAttrs: false,
@@ -188,6 +212,7 @@ export const GlowTourFooter = /* @__PURE__ */ defineComponent({
   },
 });
 
+/** Popover component containing the tour content with accessibility attributes. */
 export const GlowTourPopover = /* @__PURE__ */ defineComponent({
   name: componentName("Popover"),
   inheritAttrs: false,
@@ -214,22 +239,33 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
   },
 });
 
+/** Pointer component displaying directional indicators pointing to the target element. */
 export const GlowTourPointer = /* @__PURE__ */ defineComponent({
   name: componentName("Pointer"),
   inheritAttrs: false,
-  setup(_props, { attrs, slots }) {
+  props: {
+    directionContent: { default: undefined, type: Object as PropType<PointerDirectionContent> },
+  },
+  setup(props, { attrs }) {
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPointer(activeElement),
     );
-    return () =>
-      h(
+    return () => {
+      const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...props.directionContent };
+      return h(
         "div",
         mergeProps(attrs, { "aria-hidden": "true", "data-glow-tour-pointer": "", ref: element }),
-        h("div", { "data-glow-tour-pointer-content": "" }, slots.default?.()),
+        (
+          Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
+        ).map((direction) =>
+          h("div", { "data-glow-tour-pointer-direction": direction }, [content[direction]]),
+        ),
       );
+    };
   },
 });
 
+/** Overlay component rendering a clipped SVG mask highlighting the target element. */
 export const GlowTourOverlay = /* @__PURE__ */ defineComponent({
   name: componentName("Overlay"),
   inheritAttrs: false,
@@ -288,6 +324,7 @@ function trigger(
   };
 }
 
+/** Button component for navigating to the previous step in the tour. */
 export const GlowTourBackTrigger = /* @__PURE__ */ defineComponent({
   name: componentName("BackTrigger"),
   inheritAttrs: false,
@@ -308,6 +345,7 @@ export const GlowTourBackTrigger = /* @__PURE__ */ defineComponent({
   },
 });
 
+/** Button component for advancing to the next step or finishing the tour. */
 export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
   name: componentName("AdvanceTrigger"),
   inheritAttrs: false,
@@ -336,6 +374,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
   },
 });
 
+/** Button component for canceling/skipping the tour. */
 export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
   name: componentName("CancelTrigger"),
   inheritAttrs: false,

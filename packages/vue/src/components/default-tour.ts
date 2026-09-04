@@ -16,6 +16,7 @@ import {
 
 type Tour = CoreGlowTour<VueTourContent>;
 
+/** Default Glow Tour component that renders all tour UI elements in a standard layout. */
 export const GlowTourDefault = /* @__PURE__ */ defineComponent({
   name: "GlowTourDefault",
   props: {

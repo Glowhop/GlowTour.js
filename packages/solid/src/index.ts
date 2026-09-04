@@ -1,5 +1,6 @@
-export type { GlowTourOptions, StartOptions } from "@glowhop/core-tour";
+export type { GlowTourOptions } from "@glowhop/core-tour";
 export { DefaultTour, type DefaultTourProps } from "./components/default-tour";
+export type { PointerDirectionContent } from "./components/tour-components";
 export {
   AdvanceTrigger,
   BackTrigger,
@@ -16,6 +17,7 @@ export {
 } from "./components/tour-components";
 export type {
   SolidTourContent,
+  StartOptions,
   StepPropsStore,
   Tour,
   TourState,

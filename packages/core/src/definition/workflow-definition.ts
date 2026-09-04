@@ -98,7 +98,7 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
   });
 }
 
-function freezeOptions(options: StartOptions): ReadonlyStartOptions {
+function freezeOptions<T>(options: StartOptions<T>): ReadonlyStartOptions<T> {
   return freezeRecord({
     ...options,
     overlay: freezeOverlay(options.overlay),
@@ -113,6 +113,11 @@ function freezeOptions(options: StartOptions): ReadonlyStartOptions {
   });
 }
 
+/**
+ * Creates a mutable copy of a workflow step definition.
+ * @param definition The step definition to clone.
+ * @returns A mutable copy that can be further modified.
+ */
 export function cloneWorkflowStepDraft<T>(
   definition: WorkflowStepDefinition<T> | WorkflowStepDraft<T>,
 ): WorkflowStepDraft<T> {
@@ -124,9 +129,16 @@ export function cloneWorkflowStepDraft<T>(
   };
 }
 
+/**
+ * Creates a frozen workflow definition from a name, options, and step drafts.
+ * @param name The workflow name.
+ * @param options Tour start options and lifecycle hooks.
+ * @param drafts The workflow steps.
+ * @returns A frozen workflow definition ready to run.
+ */
 export function createWorkflowDefinition<T>(
   name: string,
-  options: StartOptions,
+  options: StartOptions<T>,
   drafts: readonly WorkflowStepDraft<T>[],
 ): WorkflowDefinition<T> {
   return freezeRecord({

@@ -19,11 +19,12 @@ export class ActiveStep<T> {
   readonly props: StepPropsStore<T>;
   readonly behavior;
   readonly animated: boolean | undefined;
+  readonly allowScroll: boolean;
   target: HTMLElement | null = null;
 
   constructor(
     readonly definition: WorkflowStepDefinition<T>,
-    defaults: ReadonlyStartOptions,
+    defaults: ReadonlyStartOptions<T>,
     reportSubscriberError: (error: unknown) => void = () => {},
     readonly path = "steps[0]",
     private readonly rootDocument?: Document,
@@ -39,6 +40,7 @@ export class ActiveStep<T> {
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
+    this.allowScroll = defaults.allowScroll === true;
   }
 
   reset() {

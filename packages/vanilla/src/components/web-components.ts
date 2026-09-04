@@ -2,6 +2,7 @@ import type { ReadonlyStepProps, TourState } from "@glowhop/core-tour";
 import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import type { VanillaGlowTour, VanillaTourContent } from "../glow-tour";
 
+/** Names of all Glow Tour custom elements. */
 export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-root",
   "glow-tour-header",
@@ -15,13 +16,42 @@ export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-overlay",
 ] as const;
 
+/** The root custom element that contains all tour UI. */
 export interface GlowTourRootElement extends HTMLElement {
+  /** The tour controller instance. */
   tour: VanillaGlowTour | null;
+  /** Optional prefix for internal element IDs. */
   idPrefix: string | undefined;
 }
 
+type PointerDirection = "top" | "bottom" | "left" | "right";
+type PointerDirectionValue = string | Node;
+
+/** Content displayed in the pointer indicator for each direction. */
+export interface PointerDirectionContent {
+  readonly top?: PointerDirectionValue;
+  readonly bottom?: PointerDirectionValue;
+  readonly left?: PointerDirectionValue;
+  readonly right?: PointerDirectionValue;
+}
+
+/** The pointer/indicator custom element that visually highlights the target. */
+export interface GlowTourPointerElement extends HTMLElement {
+  /** Directional content for the pointer (emoji or custom content). */
+  directionContent: PointerDirectionContent | undefined;
+}
+
+const POINTER_DIRECTIONS: readonly PointerDirection[] = ["top", "bottom", "left", "right"];
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
 declare global {
   interface HTMLElementTagNameMap {
+    "glow-tour-pointer": GlowTourPointerElement;
     "glow-tour-root": GlowTourRootElement;
   }
 }
@@ -287,6 +317,14 @@ function effectiveId(root: HTMLElement, selector: string, fallback: string) {
   return element?.id || fallback;
 }
 
+/**
+ * Registers Glow Tour custom elements with the browser.
+ *
+ * Must be called before creating tour UI elements. Alternatively, import
+ * `@glowhop/vanilla-tour/auto` which calls this automatically on load.
+ *
+ * Safe to call multiple times; re-registration with different constructors will throw.
+ */
 export function registerGlowTourElements() {
   const registry = customElementRegistry();
   if (!registry) return;
@@ -497,17 +535,36 @@ export function registerGlowTourElements() {
     }
   }
 
-  class GlowTourPointer extends ScopedElement {
+  class GlowTourPointer extends ScopedElement implements GlowTourPointerElement {
+    private directionContentValue: PointerDirectionContent | undefined;
+
+    get directionContent() {
+      return this.directionContentValue;
+    }
+
+    set directionContent(value: PointerDirectionContent | undefined) {
+      this.directionContentValue = value;
+      if (this.isConnected) this.renderDirections();
+    }
+
     connectedCallback() {
       this.setAttribute("aria-hidden", "true");
       this.setAttribute("data-glow-tour-pointer", "");
-      if (!this.querySelector(":scope > [data-glow-tour-pointer-content]")) {
-        const content = document.createElement("div");
-        content.setAttribute("data-glow-tour-pointer-content", "");
-        content.append(...Array.from(this.childNodes));
-        this.replaceChildren(content);
-      }
+      this.renderDirections();
       super.connectedCallback();
+    }
+
+    private renderDirections() {
+      this.replaceChildren();
+      const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...this.directionContentValue };
+      for (const direction of POINTER_DIRECTIONS) {
+        const node = document.createElement("div");
+        node.setAttribute("data-glow-tour-pointer-direction", direction);
+        const value = content[direction];
+        if (typeof value === "string") node.textContent = value;
+        else node.append(value);
+        this.appendChild(node);
+      }
     }
 
     protected override bind(context: RootContext) {

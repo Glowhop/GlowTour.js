@@ -26,6 +26,26 @@ import type { AngularTourContent } from "../glow-tour";
 
 type Tour = CoreGlowTour<AngularTourContent>;
 
+/** Pointer direction content value type: string or TemplateRef. */
+export type PointerDirectionValue = string | TemplateRef<unknown>;
+
+/** Pointer direction content configuration for custom pointer content. */
+export interface PointerDirectionContent {
+  readonly top?: PointerDirectionValue;
+  readonly bottom?: PointerDirectionValue;
+  readonly left?: PointerDirectionValue;
+  readonly right?: PointerDirectionValue;
+}
+
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
+const POINTER_DIRECTIONS = ["top", "bottom", "left", "right"] as const;
+
 interface ActiveRootBinding {
   readonly binding: AdapterRootBinding;
   readonly idPrefix: string | undefined;
@@ -66,6 +86,11 @@ function useTourScope() {
   return scope;
 }
 
+/**
+ * Injects the tour state signal into a component.
+ * Must be called within a GlowTourRoot component context.
+ * @returns A signal containing the current tour state or null.
+ */
 export function injectGlowTour(): Signal<TourState<AngularTourContent> | null> {
   return useTourScope().state;
 }
@@ -84,8 +109,11 @@ abstract class GlowTourReactiveComponent {
   providers: [GlowTourScope, { provide: GLOW_TOUR_SCOPE, useExisting: GlowTourScope }],
   template: "<ng-content />",
 })
+/** Root container component for Glow Tour. Provides tour context and manages the root binding. */
 export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
+  /** The tour controller instance to display. */
   @Input({ required: true }) tour!: Tour;
+  /** Optional prefix for generated HTML IDs. */
   @Input() idPrefix?: string;
 
   private readonly element = inject(ElementRef<HTMLElement>);
@@ -157,6 +185,7 @@ export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
     </header>
   `,
 })
+/** Header component displaying the current step's title. */
 export class GlowTourHeader extends GlowTourReactiveComponent {
   readonly titleTemplate = computed(() => {
     const title = this.step()?.title;
@@ -182,6 +211,7 @@ export class GlowTourHeader extends GlowTourReactiveComponent {
     </div>
   `,
 })
+/** Content component displaying the current step's content with live region. */
 export class GlowTourContent extends GlowTourReactiveComponent {
   readonly contentTemplate = computed(() => {
     const content = this.step()?.content;
@@ -198,6 +228,7 @@ export class GlowTourContent extends GlowTourReactiveComponent {
   standalone: true,
   template: `@if (!step()?.popover?.hideFooter) { <footer data-glow-tour-footer><ng-content /></footer> }`,
 })
+/** Footer component containing action buttons. Conditionally rendered based on tour step configuration. */
 export class GlowTourFooter extends GlowTourReactiveComponent {}
 
 @Directive()
@@ -232,6 +263,7 @@ abstract class GlowTourBoundElement<T extends Element> {
     ><ng-content /></section>
   `,
 })
+/** Popover component containing the tour content with accessibility attributes. */
 export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<HTMLElement>;
 
@@ -243,12 +275,40 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
 @Component({
   selector: "glow-tour-pointer",
   standalone: true,
+  imports: [NgTemplateOutlet],
   template: `
-    <div #tourElement data-glow-tour-pointer aria-hidden="true"><div data-glow-tour-pointer-content><ng-content /></div></div>
+    <div #tourElement data-glow-tour-pointer aria-hidden="true">
+      @for (direction of directions; track direction) {
+        <div [attr.data-glow-tour-pointer-direction]="direction">
+          @if (asTemplate(content()[direction]); as template) {
+            <ng-container [ngTemplateOutlet]="template" />
+          } @else {
+            {{ content()[direction] }}
+          }
+        </div>
+      }
+    </div>
   `,
 })
+/** Pointer component displaying directional indicators pointing to the target element. */
 export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<HTMLElement>;
+  private readonly directionContentValue = signal<PointerDirectionContent | undefined>(undefined);
+
+  protected readonly directions = POINTER_DIRECTIONS;
+  readonly content = computed(() => ({
+    ...DEFAULT_POINTER_DIRECTION_CONTENT,
+    ...this.directionContentValue(),
+  }));
+
+  /** Optional custom content for each pointer direction. */
+  @Input() set directionContent(value: PointerDirectionContent | undefined) {
+    this.directionContentValue.set(value);
+  }
+
+  protected asTemplate(value: PointerDirectionValue): TemplateRef<unknown> | null {
+    return value instanceof TemplateRef ? value : null;
+  }
 
   ngOnInit() {
     this.bind(this.element.nativeElement, (binding, element) => binding.bindPointer(element));
@@ -264,6 +324,7 @@ export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implement
     </svg>
   `,
 })
+/** Overlay component rendering a clipped SVG mask highlighting the target element. */
 export class GlowTourOverlay extends GlowTourBoundElement<SVGSVGElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<SVGSVGElement>;
 
@@ -307,15 +368,19 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
     }
   `,
 })
+/** Button component for navigating to the previous step in the tour. */
 export class GlowTourBackTrigger extends GlowTourTrigger {
   private readonly backLabelValue = signal<string | undefined>(undefined);
 
+  /** Optional aria-label for the back button. */
   @Input() set ariaLabel(value: string | undefined) {
     this.setAriaLabel(value);
   }
+  /** Optional label text for the back button. */
   @Input() set backLabel(value: string | undefined) {
     this.backLabelValue.set(value);
   }
+  /** Whether the button is disabled. */
   @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
     this.setDisabled(value);
   }
@@ -346,19 +411,24 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
     }
   `,
 })
+/** Button component for advancing to the next step or finishing the tour. */
 export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   private readonly finishLabelValue = signal<string | undefined>(undefined);
   private readonly advanceLabelValue = signal<string | undefined>(undefined);
 
+  /** Optional aria-label for the advance button. */
   @Input() set ariaLabel(value: string | undefined) {
     this.setAriaLabel(value);
   }
+  /** Whether the button is disabled. */
   @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
     this.setDisabled(value);
   }
+  /** Optional label text for the finish step. */
   @Input() set finishLabel(value: string | undefined) {
     this.finishLabelValue.set(value);
   }
+  /** Optional label text for advancing to the next step. */
   @Input() set advanceLabel(value: string | undefined) {
     this.advanceLabelValue.set(value);
   }
@@ -393,10 +463,13 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
     }
   `,
 })
+/** Button component for canceling/skipping the tour. */
 export class GlowTourCancelTrigger extends GlowTourTrigger {
+  /** Optional aria-label for the cancel button. */
   @Input() set ariaLabel(value: string | undefined) {
     this.setAriaLabel(value);
   }
+  /** Whether the button is disabled. */
   @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
     this.setDisabled(value);
   }

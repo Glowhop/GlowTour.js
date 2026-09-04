@@ -31,9 +31,25 @@ type ElementProps = ParentProps<
 >;
 type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = ParentProps<Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "ref">>;
-type PointerProps = ParentProps<
-  Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden" | "ref"> & { as?: ValidComponent }
->;
+/** Content displayed in the pointer indicator for each direction. */
+export interface PointerDirectionContent {
+  readonly top?: JSX.Element;
+  readonly bottom?: JSX.Element;
+  readonly left?: JSX.Element;
+  readonly right?: JSX.Element;
+}
+
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
+type PointerProps = Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
+  as?: ValidComponent;
+  directionContent?: PointerDirectionContent;
+};
 type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
   children?: (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => JSX.Element;
   disabled?: boolean;
@@ -69,6 +85,12 @@ function useTourSnapshot(tour: () => Tour) {
   return snapshot;
 }
 
+/**
+ * Solid hook that returns the current tour state.
+ *
+ * Must be called inside a component rendered within `<GlowTour.Root>`.
+ * @returns The current tour state.
+ */
 export function useTour(): Accessor<TourState<SolidTourContent>> {
   return useTourSnapshot(useTourContext().tour);
 }
@@ -91,6 +113,14 @@ function currentStep(snapshot: TourState<SolidTourContent>) {
   return snapshot.currentStep?.currentProps ?? null;
 }
 
+/**
+ * Root component that must wrap all other tour components.
+ *
+ * Manages tour initialization and connects the tour instance to the DOM.
+ * All other tour components (Overlay, Pointer, Popover, etc.) must be rendered inside this root.
+ * @param props Component props including the tour instance and optional ID prefix.
+ * @returns The root provider component.
+ */
 export function Root(props: RootProps): JSX.Element {
   const [local, other] = splitProps(props, ["children", "idPrefix", "tour"]);
   const [element, setElement] = createSignal<HTMLElement | null>(null);
@@ -135,6 +165,14 @@ export function Root(props: RootProps): JSX.Element {
   });
 }
 
+/**
+ * The popover container that displays step content.
+ *
+ * Renders as a `<section>` by default, but can be customized via the `as` prop.
+ * Should contain Header, Content, and Footer components.
+ * @param props HTML attributes and the `as` prop for customizing the container element.
+ * @returns The popover container.
+ */
 export function Popover(props: ElementProps): JSX.Element {
   const context = useTourContext();
   const [local, other] = splitProps(props, ["as", "children"]);
@@ -166,6 +204,11 @@ export function Popover(props: ElementProps): JSX.Element {
   );
 }
 
+/**
+ * Displays the title of the current step.
+ * @param props HTML attributes.
+ * @returns The step title header.
+ */
 export function Header(props: ContentProps): JSX.Element {
   const context = useTourContext();
   const snapshot = useTourSnapshot(context.tour);
@@ -184,6 +227,11 @@ export function Header(props: ContentProps): JSX.Element {
   );
 }
 
+/**
+ * Displays the body content of the current step.
+ * @param props HTML attributes.
+ * @returns The step content area.
+ */
 export function Content(props: ContentProps): JSX.Element {
   const context = useTourContext();
   const snapshot = useTourSnapshot(context.tour);
@@ -203,6 +251,12 @@ export function Content(props: ContentProps): JSX.Element {
   );
 }
 
+/**
+ * The footer section of the popover, typically containing navigation buttons.
+ * Automatically hidden if configured via `popover.hideFooter`.
+ * @param props HTML attributes and children.
+ * @returns The footer container, or null if hidden.
+ */
 export function Footer(props: ElementProps): JSX.Element {
   const context = useTourContext();
   const snapshot = useTourSnapshot(context.tour);
@@ -222,6 +276,12 @@ export function Footer(props: ElementProps): JSX.Element {
   });
 }
 
+/**
+ * The dimmed overlay backdrop that highlights the target element.
+ * Renders as an SVG with a cutout around the target.
+ * @param props SVG attributes.
+ * @returns The overlay SVG element.
+ */
 export function Overlay(props: OverlayProps): JSX.Element {
   const [local, other] = splitProps(props, ["children", "viewBox"]);
   const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
@@ -250,16 +310,27 @@ export function Overlay(props: OverlayProps): JSX.Element {
   );
 }
 
+/**
+ * A pointer/indicator that visually highlights the target element.
+ * Displays directional content (emoji or custom content) based on pointer position.
+ * Renders as a `<div>` by default, but can be customized via the `as` prop.
+ * @param props HTML attributes, the `as` prop for customizing the container, and `directionContent`.
+ * @returns The pointer indicator element.
+ */
 export function Pointer(props: PointerProps): JSX.Element {
-  const [local, other] = splitProps(props, ["as", "children"]);
+  const [local, other] = splitProps(props, ["as", "directionContent"]);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
-  const content = createComponent(Dynamic, {
-    component: "div",
-    "data-glow-tour-pointer-content": "",
-    get children() {
-      return local.children;
-    },
-  });
+  const directions = (
+    Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
+  ).map((direction) =>
+    createComponent(Dynamic, {
+      component: "div",
+      "data-glow-tour-pointer-direction": direction,
+      get children() {
+        return local.directionContent?.[direction] ?? DEFAULT_POINTER_DIRECTION_CONTENT[direction];
+      },
+    }),
+  );
 
   return createComponent(
     Dynamic,
@@ -270,7 +341,7 @@ export function Pointer(props: PointerProps): JSX.Element {
       },
       "data-glow-tour-pointer": "",
       ref,
-      children: content,
+      children: directions,
     }),
   );
 }
@@ -327,6 +398,12 @@ function Trigger(
   );
 }
 
+/**
+ * Button that navigates to the previous step.
+ * Automatically hidden or disabled based on tour state.
+ * @param props Button props and an optional `backLabel` for the button text.
+ * @returns The back button, or null if hidden.
+ */
 export function BackTrigger(props: BackTriggerProps): JSX.Element {
   const context = useTourContext();
   const snapshot = useTourSnapshot(context.tour);
@@ -352,6 +429,12 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
   });
 }
 
+/**
+ * Button that navigates to the next step, or finishes the tour on the last step.
+ * Automatically hidden or disabled based on tour state.
+ * @param props Button props, an optional `advanceLabel` for non-final steps, and `finishLabel` for the final step.
+ * @returns The advance button, or null if hidden.
+ */
 export function AdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
   const context = useTourContext();
   const snapshot = useTourSnapshot(context.tour);
@@ -380,6 +463,12 @@ export function AdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
   });
 }
 
+/**
+ * Button that cancels the tour.
+ * Automatically hidden if the tour is not cancellable.
+ * @param props Button props.
+ * @returns The cancel button, or null if the tour cannot be cancelled.
+ */
 export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
   const context = useTourContext();
   const snapshot = useTourSnapshot(context.tour);

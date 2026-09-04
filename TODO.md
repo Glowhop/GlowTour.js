@@ -62,11 +62,10 @@ ARIA de base déjà en place par adaptateur (`role="dialog"`, `aria-labelledby`/
 
 ## API & DX (inspiré Driver.js)
 
-- [ ] Ajouter une option `allowScroll`, `false` par défaut, qui empêche le scroll de la page pendant le tour
-- [ ] Ajouter une option `preventCancel: () => {}` (signature à confirmer) permettant d'intercepter/bloquer conditionnellement une tentative d'annulation du tour
-- [ ] Étudier l'API de [driver.js](https://driverjs.com/docs/api) et ajouter les méthodes/APIs manquantes pertinentes à `packages/core`
-- [ ] Reprendre le flow d'instanciation inspiré de [driver.js basic usage](https://driverjs.com/docs/basic-usage) : `workflow.run()` plutôt que `tour.run(workflow)`
-
+- [x] Ajouter une option `allowScroll`, `false` par défaut, qui empêche le scroll de la page pendant le tour
+- [x] changer la signature de `StartOptions.onCancel: () => {}` afin de permettre d'intercepter/bloquer conditionnellement une tentative d'annulation du tour
+- [x] Ajouter une option `StepBehavior.overlayClick` `= "none" | "advance" | "cancel" défault "none"`
+- [x] Simplifier la logique du pointer, sortir le placement de `default.css` : le `children` de `Pointer`/`GlowTourPointer`/`glow-tour-pointer` est remplacé par un paramètre `directionContent` (`{ top, bottom, left, right }`, typé par framework) ; défaut `{ top: 👆, bottom: 👇, left: 👈, right: 👉 }` partout. Le core (`packages/core/src/elements/pointer.ts`) bascule lui-même l'affichage du bon glyphe via `data-glow-tour-pointer-direction`, sans plus passer par une rotation CSS dans `default.css`.
 ## Publication & mesurabilité
 
 - [ ] Premier release public `0.1.0` via Changesets sur npm pour tous les packages `@glowhop/*`

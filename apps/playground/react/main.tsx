@@ -21,7 +21,7 @@ const reactRoot = createRoot(lab.rendererRoot);
 reactRoot.render(
   <GlowTour.Root tour={tour}>
     <GlowTour.Overlay />
-    <GlowTour.Pointer>☝️</GlowTour.Pointer>
+    <GlowTour.Pointer />
     <GlowTour.Popover>
       <GlowTour.Header />
       <GlowTour.Content />

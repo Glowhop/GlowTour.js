@@ -32,7 +32,7 @@ const app = createApp({
   render: () =>
     h(GlowTourRoot, { tour }, () => [
       h(GlowTourOverlay),
-      h(GlowTourPointer, null, () => "☝️"),
+      h(GlowTourPointer),
       h(GlowTourPopover, null, () => [
         h(GlowTourHeader),
         h(GlowTourContent),

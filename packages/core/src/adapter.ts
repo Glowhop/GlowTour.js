@@ -9,6 +9,19 @@ import type { GlowTour } from "./types";
 
 export type { AdapterRootBinding, AdapterRootIds };
 
+/**
+ * Connects a Glow Tour instance to a DOM root element.
+ *
+ * Framework adapters call this to initialize tour UI bindings. It must be called
+ * with a valid GlowTour instance created via createGlowTour.
+ *
+ * @param tour The GlowTour instance.
+ * @param options Configuration for the adapter root binding.
+ * @param options.root The DOM element where tour UI will be rendered.
+ * @param options.idPrefix Optional prefix for internal element IDs.
+ * @returns The adapter root binding for managing the tour UI.
+ * @throws Throws if the tour is not a valid GlowTour instance.
+ */
 export function connectGlowTourRoot<T>(
   tour: GlowTour<T>,
   options: { readonly idPrefix?: string; readonly root: HTMLElement },

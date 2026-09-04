@@ -31,6 +31,15 @@ class MockEvent {
   preventDefault() {
     this.defaultPrevented = true;
   }
+  composedPath(): MockNode[] {
+    const path: MockNode[] = [];
+    let node: MockNode | null = this.target;
+    while (node) {
+      path.push(node);
+      node = node.parent;
+    }
+    return path;
+  }
 }
 class MockKeyboardEvent extends MockEvent {
   altKey = false;
@@ -423,6 +432,7 @@ function createStep(
     animated?: boolean;
     cancellable?: boolean;
     advanceShortcuts?: readonly string[];
+    overlayClick?: "none" | "advance" | "cancel";
   } = {},
 ) {
   const workflow = new WorkflowBuilder<string>("dom-driver", {
@@ -433,6 +443,7 @@ function createStep(
     },
   })
     .step({
+      behavior: options.overlayClick ? { overlayClick: options.overlayClick } : undefined,
       content: "content",
       popover: options.advanceShortcuts
         ? { keyboardShortcuts: { advance: options.advanceShortcuts } }
@@ -1139,6 +1150,102 @@ describe("DomTourViewDriver", () => {
       assert.deepEqual(commandState.calls, [command]);
     });
   }
+  test('advances when overlayClick is "advance" and the click misses tour-owned elements', async () => {
+    const { calls, driver } = installDriver(),
+      target = createTarget(),
+      step = createStep({ overlayClick: "advance" });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    window.dispatchEvent(new MockEvent("click", { target: document.body }));
+    assert.deepEqual(calls, ["advance"]);
+  });
+  test('cancels when overlayClick is "cancel" and the click misses tour-owned elements', async () => {
+    const { calls, driver } = installDriver(),
+      target = createTarget(),
+      step = createStep({ overlayClick: "cancel" });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    window.dispatchEvent(new MockEvent("click", { target: document.body }));
+    assert.deepEqual(calls, ["cancel"]);
+  });
+  test("ignores an overlay click landing on the target element", async () => {
+    const { calls, driver } = installDriver(),
+      target = createTarget(),
+      step = createStep({ overlayClick: "cancel" });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    window.dispatchEvent(new MockEvent("click", { target }));
+    assert.deepEqual(calls, []);
+  });
+  test("ignores an overlay click landing on the popover or its descendants", async () => {
+    const { calls, driver, elements } = installDriver(),
+      target = createTarget(),
+      step = createStep({ overlayClick: "cancel" }),
+      descendant = document.createElement("span");
+    elements.popover.append(descendant);
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    window.dispatchEvent(new MockEvent("click", { target: descendant }));
+    assert.deepEqual(calls, []);
+  });
+  test("ignores overlay clicks entirely when allowInteraction is true", async () => {
+    const { calls, driver } = installDriver(),
+      target = createTarget(),
+      step = createStep({ allowInteraction: true, overlayClick: "cancel" });
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    window.dispatchEvent(new MockEvent("click", { target: document.body }));
+    assert.deepEqual(calls, []);
+  });
+  test("does nothing on overlay clicks when overlayClick is unset", async () => {
+    const { calls, driver } = installDriver(),
+      target = createTarget(),
+      step = createStep();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+
+    window.dispatchEvent(new MockEvent("click", { target: document.body }));
+    assert.deepEqual(calls, []);
+  });
+  test('respects cancellable: false when overlayClick is "cancel"', async () => {
+    const { driver } = installDriver(),
+      target = createTarget(),
+      tour = new TourController(driver);
+    const denied = tour
+      .create("overlay-click-denied", { cancellable: false })
+      .step({
+        behavior: { overlayClick: "cancel" },
+        content: "content",
+        target: () => target as unknown as HTMLElement,
+        title: "title",
+      })
+      .build();
+    await tour.run(denied);
+
+    window.dispatchEvent(new MockEvent("click", { target: document.body }));
+    await new Promise<void>((resolve) => setTimeout(resolve));
+    assert.equal(tour.state.get().status, "active");
+  });
+  test("does not leave a stale overlay click listener attached after a step transition", async () => {
+    const { calls, driver } = installDriver(),
+      targetA = createTarget(),
+      targetB = createTarget(),
+      stepA = createStep({ overlayClick: "cancel" }),
+      stepB = createStep({ overlayClick: "advance" });
+    stepA.target = targetA as unknown as HTMLElement;
+    stepB.target = targetB as unknown as HTMLElement;
+    await driver.show(stepA, "advance", new AbortController().signal);
+    await driver.show(stepB, "advance", new AbortController().signal);
+
+    assert.equal(window.listeners.get("click")?.size ?? 0, 1);
+    window.dispatchEvent(new MockEvent("click", { target: document.body }));
+    assert.deepEqual(calls, ["advance"]);
+  });
   test("blocks inactive commands without visually disabling controls", async () => {
     const commandState = createToggleableCommands();
     const driver = new DomTourViewDriver<string>(commandState.commands);

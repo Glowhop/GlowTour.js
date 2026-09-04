@@ -15,8 +15,24 @@ type ElementProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref"> & {
 };
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = Omit<React.SVGAttributes<SVGSVGElement>, "ref">;
-type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "ref"> & {
+/** Content displayed in the pointer indicator for each direction. */
+export interface PointerDirectionContent {
+  readonly top?: React.ReactNode;
+  readonly bottom?: React.ReactNode;
+  readonly left?: React.ReactNode;
+  readonly right?: React.ReactNode;
+}
+
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
+type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
   as?: React.ElementType;
+  directionContent?: PointerDirectionContent;
 };
 type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
   children?:
@@ -86,6 +102,14 @@ function useStep(snapshot: TourState<ReactTourContent>) {
   return snapshot.currentStep?.currentProps;
 }
 
+/**
+ * Root component that must wrap all other tour components.
+ *
+ * Manages tour initialization and connects the tour instance to the DOM.
+ * All other tour components (Overlay, Pointer, Popover, etc.) must be rendered inside this root.
+ * @param props Component props including the tour instance and optional ID prefix.
+ * @returns The root provider component.
+ */
 export function Root({ children, idPrefix, tour, ...props }: RootProps) {
   const mounted = React.useRef<{ binding: AdapterRootBinding; element: HTMLDivElement } | null>(
     null,
@@ -124,6 +148,14 @@ export function Root({ children, idPrefix, tour, ...props }: RootProps) {
   );
 }
 
+/**
+ * The popover container that displays step content.
+ *
+ * Renders as a `<section>` by default, but can be customized via the `as` prop.
+ * Should contain Header, Content, and Footer components.
+ * @param props HTML attributes and the `as` prop for customizing the container element.
+ * @returns The popover container.
+ */
 export function Popover({ as: Component = "section", ...props }: ElementProps) {
   const { binding } = useTourContext();
   const ref = useBoundElement<HTMLElement>((activeBinding, element) =>
@@ -144,6 +176,11 @@ export function Popover({ as: Component = "section", ...props }: ElementProps) {
   );
 }
 
+/**
+ * Displays the title of the current step.
+ * @param props HTML attributes.
+ * @returns The step title header.
+ */
 export function Header(props: ContentProps) {
   const { binding, tour } = useTourContext();
   const step = useStep(useTourSnapshot(tour));
@@ -155,6 +192,11 @@ export function Header(props: ContentProps) {
   );
 }
 
+/**
+ * Displays the body content of the current step.
+ * @param props HTML attributes.
+ * @returns The step content area.
+ */
 export function Content(props: ContentProps) {
   const { binding, tour } = useTourContext();
   const step = useStep(useTourSnapshot(tour));
@@ -166,6 +208,12 @@ export function Content(props: ContentProps) {
   );
 }
 
+/**
+ * The footer section of the popover, typically containing navigation buttons.
+ * Automatically hidden if configured via `popover.hideFooter`.
+ * @param props HTML attributes and children.
+ * @returns The footer container, or null if hidden.
+ */
 export function Footer({ children, ...props }: ElementProps) {
   const { tour } = useTourContext();
   const step = useStep(useTourSnapshot(tour));
@@ -178,6 +226,12 @@ export function Footer({ children, ...props }: ElementProps) {
   );
 }
 
+/**
+ * The dimmed overlay backdrop that highlights the target element.
+ * Renders as an SVG with a cutout around the target.
+ * @param props SVG attributes.
+ * @returns The overlay SVG element.
+ */
 export function Overlay({ children, viewBox = "0 0 0 0", ...props }: OverlayProps) {
   const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
 
@@ -197,12 +251,26 @@ export function Overlay({ children, viewBox = "0 0 0 0", ...props }: OverlayProp
   );
 }
 
-export function Pointer({ as: Component = "div", children, ...props }: PointerProps) {
+/**
+ * A pointer/indicator that visually highlights the target element.
+ * Displays directional content (emoji or custom content) based on pointer position.
+ * Renders as a `<div>` by default, but can be customized via the `as` prop.
+ * @param props HTML attributes, the `as` prop for customizing the container, and `directionContent`.
+ * @returns The pointer indicator element.
+ */
+export function Pointer({ as: Component = "div", directionContent, ...props }: PointerProps) {
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
+  const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...directionContent };
 
   return (
     <Component {...props} aria-hidden="true" data-glow-tour-pointer ref={ref}>
-      <div data-glow-tour-pointer-content>{children}</div>
+      {(Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>).map(
+        (direction) => (
+          <div data-glow-tour-pointer-direction={direction} key={direction}>
+            {content[direction]}
+          </div>
+        ),
+      )}
     </Component>
   );
 }
@@ -253,6 +321,12 @@ function Trigger({
   return <button {...buttonProps}>{label}</button>;
 }
 
+/**
+ * Button that navigates to the previous step.
+ * Automatically hidden or disabled based on tour state.
+ * @param props Button props and an optional `backLabel` for the button text.
+ * @returns The back button, or null if hidden.
+ */
 export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
@@ -270,6 +344,12 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   );
 }
 
+/**
+ * Button that navigates to the next step, or finishes the tour on the last step.
+ * Automatically hidden or disabled based on tour state.
+ * @param props Button props, an optional `advanceLabel` for non-final steps, and `finishLabel` for the final step.
+ * @returns The advance button, or null if hidden.
+ */
 export function AdvanceTrigger({ finishLabel, advanceLabel, ...props }: AdvanceTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
@@ -288,6 +368,12 @@ export function AdvanceTrigger({ finishLabel, advanceLabel, ...props }: AdvanceT
   );
 }
 
+/**
+ * Button that cancels the tour.
+ * Automatically hidden if the tour is not cancellable.
+ * @param props Button props.
+ * @returns The cancel button, or null if the tour cannot be cancelled.
+ */
 export function CancelTrigger(props: CancelTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
@@ -297,6 +383,12 @@ export function CancelTrigger(props: CancelTriggerProps) {
   );
 }
 
+/**
+ * React hook that returns the current tour state.
+ *
+ * Must be called inside a component rendered within `<GlowTour.Root>`.
+ * @returns The current tour state.
+ */
 export function useTour(): TourState<ReactTourContent> {
   const { tour } = useTourContext();
   return useTourSnapshot(tour);
