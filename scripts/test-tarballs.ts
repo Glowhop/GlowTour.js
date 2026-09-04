@@ -33,13 +33,13 @@ const packageNames: readonly PackageName[] = [
   "@glowhop/vanilla-tour",
 ];
 const consumerPeerDependencies: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-  "@glowhop/react-tour": { react: "^19.2.0" },
-  "@glowhop/vue-tour": { vue: "^3.5.0" },
+  "@glowhop/react-tour": { react: "^18.0.0 || ^19.0.0" },
+  "@glowhop/vue-tour": { vue: "^3.3.0" },
   "@glowhop/angular-tour": {
-    "@angular/common": "^18.2.0",
-    "@angular/core": "^18.2.0",
+    "@angular/common": "^18.0.0",
+    "@angular/core": "^18.0.0",
   },
-  "@glowhop/solid-tour": { "solid-js": "^1.9.14" },
+  "@glowhop/solid-tour": { "solid-js": "^1.8.0" },
 };
 
 function run(command: string, args: readonly string[], cwd = root): string {
