@@ -24,7 +24,7 @@ export class ActiveStep<T> {
 
   constructor(
     readonly definition: WorkflowStepDefinition<T>,
-    defaults: ReadonlyStartOptions,
+    defaults: ReadonlyStartOptions<T>,
     reportSubscriberError: (error: unknown) => void = () => {},
     readonly path = "steps[0]",
     private readonly rootDocument?: Document,

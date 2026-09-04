@@ -14,6 +14,7 @@ export type {
   GlowTour,
   GlowTourOptions,
   IndicatorOptions,
+  LifecycleHookContext,
   OverlayOptions,
   PopoverArrowOptions,
   PopoverOptions,

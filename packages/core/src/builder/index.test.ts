@@ -52,7 +52,7 @@ const removedStepScroll: StepParameters<string> = {
   // @ts-expect-error Scroll configuration now belongs to behavior.scroll.
   scroll: { behavior: "smooth" },
 };
-const removedStartScroll: StartOptions = {
+const removedStartScroll: StartOptions<string> = {
   // @ts-expect-error Scroll configuration now belongs to behavior.scroll.
   scroll: { behavior: "smooth" },
 };

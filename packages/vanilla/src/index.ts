@@ -1,4 +1,4 @@
-export type { GlowTourOptions, StartOptions } from "@glowhop/core-tour";
+export type { GlowTourOptions } from "@glowhop/core-tour";
 export {
   type CreateDefaultTourElementOptions,
   createDefaultTourElement,
@@ -10,6 +10,7 @@ export type {
 } from "./components/web-components";
 export { GLOW_TOUR_ELEMENT_NAMES, registerGlowTourElements } from "./components/web-components";
 export type {
+  StartOptions,
   StepPropsStore,
   Tour,
   TourState,

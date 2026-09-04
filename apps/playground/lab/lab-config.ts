@@ -46,7 +46,7 @@ export const LAB_CONFIG = {
         scroll: { behavior: "smooth", block: "center", inline: "nearest" },
         targetTimeout: 3000,
       },
-    } satisfies StartOptions,
+    } satisfies StartOptions<unknown>,
   },
   selectors: {
     start: "#api-lab-start",

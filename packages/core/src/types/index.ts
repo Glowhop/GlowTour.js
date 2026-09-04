@@ -123,7 +123,37 @@ export interface AnimationOptions {
   easing: string;
 }
 
-export interface StartOptions {
+/**
+ * Context passed to a tour-level lifecycle hook (`onStart`, `onCancel`, `onFinish`).
+ */
+export interface LifecycleHookContext<T> {
+  /**
+   * The step associated with this lifecycle transition:
+   * - `onStart`: the first step about to be entered (`workflow.steps[0]`), or
+   *   `null` if the workflow has no steps.
+   * - `onCancel`: the step the tour is currently on when cancellation is
+   *   requested. Always non-null in practice, since a step is always active
+   *   at the point a tour can be cancelled.
+   * - `onFinish`: the last step the tour was on before finishing. Always
+   *   non-null in practice, except for the edge case of a workflow with zero
+   *   steps, which finishes immediately after `onStart` without ever
+   *   entering a step.
+   */
+  readonly step: TourCurrentStep<T> | null;
+  /**
+   * Call this synchronously, or before the hook's returned promise resolves,
+   * to prevent the lifecycle transition from completing:
+   * - in `onStart`, the tour never starts: no step is entered (and, for a
+   *   zero-step workflow, `onFinish` never fires either).
+   * - in `onCancel`, the cancellation is prevented: the tour remains on its
+   *   current step, un-cancelled.
+   * - in `onFinish`, completion is prevented: the tour remains on its last
+   *   step / current state, uncompleted.
+   */
+  abort(): void;
+}
+
+export interface StartOptions<T> {
   cancellable?: boolean;
   /**
    * Locks page scroll while the tour is active, restoring it on finish,
@@ -138,9 +168,9 @@ export interface StartOptions {
   animated?: boolean;
   behavior?: StepBehavior;
 
-  onStart?: () => void | Promise<void>;
-  onCancel?: () => void | Promise<void>;
-  onFinish?: () => void | Promise<void>;
+  onStart?: (context: LifecycleHookContext<T>) => void | Promise<void>;
+  onCancel?: (context: LifecycleHookContext<T>) => void | Promise<void>;
+  onFinish?: (context: LifecycleHookContext<T>) => void | Promise<void>;
 }
 
 export type StepPropsUpdate<T> =
@@ -231,7 +261,7 @@ export interface ReadonlyTourState<T> {
 }
 
 export interface GlowTour<T> {
-  create(name: string, options?: StartOptions): WorkflowBuilder<T>;
+  create(name: string, options?: StartOptions<T>): WorkflowBuilder<T>;
   run(workflow: WorkflowDefinition<T>): Promise<void>;
   advance(): Promise<void>;
   previous(): Promise<void>;

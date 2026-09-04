@@ -7,7 +7,7 @@ import { validateWorkflowOptions } from "./validation";
 
 const target = {} as HTMLElement;
 
-function workflow(options: StartOptions = {}) {
+function workflow(options: StartOptions<string> = {}) {
   return new TourController<string>(new NoopTourViewDriver())
     .create("validation", options)
     .step({ content: "content", target, title: "title" })
@@ -15,7 +15,7 @@ function workflow(options: StartOptions = {}) {
 }
 
 describe("runtime option validation", () => {
-  const invalidOptions: readonly { options: StartOptions; path: string }[] = [
+  const invalidOptions: readonly { options: StartOptions<string>; path: string }[] = [
     { options: { behavior: { targetTimeout: -1 } }, path: "options.behavior.targetTimeout" },
     {
       options: { overlay: { animation: { duration: Number.POSITIVE_INFINITY, easing: "linear" } } },
@@ -61,7 +61,7 @@ describe("runtime option validation", () => {
   test("requires an animation duration when animation options are present", () => {
     const options = {
       overlay: { animation: { easing: "linear" } },
-    } as unknown as StartOptions;
+    } as unknown as StartOptions<string>;
 
     assert.throws(() => validateWorkflowOptions(workflow(options)), {
       message: "Invalid option: options.overlay.animation.duration",
