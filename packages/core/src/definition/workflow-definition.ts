@@ -98,7 +98,7 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
   });
 }
 
-function freezeOptions(options: StartOptions): ReadonlyStartOptions {
+function freezeOptions<T>(options: StartOptions<T>): ReadonlyStartOptions<T> {
   return freezeRecord({
     ...options,
     overlay: freezeOverlay(options.overlay),
@@ -126,7 +126,7 @@ export function cloneWorkflowStepDraft<T>(
 
 export function createWorkflowDefinition<T>(
   name: string,
-  options: StartOptions,
+  options: StartOptions<T>,
   drafts: readonly WorkflowStepDraft<T>[],
 ): WorkflowDefinition<T> {
   return freezeRecord({

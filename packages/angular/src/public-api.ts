@@ -1,4 +1,4 @@
-export type { GlowTourOptions, StartOptions } from "@glowhop/core-tour";
+export type { GlowTourOptions } from "@glowhop/core-tour";
 export { GlowTourDefault } from "./lib/components/default-tour";
 export {
   GlowTourAdvanceTrigger,
@@ -15,6 +15,7 @@ export {
 } from "./lib/components/tour-components";
 export type {
   AngularTourContent,
+  StartOptions,
   StepPropsStore,
   Tour,
   TourState,

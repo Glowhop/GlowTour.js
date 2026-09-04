@@ -93,7 +93,7 @@ export class WorkflowBuilder<T> {
 
   constructor(
     public readonly name: string,
-    private readonly options: StartOptions = {},
+    private readonly options: StartOptions<T> = {},
   ) {}
 
   step(options: StepParameters<T>) {

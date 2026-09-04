@@ -31,7 +31,7 @@ export type ReadonlyStepProps<T> = {
   readonly indicator?: DeepReadonly<IndicatorOptions>;
 };
 
-export type ReadonlyStartOptions = DeepReadonly<StartOptions>;
+export type ReadonlyStartOptions<T> = DeepReadonly<StartOptions<T>>;
 
 export interface WorkflowStepDefinition<T> {
   readonly target: TargetResolver;
@@ -47,6 +47,6 @@ export interface WorkflowStepDefinition<T> {
 
 export interface WorkflowDefinition<T> {
   readonly name: string;
-  readonly options: ReadonlyStartOptions;
+  readonly options: ReadonlyStartOptions<T>;
   readonly steps: readonly WorkflowStepDefinition<T>[];
 }

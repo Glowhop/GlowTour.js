@@ -6,6 +6,7 @@ import type {
   BeforeActionStepContext,
   GlowTour,
   GlowTourOptions,
+  LifecycleHookContext,
   StartOptions,
   StepContext,
   TourDirection,
@@ -104,7 +105,7 @@ export class TourController<T> {
     });
   }
 
-  create(name: string, options: StartOptions = {}) {
+  create(name: string, options: StartOptions<T> = {}) {
     return new WorkflowBuilder<T>(name, options);
   }
 
@@ -140,8 +141,15 @@ export class TourController<T> {
     try {
       this.setStatus("starting");
       this.assertCurrent(operation);
-      await workflow.options.onStart?.();
+      const { context: startContext, isAborted: isStartAborted } = this.createLifecycleHookContext(
+        this.steps[0] ?? null,
+      );
+      await workflow.options.onStart?.(startContext);
       this.assertCurrent(operation);
+      if (isStartAborted()) {
+        this.resetToIdle();
+        return;
+      }
       if (this.steps.length === 0) {
         await this.finish(operation);
         return;
@@ -396,12 +404,20 @@ export class TourController<T> {
   }
 
   private async finish(operation: number) {
+    this.assertCurrent(operation);
+    const step = this.currentStep();
+    const { context, isAborted } = this.createLifecycleHookContext(step);
+    await this.workflow?.options.onFinish?.(context);
+    this.assertCurrent(operation);
+    if (isAborted()) {
+      if (step) this.setStatus("active");
+      else this.resetToIdle();
+      return;
+    }
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
     this.retainedPresentation = null;
     this.setStatus("finished");
-    this.assertCurrent(operation);
-    await this.workflow?.options.onFinish?.();
     this.assertCurrent(operation);
   }
 
@@ -411,13 +427,46 @@ export class TourController<T> {
       await step.definition.cancelAction(this.createBeforeActionStepContext(step));
     }
     this.assertCurrent(operation);
+    const { context, isAborted } = this.createLifecycleHookContext(step);
+    await this.workflow?.options.onCancel?.(context);
+    this.assertCurrent(operation);
+    if (isAborted()) {
+      this.setStatus("active");
+      return;
+    }
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
     this.retainedPresentation = null;
     this.setStatus("cancelled");
     this.assertCurrent(operation);
-    await this.workflow?.options.onCancel?.();
-    this.assertCurrent(operation);
+  }
+
+  private createLifecycleHookContext(step: ActiveStep<T> | null): {
+    context: LifecycleHookContext<T>;
+    isAborted: () => boolean;
+  } {
+    let aborted = false;
+    const context: LifecycleHookContext<T> = Object.freeze({
+      step: step?.snapshot() ?? null,
+      abort: () => {
+        aborted = true;
+      },
+    });
+    return { context, isAborted: () => aborted };
+  }
+
+  /**
+   * Restores the controller to its pre-`run()` idle state. Used when an
+   * aborted lifecycle hook prevents the tour from ever becoming active
+   * (`onStart` abort, and the zero-step `onFinish` abort edge case).
+   */
+  private resetToIdle() {
+    this.workflow = null;
+    this.releaseStepPropsSubscriptions();
+    this.steps = [];
+    this.index = -1;
+    this.retainedPresentation = null;
+    this.setStatus("idle");
   }
 
   private async handleFailure(reason: unknown, operation: number) {

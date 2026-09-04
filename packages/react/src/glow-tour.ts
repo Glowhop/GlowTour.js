@@ -1,5 +1,6 @@
 import type {
   GlowTour as CoreGlowTour,
+  StartOptions as CoreStartOptions,
   StepPropsStore as CoreStepPropsStore,
   TourState as CoreTourState,
   WorkflowDefinition as CoreWorkflowDefinition,
@@ -13,6 +14,7 @@ export type Tour = CoreGlowTour<ReactTourContent>;
 export type TourState = CoreTourState<ReactTourContent>;
 export type StepPropsStore = CoreStepPropsStore<ReactTourContent>;
 export type WorkflowDefinition = CoreWorkflowDefinition<ReactTourContent>;
+export type StartOptions = CoreStartOptions<ReactTourContent>;
 
 export function createGlowTour(options: GlowTourOptions = {}): Tour {
   return createCoreGlowTour<ReactTourContent>(options);
