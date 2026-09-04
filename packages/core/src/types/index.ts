@@ -116,6 +116,13 @@ export interface AnimationOptions {
 
 export interface StartOptions {
   cancellable?: boolean;
+  /**
+   * Locks page scroll while the tour is active, restoring it on finish,
+   * cancel, error, or dispose.
+   *
+   * @default false
+   */
+  allowScroll?: boolean;
   overlay?: OverlayOptions;
   popover?: PopoverOptions;
   indicator?: IndicatorOptions;
