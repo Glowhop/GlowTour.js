@@ -26,6 +26,15 @@ export interface StepBehavior {
   missingTargetStrategy?: "wait" | "skip" | "error";
   scroll?: ScrollOptions;
   targetTimeout?: number;
+  /**
+   * Behavior when the dimmed overlay backdrop (outside the cutout around the
+   * target) is clicked: `"advance"` moves to the next step, `"cancel"` ends
+   * the tour, `"none"` ignores the click. Has no effect when
+   * `allowInteraction` is `true`, since the page stays fully interactive and
+   * there is no modal backdrop to click.
+   * @default "none"
+   */
+  overlayClick?: "none" | "advance" | "cancel";
 }
 
 export type TryOrderOptions = "top" | "bottom" | "left" | "right";

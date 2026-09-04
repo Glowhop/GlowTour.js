@@ -142,6 +142,7 @@ export function mergeStepBehavior(
     missingTargetStrategy: overrides?.missingTargetStrategy ?? defaults?.missingTargetStrategy,
     scroll: mergeScrollOptions(defaults?.scroll, overrides?.scroll),
     targetTimeout: overrides?.targetTimeout ?? defaults?.targetTimeout,
+    overlayClick: overrides?.overlayClick ?? defaults?.overlayClick,
   };
 }
 
