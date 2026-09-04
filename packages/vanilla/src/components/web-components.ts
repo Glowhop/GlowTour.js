@@ -20,8 +20,31 @@ export interface GlowTourRootElement extends HTMLElement {
   idPrefix: string | undefined;
 }
 
+type PointerDirection = "top" | "bottom" | "left" | "right";
+type PointerDirectionValue = string | Node;
+
+export interface PointerDirectionContent {
+  readonly top?: PointerDirectionValue;
+  readonly bottom?: PointerDirectionValue;
+  readonly left?: PointerDirectionValue;
+  readonly right?: PointerDirectionValue;
+}
+
+export interface GlowTourPointerElement extends HTMLElement {
+  directionContent: PointerDirectionContent | undefined;
+}
+
+const POINTER_DIRECTIONS: readonly PointerDirection[] = ["top", "bottom", "left", "right"];
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
 declare global {
   interface HTMLElementTagNameMap {
+    "glow-tour-pointer": GlowTourPointerElement;
     "glow-tour-root": GlowTourRootElement;
   }
 }
@@ -497,17 +520,36 @@ export function registerGlowTourElements() {
     }
   }
 
-  class GlowTourPointer extends ScopedElement {
+  class GlowTourPointer extends ScopedElement implements GlowTourPointerElement {
+    private directionContentValue: PointerDirectionContent | undefined;
+
+    get directionContent() {
+      return this.directionContentValue;
+    }
+
+    set directionContent(value: PointerDirectionContent | undefined) {
+      this.directionContentValue = value;
+      if (this.isConnected) this.renderDirections();
+    }
+
     connectedCallback() {
       this.setAttribute("aria-hidden", "true");
       this.setAttribute("data-glow-tour-pointer", "");
-      if (!this.querySelector(":scope > [data-glow-tour-pointer-content]")) {
-        const content = document.createElement("div");
-        content.setAttribute("data-glow-tour-pointer-content", "");
-        content.append(...Array.from(this.childNodes));
-        this.replaceChildren(content);
-      }
+      this.renderDirections();
       super.connectedCallback();
+    }
+
+    private renderDirections() {
+      this.replaceChildren();
+      const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...this.directionContentValue };
+      for (const direction of POINTER_DIRECTIONS) {
+        const node = document.createElement("div");
+        node.setAttribute("data-glow-tour-pointer-direction", direction);
+        const value = content[direction];
+        if (typeof value === "string") node.textContent = value;
+        else node.append(value);
+        this.appendChild(node);
+      }
     }
 
     protected override bind(context: RootContext) {

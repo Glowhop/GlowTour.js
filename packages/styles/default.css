@@ -147,37 +147,18 @@
 
 :where([data-glow-tour-root]) [data-glow-tour-pointer] {
   font-size: 2rem;
+  height: 1em;
   line-height: 1;
+  position: relative;
+  width: 1em;
 }
 
-:where([data-glow-tour-root]) [data-glow-tour-pointer-content] {
-  display: block;
-  transform: rotate(0deg);
-  transform-origin: center;
-}
-
-:where([data-glow-tour-root])
-  [data-glow-tour-pointer][data-glow-tour-placement="top"]
-  [data-glow-tour-pointer-content] {
-  transform: rotate(180deg);
-}
-
-:where([data-glow-tour-root])
-  [data-glow-tour-pointer][data-glow-tour-placement="bottom"]
-  [data-glow-tour-pointer-content] {
-  transform: rotate(0deg);
-}
-
-:where([data-glow-tour-root])
-  [data-glow-tour-pointer][data-glow-tour-placement="left"]
-  [data-glow-tour-pointer-content] {
-  transform: scaleX(-1) rotate(-90deg);
-}
-
-:where([data-glow-tour-root])
-  [data-glow-tour-pointer][data-glow-tour-placement="right"]
-  [data-glow-tour-pointer-content] {
-  transform: rotate(-90deg);
+:where([data-glow-tour-root]) [data-glow-tour-pointer-direction] {
+  align-items: center;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
 }
 
 @media (prefers-reduced-motion: reduce) {

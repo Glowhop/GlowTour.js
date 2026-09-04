@@ -18,9 +18,23 @@ interface PointerPosition {
   y: number;
 }
 
+const POINTER_DIRECTION_SELECTOR = "[data-glow-tour-pointer-direction]";
+
+/**
+ * A pointer placed "top" of the target sits above it, so it must point down to gesture at
+ * it — the visible direction glyph is always the opposite of where the pointer is placed.
+ */
+const OPPOSITE_DIRECTION: Record<TryOrderOptions, TryOrderOptions> = {
+  bottom: "top",
+  left: "right",
+  right: "left",
+  top: "bottom",
+};
+
 export default class PointerElement extends GlowTourElement {
   private animation: Animation | null = null;
   private popoverPlacement?: ResolvedPlacement;
+  private directionNodes: Partial<Record<TryOrderOptions, HTMLElement>> | null = null;
 
   initializeProps() {
     this.element.style.setProperty("position", "fixed");
@@ -35,7 +49,7 @@ export default class PointerElement extends GlowTourElement {
 
   protected _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
     const nextPosition = this._resolvePosition(position, step);
-    this.element.setAttribute("data-glow-tour-placement", nextPosition.placement);
+    this._setPlacement(nextPosition.placement);
 
     return {
       left: `${roundByDPR(nextPosition.x, this.element)}px`,
@@ -74,7 +88,7 @@ export default class PointerElement extends GlowTourElement {
       this.element.style.setProperty("top", top);
     }
     if (currentPlacement !== nextPlacement) {
-      this.element.setAttribute("data-glow-tour-placement", nextPlacement);
+      this._setPlacement(nextPlacement);
     }
     if (nextPlacement !== currentPlacement && this.element.getAttribute("aria-hidden") !== "true") {
       this._startPointerAnimation(nextPlacement);
@@ -92,7 +106,7 @@ export default class PointerElement extends GlowTourElement {
     if (!visible) {
       this.element.style.setProperty("opacity", "0");
       this.element.setAttribute("aria-hidden", "true");
-      this.element.removeAttribute("data-glow-tour-placement");
+      this._setPlacement(null);
       return;
     }
 
@@ -145,7 +159,7 @@ export default class PointerElement extends GlowTourElement {
 
     this.element.style.setProperty("opacity", "0");
     this.element.setAttribute("aria-hidden", "true");
-    this.element.removeAttribute("data-glow-tour-placement");
+    this._setPlacement(null);
   }
 
   private _resolvePosition(targetPosition: DOMRect, step: TourElementStep): PointerPosition {
@@ -234,7 +248,38 @@ export default class PointerElement extends GlowTourElement {
     this._stopAnimation();
     this.element.style.setProperty("opacity", "0");
     this.element.setAttribute("aria-hidden", "true");
-    this.element.removeAttribute("data-glow-tour-placement");
+    this._setPlacement(null);
+  }
+
+  private _setPlacement(placement: TryOrderOptions | null) {
+    if (placement) this.element.setAttribute("data-glow-tour-placement", placement);
+    else this.element.removeAttribute("data-glow-tour-placement");
+    this._syncDirectionVisibility(placement);
+  }
+
+  private _syncDirectionVisibility(placement: TryOrderOptions | null) {
+    const nodes = this._ensureDirectionNodes();
+    const pointingDirection = placement ? OPPOSITE_DIRECTION[placement] : null;
+    for (const [direction, node] of Object.entries(nodes) as [TryOrderOptions, HTMLElement][]) {
+      node.style.setProperty("display", direction === pointingDirection ? "" : "none");
+    }
+  }
+
+  private _ensureDirectionNodes() {
+    if (this.directionNodes) return this.directionNodes;
+    const nodes: Partial<Record<TryOrderOptions, HTMLElement>> = {};
+    if (typeof (this.element as Element).querySelectorAll === "function") {
+      for (const node of Array.from(
+        (this.element as Element).querySelectorAll<HTMLElement>(POINTER_DIRECTION_SELECTOR),
+      )) {
+        const direction = node.getAttribute(
+          "data-glow-tour-pointer-direction",
+        ) as TryOrderOptions | null;
+        if (direction) nodes[direction] = node;
+      }
+    }
+    this.directionNodes = nodes;
+    return nodes;
   }
 
   private _getTargetTransform(placement: TryOrderOptions) {

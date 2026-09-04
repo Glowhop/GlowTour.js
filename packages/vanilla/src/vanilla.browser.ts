@@ -278,7 +278,10 @@ describe("vanilla adapter browser behavior", () => {
     const target = document.createElement("button");
     const element = root(tour, "dynamic");
     element.innerHTML =
-      "<glow-tour-overlay></glow-tour-overlay><glow-tour-pointer>Pointer</glow-tour-pointer><glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content><glow-tour-footer></glow-tour-footer></glow-tour-popover>";
+      "<glow-tour-overlay></glow-tour-overlay><glow-tour-pointer></glow-tour-pointer><glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content><glow-tour-footer></glow-tour-footer></glow-tour-popover>";
+    const pointer = element.querySelector("glow-tour-pointer");
+    assert.ok(pointer);
+    pointer.directionContent = { top: "Pointer" };
     document.body.append(target, element);
     await settle();
     let activeProps!: StepContext<VanillaTourContent>["props"];
@@ -302,7 +305,10 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(element.querySelector("[data-glow-tour-content]")?.textContent, "Two");
     assert.equal(element.querySelector<HTMLElement>("[data-glow-tour-footer]")?.hidden, true);
     assert.ok(element.querySelector("svg[data-glow-tour-overlay]"));
-    assert.equal(element.querySelector("[data-glow-tour-pointer-content]")?.textContent, "Pointer");
+    assert.equal(
+      element.querySelector('[data-glow-tour-pointer-direction="top"]')?.textContent,
+      "Pointer",
+    );
     const replacement = runtime.createGlowTour();
     element.tour = replacement;
     await settle();

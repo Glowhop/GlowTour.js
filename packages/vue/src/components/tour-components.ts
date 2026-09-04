@@ -19,6 +19,20 @@ import type { VueTourContent } from "../glow-tour.js";
 
 type Tour = CoreGlowTour<VueTourContent>;
 
+export interface PointerDirectionContent {
+  readonly top?: VNodeChild;
+  readonly bottom?: VNodeChild;
+  readonly left?: VNodeChild;
+  readonly right?: VNodeChild;
+}
+
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
 interface TourContextValue {
   readonly binding: Ref<AdapterRootBinding | null>;
   readonly tour: Ref<Tour>;
@@ -217,16 +231,25 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
 export const GlowTourPointer = /* @__PURE__ */ defineComponent({
   name: componentName("Pointer"),
   inheritAttrs: false,
-  setup(_props, { attrs, slots }) {
+  props: {
+    directionContent: { default: undefined, type: Object as PropType<PointerDirectionContent> },
+  },
+  setup(props, { attrs }) {
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPointer(activeElement),
     );
-    return () =>
-      h(
+    return () => {
+      const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...props.directionContent };
+      return h(
         "div",
         mergeProps(attrs, { "aria-hidden": "true", "data-glow-tour-pointer": "", ref: element }),
-        h("div", { "data-glow-tour-pointer-content": "" }, slots.default?.()),
+        (
+          Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
+        ).map((direction) =>
+          h("div", { "data-glow-tour-pointer-direction": direction }, [content[direction]]),
+        ),
       );
+    };
   },
 });
 

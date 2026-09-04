@@ -50,7 +50,7 @@ lab.rendererRoot.append(document.createElement("angular-tour-renderer"));
   template: `
     <glow-tour-root [tour]="tour">
       <glow-tour-overlay></glow-tour-overlay>
-      <glow-tour-pointer>☝️</glow-tour-pointer>
+      <glow-tour-pointer></glow-tour-pointer>
       <glow-tour-popover>
         <glow-tour-header></glow-tour-header>
         <glow-tour-content></glow-tour-content>

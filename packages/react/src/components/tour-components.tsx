@@ -15,8 +15,23 @@ type ElementProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref"> & {
 };
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = Omit<React.SVGAttributes<SVGSVGElement>, "ref">;
-type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "ref"> & {
+export interface PointerDirectionContent {
+  readonly top?: React.ReactNode;
+  readonly bottom?: React.ReactNode;
+  readonly left?: React.ReactNode;
+  readonly right?: React.ReactNode;
+}
+
+const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
+  bottom: "👇",
+  left: "👈",
+  right: "👉",
+  top: "👆",
+};
+
+type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
   as?: React.ElementType;
+  directionContent?: PointerDirectionContent;
 };
 type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
   children?:
@@ -197,12 +212,19 @@ export function Overlay({ children, viewBox = "0 0 0 0", ...props }: OverlayProp
   );
 }
 
-export function Pointer({ as: Component = "div", children, ...props }: PointerProps) {
+export function Pointer({ as: Component = "div", directionContent, ...props }: PointerProps) {
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
+  const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...directionContent };
 
   return (
     <Component {...props} aria-hidden="true" data-glow-tour-pointer ref={ref}>
-      <div data-glow-tour-pointer-content>{children}</div>
+      {(Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>).map(
+        (direction) => (
+          <div data-glow-tour-pointer-direction={direction} key={direction}>
+            {content[direction]}
+          </div>
+        ),
+      )}
     </Component>
   );
 }
