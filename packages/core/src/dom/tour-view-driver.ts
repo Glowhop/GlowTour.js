@@ -431,6 +431,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.listen(currentWindow, "keydown", (event) => {
         if (this.isCurrentGeneration(generation)) this.handleKeydown(event as KeyboardEvent);
       });
+      this.listen(currentWindow, "click", (event) => {
+        if (this.isCurrentGeneration(generation)) {
+          this.handleOverlayClick(event as MouseEvent, step, target);
+        }
+      });
     }
     this.attachButtonHandlers(step);
     this.observeControls(step, generation);
@@ -575,6 +580,26 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     ) {
       event.preventDefault();
       void this.command("previous");
+    }
+  }
+
+  private handleOverlayClick(event: MouseEvent, step: ActiveStep<T>, target: HTMLElement) {
+    if (this.currentStep !== step || event.defaultPrevented) return;
+    if (step.behavior?.allowInteraction === true) return;
+    const path = event.composedPath();
+    const popover = this.popover?.getElement();
+    const pointer = this.pointer?.getElement();
+    if (
+      path.includes(target) ||
+      (popover && path.includes(popover)) ||
+      (pointer && path.includes(pointer))
+    )
+      return;
+    const overlayClick = step.behavior?.overlayClick ?? "none";
+    if (overlayClick === "advance" && this.canCommand("advance", step)) {
+      void this.command("advance");
+    } else if (overlayClick === "cancel" && this.canCommand("cancel", step)) {
+      void this.command("cancel");
     }
   }
 
