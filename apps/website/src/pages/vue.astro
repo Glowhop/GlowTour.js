@@ -1,0 +1,17 @@
+---
+import FrameworkPage from "../components/FrameworkPage.astro";
+import { vueSource } from "../lib/framework-sources";
+---
+
+<FrameworkPage
+  name="Vue"
+  icon="vue"
+  packageName="vue"
+  installCommand="bun add @glowhop/vue-tour @glowhop/styles-tour"
+  intro="Vue 3.3+ components with a provide/inject-scoped tour instance. GlowTourDefault drops straight into your template — no manual mounting required."
+  code={vueSource}
+  lang="vue"
+  guideHref="/docs/guides/vue"
+  title="Glow Tour for Vue — guided tours for Vue 3"
+  description="Add accessible, SSR-safe guided tours to a Vue 3 app with @glowhop/vue-tour: createGlowTour, a step builder, and a GlowTourDefault component."
+/>

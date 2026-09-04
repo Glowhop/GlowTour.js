@@ -1,0 +1,17 @@
+---
+import FrameworkPage from "../components/FrameworkPage.astro";
+import { solidSource } from "../lib/framework-sources";
+---
+
+<FrameworkPage
+  name="Solid"
+  icon="solid"
+  packageName="solid"
+  installCommand="bun add @glowhop/solid-tour @glowhop/styles-tour"
+  intro="Solid 1.8+ components with a Context-scoped tour instance, verified for real server rendering and hydration in a SolidStart app."
+  code={solidSource}
+  lang="tsx"
+  guideHref="/docs/guides/solid"
+  title="Glow Tour for Solid — guided tours for Solid 1.8+"
+  description="Add accessible, SSR-safe guided tours to a Solid app with @glowhop/solid-tour: createGlowTour, a step builder, and a DefaultTour component."
+/>

@@ -1,0 +1,28 @@
+{
+  "name": "@glowhop/website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.4.1",
+    "@astrojs/starlight": "^0.42.0",
+    "@glowhop/react-tour": "workspace:*",
+    "@glowhop/styles-tour": "workspace:*",
+    "@iconify-json/logos": "^1.2.4",
+    "astro": "^7.3.1",
+    "astro-icon": "^1.1.5",
+    "lucide-react": "^0.545.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "tailwindcss": "^4.3.2"
+  }
+}

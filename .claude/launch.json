@@ -6,6 +6,12 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "--cwd", "apps/playground", "dev"],
       "port": 5173
+    },
+    {
+      "name": "website",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "apps/website", "dev"],
+      "port": 4321
     }
   ]
 }

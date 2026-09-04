@@ -1,0 +1,17 @@
+---
+import FrameworkPage from "../components/FrameworkPage.astro";
+import { vanillaSource } from "../lib/framework-sources";
+---
+
+<FrameworkPage
+  name="Vanilla"
+  icon="vanilla"
+  packageName="vanilla"
+  installCommand="bun add @glowhop/vanilla-tour @glowhop/styles-tour"
+  intro="Native browser custom elements for apps with no framework at all. registerGlowTourElements() and a plain tour property on the root are all the wiring you need."
+  code={vanillaSource}
+  lang="ts"
+  guideHref="/docs/guides/vanilla"
+  title="Glow Tour for Vanilla JS — guided tours with no framework"
+  description="Add accessible guided tours to any page with @glowhop/vanilla-tour: native custom elements, createGlowTour, and a step builder."
+/>

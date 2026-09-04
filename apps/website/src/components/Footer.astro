@@ -1,0 +1,42 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-[var(--color-border)]">
+  <div
+    class="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-[var(--color-text-muted)] sm:flex-row sm:items-center sm:justify-between"
+  >
+    <p>&copy; {year} Glow Tour. MIT licensed.</p>
+    <div class="flex flex-wrap items-center gap-5">
+      <a href="/docs/getting-started" class="transition-colors hover:text-[var(--color-text)]">
+        Docs
+      </a>
+      <a
+        href="https://github.com/Glowhop/glow-tour"
+        class="transition-colors hover:text-[var(--color-text)]"
+      >
+        GitHub
+      </a>
+      <a
+        href="https://github.com/Glowhop/glow-tour/issues"
+        class="transition-colors hover:text-[var(--color-text)]"
+      >
+        Issues
+      </a>
+      <a href="https://www.npmjs.com/package/@glowhop/core-tour" class="flex items-center">
+        <img
+          src="https://img.shields.io/npm/dm/@glowhop/core-tour"
+          alt="npm downloads per month"
+          class="h-5"
+        />
+      </a>
+      <a href="https://github.com/Glowhop/glow-tour/stargazers" class="flex items-center">
+        <img
+          src="https://img.shields.io/github/stars/Glowhop/glow-tour"
+          alt="GitHub stars"
+          class="h-5"
+        />
+      </a>
+    </div>
+  </div>
+</footer>

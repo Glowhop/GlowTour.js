@@ -1,0 +1,67 @@
+---
+interface Props {
+  items: readonly string[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="marquee border-y border-[var(--color-border)] bg-[var(--color-surface-muted)] py-3">
+  <div class="marquee-track">
+    {
+      [items, items].map((group) => (
+        <div class="marquee-group">
+          {group.map((item) => (
+            <span class="flex items-center gap-6">
+              <span class="text-sm font-medium text-[var(--color-text-muted)] whitespace-nowrap">
+                {item}
+              </span>
+              <span
+                aria-hidden="true"
+                class="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-accent)]"
+              />
+            </span>
+          ))}
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .marquee {
+    overflow: hidden;
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll 28s linear infinite;
+  }
+
+  .marquee-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  @keyframes marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+
+    .marquee-group:last-child {
+      display: none;
+    }
+  }
+</style>

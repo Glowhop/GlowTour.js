@@ -1,0 +1,304 @@
+---
+import { experimental_AstroContainer as AstroContainer } from "astro/container";
+import { Icon } from "astro-icon/components";
+import Button from "../components/Button.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+import { ExamplesGallery } from "../components/ExamplesGallery";
+import FrameworkIcon from "../components/FrameworkIcon.astro";
+import Marquee from "../components/Marquee.astro";
+import MarketingLayout from "../layouts/MarketingLayout.astro";
+import {
+  advanceOnClickSource,
+  cancellableSource,
+  customIndicatorSource,
+  customStylingSource,
+  interactionAllowedSource,
+  multiStepSource,
+  programmaticSource,
+  singleStepSource,
+  waitForAsyncSource,
+} from "../lib/hero-demo-sources";
+
+// The Examples gallery pairs each live demo with its highlighted source code, but Astro's Shiki
+// integration (astro:components' <Code>) only works at build time inside .astro files, not inside
+// a React island. Pre-rendering CodeBlock.astro through the container API here produces the same
+// highlighted HTML markup as the rest of the site's code blocks, which is then passed into the
+// island as static strings — the island just swaps which one is visible.
+const container = await AstroContainer.create();
+const exampleSources = [
+  singleStepSource,
+  multiStepSource,
+  programmaticSource,
+  interactionAllowedSource,
+  advanceOnClickSource,
+  cancellableSource,
+  customStylingSource,
+  waitForAsyncSource,
+  customIndicatorSource,
+];
+const exampleCodeHtml = await Promise.all(
+  exampleSources.map((code) =>
+    container.renderToString(CodeBlock, { props: { code, lang: "tsx" } }),
+  ),
+);
+
+const frameworks = [
+  { label: "React", href: "/react", icon: "react" as const },
+  { label: "Vue", href: "/vue", icon: "vue" as const },
+  { label: "Solid", href: "/solid", icon: "solid" as const },
+  { label: "Angular", href: "/angular", icon: "angular" as const },
+  { label: "Vanilla", href: "/vanilla", icon: "vanilla" as const },
+];
+
+const stats = [
+  { value: "5", label: "framework adapters" },
+  { value: "ESM-only", label: "every published package" },
+  { value: "ARIA", label: "dialog semantics, keyboard trap, focus restore" },
+];
+
+const useCases = [
+  {
+    title: "Onboard users",
+    description: "Walk new users through the parts of your product that matter on day one.",
+  },
+  {
+    title: "Feature adoption",
+    description: "Point returning users at a feature they haven't discovered yet.",
+  },
+  {
+    title: "Contextual help",
+    description: "Explain an element exactly where it lives, instead of linking out to docs.",
+  },
+  {
+    title: "Interactive tutorials",
+    description: "Chain steps that wait for real actions, not just click-through slides.",
+  },
+  {
+    title: "Form guidance",
+    description: "Guide multi-step forms field by field with placement that adapts to layout.",
+  },
+  {
+    title: "Reduce support tickets",
+    description: "Answer the same repeated question in-product before it becomes a ticket.",
+  },
+];
+
+const marqueeClaims = [
+  "ESM-only",
+  "Accessible by default",
+  "SSR-verified",
+  "Native adapters, not wrappers",
+  "MIT licensed",
+];
+
+const features = [
+  {
+    title: "Placement & collision",
+    description:
+      "popover.placementTryOrder and indicator.placementTryOrder walk top/bottom/left/right until one fits, falling back to center.",
+  },
+  {
+    title: "Interaction control",
+    description:
+      "behavior.allowInteraction lets pointer events pass through the overlay to the target.",
+  },
+  {
+    title: "Scroll handling",
+    description:
+      "Step and start-level scroll options control behavior, block, and inline scroll-into-view.",
+  },
+  {
+    title: "Lifecycle callbacks",
+    description:
+      "onStart, onCancel, onFinish at the workflow level; beforeAdvance, beforePrevious, beforeCancel per step.",
+  },
+  {
+    title: "Step actions",
+    description:
+      ".do(fn), .wait(ms), .waitUntil(fn), and .waitUntilElement(selector) sequence work between steps.",
+  },
+  {
+    title: "Target events",
+    description: '.onTargetEvent("click", fn) reacts to real DOM events on the current target.',
+  },
+  {
+    title: "Accessible by default",
+    description:
+      "Every adapter renders the same dialog role, aria-live description, keyboard shortcuts (Escape, arrows, Tab trap), and focus restoration on exit.",
+  },
+  {
+    title: "SSR-verified for React, Vue, Solid",
+    description:
+      "Real renderToString/hydration coverage plus full Next.js, Nuxt, and SolidStart apps driven end to end with Playwright.",
+  },
+];
+---
+
+<MarketingLayout
+  title="Glow Tour — a cross-framework guided-tour library"
+  description="A guided-tour engine for React, Vue, Solid, Angular, and vanilla apps. One core, real accessibility, real SSR support."
+>
+  <section class="mx-auto max-w-6xl px-6 pt-16 pb-8 sm:pt-24">
+    <div class="mx-auto max-w-3xl text-center">
+      <h1 class="text-4xl font-semibold tracking-tight text-[var(--color-text)] sm:text-5xl">
+        Guided tours for whatever you're already building
+      </h1>
+      <p class="mt-5 text-lg text-[var(--color-text-muted)]">
+        One workflow engine, native adapters for React, Vue, Solid, Angular, and vanilla DOM.
+        Accessible, SSR-verified, ESM-only.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <Button href="/docs/getting-started">Get started</Button>
+        <Button href="#examples" variant="secondary">View examples</Button>
+      </div>
+    </div>
+  </section>
+
+  <Marquee items={marqueeClaims} />
+
+  <section id="examples" class="mx-auto max-w-6xl px-6 pt-16 pb-20 scroll-mt-20">
+    <h2 class="text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      Examples
+    </h2>
+    <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
+      Every demo below runs for real on this page — and shows the exact code that produced it,
+      side by side.
+    </p>
+    <div class="mt-10">
+      <ExamplesGallery client:load codeHtml={exampleCodeHtml} />
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-6 pb-20">
+    <h2 class="text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      Use cases
+    </h2>
+    <div class="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
+      {
+        useCases.map((useCase) => (
+          <div class="flex gap-4">
+            <span class="mt-1 h-px w-6 shrink-0 bg-[var(--color-accent)]" aria-hidden="true" />
+            <div>
+              <h3 class="font-semibold text-[var(--color-text)]">{useCase.title}</h3>
+              <p class="mt-1 text-sm text-[var(--color-text-muted)]">{useCase.description}</p>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="border-y border-[var(--color-border)] bg-[var(--color-surface-muted)]">
+    <div class="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-3">
+      {
+        stats.map((stat) => (
+          <div class="text-center">
+            <div class="text-3xl font-semibold text-[var(--color-accent)]">{stat.value}</div>
+            <div class="mt-1 text-sm text-[var(--color-text-muted)]">{stat.label}</div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-6 py-20">
+    <h2 class="text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      Works with any framework
+    </h2>
+    <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
+      One core engine, native adapters — not a generic wrapper — for each framework.
+    </p>
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
+      {
+        frameworks.map((fw) => (
+          <Button href={fw.href} variant="secondary" class="gap-2">
+            <FrameworkIcon name={fw.icon} class="h-4 w-4" />
+            {fw.label}
+          </Button>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="border-t border-[var(--color-border)] bg-[var(--color-surface-muted)]">
+    <div class="mx-auto max-w-3xl px-6 py-20 text-center">
+      <h2 class="text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+        Free for everyone, forever
+      </h2>
+      <p class="mt-4 text-[var(--color-text-muted)]">
+        Glow Tour is MIT licensed. No paid tier, no feature gate.
+      </p>
+      <ul class="mx-auto mt-8 grid max-w-md gap-3 text-left">
+        {
+          [
+            "Personal projects",
+            "Commercial products",
+            "Unlimited projects",
+            "No attribution required",
+          ].map((item) => (
+            <li class="flex items-center gap-3 text-[var(--color-text)]">
+              <svg
+                class="h-5 w-5 shrink-0 text-[var(--color-accent)]"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 10.5l3.5 3.5L16 5.5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              {item}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-6 py-20">
+    <h2 class="text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      Everything a tour engine needs, nothing it doesn't
+    </h2>
+    <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        features.map((feature) => (
+          <div class="rounded-[var(--radius-glow)] border border-[var(--color-border)] p-5">
+            <h3 class="font-semibold text-[var(--color-text)]">{feature.title}</h3>
+            <p class="mt-2 text-sm text-[var(--color-text-muted)]">{feature.description}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="bg-[var(--color-accent)]">
+    <div class="mx-auto max-w-3xl px-6 py-20 text-center">
+      <h2 class="text-3xl font-semibold tracking-tight text-[var(--color-on-accent)]">
+        Ship your first tour today
+      </h2>
+      <p class="mt-4 text-[var(--color-on-accent)]/80">
+        Install the adapter for your framework, import the default theme, and build your first
+        workflow.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <a
+          href="/docs/getting-started"
+          class="inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] bg-[var(--color-on-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-accent)] transition-colors hover:opacity-90"
+        >
+          Get started
+        </a>
+        <a
+          href="https://github.com/Glowhop/glow-tour"
+          class="inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] border border-[var(--color-on-accent)]/40 px-5 py-2.5 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-on-accent)]/10"
+        >
+          <Icon name="logos:github-icon" class="h-4 w-4" />
+          Star on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+</MarketingLayout>

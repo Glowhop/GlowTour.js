@@ -1,0 +1,18 @@
+---
+import { Code } from "astro:components";
+
+interface Props {
+  code: string;
+  lang?: string;
+  class?: string;
+}
+
+const { code, lang = "tsx", class: className = "" } = Astro.props;
+---
+
+<div
+  data-code-block
+  class={`overflow-x-auto rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[#101014] text-sm [&_pre]:p-4 ${className}`}
+>
+  <Code code={code} lang={lang} theme="css-variables" />
+</div>

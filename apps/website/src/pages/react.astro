@@ -1,0 +1,17 @@
+---
+import FrameworkPage from "../components/FrameworkPage.astro";
+import { reactSource } from "../lib/framework-sources";
+---
+
+<FrameworkPage
+  name="React"
+  icon="react"
+  packageName="react"
+  installCommand="bun add @glowhop/react-tour @glowhop/styles-tour"
+  intro="Native React components and a Context-scoped tour instance, built for React 18 and 19. No portals to wire up yourself — DefaultTour renders the popover, overlay, and pointer for you."
+  code={reactSource}
+  lang="tsx"
+  guideHref="/docs/guides/react"
+  title="Glow Tour for React — guided tours for React 18/19"
+  description="Add accessible, SSR-safe guided tours to a React app with @glowhop/react-tour: createGlowTour, a step builder, and a DefaultTour component."
+/>

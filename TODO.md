@@ -60,6 +60,13 @@ ARIA de base déjà en place par adaptateur (`role="dialog"`, `aria-labelledby`/
 - [x] Vérifier et documenter le comportement d'hydratation réel pour chaque adapter (actuellement "non vérifié" dans [docs/compatibility.md](docs/compatibility.md)) — React/Vue/Solid vérifiés (SSR + hydration réels), Angular/Solid limites documentées explicitement
 - [x] Ajouter un test SSR + hydration par adapter (Next.js pour React, Nuxt pour Vue, SolidStart pour Solid) — `apps/ssr-react`, `apps/ssr-vue`, `apps/ssr-solid` : vraies apps avec build de prod + tests Playwright (SSR + hydration + interactivité), tous verts. A aussi révélé et corrigé un vrai bug de build (`scripts/build-packages.ts` ne forçait pas `NODE_ENV=production`, donc le dist publié de `@glowhop/react-tour` embarquait `jsxDEV`, cassant tout build de prod consommateur type `next build`)
 
+## API & DX (inspiré Driver.js)
+
+- [ ] Ajouter une option `allowScroll`, `false` par défaut, qui empêche le scroll de la page pendant le tour
+- [ ] Ajouter une option `preventCancel: () => {}` (signature à confirmer) permettant d'intercepter/bloquer conditionnellement une tentative d'annulation du tour
+- [ ] Étudier l'API de [driver.js](https://driverjs.com/docs/api) et ajouter les méthodes/APIs manquantes pertinentes à `packages/core`
+- [ ] Reprendre le flow d'instanciation inspiré de [driver.js basic usage](https://driverjs.com/docs/basic-usage) : `workflow.run()` plutôt que `tour.run(workflow)`
+
 ## Publication & mesurabilité
 
 - [ ] Premier release public `0.1.0` via Changesets sur npm pour tous les packages `@glowhop/*`
