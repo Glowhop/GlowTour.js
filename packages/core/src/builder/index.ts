@@ -21,6 +21,7 @@ const DEFAULT_WAIT_TIMEOUT = 3000;
 const INACTIVE_STEP_ERROR = "WorkflowStepBuilder is no longer active";
 const STEP_BUILDER_INTERNAL = Symbol("WorkflowStepBuilder.internal");
 
+/** Standard DOM event names supported by HTML elements. */
 export type EventName = keyof HTMLElementEventMap;
 
 type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
@@ -86,16 +87,27 @@ function waitOptions(options: WaitUntilOptions = {}) {
   return { interval, timeout };
 }
 
+/** Builder for constructing a tour workflow step-by-step. */
 export class WorkflowBuilder<T> {
   private readonly steps: WorkflowStepDraft<T>[] = [];
   private currentStep: WorkflowStepBuilder<T> | null = null;
   private definition: WorkflowDefinition<T> | null = null;
 
+  /**
+   * Creates a new workflow builder.
+   * @param name The name of the workflow.
+   * @param options Tour start options (lifecycle hooks, display options, behavior).
+   */
   constructor(
     public readonly name: string,
     private readonly options: StartOptions<T> = {},
   ) {}
 
+  /**
+   * Add a new step to the workflow.
+   * @param options Step configuration.
+   * @returns A WorkflowStepBuilder for chaining additional configuration.
+   */
   step(options: StepParameters<T>) {
     this.assertBuilding();
     this.commitCurrentStep();
@@ -120,6 +132,11 @@ export class WorkflowBuilder<T> {
     return this.currentStep;
   }
 
+  /**
+   * Append another workflow's steps to this workflow.
+   * @param workflow The workflow to append.
+   * @returns A WorkflowStepBuilder for the last appended step.
+   */
   append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T> {
     this.assertBuilding();
     const drafts = workflow.steps.map(cloneWorkflowStepDraft);
@@ -132,6 +149,10 @@ export class WorkflowBuilder<T> {
     return this.currentStep;
   }
 
+  /**
+   * Build and return the workflow definition. Can be called multiple times.
+   * @returns A frozen workflow definition ready to run.
+   */
   build(): WorkflowDefinition<T> {
     if (this.definition) return this.definition;
     this.commitCurrentStep();
@@ -150,29 +171,53 @@ export class WorkflowBuilder<T> {
   }
 }
 
+/** Builder for configuring a single tour step with actions and event handlers. */
 export class WorkflowStepBuilder<T> {
   private active = true;
 
+  /**
+   * Creates a step builder for the given workflow.
+   * @param owner The parent WorkflowBuilder.
+   * @param draft The step definition being built.
+   */
   constructor(
     private readonly owner: WorkflowBuilder<T>,
     private readonly draft: WorkflowStepDraft<T>,
   ) {}
 
+  /**
+   * Add another step to the workflow after this one.
+   * @param options The new step configuration.
+   * @returns The new WorkflowStepBuilder.
+   */
   step(options: StepParameters<T>): WorkflowStepBuilder<T> {
     this.assertActive();
     return this.owner.step(options);
   }
 
+  /**
+   * Append another workflow's steps after this step.
+   * @param workflow The workflow to append.
+   * @returns The WorkflowStepBuilder for the last appended step.
+   */
   append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T> {
     this.assertActive();
     return this.owner.append(workflow);
   }
 
+  /**
+   * Build and return the workflow definition.
+   * @returns A frozen workflow definition ready to run.
+   */
   build(): WorkflowDefinition<T> {
     this.assertActive();
     return this.owner.build();
   }
 
+  /**
+   * Add an action that clicks the target element when the step is entered.
+   * @returns This builder for chaining.
+   */
   clickTarget(): this {
     return this.do(({ target }) => {
       target?.click();
@@ -180,6 +225,10 @@ export class WorkflowStepBuilder<T> {
     });
   }
 
+  /**
+   * Add an action that focuses the target element when the step is entered.
+   * @returns This builder for chaining.
+   */
   focusTarget(): this {
     return this.do(({ target }) => {
       target?.focus();
@@ -187,6 +236,11 @@ export class WorkflowStepBuilder<T> {
     });
   }
 
+  /**
+   * Add a delay action.
+   * @param timeMs The delay duration in milliseconds.
+   * @returns This builder for chaining.
+   */
   wait(timeMs: number) {
     this.assertActive();
     assertTimingValue("timeMs", timeMs);
@@ -194,6 +248,12 @@ export class WorkflowStepBuilder<T> {
     return this;
   }
 
+  /**
+   * Add an action that waits for a condition before continuing.
+   * @param predicate Function that returns true when the condition is met.
+   * @param options Timeout and polling interval options.
+   * @returns This builder for chaining.
+   */
   waitUntil(predicate: WaitUntilPredicate<T>, options: WaitUntilOptions = {}): this {
     this.assertActive();
     const { interval, timeout } = waitOptions(options);
@@ -223,6 +283,12 @@ export class WorkflowStepBuilder<T> {
     return this;
   }
 
+  /**
+   * Add an action that waits for an element to appear in the DOM.
+   * @param selector CSS selector for the element to wait for.
+   * @param options Timeout and polling interval options.
+   * @returns This builder for chaining.
+   */
   waitUntilElement(selector: string, options?: WaitUntilOptions): this {
     if (selector.length === 0) throw new TypeError("selector must not be empty");
     return this.waitUntil(
@@ -231,38 +297,76 @@ export class WorkflowStepBuilder<T> {
     );
   }
 
+  /**
+   * Add a custom action callback to run when the step is entered.
+   * @param callback The action callback.
+   * @returns This builder for chaining.
+   */
   do(callback: StepAction<T>) {
     this.assertActive();
     this.draft.actions.push(callback);
     return this;
   }
 
+  /**
+   * Add a callback that runs before advancing to the next step.
+   * @param callback The transition callback.
+   * @returns This builder for chaining.
+   */
   beforeAdvance(callback: StepTransitionAction<T>) {
     this.assertActive();
     this.draft.advanceAction = callback;
     return this;
   }
 
+  /**
+   * Add a callback that runs before going to the previous step.
+   * @param callback The transition callback.
+   * @returns This builder for chaining.
+   */
   beforePrevious(callback: StepTransitionAction<T>) {
     this.assertActive();
     this.draft.previousAction = callback;
     return this;
   }
 
+  /**
+   * Add a callback that runs before cancelling the tour.
+   * @param callback The transition callback.
+   * @returns This builder for chaining.
+   */
   beforeCancel(callback: StepTransitionAction<T>) {
     this.assertActive();
     this.draft.cancelAction = callback;
     return this;
   }
 
+  /**
+   * Add an event listener to the target element for a specific event name.
+   * @param event The event name.
+   * @param callback The handler function.
+   * @returns This builder for chaining.
+   */
   onTargetEvent<const TEventName extends EventName>(
     event: TEventName,
     callback: EventHandler<T, EventForName<TEventName>>["callback"],
   ): this;
+  /**
+   * Add an event listener to the target element for multiple event names.
+   * @param events Array of event names.
+   * @param callback The handler function.
+   * @returns This builder for chaining.
+   */
   onTargetEvent<const TEventNames extends readonly EventName[]>(
     events: TEventNames,
     callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
   ): this;
+  /**
+   * Add an event listener to the target element for a custom event.
+   * @param event The event name.
+   * @param callback The handler function.
+   * @returns This builder for chaining.
+   */
   onTargetEvent<TEvent extends Event>(
     event: string,
     callback: EventHandler<T, TEvent>["callback"],

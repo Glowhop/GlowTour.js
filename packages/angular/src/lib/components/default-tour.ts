@@ -45,7 +45,10 @@ import {
     </glow-tour-root>
   `,
 })
+/** Default Glow Tour component that renders all tour UI elements in a standard layout. */
 export class GlowTourDefault {
+  /** The tour controller instance to display. */
   @Input({ required: true }) tour!: GlowTour<AngularTourContent>;
+  /** Optional prefix for generated HTML IDs. */
   @Input() idPrefix?: string;
 }

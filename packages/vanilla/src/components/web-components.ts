@@ -2,6 +2,7 @@ import type { ReadonlyStepProps, TourState } from "@glowhop/core-tour";
 import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
 import type { VanillaGlowTour, VanillaTourContent } from "../glow-tour";
 
+/** Names of all Glow Tour custom elements. */
 export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-root",
   "glow-tour-header",
@@ -15,14 +16,18 @@ export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-overlay",
 ] as const;
 
+/** The root custom element that contains all tour UI. */
 export interface GlowTourRootElement extends HTMLElement {
+  /** The tour controller instance. */
   tour: VanillaGlowTour | null;
+  /** Optional prefix for internal element IDs. */
   idPrefix: string | undefined;
 }
 
 type PointerDirection = "top" | "bottom" | "left" | "right";
 type PointerDirectionValue = string | Node;
 
+/** Content displayed in the pointer indicator for each direction. */
 export interface PointerDirectionContent {
   readonly top?: PointerDirectionValue;
   readonly bottom?: PointerDirectionValue;
@@ -30,7 +35,9 @@ export interface PointerDirectionContent {
   readonly right?: PointerDirectionValue;
 }
 
+/** The pointer/indicator custom element that visually highlights the target. */
 export interface GlowTourPointerElement extends HTMLElement {
+  /** Directional content for the pointer (emoji or custom content). */
   directionContent: PointerDirectionContent | undefined;
 }
 
@@ -310,6 +317,14 @@ function effectiveId(root: HTMLElement, selector: string, fallback: string) {
   return element?.id || fallback;
 }
 
+/**
+ * Registers Glow Tour custom elements with the browser.
+ *
+ * Must be called before creating tour UI elements. Alternatively, import
+ * `@glowhop/vanilla-tour/auto` which calls this automatically on load.
+ *
+ * Safe to call multiple times; re-registration with different constructors will throw.
+ */
 export function registerGlowTourElements() {
   const registry = customElementRegistry();
   if (!registry) return;

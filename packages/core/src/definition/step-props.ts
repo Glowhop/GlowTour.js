@@ -1,5 +1,10 @@
 import type { ReadonlyStepProps, StepProps } from "./types";
 
+/**
+ * Creates a shallow clone of step properties with deep clones of nested objects.
+ * @param props The properties to clone.
+ * @returns A mutable copy of the properties.
+ */
 export function cloneStepProps<T>(props: ReadonlyStepProps<T>): StepProps<T> {
   return {
     title: props.title,
@@ -36,6 +41,11 @@ export function cloneStepProps<T>(props: ReadonlyStepProps<T>): StepProps<T> {
   };
 }
 
+/**
+ * Creates a deep-frozen copy of step properties.
+ * @param props The properties to freeze.
+ * @returns An immutable copy of the properties.
+ */
 export function freezeStepProps<T>(props: ReadonlyStepProps<T>): ReadonlyStepProps<T> {
   const cloned = cloneStepProps(props);
   if (cloned.data) Object.freeze(cloned.data);

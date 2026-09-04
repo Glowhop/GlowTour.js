@@ -703,6 +703,11 @@ export class TourController<T> {
   }
 }
 
+/**
+ * Creates a new Glow Tour instance.
+ * @param options Tour options for error handling.
+ * @returns A tour controller ready to run workflows.
+ */
 export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
   const driver = new DomTourViewDriver<T>();
   let bridge!: ReturnType<typeof attachRootBridge<T>>;
