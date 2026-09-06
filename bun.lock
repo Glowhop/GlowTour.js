@@ -97,6 +97,7 @@
       "name": "@glowhop/website",
       "dependencies": {
         "@astrojs/react": "^4.4.1",
+        "@astrojs/sitemap": "^3.7.4",
         "@astrojs/starlight": "^0.42.0",
         "@glowhop/react-tour": "workspace:*",
         "@glowhop/styles-tour": "workspace:*",

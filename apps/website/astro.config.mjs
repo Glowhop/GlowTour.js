@@ -1,4 +1,5 @@
 import react from "@astrojs/react";
+import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
@@ -10,6 +11,8 @@ import icon from "astro-icon";
 // file path relative to `src/content/docs/`, so nesting one more `docs/` folder in there produces
 // `/docs/...` URLs while leaving the site root free for the marketing pages in `src/pages/`.
 export default defineConfig({
+  // TODO: replace with the real production domain once it's chosen.
+  site: "https://glowtour.dev",
   integrations: [
     starlight({
       title: "GlowTour.js",
@@ -78,6 +81,7 @@ export default defineConfig({
     }),
     react(),
     icon(),
+    sitemap(),
   ],
   vite: {
     plugins: [tailwindcss()],
