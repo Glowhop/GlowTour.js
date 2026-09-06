@@ -1,0 +1,41 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<span class:list={["wordmark", className]} translate="no">
+  <span><span class="wordmark__accent">Glow</span> Tour</span>
+  <span aria-hidden="true" class="wordmark__spark">✦</span>
+</span>
+
+<style>
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--wordmark-text, var(--color-text, currentColor));
+    font-family: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 1.25rem;
+    font-variation-settings:
+      "SOFT" 40,
+      "WONK" 1;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .wordmark__accent {
+    color: var(--wordmark-accent, var(--color-accent, #4c35fd));
+  }
+
+  .wordmark__spark {
+    color: var(--wordmark-spark, var(--color-spark, #d9a327));
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+</style>

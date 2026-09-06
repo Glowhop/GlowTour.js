@@ -1,0 +1,41 @@
+---
+import Sparkle from "./Sparkle.astro";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+
+/*
+ * Wand trail: sparkles shrinking and fading outward from a bright center, so the divider reads as
+ * something the wand just swept across rather than a plain rule.
+ */
+const trail = [
+  { size: "h-1.5 w-1.5", opacity: 0.25 },
+  { size: "h-2 w-2", opacity: 0.4 },
+  { size: "h-3 w-3", opacity: 0.6 },
+  { size: "h-4 w-4", opacity: 0.9 },
+  { size: "h-3 w-3", opacity: 0.6 },
+  { size: "h-2 w-2", opacity: 0.4 },
+  { size: "h-1.5 w-1.5", opacity: 0.25 },
+];
+---
+
+{/*
+  Section divider: a wand trail in place of a plain border or background-block transition.
+  Decorative only, so the whole row is aria-hidden.
+*/}
+<div
+  class={`mx-auto flex max-w-6xl items-center justify-center gap-2.5 px-6 ${className}`}
+  aria-hidden="true"
+>
+  {
+    trail.map((sparkle) => (
+      <Sparkle
+        class={`${sparkle.size} shrink-0 text-[var(--color-spark)]`}
+        style={`opacity:${sparkle.opacity}`}
+      />
+    ))
+  }
+</div>

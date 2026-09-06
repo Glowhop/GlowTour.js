@@ -1,0 +1,26 @@
+---
+interface Props {
+  class?: string;
+  /** Any CSS color; defaults to the element's currentColor so callers can tint via text-*. */
+  color?: string;
+  style?: string;
+}
+
+const { class: className = "h-4 w-4", color = "currentColor", style } = Astro.props;
+---
+
+{/*
+  Four-point sparkle, the recurring mark of the site's stage-magic art direction: it replaces the
+  plain dots the hero backdrop and the section dividers used before. Purely decorative, so every
+  instance is aria-hidden and never carries meaning on its own.
+*/}
+<svg
+  class={className}
+  style={style}
+  viewBox="0 0 24 24"
+  fill={color}
+  aria-hidden="true"
+  focusable="false"
+>
+  <path d="M12 0c1 8 4 11 12 12-8 1-11 4-12 12-1-8-4-11-12-12C8 11 11 8 12 0Z"></path>
+</svg>
