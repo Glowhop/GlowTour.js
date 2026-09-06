@@ -122,30 +122,36 @@ interface PointerProps extends ComponentProps {
 
 ## Hooks
 
-### `useTour(tour)`
+### `useTour()`
 
-Returns reactive tour state.
+Returns reactive tour state. Must be called inside `<GlowTour.Root tour={...}>`.
 
 **Signature**:
 ```typescript
-function useTour(tour: Tour): TourState
+function useTour(): TourState<ReactTourContent>
 ```
 
 **Returns**:
 ```typescript
 {
-  status: "idle" | "active" | "completed" | "error"
-  currentStep: TourCurrentStep | null
+  name: string
+  totalSteps: number
+  currentStepIndex: number
+  currentStep: TourCurrentStep<ReactTourContent> | null
+  direction: "advance" | "previous"
   canAdvance: boolean
   canPrevious: boolean
   canCancel: boolean
+  isFirstStep: boolean
+  isLastStep: boolean
+  status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
   error: Error | null
 }
 ```
 
 **Usage**:
 ```tsx
-const state = useTour(tour);
+const state = useTour();
 
 return (
   <div>

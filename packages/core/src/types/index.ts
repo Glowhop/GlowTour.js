@@ -79,11 +79,11 @@ export interface IndicatorOptions extends BaseOptions {
 export interface OverlayOptions extends BaseOptions {
   /** Color of the overlay backdrop (CSS color). @default "rgba(0, 0, 0, 0.5)" */
   color?: string;
-  /** Opacity of the overlay (0-1). @default 0.5 */
+  /** Opacity of the overlay (0-1). @default 0.7 */
   opacity?: number;
   /** Padding around the target cutout in pixels. @default 8 */
   padding?: number;
-  /** Border radius of the target cutout in pixels. @default 4 */
+  /** Border radius of the target cutout in pixels. @default 8 */
   radius?: number;
 }
 
@@ -93,7 +93,7 @@ export interface PopoverArrowOptions {
   disabled?: boolean;
   /** Color of the arrow (CSS color). */
   color?: string;
-  /** Size of the arrow in pixels. @default 8 */
+  /** Size of the arrow in pixels. @default 12 */
   size?: number;
   /** Border width of the arrow in pixels. @default 0 */
   borderWidth?: number;

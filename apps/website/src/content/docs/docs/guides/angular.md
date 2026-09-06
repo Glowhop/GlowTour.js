@@ -181,7 +181,7 @@ import {
       <glow-tour-overlay />
       <glow-tour-popover>
         @if (state(); as tourState) {
-          <p>Current step: {{ tourState.currentStep?.index }}</p>
+          <p>Current step: {{ tourState.currentStepIndex }}</p>
           <button [disabled]="!tourState.canAdvance" (click)="tour.advance()">
             Next
           </button>
