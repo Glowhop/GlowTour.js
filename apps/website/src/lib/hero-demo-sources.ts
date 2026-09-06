@@ -38,7 +38,7 @@ const workflow = tour
     target: "#continue",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance().",
-    popover: { hideAdvanceButton: true },
+    popover: { disableAdvanceButton: true },
     behavior: { allowInteraction: true },
   })
   .onTargetEvent("click", (event, context) => context.advance())

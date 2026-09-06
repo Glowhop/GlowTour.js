@@ -1,13 +1,13 @@
 ---
 title: Overview
-description: Introduction to Glow Tour guided tours library.
+description: Introduction to GlowTour.js guided tours library.
 ---
 
-Glow Tour is a cross-framework guided-tour library that works with React, Vue, Solid, Angular, and vanilla JavaScript. Create interactive product tours, onboarding flows, and feature highlights with a simple, composable API.
+GlowTour.js is a cross-framework guided-tour library that works with React, Vue, Solid, Angular, and vanilla JavaScript. Create interactive product tours, onboarding flows, and feature highlights with a simple, composable API.
 
 ## Get started
 
-- **[Getting Started](/docs/getting-started)** — Install Glow Tour and build your first tour in minutes.
+- **[Getting Started](/docs/getting-started)** — Install GlowTour.js and build your first tour in minutes.
 
 ## Choose your framework
 

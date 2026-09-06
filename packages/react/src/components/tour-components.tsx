@@ -1,5 +1,15 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
+import {
+  type AdapterRootBinding,
+  connectGlowTourRoot,
+  OVERLAY_IDLE_ATTRIBUTES,
+  OVERLAY_IDLE_STYLE,
+  OVERLAY_PATH_IDLE_ATTRIBUTES,
+  POINTER_IDLE_STYLE,
+  POPOVER_IDLE_ATTRIBUTES,
+  POPOVER_IDLE_STYLE,
+  styleRecordToCamelCase,
+} from "@glowhop/core-tour/adapter";
 import * as React from "react";
 import type { ReactTourContent } from "../glow-tour";
 import { DefaultTour } from "./default-tour";
@@ -29,6 +39,10 @@ const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
   right: "👉",
   top: "👆",
 };
+
+const OVERLAY_IDLE_STYLE_REACT = styleRecordToCamelCase(OVERLAY_IDLE_STYLE) as React.CSSProperties;
+const POINTER_IDLE_STYLE_REACT = styleRecordToCamelCase(POINTER_IDLE_STYLE) as React.CSSProperties;
+const POPOVER_IDLE_STYLE_REACT = styleRecordToCamelCase(POPOVER_IDLE_STYLE) as React.CSSProperties;
 
 type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
   as?: React.ElementType;
@@ -156,7 +170,7 @@ export function Root({ children, idPrefix, tour, ...props }: RootProps) {
  * @param props HTML attributes and the `as` prop for customizing the container element.
  * @returns The popover container.
  */
-export function Popover({ as: Component = "section", ...props }: ElementProps) {
+export function Popover({ as: Component = "section", style, ...props }: ElementProps) {
   const { binding } = useTourContext();
   const ref = useBoundElement<HTMLElement>((activeBinding, element) =>
     activeBinding.bindPopover(element),
@@ -166,11 +180,14 @@ export function Popover({ as: Component = "section", ...props }: ElementProps) {
     <Component
       {...props}
       aria-describedby={binding?.ids.description}
+      aria-hidden={POPOVER_IDLE_ATTRIBUTES["aria-hidden"]}
       aria-labelledby={binding?.ids.title}
       data-glow-tour-popover
       id={binding?.ids.popover}
+      inert={POPOVER_IDLE_ATTRIBUTES.inert === "true"}
       ref={ref}
       role="dialog"
+      style={style ?? POPOVER_IDLE_STYLE_REACT}
       tabIndex={-1}
     />
   );
@@ -232,20 +249,36 @@ export function Footer({ children, ...props }: ElementProps) {
  * @param props SVG attributes.
  * @returns The overlay SVG element.
  */
-export function Overlay({ children, viewBox = "0 0 0 0", ...props }: OverlayProps) {
+// `inert` is a global HTML attribute; @types/react's `SVGAttributes` does not
+// declare it even though browsers honor it on `<svg>`, so it is applied via a
+// separately typed prop bag rather than as a named `SVGProps` prop.
+const OVERLAY_INERT_PROP: { inert?: boolean } = {
+  inert: OVERLAY_IDLE_ATTRIBUTES.inert === "true",
+};
+
+export function Overlay({ children, style, viewBox = "0 0 0 0", ...props }: OverlayProps) {
   const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
 
   return (
     <svg
       {...props}
-      aria-hidden
+      {...OVERLAY_INERT_PROP}
+      aria-hidden={OVERLAY_IDLE_ATTRIBUTES["aria-hidden"]}
+      data-glow-tour-allow-interaction={OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"]}
       data-glow-tour-overlay
       focusable="false"
       ref={ref}
       role="presentation"
+      style={style ?? OVERLAY_IDLE_STYLE_REACT}
       viewBox={viewBox}
     >
-      <path data-glow-tour-overlay-path fillRule="evenodd" />
+      <path
+        cursor={OVERLAY_PATH_IDLE_ATTRIBUTES.cursor}
+        data-glow-tour-overlay-path
+        fillRule="evenodd"
+        opacity={OVERLAY_PATH_IDLE_ATTRIBUTES.opacity}
+        pointerEvents={OVERLAY_PATH_IDLE_ATTRIBUTES["pointer-events"]}
+      />
       {children}
     </svg>
   );
@@ -258,12 +291,23 @@ export function Overlay({ children, viewBox = "0 0 0 0", ...props }: OverlayProp
  * @param props HTML attributes, the `as` prop for customizing the container, and `directionContent`.
  * @returns The pointer indicator element.
  */
-export function Pointer({ as: Component = "div", directionContent, ...props }: PointerProps) {
+export function Pointer({
+  as: Component = "div",
+  directionContent,
+  style,
+  ...props
+}: PointerProps) {
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...directionContent };
 
   return (
-    <Component {...props} aria-hidden="true" data-glow-tour-pointer ref={ref}>
+    <Component
+      {...props}
+      aria-hidden="true"
+      data-glow-tour-pointer
+      ref={ref}
+      style={style ?? POINTER_IDLE_STYLE_REACT}
+    >
       {(Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>).map(
         (direction) => (
           <div data-glow-tour-pointer-direction={direction} key={direction}>

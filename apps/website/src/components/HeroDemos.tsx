@@ -96,7 +96,7 @@ const advanceOnClickWorkflow = advanceOnClickTour
     target: "#hero-advance-on-click-target",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance() from a real DOM click.",
-    popover: { hideAdvanceButton: true },
+    popover: { disableAdvanceButton: true },
     behavior: { allowInteraction: true },
   })
   .onTargetEvent("click", (_event, context) => context.advance())
@@ -557,7 +557,7 @@ const liveProgressWorkflow = liveProgressTour
 function LiveProgress() {
   const state = useTour();
   return (
-    <p className="px-4 pt-3 text-xs font-semibold text-[var(--color-accent)]">
+    <p className="text-xs font-semibold text-[var(--color-accent)]">
       Step {state.currentStepIndex + 1} of {state.totalSteps}
     </p>
   );
@@ -590,8 +590,10 @@ export function LiveProgressDemo() {
         <Overlay />
         <Pointer />
         <Popover>
-          <Header />
-          <LiveProgress />
+          <div className="flex justify-between">
+            <Header />
+            <LiveProgress />
+          </div>
           <Content />
           <Footer>
             <CancelTrigger />

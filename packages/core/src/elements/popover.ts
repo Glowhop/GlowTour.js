@@ -2,9 +2,10 @@ import { DomMutationLease } from "../dom/dom-mutation-lease";
 import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { roundByDPR, viewportDimensions } from "../utils/utils";
 import GlowTourElement, { type TourElementStep } from "./base";
+import { POPOVER_IDLE_ATTRIBUTES, POPOVER_IDLE_STYLE } from "./idle-presentation";
 import { ensurePopoverArrowStyles } from "./popover-arrow-styles";
 
-const DEFAULT_POPOVER_GAP = 14;
+const DEFAULT_POPOVER_GAP = 32;
 const DEFAULT_ARROW_EDGE_PADDING = 16;
 const DEFAULT_TRY_ORDER = ["bottom", "top", "right", "left"] as const;
 const REPLACEMENT_DIFF = 50; // pixels
@@ -185,17 +186,14 @@ export default class PopoverElement extends GlowTourElement {
       return;
     }
 
-    this.mutationLease.setStyle("position", "fixed");
-    this.mutationLease.setStyle("z-index", "10001");
-    this.mutationLease.setStyle("top", "0px");
-    this.mutationLease.setStyle("left", "0px");
-    this.mutationLease.setStyle("opacity", "0");
-    this.mutationLease.setStyle("transform-origin", "center center");
-    if (!el.hasAttribute("tabindex")) {
-      this.mutationLease.setAttribute("tabindex", "-1");
+    for (const [property, value] of Object.entries(POPOVER_IDLE_STYLE)) {
+      this.mutationLease.setStyle(property, value);
     }
-    this.mutationLease.setAttribute("aria-hidden", "true");
-    this.mutationLease.setAttribute("inert", "true");
+    if (!el.hasAttribute("tabindex")) {
+      this.mutationLease.setAttribute("tabindex", POPOVER_IDLE_ATTRIBUTES.tabindex);
+    }
+    this.mutationLease.setAttribute("aria-hidden", POPOVER_IDLE_ATTRIBUTES["aria-hidden"]);
+    this.mutationLease.setAttribute("inert", POPOVER_IDLE_ATTRIBUTES.inert);
   }
 
   updatePosition(

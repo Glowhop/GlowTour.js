@@ -16,7 +16,7 @@ if (root) {
   createRoot(root).render(
     <>
       <div style={{ padding: "20px" }}>
-        <h1>Glow Tour - React Example</h1>
+        <h1>GlowTour.js - React Example</h1>
         <button
           id="welcome"
           type="button"
@@ -48,7 +48,7 @@ function start() {
 
 <template>
   <div style="padding: 20px">
-    <h1>Glow Tour - Vue Example</h1>
+    <h1>GlowTour.js - Vue Example</h1>
     <button id="welcome" type="button" @click="start"
       style="padding: 10px 20px; font-size: 16px">
       Start tour
@@ -73,7 +73,7 @@ if (appRoot) {
     () => (
       <>
         <div style={{ padding: "20px" }}>
-          <h1>Glow Tour - Solid Example</h1>
+          <h1>GlowTour.js - Solid Example</h1>
           <button
             id="welcome"
             type="button"
@@ -100,7 +100,7 @@ import { createGlowTour, GlowTourDefault } from "@glowhop/angular-tour";
   selector: "app-root",
   template: \`
     <div style="padding: 20px">
-      <h1>Glow Tour - Angular Example</h1>
+      <h1>GlowTour.js - Angular Example</h1>
       <button
         id="welcome"
         type="button"

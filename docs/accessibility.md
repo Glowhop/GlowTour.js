@@ -1,6 +1,6 @@
 # Accessibility
 
-This document is the accessibility contract for Glow Tour: the ARIA semantics every adapter
+This document is the accessibility contract for GlowTour.js: the ARIA semantics every adapter
 renders, the keyboard shortcuts the core engine supports, and the focus-restoration behavior
 guaranteed when a tour ends. It reflects the current `packages/core` state machine
 (`tour-view-driver.ts`, `focus-guard.ts`) and the adapter markup in each

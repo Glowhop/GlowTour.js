@@ -3,7 +3,7 @@ title: Vanilla guide
 description: Build guided tours with @glowhop/vanilla-tour.
 ---
 
-Glow Tour's Vanilla adapter uses native custom elements. Content is HTML and text. No framework required — works in any DOM-based application.
+The GlowTour.js Vanilla adapter uses native custom elements. Content is HTML and text. No framework required — works in any DOM-based application.
 
 ## Setup
 
@@ -77,7 +77,7 @@ In your HTML:
 <!doctype html>
 <html>
   <head>
-    <title>Glow Tour - Vanilla</title>
+    <title>GlowTour.js - Vanilla</title>
   </head>
   <body>
     <header>
@@ -146,7 +146,7 @@ Each custom element exposes properties and follows standard DOM patterns:
 
 ## Modern browsers
 
-Glow Tour's Vanilla adapter requires modern browser support for custom elements and the Shadow DOM API. It works in all modern browsers (Chrome 77+, Firefox 63+, Safari 13+, Edge 79+).
+The GlowTour.js Vanilla adapter requires modern browser support for custom elements and the Shadow DOM API. It works in all modern browsers (Chrome 77+, Firefox 63+, Safari 13+, Edge 79+).
 
 ## SSR
 

@@ -14,7 +14,7 @@ if (appRoot) {
     () => (
       <>
         <div style={{ padding: "20px" }}>
-          <h1>Glow Tour - Solid Example</h1>
+          <h1>GlowTour.js - Solid Example</h1>
           <button
             id="welcome"
             type="button"

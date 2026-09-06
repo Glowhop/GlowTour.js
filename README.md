@@ -1,6 +1,6 @@
-# Glow Tour
+# GlowTour.js
 
-Glow Tour is a cross-framework guided-tour package inspired by Driver.js. The project is in `dev`, so breaking changes remain possible.
+GlowTour.js is a cross-framework guided-tour package inspired by Driver.js. The project is in `dev`, so breaking changes remain possible.
 
 ## Choose a package
 

@@ -13,7 +13,7 @@ if (root) {
   createRoot(root).render(
     <>
       <div style={{ padding: "20px" }}>
-        <h1>Glow Tour - React Example</h1>
+        <h1>GlowTour.js - React Example</h1>
         <button
           id="welcome"
           type="button"

@@ -3,7 +3,7 @@ title: React guide
 description: Build guided tours with @glowhop/react-tour.
 ---
 
-Glow Tour's React adapter provides native React components and a Context-scoped tour instance. No portals to wire up yourself — `DefaultTour` renders the complete UI for you.
+The GlowTour.js React adapter provides native React components and a Context-scoped tour instance. No portals to wire up yourself — `DefaultTour` renders the complete UI for you.
 
 ## Setup
 
@@ -131,7 +131,7 @@ The `useTour()` hook returns the reactive tour state for custom styling or logic
 
 ## React 18 vs 19
 
-Glow Tour supports both React 18 and 19. The adapter uses `useSyncExternalStore` for state management and works identically across both versions. No changes are needed when upgrading.
+GlowTour.js supports both React 18 and 19. The adapter uses `useSyncExternalStore` for state management and works identically across both versions. No changes are needed when upgrading.
 
 ## SSR
 

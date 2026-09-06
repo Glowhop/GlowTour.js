@@ -146,7 +146,8 @@ function createStep(
   options: Omit<PopoverOptions, "placementTryOrder"> = {},
 ) {
   return {
-    popover: { ...options, placementTryOrder },
+    // Pin the gap so positioning expectations stay independent of the default.
+    popover: { gap: 14, ...options, placementTryOrder },
   } satisfies TourElementStep;
 }
 

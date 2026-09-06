@@ -23,7 +23,7 @@ export type WorkflowDefinition = CoreWorkflowDefinition<ReactTourContent>;
 export type StartOptions = CoreStartOptions<ReactTourContent>;
 
 /**
- * Creates a new Glow Tour instance for React.
+ * Creates a new GlowTour.js instance for React.
  * @param options Tour options for error handling.
  * @returns A tour controller ready to run React workflows.
  */

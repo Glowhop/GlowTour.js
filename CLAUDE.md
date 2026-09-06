@@ -1,6 +1,6 @@
-# Glow Tour
+# GlowTour.js
 
-Glow Tour is a cross-framework guided-tour library (core engine + React/Solid/Vue/Angular/vanilla adapters), managed as a Bun workspace monorepo. See [README.md](README.md) for the package layout and quick start.
+GlowTour.js is a cross-framework guided-tour library (core engine + React/Solid/Vue/Angular/vanilla adapters), managed as a Bun workspace monorepo. See [README.md](README.md) for the package layout and quick start.
 
 ## Working style
 

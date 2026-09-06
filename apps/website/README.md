@@ -1,6 +1,6 @@
 # @glowhop/website
 
-Marketing site + docs for Glow Tour, built with [Astro](https://astro.build), [Starlight](https://starlight.astro.build) for `/docs`, `@astrojs/react` for interactive hero demos, and Tailwind v4.
+Marketing site + docs for GlowTour.js, built with [Astro](https://astro.build), [Starlight](https://starlight.astro.build) for `/docs`, `@astrojs/react` for interactive hero demos, and Tailwind v4.
 
 ## Scripts
 
