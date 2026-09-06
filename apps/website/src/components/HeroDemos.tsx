@@ -590,11 +590,10 @@ export function LiveProgressDemo() {
         <Overlay />
         <Pointer />
         <Popover>
-        <div className="flex justify-between">
-
-          <Header />
-          <LiveProgress />
-        </div>
+          <div className="flex justify-between">
+            <Header />
+            <LiveProgress />
+          </div>
           <Content />
           <Footer>
             <CancelTrigger />
