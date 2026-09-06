@@ -135,12 +135,24 @@ const features = [
       "Real renderToString/hydration coverage plus full Next.js, Nuxt, and SolidStart apps driven end to end with Playwright.",
   },
 ];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  name: "GlowTour.js",
+  description:
+    "A guided-tour engine for React, Vue, Solid, Angular, and vanilla apps. One core, real accessibility, real SSR support.",
+  codeRepository: "https://github.com/Glowhop/glow-tour",
+  programmingLanguage: "TypeScript",
+  license: "https://github.com/Glowhop/glow-tour/blob/main/LICENSE",
+};
 ---
 
 <MarketingLayout
   title="GlowTour.js — a cross-framework guided-tour library"
   description="A guided-tour engine for React, Vue, Solid, Angular, and vanilla apps. One core, real accessibility, real SSR support."
 >
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <section class="relative isolate overflow-hidden px-6 pt-20 pb-0 sm:pt-28">
     <SpotlightMotif class="-z-10" />
     <div class="mx-auto max-w-3xl text-center">

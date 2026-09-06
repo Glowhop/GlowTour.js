@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://glowtour.dev/sitemap-index.xml
