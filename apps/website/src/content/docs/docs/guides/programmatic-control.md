@@ -25,18 +25,24 @@ Access the current tour state and subscribe to changes:
 ```typescript
 const state = tour.state.get();
 
-console.log(state.status);        // "idle", "active", "error", "completed"
+console.log(state.status);        // "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
 console.log(state.currentStep);   // Current step info (or null if not active)
 console.log(state.error);         // Error if status === "error"
 ```
 
 State includes:
 
+- `name` - Name of the running workflow
+- `totalSteps` - Total number of steps in the workflow
+- `currentStepIndex` - Index of the active step (0-based), or -1 if none
 - `status` - Current tour state
 - `currentStep` - Current step data
+- `direction` - Direction of the last navigation ("advance" or "previous")
 - `canAdvance` - Whether advancing is allowed
 - `canPrevious` - Whether going back is allowed
 - `canCancel` - Whether cancelling is allowed
+- `isFirstStep` - Whether the tour is on the first step
+- `isLastStep` - Whether the tour is on the last step
 - `error` - Error if the tour failed
 
 ### Subscribing to changes
@@ -44,7 +50,7 @@ State includes:
 ```typescript
 const unsubscribe = tour.state.subscribe((newState) => {
   console.log("Tour state changed:", newState);
-  if (newState.status === "completed") {
+  if (newState.status === "finished") {
     console.log("Tour finished!");
   }
 });
@@ -109,7 +115,8 @@ const workflow = tour
 
 ## Transition callbacks
 
-React to step transitions:
+React to step transitions. These are builder *methods* chained after a `.step()` call, not options
+inside it — they attach to the step that precedes them:
 
 ```typescript
 const workflow = tour
@@ -118,32 +125,32 @@ const workflow = tour
     target: "#step1",
     title: "First",
     content: "Step 1",
-    beforeAdvance: async (context) => {
-      console.log("About to advance from step 1");
-      // Perform async work, e.g., save user progress
-      await saveProgress();
-    },
+  })
+  .beforeAdvance(async (context) => {
+    console.log("About to advance from step 1");
+    // Perform async work, e.g., save user progress
+    await saveProgress();
   })
   .step({
     target: "#step2",
     title: "Second",
     content: "Step 2",
-    beforePrevious: async (context) => {
-      console.log("About to go back to step 1");
-    },
+  })
+  .beforePrevious(async (context) => {
+    console.log("About to go back to step 1");
   })
   .step({
     target: "#step3",
     title: "Third",
     content: "Step 3",
-    beforeCancel: async (context) => {
-      console.log("About to cancel the tour");
-    },
+  })
+  .beforeCancel(async (context) => {
+    console.log("About to cancel the tour");
   })
   .build();
 ```
 
-`beforeAdvance`, `beforePrevious`, and `beforeCancel` can be async and will pause the transition until they resolve.
+`.beforeAdvance()`, `.beforePrevious()`, and `.beforeCancel()` can be async and will pause the transition until they resolve.
 
 ## Step actions
 
@@ -184,6 +191,27 @@ Available actions:
 - `.wait(ms)` - Wait for a duration in milliseconds
 - `.waitUntil(fn, options)` - Wait until a condition is true (default: checks every 16ms, 3000ms timeout)
 - `.waitUntilElement(selector, options)` - Wait until an element enters the DOM
+- `.clickTarget()` - Click the current step's target element
+- `.focusTarget()` - Focus the current step's target element
+
+## Composing workflows
+
+`.append(workflow)` splices an already-built workflow's steps into the one you are building, so you can
+define reusable fragments once and reuse them across tours:
+
+```typescript
+const profileSteps = tour
+  .create("profile-fragment")
+  .step({ target: "#profile", title: "Your profile", content: "Complete it to continue." })
+  .build();
+
+const workflow = tour
+  .create("onboarding")
+  .step({ target: "#welcome", title: "Welcome", content: "Let's get started!" })
+  .append(profileSteps)
+  .step({ target: "#dashboard", title: "You're ready!", content: "Explore your dashboard." })
+  .build();
+```
 
 ## Target events
 
@@ -210,6 +238,14 @@ const workflow = tour
 
 The event handler receives the native DOM event and the step context.
 
+Pass an array to bind the same handler to several events at once:
+
+```typescript
+.onTargetEvent(["focus", "blur"], (event, context) => {
+  console.log("Target received:", event.type);
+})
+```
+
 ## Error handling
 
 Handle subscriber errors that don't crash the tour:
@@ -232,13 +268,8 @@ A fatal error from the rendering layer (e.g., the popover component throws) will
 Here's a tour that combines multiple features:
 
 ```typescript
+// `createGlowTour` only takes controller-level options; lifecycle hooks belong to the workflow.
 const tour = createGlowTour({
-  onStart(context) {
-    analytics.track("tour_started");
-  },
-  onFinish(context) {
-    analytics.track("tour_completed");
-  },
   onSubscriberError(error) {
     logger.error("Tour error", error);
   },
@@ -246,17 +277,23 @@ const tour = createGlowTour({
 
 const workflow = tour
   .create("onboarding", {
+    onStart(context) {
+      analytics.track("tour_started");
+    },
     onCancel(context) {
       analytics.track("tour_cancelled");
+    },
+    onFinish(context) {
+      analytics.track("tour_completed");
     },
   })
   .step({
     target: "#welcome",
     title: "Welcome",
     content: "Let's get started!",
-    beforeAdvance: async () => {
-      await api.logEvent("welcome_seen");
-    },
+  })
+  .beforeAdvance(async () => {
+    await api.logEvent("welcome_seen");
   })
   .wait(500)
   .step({
@@ -274,12 +311,10 @@ const workflow = tour
     target: "#dashboard",
     title: "You're ready!",
     content: "Explore your dashboard.",
-    beforeCancel: async (context) => {
-      if (context.canPrevious) {
-        // User is backing up; don't log finish
-        return;
-      }
-    },
+  })
+  .beforeCancel(async (context) => {
+    // The transition context carries the step's props and its resolved target element.
+    await api.logEvent("cancelled_on", { step: context.title });
   })
   .build();
 

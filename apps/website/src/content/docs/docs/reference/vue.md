@@ -123,23 +123,29 @@ interface GlowTourPointerProps {
 
 ## Hooks
 
-### `useTour(tour)`
+### `useTour()`
 
-Returns reactive tour state as a ref.
+Returns reactive tour state as a ref. Must be called inside `<GlowTourRoot tour={...}>`.
 
 **Signature**:
 ```typescript
-function useTour(tour: Tour): Ref<TourState>
+function useTour(): ShallowRef<TourState<VueTourContent>>
 ```
 
 **Returns**:
 ```typescript
-Ref<{
-  status: "idle" | "active" | "completed" | "error"
-  currentStep: TourCurrentStep | null
+ShallowRef<{
+  name: string
+  totalSteps: number
+  currentStepIndex: number
+  currentStep: TourCurrentStep<VueTourContent> | null
+  direction: "advance" | "previous"
   canAdvance: boolean
   canPrevious: boolean
   canCancel: boolean
+  isFirstStep: boolean
+  isLastStep: boolean
+  status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
   error: Error | null
 }>
 ```
@@ -149,7 +155,7 @@ Ref<{
 <script setup>
 import { useTour } from "@glowhop/vue-tour";
 
-const state = useTour(tour);
+const state = useTour();
 </script>
 
 <template>

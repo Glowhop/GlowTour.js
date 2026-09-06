@@ -107,6 +107,7 @@ test("the Vanilla package exposes separate pure and auto registration entries", 
   expect(manifest.exports).toEqual({
     ".": { import: "./dist/index.js", types: "./dist/index.d.ts" },
     "./auto": { import: "./dist/auto.js", types: "./dist/auto.d.ts" },
+    "./config": { import: "./dist/config.js", types: "./dist/config.d.ts" },
   });
 });
 
