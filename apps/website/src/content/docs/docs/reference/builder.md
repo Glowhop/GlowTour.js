@@ -277,8 +277,8 @@ Control the semi-transparent overlay that darkens non-target areas.
 |--------|------|---------|-------------|
 | `color` | string | — | Overlay color (uses theme's overlay fill if not set) |
 | `opacity` | number | `0.7` | Overlay opacity (0 = transparent, 1 = opaque) |
-| `padding` | number | `16` | Padding around the target element (in pixels) |
-| `radius` | number | `12` | Border radius of the overlay cutout (in pixels) |
+| `padding` | number | `8` | Padding around the target element (in pixels) |
+| `radius` | number | `8` | Border radius of the overlay cutout (in pixels) |
 | `animated` | boolean | `true` | Enable/disable animation |
 | `animation` | AnimationOptions | — | Custom animation (duration and easing) |
 
@@ -362,7 +362,7 @@ Control the decorative indicator/pointer that highlights the target element.
 |--------|------|---------|-------------|
 | `disabled` | boolean | `false` | Hide the indicator |
 | `gap` | number | `16` | Spacing between indicator and target (in pixels) |
-| `placementTryOrder` | Array | `["left", "right", "top", "bottom"]` | Preferred placements in order of preference |
+| `placementTryOrder` | Array | `["bottom", "top", "right", "left"]` | Preferred placements in order of preference |
 | `animated` | boolean | `true` | Enable/disable animation |
 | `animation` | AnimationOptions | — | Custom animation (duration and easing) |
 

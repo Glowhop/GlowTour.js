@@ -37,6 +37,10 @@
     "./adapter": {
       "types": "./dist/adapter.d.ts",
       "import": "./dist/adapter.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js"
     }
   },
   "scripts": {

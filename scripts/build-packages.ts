@@ -36,20 +36,21 @@ const root = resolve(import.meta.dir, "..");
 const packageRoot = join(root, "packages");
 const sharedReleaseDocuments = ["LICENSE"] as const;
 const packageBuilds: readonly PackageBuild[] = [
-  { id: "core", entrypoints: ["src/index.ts", "src/adapter.ts"] },
-  { id: "react", entrypoints: ["src/index.ts"] },
+  { id: "core", entrypoints: ["src/index.ts", "src/adapter.ts", "src/config/index.ts"] },
+  { id: "react", entrypoints: ["src/index.ts", "src/config.ts"] },
   {
     id: "vue",
     entrypoints: [
       "src/index.ts",
       "src/glow-tour.ts",
+      "src/config.ts",
       "src/components/default-tour.ts",
       "src/components/tour-components.ts",
     ],
     preserveModules: true,
   },
-  { id: "solid", entrypoints: ["src/index.ts"] },
-  { id: "vanilla", entrypoints: ["src/index.ts", "src/auto.ts"] },
+  { id: "solid", entrypoints: ["src/index.ts", "src/config.ts"] },
+  { id: "vanilla", entrypoints: ["src/index.ts", "src/auto.ts", "src/config.ts"] },
 ];
 const externalPackages = [
   "@angular/common",
