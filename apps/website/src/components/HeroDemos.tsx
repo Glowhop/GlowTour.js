@@ -557,7 +557,7 @@ const liveProgressWorkflow = liveProgressTour
 function LiveProgress() {
   const state = useTour();
   return (
-    <p className="px-4 pt-3 text-xs font-semibold text-[var(--color-accent)]">
+    <p className="text-xs font-semibold text-[var(--color-accent)]">
       Step {state.currentStepIndex + 1} of {state.totalSteps}
     </p>
   );
@@ -590,8 +590,11 @@ export function LiveProgressDemo() {
         <Overlay />
         <Pointer />
         <Popover>
+        <div className="flex justify-between">
+
           <Header />
           <LiveProgress />
+        </div>
           <Content />
           <Footer>
             <CancelTrigger />
