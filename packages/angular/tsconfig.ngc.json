@@ -8,8 +8,10 @@
     "strict": true,
     "skipLibCheck": true,
     "paths": {
+      "@glowhop/angular-tour": ["packages/angular/dist/index.d.ts"],
       "@glowhop/core-tour": ["packages/core/dist/index.d.ts"],
-      "@glowhop/core-tour/adapter": ["packages/core/dist/adapter.d.ts"]
+      "@glowhop/core-tour/adapter": ["packages/core/dist/adapter.d.ts"],
+      "@glowhop/core-tour/config": ["packages/core/dist/config/index.d.ts"]
     }
   },
   "angularCompilerOptions": {

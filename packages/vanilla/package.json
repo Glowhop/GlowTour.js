@@ -40,6 +40,10 @@
     "./auto": {
       "types": "./dist/auto.d.ts",
       "import": "./dist/auto.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
     }
   },
   "dependencies": {

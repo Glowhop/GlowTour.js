@@ -25,6 +25,7 @@ const STEP_BUILDER_INTERNAL = Symbol("WorkflowStepBuilder.internal");
 export type EventName = keyof HTMLElementEventMap;
 
 type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
+/** Predicate polled by `.waitUntil()` until it returns `true` or the wait times out. */
 type WaitUntilPredicate<T> = (context: StepContext<T>) => Promise<boolean> | boolean;
 
 function assertTimingValue(name: string, value: number): void {

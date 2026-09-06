@@ -183,6 +183,7 @@ function assertPackedArtifact(packageName: PackageName) {
     assert.deepEqual(manifest.exports, {
       ".": { import: "./index.js", types: "./index.d.ts" },
       "./auto": { import: "./auto.js", types: "./auto.d.ts" },
+      "./config": { import: "./config.js", types: "./config.d.ts" },
     });
   }
 }
