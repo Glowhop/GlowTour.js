@@ -9,11 +9,14 @@ const { variant, class: className = "h-6 w-6" } = Astro.props;
 
 {
   variant === "square" && (
-    <span
-      class={`inline-flex items-center justify-center rounded-[var(--radius-glow)] bg-[var(--color-accent)] text-xs font-bold text-[var(--color-on-accent)] ${className}`}
-    >
-      G
-    </span>
+    <img
+      src="/glow-tour-logo.png"
+      alt=""
+      width="512"
+      height="427"
+      decoding="async"
+      class={`object-contain ${className}`}
+    />
   )
 }
 {

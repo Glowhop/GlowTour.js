@@ -6,6 +6,8 @@ import CodeBlock from "../components/CodeBlock.astro";
 import { ExamplesGallery } from "../components/ExamplesGallery";
 import FrameworkIcon from "../components/FrameworkIcon.astro";
 import Marquee from "../components/Marquee.astro";
+import SpotlightMotif from "../components/SpotlightMotif.astro";
+import StepDivider from "../components/StepDivider.astro";
 import MarketingLayout from "../layouts/MarketingLayout.astro";
 import {
   advanceOnClickSource,
@@ -58,28 +60,29 @@ const stats = [
 
 const useCases = [
   {
-    title: "Onboard users",
-    description: "Walk new users through the parts of your product that matter on day one.",
+    title: "First-day onboarding",
+    description: "Take a new user straight to the parts of your product that matter today.",
   },
   {
-    title: "Feature adoption",
-    description: "Point returning users at a feature they haven't discovered yet.",
+    title: "Surface a feature",
+    description: "Point a returning user at something you shipped that they haven't found yet.",
   },
   {
-    title: "Contextual help",
-    description: "Explain an element exactly where it lives, instead of linking out to docs.",
+    title: "In-place explanations",
+    description: "Describe an element right next to it, instead of sending people to your docs.",
   },
   {
-    title: "Interactive tutorials",
-    description: "Chain steps that wait for real actions, not just click-through slides.",
+    title: "Tutorials that wait",
+    description: "Chain steps that advance on a real action, not another click-through slide.",
   },
   {
-    title: "Form guidance",
-    description: "Guide multi-step forms field by field with placement that adapts to layout.",
+    title: "Field-by-field guidance",
+    description:
+      "Walk a multi-step form one field at a time, with placement that adapts to layout.",
   },
   {
-    title: "Reduce support tickets",
-    description: "Answer the same repeated question in-product before it becomes a ticket.",
+    title: "Fewer repeat tickets",
+    description: "Answer the question support hears every week before it's asked again.",
   },
 ];
 
@@ -138,31 +141,72 @@ const features = [
   title="Glow Tour — a cross-framework guided-tour library"
   description="A guided-tour engine for React, Vue, Solid, Angular, and vanilla apps. One core, real accessibility, real SSR support."
 >
-  <section class="mx-auto max-w-6xl px-6 pt-16 pb-8 sm:pt-24">
+  <section class="relative isolate overflow-hidden px-6 pt-20 pb-0 sm:pt-28">
+    <SpotlightMotif class="-z-10" />
     <div class="mx-auto max-w-3xl text-center">
-      <h1 class="text-4xl font-semibold tracking-tight text-[var(--color-text)] sm:text-5xl">
-        Guided tours for whatever you're already building
-      </h1>
-      <p class="mt-5 text-lg text-[var(--color-text-muted)]">
-        One workflow engine, native adapters for React, Vue, Solid, Angular, and vanilla DOM.
-        Accessible, SSR-verified, ESM-only.
+      <p
+        class="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-3 py-1 text-xs font-medium text-[var(--color-text-muted)] backdrop-blur"
+      >
+        <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" aria-hidden="true"></span>
+        Guided tours, five frameworks, one engine
       </p>
-      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+      <h1
+        class="font-heading mt-6 text-[2.6rem] leading-[1.05] font-semibold tracking-[-0.02em] text-balance text-[var(--color-text)] sm:text-6xl"
+      >
+        Show people around, without writing a guide.
+      </h1>
+      <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-pretty text-[var(--color-text-muted)]">
+        One workflow engine with native adapters for React, Vue, Solid, Angular, and vanilla DOM —
+        accessible by default, verified under real SSR, shipped as ESM only.
+      </p>
+      <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
         <Button href="/docs/getting-started">Get started</Button>
-        <Button href="#examples" variant="secondary">View examples</Button>
+        <Button href="#frameworks" variant="secondary">Pick your framework</Button>
       </div>
+      {/*
+        The mascot stands in the pool of light the SpotlightMotif casts, so the illustration and
+        the backdrop read as one stage rather than two stacked decorations. Decorative: the
+        headline and subhead already carry the message, so the alt text stays empty.
+      */}
+      <img
+        src="/mascot-wizard.png"
+        alt=""
+        width="1024"
+        height="749"
+        loading="eager"
+        fetchpriority="high"
+        class="mx-auto mt-12 w-full max-w-lg"
+      />
     </div>
   </section>
 
   <Marquee items={marqueeClaims} />
 
-  <section id="examples" class="mx-auto max-w-6xl px-6 pt-16 pb-20 scroll-mt-20">
-    <h2 class="text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
-      Examples
+  <section id="frameworks" class="mx-auto max-w-6xl px-6 pt-16 pb-4 scroll-mt-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      Pick your framework
     </h2>
     <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
-      Every demo below runs for real on this page — and shows the exact code that produced it,
-      side by side.
+      Same workflow engine underneath — each adapter renders it the way that framework expects.
+    </p>
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
+      {
+        frameworks.map((fw) => (
+          <Button href={fw.href} variant="secondary" class="gap-2">
+            <FrameworkIcon name={fw.icon} class="h-4 w-4" />
+            {fw.label}
+          </Button>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="examples" class="mx-auto max-w-6xl px-6 pt-16 pb-20 scroll-mt-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      Try it, then read it.
+    </h2>
+    <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
+      Every example below runs for real — the code beside it is exactly what produced it.
     </p>
     <div class="mt-10">
       <ExamplesGallery client:load codeHtml={exampleCodeHtml} />
@@ -170,8 +214,8 @@ const features = [
   </section>
 
   <section class="mx-auto max-w-6xl px-6 pb-20">
-    <h2 class="text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
-      Use cases
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      Where teams actually use it
     </h2>
     <div class="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
       {
@@ -188,87 +232,72 @@ const features = [
     </div>
   </section>
 
-  <section class="border-y border-[var(--color-border)] bg-[var(--color-surface-muted)]">
-    <div class="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-3">
-      {
-        stats.map((stat) => (
-          <div class="text-center">
-            <div class="text-3xl font-semibold text-[var(--color-accent)]">{stat.value}</div>
-            <div class="mt-1 text-sm text-[var(--color-text-muted)]">{stat.label}</div>
-          </div>
-        ))
-      }
-    </div>
-  </section>
+  <StepDivider class="py-2" />
 
-  <section class="mx-auto max-w-6xl px-6 py-20">
-    <h2 class="text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
-      Works with any framework
-    </h2>
-    <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
-      One core engine, native adapters — not a generic wrapper — for each framework.
+  <section class="mx-auto max-w-4xl px-6 py-14 text-center">
+    <p class="text-xl leading-relaxed text-[var(--color-text)] sm:text-2xl">
+      <span class="font-heading font-semibold text-[var(--color-accent)]">{stats[0].value}</span>{" "}
+      framework adapters share one <span class="font-semibold">{stats[1].value}</span> core, each rendering
+      full <span class="font-heading font-semibold text-[var(--color-accent)]">{stats[2].value}</span>{" "}
+      dialog semantics, keyboard trap, and focus restore.
     </p>
-    <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
+  </section>
+
+  <StepDivider class="py-2" />
+
+  <section class="mx-auto max-w-3xl px-6 py-20 text-center">
+    <h2 class="font-heading text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      MIT, plainly
+    </h2>
+    <p class="mt-4 text-[var(--color-text-muted)]">No tiers, no feature gates, no fine print.</p>
+    <ul class="mx-auto mt-8 grid max-w-md gap-3 text-left">
       {
-        frameworks.map((fw) => (
-          <Button href={fw.href} variant="secondary" class="gap-2">
-            <FrameworkIcon name={fw.icon} class="h-4 w-4" />
-            {fw.label}
-          </Button>
+        [
+          "Personal projects",
+          "Commercial products",
+          "Unlimited projects",
+          "No attribution required",
+        ].map((item) => (
+          <li class="flex items-center gap-3 text-[var(--color-text)]">
+            <svg
+              class="h-5 w-5 shrink-0 text-[var(--color-accent)]"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M4 10.5l3.5 3.5L16 5.5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            {item}
+          </li>
         ))
       }
-    </div>
+    </ul>
   </section>
 
-  <section class="border-t border-[var(--color-border)] bg-[var(--color-surface-muted)]">
-    <div class="mx-auto max-w-3xl px-6 py-20 text-center">
-      <h2 class="text-3xl font-semibold tracking-tight text-[var(--color-text)]">
-        Free for everyone, forever
-      </h2>
-      <p class="mt-4 text-[var(--color-text-muted)]">
-        Glow Tour is MIT licensed. No paid tier, no feature gate.
-      </p>
-      <ul class="mx-auto mt-8 grid max-w-md gap-3 text-left">
-        {
-          [
-            "Personal projects",
-            "Commercial products",
-            "Unlimited projects",
-            "No attribution required",
-          ].map((item) => (
-            <li class="flex items-center gap-3 text-[var(--color-text)]">
-              <svg
-                class="h-5 w-5 shrink-0 text-[var(--color-accent)]"
-                viewBox="0 0 20 20"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4 10.5l3.5 3.5L16 5.5"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-              {item}
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-  </section>
-
-  <section class="mx-auto max-w-6xl px-6 py-20">
-    <h2 class="text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
-      Everything a tour engine needs, nothing it doesn't
+  <section class="mx-auto max-w-5xl px-6 py-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+      What's actually in the box
     </h2>
-    <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mt-10 grid gap-x-10 gap-y-6 sm:grid-cols-2">
       {
         features.map((feature) => (
-          <div class="rounded-[var(--radius-glow)] border border-[var(--color-border)] p-5">
-            <h3 class="font-semibold text-[var(--color-text)]">{feature.title}</h3>
-            <p class="mt-2 text-sm text-[var(--color-text-muted)]">{feature.description}</p>
+          <div class="flex gap-4">
+            <span
+              class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[calc(var(--radius-glow)/2)] bg-[var(--color-accent)]/10"
+              aria-hidden="true"
+            >
+              <span class="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
+            </span>
+            <div>
+              <h3 class="font-semibold text-[var(--color-text)]">{feature.title}</h3>
+              <p class="mt-1 text-sm text-[var(--color-text-muted)]">{feature.description}</p>
+            </div>
           </div>
         ))
       }
@@ -277,8 +306,8 @@ const features = [
 
   <section class="bg-[var(--color-accent)]">
     <div class="mx-auto max-w-3xl px-6 py-20 text-center">
-      <h2 class="text-3xl font-semibold tracking-tight text-[var(--color-on-accent)]">
-        Ship your first tour today
+      <h2 class="font-heading text-3xl font-semibold tracking-tight text-[var(--color-on-accent)]">
+        Your first tour, in one file
       </h2>
       <p class="mt-4 text-[var(--color-on-accent)]/80">
         Install the adapter for your framework, import the default theme, and build your first
@@ -287,13 +316,13 @@ const features = [
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
         <a
           href="/docs/getting-started"
-          class="inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] bg-[var(--color-on-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-accent)] transition-colors hover:opacity-90"
+          class="inline-flex -translate-x-px -translate-y-px items-center justify-center gap-2 rounded-[var(--radius-glow)] bg-[var(--color-on-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-accent)] shadow-[3px_3px_0_0_rgb(0_0_0_/_25%)] transition-[transform,box-shadow] duration-150 hover:translate-x-0 hover:translate-y-0 hover:shadow-[1px_1px_0_0_rgb(0_0_0_/_25%)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
         >
           Get started
         </a>
         <a
           href="https://github.com/Glowhop/glow-tour"
-          class="inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] border border-[var(--color-on-accent)]/40 px-5 py-2.5 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-on-accent)]/10"
+          class="inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] border border-dashed border-[var(--color-on-accent)]/40 px-5 py-2.5 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:border-solid hover:bg-[var(--color-on-accent)]/10"
         >
           <Icon name="logos:github-icon" class="h-4 w-4" />
           Star on GitHub

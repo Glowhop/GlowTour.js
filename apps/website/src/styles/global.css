@@ -11,6 +11,13 @@
   --color-accent-active: #3522c7;
   --color-on-accent: #ffffff;
 
+  /*
+   * Second accent, used only for the stage-light motifs (sparkles, wand trail, small marks).
+   * Purple + gold is the shorthand the whole art direction leans on; it never carries text or
+   * interactive state, so it is exempt from the contrast budget the accent color has to meet.
+   */
+  --color-spark: #d9a327;
+
   --color-surface: #ffffff;
   --color-surface-muted: #f6f6f7;
   --color-text: #1f1f23;
@@ -22,6 +29,7 @@
 
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
 }
 
 /*
@@ -38,11 +46,17 @@
     --color-accent-active: #ac9fff;
     --color-on-accent: #10101a;
 
-    --color-surface: #17171d;
-    --color-surface-muted: #1f1f28;
-    --color-text: #f1f1f4;
-    --color-text-muted: #a6a6b0;
-    --color-border: #2c2c37;
+    --color-spark: #f5c451;
+
+    /*
+     * Night-indigo rather than a neutral near-black: the dark theme is meant to read as a stage
+     * at night, which is what the spotlight/sparkle motifs are lit against.
+     */
+    --color-surface: #12102a;
+    --color-surface-muted: #1a1636;
+    --color-text: #f3f1ff;
+    --color-text-muted: #a9a3cc;
+    --color-border: #2e2952;
 
     --shadow-glow: 0 4px 16px rgb(0 0 0 / 40%);
   }
@@ -56,6 +70,19 @@ body {
   background: var(--color-surface);
   color: var(--color-text);
   font-family: var(--font-sans);
+}
+
+/*
+ * Fraunces is a display serif reserved for the home page's h1/h2 — a deliberate break from the
+ * system-sans body text, applied opt-in via this utility rather than globally on every heading
+ * site-wide. SOFT/WONK are dialed up so the terminals stay a little unruly (the art direction
+ * leans on stage magic), while the body copy stays a plain, sober sans.
+ */
+.font-heading {
+  font-variation-settings:
+    "SOFT" 40,
+    "WONK" 1;
+  font-family: var(--font-heading);
 }
 
 a,

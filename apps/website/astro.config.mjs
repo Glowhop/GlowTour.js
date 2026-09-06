@@ -13,6 +13,31 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Glow Tour",
+      favicon: "/favicon.png",
+      logo: {
+        src: "./public/glow-tour-logo.png",
+        alt: "",
+      },
+      components: {
+        SiteTitle: "./src/components/StarlightSiteTitle.astro",
+      },
+      head: [
+        {
+          tag: "link",
+          attrs: { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        },
+        {
+          tag: "link",
+          attrs: { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: true },
+        },
+        {
+          tag: "link",
+          attrs: {
+            rel: "stylesheet",
+            href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,500..700,40,1&display=swap",
+          },
+        },
+      ],
       sidebar: [
         { label: "Overview", link: "/docs" },
         { label: "Getting started", link: "/docs/getting-started" },

@@ -9,12 +9,15 @@ interface Props {
 const { href, variant = "primary", class: className = "", type = "button" } = Astro.props;
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] px-5 py-2.5 text-sm font-semibold transition-colors";
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] px-5 py-2.5 text-sm font-semibold transition-[transform,background-color,box-shadow] duration-150";
 const variants = {
+  // Tactile "sticker" look: a solid offset block sits behind the button face and the face
+  // shifts to meet it on hover/active, instead of a generic blurred box-shadow.
   primary:
-    "bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-active)]",
+    "bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-[3px_3px_0_0_var(--color-accent-active)] -translate-x-px -translate-y-px hover:bg-[var(--color-accent-hover)] hover:translate-x-0 hover:translate-y-0 hover:shadow-[1px_1px_0_0_var(--color-accent-active)] active:bg-[var(--color-accent-active)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none",
+  // Dashed border echoes the step-path dot motif; solidifies on hover.
   secondary:
-    "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-surface-muted)]",
+    "border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-solid hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-muted)]",
 };
 
 const classes = [base, variants[variant], className].join(" ");
