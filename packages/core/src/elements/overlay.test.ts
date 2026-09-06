@@ -77,6 +77,7 @@ describe("OverlayElement animation fallbacks", () => {
     assert.match(element.path.styles.get("d") ?? "", /^path\("/);
     assert.equal(element.path.styles.get("fill"), "#111");
     assert.equal(element.path.styles.get("opacity"), "0.5");
+    assert.equal(element.styles.has("display"), false);
   });
 
   test("writes the computed default fill inline when Web Animations are unavailable", async () => {
@@ -185,6 +186,7 @@ describe("OverlayElement animation fallbacks", () => {
     assert.equal(element.path.styles.has("fill"), false);
     assert.equal(element.path.styles.get("opacity"), "0");
     assert.equal(element.styles.get("pointer-events"), "none");
+    assert.equal(element.styles.get("display"), "none");
   });
 
   test("retargets from computed rendered styles without commitStyles", async () => {

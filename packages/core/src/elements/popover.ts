@@ -190,7 +190,10 @@ export default class PopoverElement extends GlowTourElement {
     this.mutationLease.setStyle("top", "0px");
     this.mutationLease.setStyle("left", "0px");
     this.mutationLease.setStyle("opacity", "0");
+    this.mutationLease.setStyle("display", "none");
     this.mutationLease.setStyle("transform-origin", "center center");
+    this.mutationLease.setStyle("visibility", "hidden");
+    this.mutationLease.setAttribute("hidden", "");
     if (!el.hasAttribute("tabindex")) {
       this.mutationLease.setAttribute("tabindex", "-1");
     }
@@ -366,14 +369,20 @@ export default class PopoverElement extends GlowTourElement {
   }
 
   private _applyVisibleState() {
+    this.mutationLease.setStyle("display", null);
     this.mutationLease.setStyle("opacity", "1");
+    this.mutationLease.setStyle("visibility", "visible");
     this.mutationLease.setAttribute("aria-hidden", null);
+    this.mutationLease.setAttribute("hidden", null);
     this.mutationLease.setAttribute("inert", null);
   }
 
   private _applyHiddenState() {
+    this.mutationLease.setStyle("display", "none");
     this.mutationLease.setStyle("opacity", "0");
+    this.mutationLease.setStyle("visibility", "hidden");
     this.mutationLease.setAttribute("aria-hidden", "true");
+    this.mutationLease.setAttribute("hidden", "");
     this.mutationLease.setAttribute("inert", "true");
     this.mutationLease.setStyle("transform", null);
   }

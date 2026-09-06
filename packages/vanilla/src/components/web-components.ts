@@ -144,6 +144,7 @@ function createOverlaySvg(host: HTMLElement) {
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("data-glow-tour-overlay", "");
   svg.setAttribute("focusable", "false");
+  svg.style.setProperty("display", "none");
   svg.setAttribute("role", "presentation");
   svg.setAttribute("viewBox", "0 0 0 0");
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -502,6 +503,10 @@ export function registerGlowTourElements() {
   class GlowTourPopover extends ScopedElement {
     connectedCallback() {
       this.setAttribute("data-glow-tour-popover", "");
+      this.setAttribute("aria-hidden", "true");
+      this.setAttribute("hidden", "");
+      this.setAttribute("inert", "");
+      this.style.setProperty("display", "none");
       if (!this.managedAttributes.isAuthored(this, "role"))
         this.managedAttributes.set(this, "role", "dialog");
       if (!this.managedAttributes.isAuthored(this, "tabindex"))
@@ -550,6 +555,8 @@ export function registerGlowTourElements() {
     connectedCallback() {
       this.setAttribute("aria-hidden", "true");
       this.setAttribute("data-glow-tour-pointer", "");
+      this.setAttribute("hidden", "");
+      this.style.setProperty("display", "none");
       this.renderDirections();
       super.connectedCallback();
     }

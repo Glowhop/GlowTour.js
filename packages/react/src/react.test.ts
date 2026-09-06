@@ -102,6 +102,11 @@ describe("react adapter contract", () => {
     const html = new TextDecoder().decode(result.stdout);
     assert.match(html, /data-glow-tour-root/);
     assert.match(html, /data-glow-tour-popover/);
+    const popover = html.match(/<section[^>]*data-glow-tour-popover[^>]*>/)?.[0] ?? "";
+    assert.match(popover, /aria-hidden="true"/);
+    assert.match(popover, /\sinert(?:=""|(?=[\s>]))/);
+    assert.match(popover, /\shidden(?:=""|(?=[\s>]))/);
+    assert.match(popover, /style="[^"]*display:\s*none/);
     assert.doesNotMatch(html, /id="glow-tour/);
   });
 

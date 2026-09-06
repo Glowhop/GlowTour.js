@@ -166,11 +166,15 @@ export function Popover({ as: Component = "section", ...props }: ElementProps) {
     <Component
       {...props}
       aria-describedby={binding?.ids.description}
+      aria-hidden="true"
       aria-labelledby={binding?.ids.title}
       data-glow-tour-popover
+      hidden
       id={binding?.ids.popover}
+      inert
       ref={ref}
       role="dialog"
+      style={{ ...props.style, display: "none" }}
       tabIndex={-1}
     />
   );
@@ -243,6 +247,7 @@ export function Overlay({ children, viewBox = "0 0 0 0", ...props }: OverlayProp
       focusable="false"
       ref={ref}
       role="presentation"
+      style={{ ...props.style, display: "none" }}
       viewBox={viewBox}
     >
       <path data-glow-tour-overlay-path fillRule="evenodd" />
@@ -263,7 +268,14 @@ export function Pointer({ as: Component = "div", directionContent, ...props }: P
   const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...directionContent };
 
   return (
-    <Component {...props} aria-hidden="true" data-glow-tour-pointer ref={ref}>
+    <Component
+      {...props}
+      aria-hidden="true"
+      data-glow-tour-pointer
+      hidden
+      ref={ref}
+      style={{ ...props.style, display: "none" }}
+    >
       {(Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>).map(
         (direction) => (
           <div data-glow-tour-pointer-direction={direction} key={direction}>

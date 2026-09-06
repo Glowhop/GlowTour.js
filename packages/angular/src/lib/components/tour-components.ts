@@ -255,10 +255,14 @@ abstract class GlowTourBoundElement<T extends Element> {
   template: `
     <section #tourElement
       data-glow-tour-popover
+      aria-hidden="true"
+      hidden
+      inert
       [attr.aria-describedby]="scope.binding()?.ids?.description"
       [attr.aria-labelledby]="scope.binding()?.ids?.title"
       [id]="scope.binding()?.ids?.popover"
       role="dialog"
+      style="display: none"
       tabindex="-1"
     ><ng-content /></section>
   `,
@@ -277,7 +281,7 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <div #tourElement data-glow-tour-pointer aria-hidden="true">
+    <div #tourElement data-glow-tour-pointer aria-hidden="true" hidden style="display: none">
       @for (direction of directions; track direction) {
         <div [attr.data-glow-tour-pointer-direction]="direction">
           @if (asTemplate(content()[direction]); as template) {
@@ -319,7 +323,7 @@ export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implement
   selector: "glow-tour-overlay",
   standalone: true,
   template: `
-    <svg #tourElement data-glow-tour-overlay aria-hidden="true" focusable="false" role="presentation" viewBox="0 0 0 0">
+    <svg #tourElement data-glow-tour-overlay aria-hidden="true" focusable="false" role="presentation" style="display: none" viewBox="0 0 0 0">
       <path data-glow-tour-overlay-path fill-rule="evenodd" /><ng-content />
     </svg>
   `,

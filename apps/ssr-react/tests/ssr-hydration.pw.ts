@@ -21,6 +21,28 @@ test.describe("Glow Tour SSR + hydration in a real Next.js app", () => {
     expect(html).toContain("data-glow-tour-popover");
   });
 
+  test("keeps the default tour hidden before hydration", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.route("**/*.css", (route) => route.abort());
+
+    try {
+      await page.goto(BASE_URL);
+
+      const popover = page.locator("[data-glow-tour-popover]");
+      const pointer = page.locator("[data-glow-tour-pointer]");
+
+      await expect(popover).toBeHidden();
+      await expect(pointer).toBeHidden();
+      await expect(popover).toHaveAttribute("aria-hidden", "true");
+      await expect(popover).toHaveAttribute("inert", "");
+      await expect(popover).toHaveAttribute("hidden", "");
+      await expect(pointer).toHaveAttribute("hidden", "");
+    } finally {
+      await context.close();
+    }
+  });
+
   test("hydrates without console errors and becomes interactive", async ({ page }) => {
     const consoleErrors: string[] = [];
     const pageErrors: string[] = [];

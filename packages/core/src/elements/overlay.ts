@@ -21,6 +21,7 @@ export default class OverlayElement extends GlowTourElement {
   }
 
   async moveToTarget(nextPosition: DOMRect, step: TourElementStep) {
+    this.element.style.removeProperty("display");
     const nextVisualState = this._getVisualState(step);
 
     const path = this._getPathElement();
@@ -138,6 +139,7 @@ export default class OverlayElement extends GlowTourElement {
     el.style.setProperty("height", "100%");
     el.style.setProperty("fill-rule", "evenodd");
     el.style.setProperty("clip-rule", "evenodd");
+    el.style.setProperty("display", "none");
     el.style.setProperty("stroke-linejoin", "round");
     el.style.setProperty("stroke-miterlimit", "2");
     el.style.setProperty("pointer-events", "none");
@@ -169,6 +171,7 @@ export default class OverlayElement extends GlowTourElement {
     path?.style.removeProperty("fill");
     path?.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
+    this.element.style.setProperty("display", "none");
   }
 
   updatePosition(
@@ -272,6 +275,7 @@ export default class OverlayElement extends GlowTourElement {
   }
 
   async _appear(position: DOMRect, step: TourElementStep) {
+    this.element.style.removeProperty("display");
     const path = this._getPathElement();
     if (!path) {
       return Promise.resolve();
@@ -313,6 +317,7 @@ export default class OverlayElement extends GlowTourElement {
     path.style.removeProperty("fill");
     path.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
+    this.element.style.setProperty("display", "none");
   }
 }
 

@@ -562,8 +562,10 @@ describe("PopoverElement animation fallbacks", () => {
 
     assert.equal(element.styles.get("transform"), "translate(14px, 114px)");
     assert.equal(element.styles.get("opacity"), "1");
+    assert.equal(element.styles.has("display"), false);
     assert.equal(element.attributes.has("aria-hidden"), false);
     assert.equal(element.attributes.has("inert"), false);
+    assert.equal(element.attributes.has("hidden"), false);
   });
 
   test("applies the hidden final state when animation creation throws", async () => {
@@ -577,8 +579,10 @@ describe("PopoverElement animation fallbacks", () => {
     await popover.disappear();
 
     assert.equal(element.styles.get("opacity"), "0");
+    assert.equal(element.styles.get("display"), "none");
     assert.equal(element.attributes.get("aria-hidden"), "true");
     assert.equal(element.attributes.get("inert"), "true");
+    assert.equal(element.attributes.has("hidden"), true);
     assert.equal(element.styles.has("transform"), false);
   });
 });

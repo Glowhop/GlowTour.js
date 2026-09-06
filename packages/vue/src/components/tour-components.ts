@@ -227,11 +227,15 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
         "section",
         mergeProps(attrs, {
           "aria-describedby": context.binding.value?.ids.description,
+          "aria-hidden": "true",
           "aria-labelledby": context.binding.value?.ids.title,
           "data-glow-tour-popover": "",
+          hidden: "",
           id: context.binding.value?.ids.popover,
+          inert: "",
           ref: element,
           role: props.role,
+          style: { display: "none" },
           tabindex: -1,
         }),
         slots.default?.(),
@@ -254,7 +258,13 @@ export const GlowTourPointer = /* @__PURE__ */ defineComponent({
       const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...props.directionContent };
       return h(
         "div",
-        mergeProps(attrs, { "aria-hidden": "true", "data-glow-tour-pointer": "", ref: element }),
+        mergeProps(attrs, {
+          "aria-hidden": "true",
+          "data-glow-tour-pointer": "",
+          hidden: "",
+          ref: element,
+          style: { display: "none" },
+        }),
         (
           Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
         ).map((direction) =>
@@ -287,6 +297,7 @@ export const GlowTourOverlay = /* @__PURE__ */ defineComponent({
           focusable: props.focusable,
           ref: element,
           role: "presentation",
+          style: { display: "none" },
           viewBox: props.viewBox,
         }),
         [

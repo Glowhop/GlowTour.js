@@ -154,6 +154,11 @@ describe("vue adapter contract", () => {
     );
 
     assert.match(html, /data-glow-tour-root/);
+    const popover = html.match(/<section[^>]*data-glow-tour-popover[^>]*>/)?.[0] ?? "";
+    assert.match(popover, /aria-hidden="true"/);
+    assert.match(popover, /\sinert(?:=""|(?=[\s>]))/);
+    assert.match(popover, /\shidden(?:=""|(?=[\s>]))/);
+    assert.match(popover, /style="[^"]*display:\s*none/);
     assert.doesNotMatch(html, /id="glow-tour/);
     assert.doesNotMatch(html, /aria-labelledby/);
     assert.doesNotMatch(html, /aria-describedby/);

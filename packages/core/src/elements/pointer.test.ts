@@ -116,7 +116,9 @@ describe("PointerElement", () => {
 
     assert.equal(element.animationCalls, 0);
     assert.equal(element.styles.get("opacity"), "1");
+    assert.equal(element.styles.has("display"), false);
     assert.equal(element.attributes.has("aria-hidden"), false);
+    assert.equal(element.attributes.has("hidden"), false);
     assert.equal(element.attributes.get("data-glow-tour-placement"), "bottom");
   });
 
@@ -129,7 +131,9 @@ describe("PointerElement", () => {
     await pointer.disappear();
 
     assert.equal(element.styles.get("opacity"), "0");
+    assert.equal(element.styles.get("display"), "none");
     assert.equal(element.attributes.get("aria-hidden"), "true");
+    assert.equal(element.attributes.has("hidden"), true);
     assert.equal(element.attributes.has("data-glow-tour-placement"), false);
   });
 

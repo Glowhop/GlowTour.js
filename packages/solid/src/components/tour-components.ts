@@ -184,6 +184,7 @@ export function Popover(props: ElementProps): JSX.Element {
       get "aria-describedby"() {
         return context.binding()?.ids.description;
       },
+      "aria-hidden": "true",
       get "aria-labelledby"() {
         return context.binding()?.ids.title;
       },
@@ -191,11 +192,14 @@ export function Popover(props: ElementProps): JSX.Element {
         return local.as ?? "section";
       },
       "data-glow-tour-popover": "",
+      hidden: true,
       get id() {
         return context.binding()?.ids.popover;
       },
+      inert: true,
       ref,
       role: "dialog",
+      style: mergeHiddenStyle(other.style),
       tabIndex: -1,
       get children() {
         return local.children;
@@ -300,6 +304,7 @@ export function Overlay(props: OverlayProps): JSX.Element {
       focusable: "false",
       ref,
       role: "presentation",
+      style: mergeHiddenStyle(other.style),
       get viewBox() {
         return local.viewBox ?? "0 0 0 0";
       },
@@ -340,10 +345,18 @@ export function Pointer(props: PointerProps): JSX.Element {
         return local.as ?? "div";
       },
       "data-glow-tour-pointer": "",
+      hidden: true,
       ref,
+      style: mergeHiddenStyle(other.style),
       children: directions,
     }),
   );
+}
+
+function mergeHiddenStyle(
+  style: JSX.CSSProperties | string | undefined,
+): JSX.CSSProperties | string {
+  return typeof style === "string" ? `${style};display:none` : { ...style, display: "none" };
 }
 
 function Trigger(

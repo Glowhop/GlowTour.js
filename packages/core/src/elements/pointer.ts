@@ -41,10 +41,13 @@ export default class PointerElement extends GlowTourElement {
     this.element.style.setProperty("z-index", "10002");
     this.element.style.setProperty("top", "0px");
     this.element.style.setProperty("left", "0px");
+    this.element.style.setProperty("display", "none");
     this.element.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
+    this.element.style.setProperty("visibility", "hidden");
     this.element.style.setProperty("will-change", "top, left, transform, opacity");
     this.element.setAttribute("aria-hidden", "true");
+    this.element.setAttribute("hidden", "");
   }
 
   protected _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
@@ -105,7 +108,10 @@ export default class PointerElement extends GlowTourElement {
     this.popoverPlacement = popoverPlacement;
     if (!visible) {
       this.element.style.setProperty("opacity", "0");
+      this.element.style.setProperty("display", "none");
+      this.element.style.setProperty("visibility", "hidden");
       this.element.setAttribute("aria-hidden", "true");
+      this.element.setAttribute("hidden", "");
       this._setPlacement(null);
       return;
     }
@@ -114,8 +120,11 @@ export default class PointerElement extends GlowTourElement {
     for (const [property, value] of Object.entries(styles)) {
       if (value != null) this.element.style.setProperty(property, String(value));
     }
+    this.element.style.removeProperty("display");
     this.element.style.setProperty("opacity", "1");
+    this.element.style.setProperty("visibility", "visible");
     this.element.removeAttribute("aria-hidden");
+    this.element.removeAttribute("hidden");
     const placement = this.element.getAttribute("data-glow-tour-placement") as TryOrderOptions;
     this._startPointerAnimation(placement);
   }
@@ -140,8 +149,11 @@ export default class PointerElement extends GlowTourElement {
     );
     if (animation && !(await this._waitForAnimation(animation))) return;
 
+    this.element.style.removeProperty("display");
     this.element.style.setProperty("opacity", "1");
+    this.element.style.setProperty("visibility", "visible");
     this.element.removeAttribute("aria-hidden");
+    this.element.removeAttribute("hidden");
     const placement = this.element.getAttribute("data-glow-tour-placement") as TryOrderOptions;
     this._startPointerAnimation(placement);
   }
@@ -158,7 +170,10 @@ export default class PointerElement extends GlowTourElement {
     if (animation && !(await this._waitForAnimation(animation))) return;
 
     this.element.style.setProperty("opacity", "0");
+    this.element.style.setProperty("display", "none");
+    this.element.style.setProperty("visibility", "hidden");
     this.element.setAttribute("aria-hidden", "true");
+    this.element.setAttribute("hidden", "");
     this._setPlacement(null);
   }
 
@@ -247,7 +262,10 @@ export default class PointerElement extends GlowTourElement {
   protected _release() {
     this._stopAnimation();
     this.element.style.setProperty("opacity", "0");
+    this.element.style.setProperty("display", "none");
+    this.element.style.setProperty("visibility", "hidden");
     this.element.setAttribute("aria-hidden", "true");
+    this.element.setAttribute("hidden", "");
     this._setPlacement(null);
   }
 
