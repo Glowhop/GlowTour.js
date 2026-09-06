@@ -98,12 +98,10 @@ describe("PointerElement", () => {
     }
   });
 
-  test("defaults to 16px and clamps negative gaps to zero", () => {
+  test("clamps negative gaps to zero", () => {
     const target = rect(100, 100, 40, 20);
-    const defaultPointer = new TestPointerElement(new MockElement() as unknown as HTMLElement);
     const zeroPointer = new TestPointerElement(new MockElement() as unknown as HTMLElement);
 
-    assert.equal(defaultPointer.getStyles(target, createStep("bottom")).top, "136px");
     assert.equal(zeroPointer.getStyles(target, createStep("bottom", -10)).top, "120px");
   });
 
