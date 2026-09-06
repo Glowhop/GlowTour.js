@@ -17,7 +17,7 @@ function start() {
 
 <template>
   <div style="padding: 20px">
-    <h1>Glow Tour - Vue Example</h1>
+    <h1>GlowTour.js - Vue Example</h1>
     <button id="welcome" type="button" @click="start"
       style="padding: 10px 20px; font-size: 16px">
       Start tour

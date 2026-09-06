@@ -1,9 +1,9 @@
 ---
 title: Accessibility guide
-description: Understand Glow Tour's accessibility features and keyboard support.
+description: Understand accessibility and keyboard support in GlowTour.js.
 ---
 
-Glow Tour is built with accessibility as a core principle. Every adapter renders the same ARIA semantics, keyboard shortcuts, and focus-restoration behavior. Tours are fully usable with keyboard navigation and screen readers.
+GlowTour.js is built with accessibility as a core principle. Every adapter renders the same ARIA semantics, keyboard shortcuts, and focus-restoration behavior. Tours are fully usable with keyboard navigation and screen readers.
 
 ## ARIA semantics
 
@@ -22,7 +22,7 @@ When a step disallows target interaction, the popover's `aria-modal` is set to `
 
 ## Keyboard shortcuts
 
-Glow Tour supports full keyboard navigation with no mouse required:
+GlowTour.js supports full keyboard navigation with no mouse required:
 
 | Key(s) | Command | Condition |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ const workflow = tour
 
 ## Focus management
 
-Glow Tour automatically manages focus for an accessible experience:
+GlowTour.js automatically manages focus for an accessible experience:
 
 ### Focus trap
 
@@ -92,4 +92,4 @@ To verify your tour's accessibility:
 
 ## Compliance notes
 
-Glow Tour follows the WCAG 2.1 AA standard for the dialog and its keyboard navigation. The default theme's color contrast was verified against AA standards. Custom themes should maintain adequate contrast ratios for text and interactive elements.
+GlowTour.js follows the WCAG 2.1 AA standard for the dialog and its keyboard navigation. The default theme's color contrast was verified against AA standards. Custom themes should maintain adequate contrast ratios for text and interactive elements.

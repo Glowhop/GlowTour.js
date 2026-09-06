@@ -704,7 +704,7 @@ export class TourController<T> {
 }
 
 /**
- * Creates a new Glow Tour instance.
+ * Creates a new GlowTour.js instance.
  * @param options Tour options for error handling.
  * @returns A tour controller ready to run workflows.
  */

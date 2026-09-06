@@ -1,8 +1,46 @@
 import type { ReadonlyStepProps, TourState } from "@glowhop/core-tour";
-import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
+import {
+  type AdapterRootBinding,
+  connectGlowTourRoot,
+  OVERLAY_IDLE_ATTRIBUTES,
+  OVERLAY_IDLE_STYLE,
+  OVERLAY_PATH_IDLE_ATTRIBUTES,
+  POINTER_IDLE_ATTRIBUTES,
+  POINTER_IDLE_STYLE,
+  POPOVER_IDLE_ATTRIBUTES,
+  POPOVER_IDLE_STYLE,
+} from "@glowhop/core-tour/adapter";
 import type { VanillaGlowTour, VanillaTourContent } from "../glow-tour";
 
-/** Names of all Glow Tour custom elements. */
+function applyIdleStyle(element: HTMLElement | SVGElement, style: Record<string, string>) {
+  for (const [property, value] of Object.entries(style)) {
+    if (!element.style.getPropertyValue(property)) {
+      element.style.setProperty(property, value);
+    }
+  }
+}
+
+/**
+ * Applies an element's intrinsic semantics — the attributes it carries for its
+ * whole lifetime, independent of any root or tour binding.
+ *
+ * These deliberately bypass {@link ManagedAttributes}. That system exists for
+ * binding-scoped attributes, which `rebind()` relinquishes and restores every
+ * time an element (re)connects or its root changes; anything registered there
+ * during `connectedCallback()` is reverted immediately, because
+ * `super.connectedCallback()` calls `rebind()`, which restores managed
+ * attributes to their pre-managed value — absent — before the binding is even
+ * established. Setting them directly keeps them, while the "skip if already
+ * present" guard preserves the existing rule of never overwriting a value the
+ * caller authored.
+ */
+function applyIntrinsicAttributes(element: HTMLElement, attributes: Record<string, string>) {
+  for (const [name, value] of Object.entries(attributes)) {
+    if (!element.hasAttribute(name)) element.setAttribute(name, value);
+  }
+}
+
+/** Names of all GlowTour.js custom elements. */
 export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-root",
   "glow-tour-header",
@@ -141,12 +179,18 @@ function createOverlaySvg(host: HTMLElement) {
   const existing = host.querySelector<SVGSVGElement>("svg[data-glow-tour-overlay]");
   if (existing) return existing;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("aria-hidden", "true");
+  applyIdleStyle(svg, OVERLAY_IDLE_STYLE);
+  for (const [name, value] of Object.entries(OVERLAY_IDLE_ATTRIBUTES)) {
+    svg.setAttribute(name, value);
+  }
   svg.setAttribute("data-glow-tour-overlay", "");
   svg.setAttribute("focusable", "false");
   svg.setAttribute("role", "presentation");
   svg.setAttribute("viewBox", "0 0 0 0");
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  for (const [name, value] of Object.entries(OVERLAY_PATH_IDLE_ATTRIBUTES)) {
+    path.setAttribute(name, value);
+  }
   path.setAttribute("data-glow-tour-overlay-path", "");
   path.setAttribute("fill-rule", "evenodd");
   svg.appendChild(path);
@@ -318,7 +362,7 @@ function effectiveId(root: HTMLElement, selector: string, fallback: string) {
 }
 
 /**
- * Registers Glow Tour custom elements with the browser.
+ * Registers GlowTour.js custom elements with the browser.
  *
  * Must be called before creating tour UI elements. Alternatively, import
  * `@glowhop/vanilla-tour/auto` which calls this automatically on load.
@@ -333,7 +377,7 @@ export function registerGlowTourElements() {
     for (const name of GLOW_TOUR_ELEMENT_NAMES) {
       if (registry.get(name) !== previousDefinitions[name]) {
         throw new Error(
-          `Glow Tour custom element "${name}" is registered with an incompatible constructor.`,
+          `GlowTour.js custom element "${name}" is registered with an incompatible constructor.`,
         );
       }
     }
@@ -465,9 +509,7 @@ export function registerGlowTourElements() {
 
   class GlowTourContent extends ReactiveElement {
     connectedCallback() {
-      if (!this.managedAttributes.isAuthored(this, "aria-live")) {
-        this.managedAttributes.set(this, "aria-live", "polite");
-      }
+      applyIntrinsicAttributes(this, { "aria-live": "polite" });
       this.setAttribute("data-glow-tour-content", "");
       super.connectedCallback();
     }
@@ -501,11 +543,9 @@ export function registerGlowTourElements() {
 
   class GlowTourPopover extends ScopedElement {
     connectedCallback() {
+      applyIdleStyle(this, POPOVER_IDLE_STYLE);
       this.setAttribute("data-glow-tour-popover", "");
-      if (!this.managedAttributes.isAuthored(this, "role"))
-        this.managedAttributes.set(this, "role", "dialog");
-      if (!this.managedAttributes.isAuthored(this, "tabindex"))
-        this.managedAttributes.set(this, "tabindex", "-1");
+      applyIntrinsicAttributes(this, { ...POPOVER_IDLE_ATTRIBUTES, role: "dialog" });
       super.connectedCallback();
     }
 
@@ -548,7 +588,8 @@ export function registerGlowTourElements() {
     }
 
     connectedCallback() {
-      this.setAttribute("aria-hidden", "true");
+      applyIdleStyle(this, POINTER_IDLE_STYLE);
+      this.setAttribute("aria-hidden", POINTER_IDLE_ATTRIBUTES["aria-hidden"]);
       this.setAttribute("data-glow-tour-pointer", "");
       this.renderDirections();
       super.connectedCallback();
@@ -743,7 +784,7 @@ export function registerGlowTourElements() {
     const existing = registry.get(name);
     if (existing && existing !== definitions[name]) {
       throw new Error(
-        `Glow Tour custom element "${name}" is registered with an incompatible constructor.`,
+        `GlowTour.js custom element "${name}" is registered with an incompatible constructor.`,
       );
     }
   }

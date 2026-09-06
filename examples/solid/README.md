@@ -1,6 +1,6 @@
 # Solid Example
 
-Minimal Solid example showing how to use Glow Tour with the Solid adapter.
+Minimal Solid example showing how to use GlowTour.js with the Solid adapter.
 
 ## Quick Start
 

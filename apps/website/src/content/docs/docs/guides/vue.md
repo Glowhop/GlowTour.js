@@ -3,7 +3,7 @@ title: Vue guide
 description: Build guided tours with @glowhop/vue-tour.
 ---
 
-Glow Tour's Vue adapter provides components and a provide/inject instance scoped through the component tree. Content is normal Vue slot content.
+The GlowTour.js Vue adapter provides components and a provide/inject instance scoped through the component tree. Content is normal Vue slot content.
 
 ## Setup
 
@@ -130,7 +130,7 @@ The `useTour()` hook returns a ref to the reactive tour state.
 
 ## Vue 3.3+
 
-Glow Tour requires Vue 3.3 or later. The adapter uses provide/inject and refs for reactivity.
+GlowTour.js requires Vue 3.3 or later. The adapter uses provide/inject and refs for reactivity.
 
 ## SSR
 

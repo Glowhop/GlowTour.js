@@ -1,9 +1,9 @@
 ---
 title: Theming guide
-description: Customize Glow Tour's appearance with CSS custom properties.
+description: Customize the appearance of GlowTour.js with CSS custom properties.
 ---
 
-Glow Tour provides a complete default theme via `@glowhop/styles-tour/default.css`. All colors, spacing, sizing, and transitions are defined as CSS custom properties and can be overridden to match your brand.
+GlowTour.js provides a complete default theme via `@glowhop/styles-tour/default.css`. All colors, spacing, sizing, and transitions are defined as CSS custom properties and can be overridden to match your brand.
 
 ## CSS custom properties
 
@@ -71,7 +71,7 @@ Or in a regular CSS file:
 
 ## Dark mode
 
-Glow Tour respects the system dark mode preference via `prefers-color-scheme`. You can provide different custom properties for light and dark modes:
+GlowTour.js respects the system dark mode preference via `prefers-color-scheme`. You can provide different custom properties for light and dark modes:
 
 ```css
 @media (prefers-color-scheme: light) {

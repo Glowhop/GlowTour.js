@@ -21,16 +21,27 @@ function binding(): AdapterRootBinding {
 }
 
 describe("core adapter entry", () => {
-  test("exports only connectGlowTourRoot at runtime", async () => {
+  test("exports only connectGlowTourRoot and the idle-presentation constants/helpers at runtime", async () => {
     const runtime = await import("./adapter");
 
-    assert.deepEqual(Object.keys(runtime), ["connectGlowTourRoot"]);
+    assert.deepEqual(Object.keys(runtime).sort(), [
+      "OVERLAY_IDLE_ATTRIBUTES",
+      "OVERLAY_IDLE_STYLE",
+      "OVERLAY_PATH_IDLE_ATTRIBUTES",
+      "POINTER_IDLE_ATTRIBUTES",
+      "POINTER_IDLE_STYLE",
+      "POPOVER_IDLE_ATTRIBUTES",
+      "POPOVER_IDLE_STYLE",
+      "connectGlowTourRoot",
+      "styleRecordToCamelCase",
+      "styleRecordToCssText",
+    ]);
   });
 
   test("rejects a tour without a compatible adapter bridge", () => {
     assert.throws(
       () => connectGlowTourRoot({} as GlowTour<unknown>, { root: {} as HTMLElement }),
-      /incompatible Glow Tour adapter bridge/i,
+      /incompatible GlowTour\.js adapter bridge/i,
     );
   });
 
@@ -41,7 +52,7 @@ describe("core adapter entry", () => {
 
     assert.throws(
       () => connectGlowTourRoot(tour, { root: {} as HTMLElement }),
-      /incompatible Glow Tour adapter bridge/i,
+      /incompatible GlowTour\.js adapter bridge/i,
     );
   });
 
@@ -56,7 +67,7 @@ describe("core adapter entry", () => {
     for (const tour of [missingConnector, invalidConnector]) {
       assert.throws(
         () => connectGlowTourRoot(tour, { root: {} as HTMLElement }),
-        /incompatible Glow Tour adapter bridge/i,
+        /incompatible GlowTour\.js adapter bridge/i,
       );
     }
   });
