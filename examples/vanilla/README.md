@@ -1,6 +1,6 @@
 # Vanilla JavaScript Example
 
-Minimal vanilla JavaScript example showing how to use Glow Tour without a framework.
+Minimal vanilla JavaScript example showing how to use GlowTour.js without a framework.
 
 ## Quick Start
 

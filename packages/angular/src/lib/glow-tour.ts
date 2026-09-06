@@ -23,7 +23,7 @@ export type WorkflowDefinition = CoreWorkflowDefinition<AngularTourContent>;
 export type StartOptions = CoreStartOptions<AngularTourContent>;
 
 /**
- * Creates a new Glow Tour instance for Angular.
+ * Creates a new GlowTour.js instance for Angular.
  * @param options Tour options for error handling.
  * @returns A tour controller ready to run Angular workflows.
  */

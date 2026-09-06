@@ -92,6 +92,55 @@ describe("angular adapter browser behavior", () => {
     });
   });
 
+  test("renders the idle presentation into the DefaultTour markup before a tour runs", async () => {
+    // The bug this guards: overlay/pointer/popover markup used to depend
+    // entirely on core's initializeProps() (only reachable once an adapter
+    // binds an element) for its idle, out-of-flow, invisible presentation.
+    // Angular's templates are static, so this asserts the idle attributes and
+    // styles are already present in the rendered DOM (equivalent to what SSR
+    // output would contain, since Angular's own template output never
+    // differs between passes) without ever starting a workflow.
+    const tour = runtime.createGlowTour();
+
+    @Component({
+      selector: "angular-default-tour-idle",
+      standalone: true,
+      imports: [runtime.GlowTourDefault],
+      template: '<glow-tour-default [tour]="tour" idPrefix="angular-idle" />',
+    })
+    class DefaultTourIdleHarness {
+      readonly tour = tour;
+    }
+
+    const host = document.createElement("angular-default-tour-idle");
+    document.body.append(host);
+    const app = await bootstrapApplication(DefaultTourIdleHarness);
+    await settle();
+    app.tick();
+
+    const popover = host.querySelector<HTMLElement>("[data-glow-tour-popover]");
+    assert.ok(popover);
+    assert.equal(popover.style.position, "fixed");
+    assert.equal(popover.style.opacity, "0");
+    assert.equal(popover.getAttribute("aria-hidden"), "true");
+    assert.equal(popover.hasAttribute("inert"), true);
+
+    const pointer = host.querySelector<HTMLElement>("[data-glow-tour-pointer]");
+    assert.ok(pointer);
+    assert.equal(pointer.style.position, "fixed");
+    assert.equal(pointer.style.opacity, "0");
+    assert.equal(pointer.getAttribute("aria-hidden"), "true");
+
+    const overlayPath = host.querySelector<SVGPathElement>("[data-glow-tour-overlay-path]");
+    assert.ok(overlayPath);
+    assert.equal(overlayPath.getAttribute("opacity"), "0");
+    assert.equal(overlayPath.getAttribute("pointer-events"), "auto");
+    assert.equal(overlayPath.getAttribute("cursor"), "auto");
+
+    await app.destroy();
+    host.remove();
+  });
+
   test("exposes reactive tour state to descendants", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");

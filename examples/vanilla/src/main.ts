@@ -19,7 +19,7 @@ container.style.padding = "20px";
 
 // Create a heading
 const heading = document.createElement("h1");
-heading.textContent = "Glow Tour - Vanilla Example";
+heading.textContent = "GlowTour.js - Vanilla Example";
 container.append(heading);
 
 // Create the button to target

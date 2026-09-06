@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Marketing design tokens derived from the default Glow Tour theme
+ * Marketing design tokens derived from the default GlowTour.js theme
  * (packages/styles/default.css) — same accent, surface, text, border, radius, and shadow scale
  * the tour popover itself uses, so the site and the product look like one thing.
  */

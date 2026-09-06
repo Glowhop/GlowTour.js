@@ -24,7 +24,7 @@ export type WorkflowDefinition = CoreWorkflowDefinition<VanillaTourContent>;
 export type StartOptions = CoreStartOptions<VanillaTourContent>;
 
 /**
- * Creates a new Glow Tour instance for vanilla JavaScript.
+ * Creates a new GlowTour.js instance for vanilla JavaScript.
  * @param options Tour options for error handling.
  * @returns A tour controller ready to run vanilla workflows.
  */

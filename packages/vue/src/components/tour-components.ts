@@ -1,5 +1,15 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
+import {
+  type AdapterRootBinding,
+  connectGlowTourRoot,
+  OVERLAY_IDLE_ATTRIBUTES,
+  OVERLAY_IDLE_STYLE,
+  OVERLAY_PATH_IDLE_ATTRIBUTES,
+  POINTER_IDLE_ATTRIBUTES,
+  POINTER_IDLE_STYLE,
+  POPOVER_IDLE_ATTRIBUTES,
+  POPOVER_IDLE_STYLE,
+} from "@glowhop/core-tour/adapter";
 import type { VNodeChild } from "vue";
 import {
   defineComponent,
@@ -102,7 +112,7 @@ function isConsumerDisabled(attrs: Record<string, unknown>) {
   return attrs.disabled === "" || attrs.disabled === true;
 }
 
-/** Root container component for Glow Tour. Provides tour context and manages the root binding. */
+/** Root container component for GlowTour.js. Provides tour context and manages the root binding. */
 export const GlowTourRoot = /* @__PURE__ */ defineComponent({
   name: componentName("Root"),
   inheritAttrs: false,
@@ -225,11 +235,13 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
     return () =>
       h(
         "section",
-        mergeProps(attrs, {
+        mergeProps({ style: POPOVER_IDLE_STYLE }, attrs, {
           "aria-describedby": context.binding.value?.ids.description,
+          "aria-hidden": POPOVER_IDLE_ATTRIBUTES["aria-hidden"],
           "aria-labelledby": context.binding.value?.ids.title,
           "data-glow-tour-popover": "",
           id: context.binding.value?.ids.popover,
+          inert: POPOVER_IDLE_ATTRIBUTES.inert,
           ref: element,
           role: props.role,
           tabindex: -1,
@@ -254,7 +266,11 @@ export const GlowTourPointer = /* @__PURE__ */ defineComponent({
       const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...props.directionContent };
       return h(
         "div",
-        mergeProps(attrs, { "aria-hidden": "true", "data-glow-tour-pointer": "", ref: element }),
+        mergeProps({ style: POINTER_IDLE_STYLE }, attrs, {
+          "aria-hidden": POINTER_IDLE_ATTRIBUTES["aria-hidden"],
+          "data-glow-tour-pointer": "",
+          ref: element,
+        }),
         (
           Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
         ).map((direction) =>
@@ -281,16 +297,25 @@ export const GlowTourOverlay = /* @__PURE__ */ defineComponent({
     return () =>
       h(
         "svg",
-        mergeProps(attrs, {
+        mergeProps({ style: OVERLAY_IDLE_STYLE }, attrs, {
           "aria-hidden": props.ariaHidden,
+          "data-glow-tour-allow-interaction":
+            OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"],
           "data-glow-tour-overlay": "",
           focusable: props.focusable,
+          inert: OVERLAY_IDLE_ATTRIBUTES.inert,
           ref: element,
           role: "presentation",
           viewBox: props.viewBox,
         }),
         [
-          h("path", { "data-glow-tour-overlay-path": "", "fill-rule": "evenodd" }),
+          h("path", {
+            cursor: OVERLAY_PATH_IDLE_ATTRIBUTES.cursor,
+            "data-glow-tour-overlay-path": "",
+            "fill-rule": "evenodd",
+            opacity: OVERLAY_PATH_IDLE_ATTRIBUTES.opacity,
+            "pointer-events": OVERLAY_PATH_IDLE_ATTRIBUTES["pointer-events"],
+          }),
           slots.default?.(),
         ],
       );

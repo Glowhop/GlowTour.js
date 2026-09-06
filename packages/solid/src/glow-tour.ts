@@ -23,7 +23,7 @@ export type WorkflowDefinition = CoreWorkflowDefinition<SolidTourContent>;
 export type StartOptions = CoreStartOptions<SolidTourContent>;
 
 /**
- * Creates a new Glow Tour instance for Solid.
+ * Creates a new GlowTour.js instance for Solid.
  * @param options Tour options for error handling.
  * @returns A tour controller ready to run Solid workflows.
  */

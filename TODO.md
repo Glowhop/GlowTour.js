@@ -26,7 +26,7 @@ Site vitrine + documentation du package, en Astro + Starlight. Voir discussion p
 ## Hors V1 (backlog v2)
 
 - [ ] `/compare` — tableau comparatif vs Shepherd.js / Intro.js / driver.js / react-joyride
-- [ ] `/showcase` — sites utilisant Glow Tour
+- [ ] `/showcase` — sites utilisant GlowTour.js
 - [ ] `/changelog` — généré depuis les changesets/releases GitHub
 - [ ] Recipes (cas d'usage concrets : onboarding SaaS, feature announcement, tour conditionnel)
 

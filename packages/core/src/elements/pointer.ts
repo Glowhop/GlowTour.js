@@ -1,6 +1,7 @@
 import type { ResolvedPlacement, TryOrderOptions } from "../types";
 import { isInViewport, roundByDPR, viewportDimensions } from "../utils/utils";
 import GlowTourElement, { type TourElementStep } from "./base";
+import { POINTER_IDLE_ATTRIBUTES, POINTER_IDLE_STYLE } from "./idle-presentation";
 
 const DEFAULT_INDICATOR_GAP = 16;
 const POINTER_ANIMATION_DISTANCE = 8;
@@ -37,14 +38,12 @@ export default class PointerElement extends GlowTourElement {
   private directionNodes: Partial<Record<TryOrderOptions, HTMLElement>> | null = null;
 
   initializeProps() {
-    this.element.style.setProperty("position", "fixed");
-    this.element.style.setProperty("z-index", "10002");
-    this.element.style.setProperty("top", "0px");
-    this.element.style.setProperty("left", "0px");
-    this.element.style.setProperty("opacity", "0");
-    this.element.style.setProperty("pointer-events", "none");
-    this.element.style.setProperty("will-change", "top, left, transform, opacity");
-    this.element.setAttribute("aria-hidden", "true");
+    for (const [property, value] of Object.entries(POINTER_IDLE_STYLE)) {
+      this.element.style.setProperty(property, value);
+    }
+    for (const [name, value] of Object.entries(POINTER_IDLE_ATTRIBUTES)) {
+      this.element.setAttribute(name, value);
+    }
   }
 
   protected _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
