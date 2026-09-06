@@ -3,7 +3,7 @@ title: Angular guide
 description: Build guided tours with @glowhop/angular-tour.
 ---
 
-Glow Tour's Angular adapter provides components and a DI-scoped tour instance. Content is normal Angular template content with full support for bindings and directives.
+The GlowTour.js Angular adapter provides components and a DI-scoped tour instance. Content is normal Angular template content with full support for bindings and directives.
 
 ## Setup
 
@@ -200,7 +200,7 @@ Angular signals are used for reactive state management internally; no additional
 
 ## Angular 18+
 
-Glow Tour requires Angular 18 or later. The adapter uses Angular's new control-flow blocks (`@if`, `@for`) and standalone components exclusively.
+GlowTour.js requires Angular 18 or later. The adapter uses Angular's new control-flow blocks (`@if`, `@for`) and standalone components exclusively.
 
 ## SSR
 

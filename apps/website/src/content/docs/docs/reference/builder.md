@@ -1,6 +1,6 @@
 ---
 title: Builder API reference
-description: Complete reference for the Glow Tour workflow/step builder and all available options with their defaults.
+description: Complete reference for the GlowTour.js workflow/step builder and all available options with their defaults.
 ---
 
 `tour.create()` returns a workflow builder: chain `.step()`, `.do()`, `.wait()`, and the other methods below to describe a tour, then call `.build()` to get an immutable `WorkflowDefinition`. For the controller that runs the resulting workflow (`createGlowTour`, `tour.run`, `tour.advance`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).

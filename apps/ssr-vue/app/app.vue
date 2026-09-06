@@ -25,7 +25,7 @@ function start() {
 
 <template>
   <div style="padding: 20px">
-    <h1>Glow Tour - SSR Vue (Nuxt) verification harness</h1>
+    <h1>GlowTour.js - SSR Vue (Nuxt) verification harness</h1>
     <p id="tour-target">This is the tour target element.</p>
     <button id="tour-trigger" type="button" @click="start">Start tour</button>
   </div>

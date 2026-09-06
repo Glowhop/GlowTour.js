@@ -3,7 +3,7 @@ title: Solid guide
 description: Build guided tours with @glowhop/solid-tour.
 ---
 
-Glow Tour's Solid adapter provides components and a Context-scoped tour instance using Solid's reactivity model. Content is normal Solid JSX.
+The GlowTour.js Solid adapter provides components and a Context-scoped tour instance using Solid's reactivity model. Content is normal Solid JSX.
 
 ## Setup
 
@@ -129,7 +129,7 @@ The `useTour()` hook returns reactive signals for fine-grained reactivity.
 
 ## Solid 1.8+
 
-Glow Tour requires Solid 1.8 or later. The adapter uses Solid's Context API and signals for state management.
+GlowTour.js requires Solid 1.8 or later. The adapter uses Solid's Context API and signals for state management.
 
 ## SSR
 

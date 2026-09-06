@@ -102,7 +102,7 @@ export interface PopoverArrowOptions {
   /** Gap between arrow tip and the target edge in pixels. @default 8 */
   edgePadding?: number;
   /**
-   * CSP nonce applied to the `<style>` element Glow Tour injects for the
+   * CSP nonce applied to the `<style>` element GlowTour.js injects for the
    * arrow's pseudo-element rules. Required when the page's Content-Security-Policy
    * blocks unnonced inline styles.
    */

@@ -1,5 +1,15 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
+import {
+  type AdapterRootBinding,
+  connectGlowTourRoot,
+  OVERLAY_IDLE_ATTRIBUTES,
+  OVERLAY_IDLE_STYLE,
+  OVERLAY_PATH_IDLE_ATTRIBUTES,
+  POINTER_IDLE_ATTRIBUTES,
+  POINTER_IDLE_STYLE,
+  POPOVER_IDLE_ATTRIBUTES,
+  POPOVER_IDLE_STYLE,
+} from "@glowhop/core-tour/adapter";
 import {
   type Accessor,
   createComponent,
@@ -184,6 +194,7 @@ export function Popover(props: ElementProps): JSX.Element {
       get "aria-describedby"() {
         return context.binding()?.ids.description;
       },
+      "aria-hidden": POPOVER_IDLE_ATTRIBUTES["aria-hidden"],
       get "aria-labelledby"() {
         return context.binding()?.ids.title;
       },
@@ -194,8 +205,12 @@ export function Popover(props: ElementProps): JSX.Element {
       get id() {
         return context.binding()?.ids.popover;
       },
+      inert: POPOVER_IDLE_ATTRIBUTES.inert,
       ref,
       role: "dialog",
+      get style() {
+        return other.style ?? POPOVER_IDLE_STYLE;
+      },
       tabIndex: -1,
       get children() {
         return local.children;
@@ -287,8 +302,11 @@ export function Overlay(props: OverlayProps): JSX.Element {
   const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
   const path = createComponent(Dynamic, {
     component: "path",
+    cursor: OVERLAY_PATH_IDLE_ATTRIBUTES.cursor,
     "data-glow-tour-overlay-path": "",
     "fill-rule": "evenodd",
+    opacity: OVERLAY_PATH_IDLE_ATTRIBUTES.opacity,
+    "pointer-events": OVERLAY_PATH_IDLE_ATTRIBUTES["pointer-events"],
   });
 
   return createComponent(
@@ -296,10 +314,16 @@ export function Overlay(props: OverlayProps): JSX.Element {
     mergeProps(other, {
       "aria-hidden": true,
       component: "svg",
+      "data-glow-tour-allow-interaction":
+        OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"],
       "data-glow-tour-overlay": "",
       focusable: "false",
+      inert: OVERLAY_IDLE_ATTRIBUTES.inert,
       ref,
       role: "presentation",
+      get style() {
+        return other.style ?? OVERLAY_IDLE_STYLE;
+      },
       get viewBox() {
         return local.viewBox ?? "0 0 0 0";
       },
@@ -335,12 +359,15 @@ export function Pointer(props: PointerProps): JSX.Element {
   return createComponent(
     Dynamic,
     mergeProps(other, {
-      "aria-hidden": "true",
+      "aria-hidden": POINTER_IDLE_ATTRIBUTES["aria-hidden"],
       get component() {
         return local.as ?? "div";
       },
       "data-glow-tour-pointer": "",
       ref,
+      get style() {
+        return other.style ?? POINTER_IDLE_STYLE;
+      },
       children: directions,
     }),
   );

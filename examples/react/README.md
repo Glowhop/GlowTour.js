@@ -1,6 +1,6 @@
 # React Example
 
-Minimal React example showing how to use Glow Tour with the React adapter.
+Minimal React example showing how to use GlowTour.js with the React adapter.
 
 ## Quick Start
 

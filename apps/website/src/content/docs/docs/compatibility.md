@@ -3,7 +3,7 @@ title: Compatibility
 description: Framework versions and SSR support verified for each adapter.
 ---
 
-Glow Tour is in `dev`. The versions listed are the current peer contracts and are not a promise of support for older major versions.
+GlowTour.js is in `dev`. The versions listed are the current peer contracts and are not a promise of support for older major versions.
 
 ## Framework contracts
 

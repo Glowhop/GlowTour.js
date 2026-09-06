@@ -1,6 +1,6 @@
 ---
 title: Tour API reference
-description: Complete reference for the Glow Tour controller — the instance returned by createGlowTour.
+description: Complete reference for the GlowTour.js controller — the instance returned by createGlowTour.
 ---
 
 `createGlowTour()` returns a tour controller: the long-lived instance that creates workflows (via `tour.create()`, see the [Builder reference](/docs/reference/builder)), runs them, drives navigation, and exposes reactive state. One controller can be connected to one live root at a time.

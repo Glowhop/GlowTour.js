@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { BASE_URL } from "../playwright.config";
 
-test.describe("Glow Tour SSR + hydration in a real Next.js app", () => {
+test.describe("GlowTour.js SSR + hydration in a real Next.js app", () => {
   test("server-rendered HTML contains the target/trigger markup before any JS runs", async ({
     request,
   }) => {

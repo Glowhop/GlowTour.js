@@ -1,9 +1,9 @@
 ---
 title: Getting started
-description: Install Glow Tour and build your first guided tour.
+description: Install GlowTour.js and build your first guided tour.
 ---
 
-Glow Tour is a cross-framework guided-tour library with a shared core engine and framework-specific adapters. Choose the adapter for your framework, import the default theme, and build your first workflow.
+GlowTour.js is a cross-framework guided-tour library with a shared core engine and framework-specific adapters. Choose the adapter for your framework, import the default theme, and build your first workflow.
 
 ## Installation
 

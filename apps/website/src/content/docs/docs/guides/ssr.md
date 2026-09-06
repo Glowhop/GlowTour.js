@@ -1,9 +1,9 @@
 ---
 title: SSR guide
-description: Server-render Glow Tour with React, Vue, Solid, Angular, or Vanilla.
+description: Server-render GlowTour.js with React, Vue, Solid, Angular, or Vanilla.
 ---
 
-Glow Tour's adapters have varying levels of SSR support. React, Vue, and Solid have full verified coverage with real-world SSR apps. Angular and Vanilla are unverified but import safely without DOM globals.
+The GlowTour.js adapters have varying levels of SSR support. React, Vue, and Solid have full verified coverage with real-world SSR apps. Angular and Vanilla are unverified but import safely without DOM globals.
 
 ## React SSR
 
@@ -177,7 +177,7 @@ Custom elements don't render on the server; they only upgrade once connected to 
 
 ## Verifying your setup
 
-When you deploy an SSR app with Glow Tour:
+When you deploy an SSR app with GlowTour.js:
 
 1. Build and start your production server
 2. Fetch the HTML and verify the tour markup is present (no errors in the build)

@@ -3,7 +3,7 @@ title: Positioning guide
 description: Control how the popover and indicator position relative to the target.
 ---
 
-Glow Tour positions the popover and pointer (indicator) around the target element and automatically handles collisions with the viewport. You control which placements to try and in what order; Glow Tour picks the first one that fits.
+GlowTour.js positions the popover and pointer (indicator) around the target element and automatically handles collisions with the viewport. You control which placements to try and in what order; GlowTour.js picks the first one that fits.
 
 ## Placement options
 
@@ -56,7 +56,7 @@ const workflow = tour
 
 ## Collision behavior
 
-The `viewport-gap` property (default `16px`) sets the minimum distance between the popover/pointer and the viewport edges. When measuring if a placement fits, Glow Tour checks:
+The `viewport-gap` property (default `16px`) sets the minimum distance between the popover/pointer and the viewport edges. When measuring if a placement fits, GlowTour.js checks:
 
 ```
 popover position + popover size + viewport-gap <= viewport edge

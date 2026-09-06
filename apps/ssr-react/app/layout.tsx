@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import "@glowhop/styles-tour/default.css";
 
 export const metadata = {
-  title: "Glow Tour SSR (React / Next.js)",
+  title: "GlowTour.js SSR (React / Next.js)",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

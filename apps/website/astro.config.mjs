@@ -12,7 +12,7 @@ import icon from "astro-icon";
 export default defineConfig({
   integrations: [
     starlight({
-      title: "Glow Tour",
+      title: "GlowTour.js",
       favicon: "/favicon.png",
       logo: {
         src: "./public/glow-tour-logo.png",

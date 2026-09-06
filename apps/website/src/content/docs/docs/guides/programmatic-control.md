@@ -3,7 +3,7 @@ title: Programmatic control guide
 description: Control tours with state subscriptions, actions, and callbacks.
 ---
 
-Glow Tour provides a complete programmatic API for controlling tours, observing state changes, and sequencing complex workflows.
+GlowTour.js provides a complete programmatic API for controlling tours, observing state changes, and sequencing complex workflows.
 
 ## Tour instance
 

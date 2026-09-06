@@ -1,6 +1,6 @@
 # Framework compatibility
 
-Glow Tour is in `dev`. The versions below are the current peer contracts; they are not a promise
+GlowTour.js is in `dev`. The versions below are the current peer contracts; they are not a promise
 of support for older major versions.
 
 | Package | Framework contract | Adapter surface |
