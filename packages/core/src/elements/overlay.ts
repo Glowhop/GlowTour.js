@@ -2,8 +2,8 @@ import { ownerWindow, roundedRectPath, viewportDimensions } from "../utils/utils
 import GlowTourElement, { type TourElementStep } from "./base";
 import { OVERLAY_IDLE_ATTRIBUTES, OVERLAY_IDLE_STYLE } from "./idle-presentation";
 
-const DEFAULT_OVERLAY_PADDING = 16;
-const DEFAULT_OVERLAY_RADIUS = 12;
+const DEFAULT_OVERLAY_PADDING = 8;
+const DEFAULT_OVERLAY_RADIUS = 8;
 
 interface OverlayVisualState {
   color: string | undefined;

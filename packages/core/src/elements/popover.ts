@@ -5,7 +5,7 @@ import GlowTourElement, { type TourElementStep } from "./base";
 import { POPOVER_IDLE_ATTRIBUTES, POPOVER_IDLE_STYLE } from "./idle-presentation";
 import { ensurePopoverArrowStyles } from "./popover-arrow-styles";
 
-const DEFAULT_POPOVER_GAP = 14;
+const DEFAULT_POPOVER_GAP = 32;
 const DEFAULT_ARROW_EDGE_PADDING = 16;
 const DEFAULT_TRY_ORDER = ["bottom", "top", "right", "left"] as const;
 const REPLACEMENT_DIFF = 50; // pixels

@@ -96,7 +96,7 @@ const advanceOnClickWorkflow = advanceOnClickTour
     target: "#hero-advance-on-click-target",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance() from a real DOM click.",
-    popover: { hideAdvanceButton: true },
+    popover: { disableAdvanceButton: true },
     behavior: { allowInteraction: true },
   })
   .onTargetEvent("click", (_event, context) => context.advance())
