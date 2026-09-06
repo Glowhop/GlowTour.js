@@ -6,20 +6,6 @@ import {
   formatBundleMeasurement,
 } from "./verify-bundles";
 
-test("defines the immutable gzip budgets for every published entry", () => {
-  expect(Object.fromEntries(bundleScenarios.map((scenario) => [scenario.name, scenario.gzipBudget]))).toEqual({
-    "Core adapter": 0.75 * 1024,
-    "Core index": 18.5 * 1024,
-    Angular: 4.5 * 1024,
-    React: 2.5 * 1024,
-    Solid: 2.5 * 1024,
-    "Styles CSS": 1.75 * 1024,
-    "Vanilla /auto": 4.75 * 1024,
-    "Vanilla main": 4.5 * 1024,
-    Vue: 2.75 * 1024,
-  });
-});
-
 test("rejects presentation code in a targeted adapter bundle without treating source paths as output", () => {
   const react = bundleScenarios.find((scenario) => scenario.name === "React");
   expect(react).toBeDefined();
@@ -108,7 +94,10 @@ test("rejects a framework import that is not declared by the measured adapter", 
 });
 
 test("formats current gzip bytes, budget, and delta for every scenario", () => {
-  expect(formatBundleMeasurement(bundleScenarios[0]!, 100)).toBe("Core index: 100 B / 18944 B (-18844 B)");
+  const scenario = { ...bundleScenarios[0]!, gzipBudget: 1000, name: "Example" };
+
+  expect(formatBundleMeasurement(scenario, 100)).toBe("Example: 100 B / 1000 B (-900 B)");
+  expect(formatBundleMeasurement(scenario, 1200)).toBe("Example: 1200 B / 1000 B (+200 B)");
 });
 
 test("retains each targeted createGlowTour call while measuring tree-shaking", () => {

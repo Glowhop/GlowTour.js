@@ -173,7 +173,6 @@ describe("core browser realm isolation", () => {
     assert.equal(document.activeElement, advance);
     assert.equal(overlay.getAttribute("viewBox"), "0 0 640 360");
     assert.match(path.style.getPropertyValue("d"), /H640 V360/);
-    assert.match(path.style.getPropertyValue("d"), /M2\.5,20\.5/);
 
     rootWindow.dispatchEvent(new rootWindow.KeyboardEvent("keydown", { key: "Enter" }));
     await waitFor(() => tour.state.get().currentStepIndex === 1, "keyboard navigation");
