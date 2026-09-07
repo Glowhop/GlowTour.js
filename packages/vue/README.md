@@ -1,8 +1,8 @@
 # @glowhop/vue-tour
 
-ESM-only Vue 3 adapter with provide/inject refs for native reactive state. Content is Vue slot content. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
+ESM-only Vue 3 adapter with provide/inject refs for native reactive state. Content is Vue slot content. See the [Core guide](https://github.com/Glowhop/GlowTour.js/tree/main/packages/core) for workflow options and actions.
 
-Compatibility: Vue 3.3+ (`^3.3.0`). SSR: the root renders through `@vue/server-renderer` and browser work starts on mount; hydration is verified at package level and in a production Nuxt app. Full contract: [compatibility](https://github.com/Glowhop/glow-tour/blob/main/docs/compatibility.md).
+Compatibility: Vue 3.3+ (`^3.3.0`). SSR: the root renders through `@vue/server-renderer` and browser work starts on mount; hydration is verified at package level and in a production Nuxt app. Full contract: [compatibility](https://github.com/Glowhop/GlowTour.js/blob/main/docs/compatibility.md).
 
 <!-- glow-tour:snippet vue-quick-start -->
 ```vue

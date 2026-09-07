@@ -1,8 +1,8 @@
 # @glowhop/vanilla-tour
 
-ESM-only browser adapter using native custom elements. The pure entry point does not register elements; registration is explicit. The `/auto` entry point registers them as a side effect. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
+ESM-only browser adapter using native custom elements. The pure entry point does not register elements; registration is explicit. The `/auto` entry point registers them as a side effect. See the [Core guide](https://github.com/Glowhop/GlowTour.js/tree/main/packages/core) for workflow options and actions.
 
-Compatibility: modern browsers with custom elements and Shadow DOM (Chrome 77+, Firefox 63+, Safari 13+, Edge 79+). SSR: imports are DOM-free, but custom elements only upgrade once connected to a live DOM, so server rendering and hydration do not apply. Full contract: [compatibility](https://github.com/Glowhop/glow-tour/blob/main/docs/compatibility.md).
+Compatibility: modern browsers with custom elements and Shadow DOM (Chrome 77+, Firefox 63+, Safari 13+, Edge 79+). SSR: imports are DOM-free, but custom elements only upgrade once connected to a live DOM, so server rendering and hydration do not apply. Full contract: [compatibility](https://github.com/Glowhop/GlowTour.js/blob/main/docs/compatibility.md).
 
 <!-- glow-tour:snippet vanilla-quick-start -->
 ```ts

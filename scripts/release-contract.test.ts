@@ -14,7 +14,7 @@ const packageNames = [
   "@glowhop/vanilla-tour",
 ] as const;
 const packageIds = ["core", "styles", "react", "vue", "angular", "solid", "vanilla"] as const;
-const repositoryUrl = "git+https://github.com/Glowhop/glow-tour.git";
+const repositoryUrl = "git+https://github.com/Glowhop/GlowTour.js.git";
 const actionPins = [
   "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", // v4.2.2
   "oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6", // v2.2.0
@@ -92,8 +92,8 @@ test("source manifests contain complete public npm metadata and preserve require
     const manifest = JSON.parse(read(`packages/${packageId}/package.json`)) as Record<string, unknown>;
     expect(manifest.description).toBeString();
     expect(manifest.license).toBe("MIT");
-    expect(manifest.homepage).toBe("https://github.com/Glowhop/glow-tour#readme");
-    expect(manifest.bugs).toEqual({ url: "https://github.com/Glowhop/glow-tour/issues" });
+    expect(manifest.homepage).toBe("https://github.com/Glowhop/GlowTour.js#readme");
+    expect(manifest.bugs).toEqual({ url: "https://github.com/Glowhop/GlowTour.js/issues" });
     expect(manifest.keywords).toBeArray();
     expect(manifest.engines).toEqual({ node: ">=18.19.1" });
     expect(manifest.files).toEqual(["dist/**/*"]);
