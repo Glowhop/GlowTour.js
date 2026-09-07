@@ -11,14 +11,14 @@ import "@glowhop/styles-tour/default.css";
 import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
-const workflow = tour.create("intro").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build();
+const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
 createRoot(document.getElementById("app")!).render(<><button id="welcome">Welcome</button><button type="button" onClick={() => void tour.run(workflow)}>Start tour</button><DefaultTour tour={tour} /></>);
 ```
 
 <!-- glow-tour:snippet react-advanced -->
 ```tsx
 import { GlowTour, createGlowTour } from "@glowhop/react-tour";
-const tour = createGlowTour(); const workflow = tour.create("custom").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build();
+const tour = createGlowTour(); const workflow = tour.create("custom").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
 export function CustomTour() { return <><button id="welcome">Target</button><button type="button" onClick={() => void tour.run(workflow)}>Start</button><GlowTour.Root tour={tour}><GlowTour.Overlay /><GlowTour.Pointer /><GlowTour.Popover><GlowTour.Header /><GlowTour.Content /><GlowTour.Footer><GlowTour.CancelTrigger /><GlowTour.AdvanceTrigger /></GlowTour.Footer></GlowTour.Popover></GlowTour.Root></>; }
 ```
 

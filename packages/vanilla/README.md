@@ -11,7 +11,7 @@ import { createDefaultTourElement, createGlowTour, registerGlowTourElements } fr
 
 registerGlowTourElements();
 const tour = createGlowTour();
-const workflow = tour.create("intro").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build();
+const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
 document.body.innerHTML = '<button id="welcome">Welcome</button>';
 const root = createDefaultTourElement(tour); document.body.append(root);
 const startButton = document.createElement("button"); startButton.type = "button"; startButton.textContent = "Start tour"; document.body.append(startButton);
@@ -22,7 +22,7 @@ startButton.addEventListener("click", () => void tour.run(workflow));
 ```ts
 import { createGlowTour, registerGlowTourElements } from "@glowhop/vanilla-tour";
 registerGlowTourElements(); const tour = createGlowTour(); const target = document.createElement("button"); target.id = "welcome"; target.textContent = "Target"; document.body.append(target); const root = document.createElement("glow-tour-root"); root.tour = tour; root.append(document.createElement("glow-tour-overlay"), document.createElement("glow-tour-popover")); document.body.append(root);
-const start = document.createElement("button"); start.type = "button"; start.textContent = "Start"; start.addEventListener("click", () => void tour.run(tour.create("custom").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build())); document.body.append(start);
+const start = document.createElement("button"); start.type = "button"; start.textContent = "Start"; start.addEventListener("click", () => void tour.run(tour.create("custom").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build())); document.body.append(start);
 ```
 
 Alternatively import `@glowhop/vanilla-tour/auto`. Compose `glow-tour-root`, `glow-tour-overlay`, `glow-tour-pointer`, `glow-tour-popover`, and named header/content/footer/trigger elements. The host `disabled` attribute/property is consumer-owned; capability state is separate. Static/dynamic targets, placement, interaction, scroll, callbacks, actions/events, cancellation, and cleanup follow Core.

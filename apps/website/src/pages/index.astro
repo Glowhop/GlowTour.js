@@ -9,17 +9,7 @@ import Marquee from "../components/Marquee.astro";
 import SpotlightMotif from "../components/SpotlightMotif.astro";
 import StepDivider from "../components/StepDivider.astro";
 import MarketingLayout from "../layouts/MarketingLayout.astro";
-import {
-  advanceOnClickSource,
-  cancellableSource,
-  confirmCancelSource,
-  customStyledIndicatorSource,
-  liveProgressSource,
-  nonInteractiveSource,
-  overlayClickSource,
-  placementOrderSource,
-  waitForAsyncSource,
-} from "../lib/hero-demo-sources";
+import { examples } from "../lib/examples";
 
 // The Examples gallery pairs each live demo with its highlighted source code, but Astro's Shiki
 // integration (astro:components' <Code>) only works at build time inside .astro files, not inside
@@ -27,20 +17,9 @@ import {
 // highlighted HTML markup as the rest of the site's code blocks, which is then passed into the
 // island as static strings — the island just swaps which one is visible.
 const container = await AstroContainer.create();
-const exampleSources = [
-  nonInteractiveSource,
-  advanceOnClickSource,
-  placementOrderSource,
-  waitForAsyncSource,
-  cancellableSource,
-  confirmCancelSource,
-  overlayClickSource,
-  customStyledIndicatorSource,
-  liveProgressSource,
-];
 const exampleCodeHtml = await Promise.all(
-  exampleSources.map((code) =>
-    container.renderToString(CodeBlock, { props: { code, lang: "tsx" } }),
+  examples.map(({ source }) =>
+    container.renderToString(CodeBlock, { props: { code: source, lang: "tsx" } }),
   ),
 );
 
