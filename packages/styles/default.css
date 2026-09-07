@@ -16,7 +16,7 @@
  * use `light-dark()`; that is their browser floor to choose, not ours.
  */
 :where(:root),
-:where([data-glow-tour-root][data-glow-tour-theme="light"]) {
+:where([data-glow-tour-theme="light"]) {
   color-scheme: light;
 
   --glow-tour-color-accent: #4c35fd;
@@ -44,10 +44,13 @@
 
 /*
  * Dark palette. Applied from the OS preference unless the page opts out, and from
- * `[data-glow-tour-theme="dark"]` regardless of the OS. The attribute is read both
- * on `:root` (the common case) and on the tour root itself, so a portaled tour — or
- * a single demo on a page — can carry a theme of its own; the tour root sits closer
- * to the popover, so it always wins over the page-level value.
+ * `data-glow-tour-theme="dark"` regardless of the OS.
+ *
+ * The attribute is read on any element, not just `:root`: tokens inherit, so putting
+ * it on `<html>` themes the whole page, and putting it on a wrapper — or on the tour
+ * root itself — themes just the tour inside it. The nearest ancestor carrying the
+ * attribute wins, which is what lets a single dark demo sit on an otherwise light
+ * page.
  *
  * In dark, elevation is carried by the border rather than the shadow: a shadow over
  * a dark ground is close to invisible whatever its opacity. The backdrop keeps the
@@ -70,8 +73,7 @@
   }
 }
 
-:where(:root[data-glow-tour-theme="dark"]),
-:where([data-glow-tour-root][data-glow-tour-theme="dark"]) {
+:where([data-glow-tour-theme="dark"]) {
   color-scheme: dark;
 
   --glow-tour-color-accent: #6d5bff;

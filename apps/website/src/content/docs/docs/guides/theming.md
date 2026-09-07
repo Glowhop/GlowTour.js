@@ -88,15 +88,25 @@ set `data-glow-tour-theme` to `light` or `dark`:
 <html data-glow-tour-theme="dark">
 ```
 
-The attribute is read on `:root` and on the tour root itself, so a tour rendered
-through a portal, or a single demo embedded in a page, can carry a theme of its own:
+The attribute works on **any** element, not just `:root`. Tokens inherit, so putting it
+on `<html>` themes every tour on the page, while putting it on a wrapper themes only the
+tour inside it — which is what lets a single dark example sit on an otherwise light page:
 
-```html
-<div data-glow-tour-root data-glow-tour-theme="dark">
+```tsx
+<div data-glow-tour-theme="dark">
+  <GlowTour.Default tour={tour} />
+</div>
 ```
 
-The tour root sits closer to the popover than `:root` does, so when both carry the
-attribute, the tour root wins.
+The nearest ancestor carrying the attribute wins, so a wrapper can opt back into light
+inside a dark page.
+
+:::caution
+The nearest element also wins for the tokens themselves. If you override a token on an
+ancestor and then place a `data-glow-tour-theme` wrapper *between* that override and the
+tour, the wrapper's palette replaces your value. Override at or below the themed element
+to keep it.
+:::
 
 ### What the dark palette changes, and what it does not
 
