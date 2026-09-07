@@ -15,6 +15,7 @@ import {
   useTour,
 } from "@glowhop/react-tour";
 import { Bell, Rocket, Trash2, UserPlus } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useState } from "react";
 import { Avatar, DemoCard, FakeField, SkeletonLine } from "./demo-ui";
 
@@ -627,6 +628,124 @@ export function LiveProgressDemo() {
           </Footer>
         </Popover>
       </Root>
+    </div>
+  );
+}
+
+// 10. Light and dark theme ---------------------------------------------------
+
+const themeTour = createGlowTour();
+const themeWorkflow = themeTour
+  .create("hero-theme")
+  .step({
+    id: "theme-field-plan",
+    target: "#hero-theme-field-plan",
+    title: "One stylesheet, two palettes",
+    content:
+      "default.css ships both. With nothing set, the tour follows the operating system preference.",
+  })
+  .step({
+    id: "theme-target",
+    target: "#hero-theme-target",
+    title: "Forced from an attribute",
+    content:
+      "data-glow-tour-theme on any ancestor pins a theme — here it is on the wrapper around this demo, so only this tour changes.",
+  })
+  .build();
+
+type ThemeChoice = "system" | "light" | "dark";
+
+export function ThemeDemo() {
+  const [theme, setTheme] = useState<ThemeChoice>("dark");
+  const choices: readonly ThemeChoice[] = ["system", "light", "dark"];
+
+  return (
+    <div
+      className="flex w-full flex-col items-center gap-4"
+      data-glow-tour-theme={theme === "system" ? undefined : theme}
+    >
+      <fieldset className="flex gap-2 border-0 p-0">
+        <legend className="sr-only">Tour theme</legend>
+        {choices.map((choice) => (
+          <button
+            key={choice}
+            type="button"
+            onClick={() => setTheme(choice)}
+            aria-pressed={theme === choice}
+            className={
+              theme === choice
+                ? "rounded-[var(--radius-glow)] border border-[var(--color-accent)] bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-[var(--color-on-accent)]"
+                : "rounded-[var(--radius-glow)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-muted)]"
+            }
+          >
+            {choice}
+          </button>
+        ))}
+      </fieldset>
+      <DemoCard className="p-5">
+        <h4 className="text-sm font-semibold text-[var(--color-text)]">Billing</h4>
+        <div className="mt-4 space-y-3">
+          <FakeField id="hero-theme-field-plan" label="Plan" value="Team — 12 seats" />
+        </div>
+        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+          <button id="hero-theme-target" type="button" className={primaryButtonClass}>
+            Update plan
+          </button>
+        </div>
+      </DemoCard>
+      <button
+        type="button"
+        onClick={() => void themeTour.run(themeWorkflow)}
+        className={runButtonClass}
+      >
+        Run this demo
+      </button>
+      <DefaultTour tour={themeTour} />
+    </div>
+  );
+}
+
+// 11. Long content in a narrow popover ---------------------------------------
+
+const longContentTour = createGlowTour();
+const longContentWorkflow = longContentTour
+  .create("hero-long-content")
+  .step({
+    id: "long-content-target",
+    target: "#hero-long-content-target",
+    title: "A step with a lot to say",
+    content:
+      "The popover never grows past the viewport: it caps its own height and scrolls its content, keeping the header and the footer buttons in place. That matters on a short window or a phone, where an unbounded popover would push its own Next button off-screen. The width here comes from --glow-tour-popover-width, set to 260px on the wrapper around this demo rather than in the library — every token can be overridden the same way, from any ancestor of the tour. The rest of this paragraph exists only to make the scroll real rather than described. A step's content is whatever your framework renders, so it can be a paragraph, a list, an image, or a whole component; the popover does not try to measure or truncate it. It gives the content the room that is left once the header and footer are laid out, then lets it scroll inside that box. Scrolling is contained, too: reaching the end of the content does not start scrolling the page behind the tour. On a short viewport the same step simply gets a smaller box and more scrolling, which is the behaviour you want when someone opens your onboarding on a laptop with a browser window half the height of yours.",
+  })
+  .build();
+
+export function LongContentDemo() {
+  return (
+    <div
+      className="flex w-full flex-col items-center gap-4"
+      style={{ "--glow-tour-popover-width": "260px" } as CSSProperties}
+    >
+      <DemoCard className="p-5">
+        <h4 className="text-sm font-semibold text-[var(--color-text)]">Release notes</h4>
+        <div className="mt-4 space-y-2">
+          <SkeletonLine />
+          <SkeletonLine width="80%" />
+          <SkeletonLine width="60%" />
+        </div>
+        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+          <button id="hero-long-content-target" type="button" className={primaryButtonClass}>
+            Read the notes
+          </button>
+        </div>
+      </DemoCard>
+      <button
+        type="button"
+        onClick={() => void longContentTour.run(longContentWorkflow)}
+        className={runButtonClass}
+      >
+        Run this demo
+      </button>
+      <DefaultTour tour={longContentTour} />
     </div>
   );
 }

@@ -82,14 +82,50 @@ Rien de ce qui suit n'est entré dans le core. Ajouter plus tard est additif ; r
 
 ## 2. Thème unique / dark mode / galerie visuelle
 
-**Problème.** `packages/styles/default.css` ne fournit qu'un thème clair. Aucune règle `prefers-color-scheme`, aucun sélecteur `[data-theme]`. Les tokens `--glow-tour-*` existent déjà (couleurs, rayon, ombre, espacement, durée) — la base est là, il manque les valeurs sombres et une stratégie de bascule.
+**Problème.** `packages/styles/default.css` ne fournissait qu'un thème clair. Aucune règle `prefers-color-scheme`, aucun sélecteur de bascule.
 
-**À trancher.**
-- [ ] **Mécanique de thème** : définir la palette claire sur `:root` (déjà le cas), redéfinir uniquement les tokens sous `@media (prefers-color-scheme: dark)` **et** sous un sélecteur explicite (`[data-glow-tour-theme="dark"]`), pour que l'app puisse forcer un thème indépendamment de l'OS. Les deux, pas l'un ou l'autre.
-- [ ] **Où vit la bascule** : attribut posé par le core sur le root de tour, ou laissé entièrement à l'app ? Option la plus simple et la plus honnête : purement CSS, aucun code — à valider.
-- [ ] **Vérifier l'overlay en sombre** : l'opacité du backdrop et l'ombre du popover ne se transposent pas mécaniquement ; à régler à l'œil dans un vrai navigateur, pas au jugé.
-- [ ] **Galerie visuelle** sur `apps/website` : une page par variation (placements, overlay, indicateur, thème clair/sombre, popover large/étroit, contenu long), chaque exemple exécutable et son code affiché. C'est le manque le plus visible face à Driver.js et Shepherd, dont la doc vend le rendu.
-- [ ] Envisager des captures/GIF dans le README racine — aujourd'hui il n'y a **aucune** image d'une lib visuelle.
+**Correction du constat initial.** Les tokens `--glow-tour-*` n'étaient **déclarés nulle part** : ils n'existaient que comme valeurs de repli de `var()`, répétées à chaque usage. Le « palette claire sur `:root`, déjà le cas » de la version précédente de cette note était faux. Déclarer la palette était donc un prérequis, pas un acquis — et c'est le seul changement du lot qui pouvait régresser des surcharges existantes.
+
+### Périmètre retenu — livré
+
+Branche `feat/dark-mode-theme` : `19fb659` (palette), `7fa3c3d` (portée de l'attribut), `13182f2` (galerie).
+
+#### 2.1 — Mécanique de thème
+
+- [x] Palette claire déclarée, valeurs identiques aux anciens replis : aucun changement visuel.
+- [x] Palette sombre sous `@media (prefers-color-scheme: dark)` **et** sous `[data-glow-tour-theme="dark"]`, les deux comme prévu. `"light"` force le clair sur un OS sombre.
+- [x] **Où déclarer les tokens — la vraie décision du lot.** Sur `:where(:root)`, à spécificité 0. Deux recettes de surcharge sont documentées et incompatibles avec les autres emplacements : `packages/styles/README.md` documente la surcharge depuis un **ancêtre**, que déclarer sur `[data-glow-tour-root]` aurait cassée (l'élément le plus proche gagne) ; le guide de theming documente la surcharge sur `:where([data-glow-tour-root])`, que déclarer sur un `:root` nu aurait cassée (spécificité 0,1,0 contre 0). À spécificité 0 sur la racine, les deux survivent — vérifié en navigateur, pas déduit.
+- [x] **Où vit la bascule** : purement CSS, zéro code core, conformément à l'option « la plus honnête ». Aucun global navigateur ajouté, SSR intact par construction.
+  - **Écart avec le plan** : l'attribut devait être lu sur `:root` **et** sur le tour root. Il est lu sur **n'importe quel élément**. Deux raisons découvertes à l'implémentation : `Root` n'accepte pas de `data-*` en TypeScript (`RootProps` dérive de `HTMLAttributes`, qui n'a pas d'index signature pour `data-*`), donc l'attribut ne peut pas être posé sur le tour root depuis React ; et la galerie a besoin de thémer un **conteneur** pour poser une démo sombre sur une page claire. Lire l'attribut partout couvre les trois emplacements et fait passer le CSS de cinq blocs à trois.
+- [x] `light-dark()` écarté, et la raison écrite dans le CSS et dans la doc : la fonction se résout sur `color-scheme`, propriété que la page hôte possède et que la plupart des apps ne définissent jamais — un `color-scheme` absent rend la valeur **claire** même sur un OS sombre (confirmé par MDN : « retourne la première valeur … si aucune préférence n'est définie »). S'y fier aurait aussi relevé le plancher navigateur (Baseline mai 2024) sans que ce plancher soit écrit nulle part. La fonction est en revanche recommandée dans la doc **au consommateur**, qui contrôle son propre `:root`.
+- [x] Matrice de 8 états vérifiée en navigateur : OS clair/sombre × aucun attribut / `<html>` clair / `<html>` sombre / wrapper sombre / wrapper clair sous `<html>` sombre, plus la non-régression de la surcharge par ancêtre dans les deux thèmes.
+
+#### 2.2 — Overlay et élévation en sombre
+
+- [x] **Contrainte dure trouvée à la lecture du core** : l'opacité du voile est écrite **inline à chaque frame** par `overlay.ts` (`opacity != null ? … : 0.7`), donc inatteignable depuis CSS. Seul le `fill` l'est — `getRenderedTargetStyles` lit justement la valeur calculée quand `step.overlay.color` est absent. Nouveau token `--glow-tour-overlay-color`, et **aucun** token d'opacité : `step.overlay.opacity` existe déjà, ce serait une seconde façon de faire.
+- [x] Le voile garde un noir identique dans les deux thèmes : il assombrit la page, il ne la teinte pas.
+- [x] L'élévation passe de l'ombre à la bordure en sombre — une ombre sur fond sombre est invisible quelle que soit son opacité.
+- [x] Vérifié à l'œil en navigateur, comme exigé : popover sombre sur page claire, voile et découpe corrects.
+
+#### 2.3 — Galerie
+
+- [x] **Constat initial à corriger là aussi** : la galerie existait déjà (9 exemples exécutables avec code affiché). Le manque n'était pas « construire une galerie » mais l'absence de page dédiée et de variation de thème.
+- [x] Deux exemples ajoutés : *Light and dark* (commutateur `system` / `light` / `dark` posant l'attribut sur le wrapper de la démo, donc une seule démo bascule sur une page claire) et *Long content* (étape longue dans un popover de 260px, largeur venant d'une surcharge de token sur ce même wrapper).
+- [x] Page dédiée `/examples` + entrée de nav ; la home garde la même galerie.
+- [x] `lib/examples.ts` : démos et extraits de code étaient deux tableaux tenus dans le même ordre à la main — le premier réordonnancement associait le mauvais extrait à une démo. Fusionnés en une seule liste, réutilisée par les deux pages.
+- [x] Piège rencontré : la première version de *Long content* ne défilait pas sur une fenêtre de 720px, alors que sa description l'affirmait. Contenu allongé jusqu'à ce que le défilement soit réel (contenu 819px dans une boîte de 576px, popover plafonné à 688px, en-tête et pied toujours visibles).
+
+### Hors périmètre — assumé
+
+- [x] **Contraste** : explicitement sorti du périmètre sur décision — c'est au dev intégrateur de vérifier. Conséquence actée : `docs/accessibility.md` revendique un audit AA sur le thème clair ; la doc de theming dit maintenant que les palettes sont un défaut raisonnable et non certifié, pour ne pas étendre implicitement cette revendication au sombre.
+- [x] **Second thème d'exemple** : non livré. Une recette de dix lignes dans le guide prouve la même chose sans surface publique à maintenir.
+
+### Vérification
+
+- [x] `bun run check`, `bunx tsc --noEmit`, `bun test` (459 tests) verts ; build du site OK.
+- [x] Navigateur : matrice de thèmes, galerie, page `/examples`, aucune erreur console.
+- [x] **Piège d'outillage à retenir.** Les trois boutons ont `transition: background-color`. Dans un document masqué, la timeline est gelée : `getComputedStyle` renvoie indéfiniment la couleur de **départ**, ce qui donne l'illusion d'un thème qui ne s'applique pas aux boutons alors que le popover, lui, change. Même classe de problème que `2bd51ef` du lot 1. Toute vérification de thème par styles calculés doit neutraliser les transitions d'abord.
+- [ ] **Reste à faire — captures / GIF dans le README racine.** Toujours aucune image d'une lib visuelle. À enregistrer via Playwright plutôt qu'à la main, sinon la capture périme au premier changement de style.
 
 ---
 
@@ -128,7 +164,7 @@ Branche `feat/monitoring-events`, partie de `feature/step-id-start-at` : le payl
 ## Ordre suggéré
 
 1. ~~**Reprise : `id` + `startAt`**~~ — **livré** (`8fddb54`, `2bd51ef`). L'identité d'étape est en place, le chantier 2 peut la consommer directement.
-2. ~~**Événements de monitoring**~~ — **livré** sur `feat/monitoring-events`, branchée sur le lot 1 dont elle consomme `currentStep.id`.
-3. **Dark mode + galerie** — indépendant du reste, gros gain de perception pour un coût faible.
+2. ~~**Dark mode + galerie**~~ — **livré** (`19fb659`, `7fa3c3d`, `13182f2`), pris avant le lot 3 car indépendant. Reste les captures du README.
+3. ~~**Événements de monitoring**~~ — **livré** sur `feat/monitoring-events`, branchée sur le lot 1 dont elle consomme `currentStep.id`.
 
 Périmètre revendicable une fois le lot 1 livré — à respecter dans le README et sur `apps/website` : ids d'étape stables, démarrage à une étape arbitraire, reprise après rechargement ou navigation en ~2 lignes avec le stockage et le routeur de l'app, compatible SSR. **Pas** "pause/reprise", **pas** "gère les workflows multi-pages" : ces deux formulations promettent des API qui n'existeront pas.
