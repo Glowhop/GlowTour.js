@@ -88,8 +88,6 @@ Rien de ce qui suit n'est entré dans le core. Ajouter plus tard est additif ; r
 - [ ] **Mécanique de thème** : définir la palette claire sur `:root` (déjà le cas), redéfinir uniquement les tokens sous `@media (prefers-color-scheme: dark)` **et** sous un sélecteur explicite (`[data-glow-tour-theme="dark"]`), pour que l'app puisse forcer un thème indépendamment de l'OS. Les deux, pas l'un ou l'autre.
 - [ ] **Où vit la bascule** : attribut posé par le core sur le root de tour, ou laissé entièrement à l'app ? Option la plus simple et la plus honnête : purement CSS, aucun code — à valider.
 - [ ] **Vérifier l'overlay en sombre** : l'opacité du backdrop et l'ombre du popover ne se transposent pas mécaniquement ; à régler à l'œil dans un vrai navigateur, pas au jugé.
-- [ ] **Contraste** : vérifier AA sur `--glow-tour-color-text` / `-text-muted` / `-on-accent` dans les deux thèmes. C'est cohérent avec le contrat de `docs/accessibility.md` — un thème sombre qui casse le contraste annulerait l'argument a11y.
-- [ ] **Deuxième thème ?** décider si on livre seulement `default` (clair + sombre) ou un second thème d'exemple (minimal / bordé) pour prouver que les tokens suffisent à re-skinner sans forker le CSS.
 - [ ] **Galerie visuelle** sur `apps/website` : une page par variation (placements, overlay, indicateur, thème clair/sombre, popover large/étroit, contenu long), chaque exemple exécutable et son code affiché. C'est le manque le plus visible face à Driver.js et Shepherd, dont la doc vend le rendu.
 - [ ] Envisager des captures/GIF dans le README racine — aujourd'hui il n'y a **aucune** image d'une lib visuelle.
 
