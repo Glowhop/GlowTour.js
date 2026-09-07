@@ -9,7 +9,8 @@ import "@glowhop/styles-tour/default.css";
 ```
 
 The theme follows `prefers-color-scheme`. To force one, set `data-glow-tour-theme` to
-`light` or `dark` on `:root` or on the tour root itself:
+`light` or `dark` on any ancestor of the tour — `<html>` for the whole page, a wrapper for
+a single tour:
 
 ```html
 <html data-glow-tour-theme="dark">
