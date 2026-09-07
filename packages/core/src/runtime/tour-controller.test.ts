@@ -2785,6 +2785,17 @@ describe("monitoring events", () => {
         ["welcome", "previous"],
       ],
     );
+
+    // A leave reports the navigation that causes it, not the one that brought
+    // the user onto the step.
+    const left = events.filter((event) => event.type === "step:leave");
+    assert.deepEqual(
+      left.map((event) => [event.stepId, event.direction]),
+      [
+        ["welcome", "advance"],
+        ["invite", "previous"],
+      ],
+    );
   });
 
   test("reports what triggered the transition", async () => {
