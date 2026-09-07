@@ -638,12 +638,14 @@ const themeTour = createGlowTour();
 const themeWorkflow = themeTour
   .create("hero-theme")
   .step({
+    id: "theme-field-plan",
     target: "#hero-theme-field-plan",
     title: "One stylesheet, two palettes",
     content:
       "default.css ships both. With nothing set, the tour follows the operating system preference.",
   })
   .step({
+    id: "theme-target",
     target: "#hero-theme-target",
     title: "Forced from an attribute",
     content:
@@ -709,6 +711,7 @@ const longContentTour = createGlowTour();
 const longContentWorkflow = longContentTour
   .create("hero-long-content")
   .step({
+    id: "long-content-target",
     target: "#hero-long-content-target",
     title: "A step with a lot to say",
     content:
