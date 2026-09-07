@@ -1,6 +1,6 @@
 # @glowhop/styles-tour
 
-ESM-only CSS package. Import the light-only theme:
+ESM-only CSS package. Import the default theme (light and dark):
 
 Compatibility: CSS-only package; no framework version or runtime SSR surface applies. Hydration is not applicable.
 
@@ -8,7 +8,16 @@ Compatibility: CSS-only package; no framework version or runtime SSR surface app
 import "@glowhop/styles-tour/default.css";
 ```
 
-Styles are scoped to `[data-glow-tour-root]`; tokens inherit from an ancestor:
+The theme follows `prefers-color-scheme`. To force one, set `data-glow-tour-theme` to
+`light` or `dark` on any ancestor of the tour — `<html>` for the whole page, a wrapper for
+a single tour:
+
+```html
+<html data-glow-tour-theme="dark">
+```
+
+Styles are scoped to `[data-glow-tour-root]`; tokens are declared at zero specificity on
+`:where(:root)`, so they can be overridden from any ancestor of the tour:
 
 ```css
 .onboarding { --glow-tour-color-accent: #0b6; --glow-tour-popover-width: 420px; }
@@ -20,6 +29,7 @@ Styles are scoped to `[data-glow-tour-root]`; tokens inherit from an ancestor:
 | `--glow-tour-color-text`, `--glow-tour-color-text-muted`, `--glow-tour-color-border` | text and borders |
 | `--glow-tour-color-accent`, `--glow-tour-color-accent-hover`, `--glow-tour-color-accent-active`, `--glow-tour-color-on-accent` | controls and focus |
 | `--glow-tour-spacing`, `--glow-tour-radius`, `--glow-tour-shadow` | shape and spacing |
+| `--glow-tour-overlay-color` | backdrop fill (its opacity is set per step, not by CSS) |
 | `--glow-tour-popover-width`, `--glow-tour-viewport-gap`, `--glow-tour-control-height` | layout |
 | `--glow-tour-transition-duration`, `--glow-tour-transition-easing` | motion |
 
