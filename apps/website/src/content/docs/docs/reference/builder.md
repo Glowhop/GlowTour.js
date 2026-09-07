@@ -309,7 +309,7 @@ Control the information box that displays step title and content.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `placementTryOrder` | Array | `["bottom", "top", "right", "left"]` | Preferred placements in order of preference |
-| `gap` | number | `14` | Spacing between popover and target (in pixels) |
+| `gap` | number | `16` | Spacing between popover and target, and the minimum margin it keeps from the viewport edges (in pixels) |
 | `hideFooter` | boolean | `false` | Hide the footer with navigation buttons |
 | `hideAdvanceButton` | boolean | `false` | Hide the "Next" button (keyboard still works) |
 | `disableAdvanceButton` | boolean | `false` | Disable advancing (keyboard and button blocked) |

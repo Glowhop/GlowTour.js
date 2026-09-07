@@ -58,17 +58,24 @@ const workflow = tour
 
 ## Collision behavior
 
-The `viewport-gap` property (default `16px`) sets the minimum distance between the popover/pointer and the viewport edges. When measuring if a placement fits, GlowTour.js checks:
+The `gap` option does double duty: it is both the spacing between the popover (or pointer) and its
+target, and the minimum margin kept from the viewport edges. It defaults to `16` for the popover
+and `16` for the pointer. When measuring if a placement fits, GlowTour.js checks:
 
 ```
-popover position + popover size + viewport-gap <= viewport edge
+popover position + popover size + gap <= viewport edge
 ```
 
 If a placement fails this check, the next placement in `placementTryOrder` is tried. If all placements fail, the popover/pointer centers on the screen.
 
+The default theme's `--glow-tour-viewport-gap` token (also `16px`) caps the popover's `max-width`
+and `max-height` at `100vw - 2 * gap`. Keep the two in step: raising `gap` above the CSS token
+means a popover at its maximum size no longer fits anywhere, and every step falls back to
+centered.
+
 ## Center fallback
 
-If all placements fail due to viewport constraints, the popover or pointer will center itself. You can customize the `viewport-gap` to adjust how aggressive the collision detection is:
+If all placements fail due to viewport constraints, the popover or pointer will center itself. Lower the `gap` to let a step sit closer to the edges before that fallback kicks in:
 
 ```typescript
 const tour = createGlowTour({
@@ -90,6 +97,7 @@ const workflow = tour
     content: "In this corner, we have minimal space.",
     popover: {
       placementTryOrder: ["right", "bottom"],
+      gap: 8,
     },
   })
   .build();
