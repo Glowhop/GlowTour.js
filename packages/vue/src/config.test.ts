@@ -10,7 +10,7 @@ describe("vue config entry point", () => {
     // cast. See HANDOFF-serializable-config.md.
     const definition = createWorkflowFromConfig({
       name: "onboarding",
-      steps: [{ target: "#invite-button", title: "Invite", content: "Invite your team" }],
+      steps: [{ id: "s1", target: "#invite-button", title: "Invite", content: "Invite your team" }],
     });
 
     await assert.rejects(() => createGlowTour().run(definition), /connected root/i);

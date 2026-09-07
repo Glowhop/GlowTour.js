@@ -51,7 +51,7 @@ import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello." })
+  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." })
   .build();
 
 createRoot(document.getElementById("app")!).render(
@@ -75,7 +75,7 @@ import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello." })
+  .step({ id: "welcome-2", target: "#welcome", title: "Welcome", content: "Hello." })
   .build();
 
 function start() {
@@ -100,7 +100,7 @@ import { DefaultTour, createGlowTour } from "@glowhop/solid-tour";
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello." })
+  .step({ id: "welcome-3", target: "#welcome", title: "Welcome", content: "Hello." })
   .build();
 
 render(() => (
@@ -134,7 +134,7 @@ export class TourComponent {
   readonly tour = createGlowTour();
   readonly workflow = this.tour
     .create("welcome")
-    .step({ target: "#welcome", title: "Welcome", content: "Hello." })
+    .step({ id: "welcome-4", target: "#welcome", title: "Welcome", content: "Hello." })
     .build();
 
   start() {
@@ -158,7 +158,7 @@ registerGlowTourElements();
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello." })
+  .step({ id: "welcome-5", target: "#welcome", title: "Welcome", content: "Hello." })
   .build();
 
 const button = document.createElement("button");

@@ -59,6 +59,7 @@ const spaWorkflow = tour
     onCancel: () => log("SPA tour cancelled"),
   })
   .step({
+    id: "spa-dashboard",
     target: "#kpi-card",
     title: "Dashboard",
     content: "Step 1 lives on the dashboard view. Advancing triggers a SPA route change.",
@@ -68,6 +69,7 @@ const spaWorkflow = tour
     navigate("profile");
   })
   .step({
+    id: "spa-profile",
     target: "#profile-avatar",
     title: "Profile",
     content: "Step 2 targets an element that only exists after the route change.",
@@ -79,6 +81,7 @@ const spaWorkflow = tour
   })
 
   .step({
+    id: "spa-save",
     target: "#profile-save",
     title: "Save",
     content: "Step 3 is on the same view as step 2. Finish to end the tour.",
@@ -96,16 +99,18 @@ const reloadWorkflow = tour
     onCancel: () => log("Full-reload tour cancelled"),
   })
   .step({
+    id: "reload-dashboard",
     target: "#kpi-card",
     title: "Dashboard",
     content: "Advancing persists the tour position, then hard-navigates to page B.",
   })
   .beforeAdvance(() => {
-    log("beforeAdvance — persisting step 1 and calling location.assign('page-b.html')");
-    persistTour({ workflow: "reload-multipage", stepIndex: 1 });
+    log("beforeAdvance — persisting the next step id and calling location.assign('page-b.html')");
+    persistTour({ workflow: "reload-multipage", stepId: "reload-settings" });
     location.assign("page-b.html");
   })
   .step({
+    id: "reload-settings",
     target: "#settings-panel",
     title: "Settings",
     content: "This target only exists on page B.",

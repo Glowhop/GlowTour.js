@@ -9,11 +9,13 @@ export default function Page() {
     tour
       .create("ssr-demo")
       .step({
+        id: "step-one",
         target: "#step-one-target",
         title: "Step One",
         content: "This step is rendered on the server and hydrated on the client.",
       })
       .step({
+        id: "step-two",
         target: "#step-two-target",
         title: "Step Two",
         content: "Advancing moved the tour to this second step.",

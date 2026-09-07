@@ -10,7 +10,7 @@ const target = {} as HTMLElement;
 function workflow(options: StartOptions<string> = {}) {
   return new TourController<string>(new NoopTourViewDriver())
     .create("validation", options)
-    .step({ content: "content", target, title: "title" })
+    .step({ id: "step-1", content: "content", target, title: "title" })
     .build();
 }
 
@@ -95,8 +95,14 @@ describe("runtime option validation", () => {
   test("identifies invalid props at their nonzero step index", () => {
     const definition = new TourController<string>(new NoopTourViewDriver())
       .create("validation")
-      .step({ content: "first", target, title: "first" })
-      .step({ content: "second", popover: { arrow: { size: -1 } }, target, title: "second" })
+      .step({ id: "step-2", content: "first", target, title: "first" })
+      .step({
+        id: "step-3",
+        content: "second",
+        popover: { arrow: { size: -1 } },
+        target,
+        title: "second",
+      })
       .build();
 
     assert.throws(() => validateWorkflowOptions(definition), {

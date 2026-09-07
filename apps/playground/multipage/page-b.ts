@@ -15,74 +15,34 @@ document.body.append(createDefaultTourElement(tour));
 (window as unknown as { __tour: typeof tour }).__tour = tour;
 
 /**
- * The same two-step workflow as page A. Step 0 targets `#kpi-card`, which does
- * not exist in this document — resuming has to get past it somehow.
+ * The same workflow as page A, rebuilt from code.
  *
- * `strategy` decides what the engine does with that missing target: the default
- * `"error"` kills the tour, `"skip"` walks past the consumed step.
+ * Rebuilding is not a workaround: a step's callbacks (`beforeAdvance`, actions,
+ * event handlers) cannot be serialized, so what crosses the page boundary is
+ * only a step id. The workflow itself always comes from the app's own code.
  */
-function buildWorkflowOn(instance: ReturnType<typeof createGlowTour>, strategy: "error" | "skip") {
-  return instance
-    .create("reload-multipage", {
-      animated: false,
-      onStart: () => log(`onStart (${strategy})`),
-      onFinish: () => log(`onFinish (${strategy})`),
-      onCancel: () => log(`onCancel (${strategy})`),
-    })
-    .step({
-      target: "#kpi-card",
-      title: "Dashboard",
-      content: "Step 1 — target lives on page A only.",
-      behavior: { missingTargetStrategy: strategy, targetTimeout: 500 },
-    })
-    .beforeAdvance(() => log("step 1 beforeAdvance — should NOT run on resume"))
-    .step({
-      target: "#settings-panel",
-      title: "Settings",
-      content: "Step 2 — this is where the tour should resume.",
-      behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
-    })
-    .build();
-}
-
-function snapshot(): string {
-  const state = tour.state.get();
-  return `status=${state.status} step=${state.currentStepIndex}`;
-}
-
-/** What the current API offers: run() then goToStep(). */
-async function attemptRunThenGoToStep(stepIndex: number): Promise<void> {
-  log("--- Attempt 1: run() + goToStep() ---");
-  try {
-    await tour.run(buildWorkflowOn(tour, "error"));
-    log("run() resolved.");
-  } catch (error) {
-    log(`run() threw — ${(error as Error).message}`);
-  }
-  log(`before goToStep: ${snapshot()}`);
-  try {
-    await tour.goToStep(stepIndex);
-    log(`goToStep(${stepIndex}) resolved.`);
-  } catch (error) {
-    log(`goToStep() threw — ${(error as Error).message}`);
-  }
-  log(`after goToStep: ${snapshot()}`);
-}
-
-/** The only workaround available today: make consumed steps skippable. */
-async function attemptSkipPrefix(): Promise<void> {
-  log("--- Attempt 2: missingTargetStrategy 'skip' on consumed steps ---");
-  tour.dispose();
-  const resumed = createGlowTour();
-  document.body.append(createDefaultTourElement(resumed));
-  try {
-    await resumed.run(buildWorkflowOn(resumed, "skip"));
-    const state = resumed.state.get();
-    log(`skip-prefix result: status=${state.status} step=${state.currentStepIndex}`);
-  } catch (error) {
-    log(`skip-prefix threw — ${(error as Error).message}`);
-  }
-}
+const workflow = tour
+  .create("reload-multipage", {
+    animated: false,
+    onStart: ({ step }) => log(`onStart — resumed on "${step?.id}"`),
+    onFinish: () => log("onFinish"),
+    onCancel: () => log("onCancel"),
+  })
+  .step({
+    id: "reload-dashboard",
+    target: "#kpi-card",
+    title: "Dashboard",
+    content: "Step 1 — target lives on page A only. Never entered when resuming.",
+  })
+  .beforeAdvance(() => log("step 1 beforeAdvance — does NOT run on resume"))
+  .step({
+    id: "reload-settings",
+    target: "#settings-panel",
+    title: "Settings",
+    content: "Step 2 — this is where the tour resumes.",
+    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+  })
+  .build();
 
 async function main(): Promise<void> {
   const persisted = readPersistedTour();
@@ -91,9 +51,18 @@ async function main(): Promise<void> {
     return;
   }
   clearPersistedTour();
-  log(`Persisted tour: ${persisted.workflow} @ step ${persisted.stepIndex}`);
-  await attemptRunThenGoToStep(persisted.stepIndex);
-  await attemptSkipPrefix();
+  log(`Persisted tour: ${persisted.workflow} @ "${persisted.stepId}"`);
+
+  // The whole resume: one option. No goToStep(), no skippable prefix steps.
+  try {
+    await tour.run(workflow, { startAt: persisted.stepId });
+    const state = tour.state.get();
+    log(`resumed: status=${state.status} step=${state.currentStep?.id}`);
+  } catch (error) {
+    // A stale id (the workflow changed since the snapshot was written) surfaces
+    // here instead of silently restarting the tour from the beginning.
+    log(`resume failed — ${(error as Error).message}`);
+  }
 }
 
 void main();

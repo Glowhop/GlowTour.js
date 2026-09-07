@@ -321,6 +321,8 @@ export type TourDirection = "advance" | "previous";
 
 /** Information about the currently active step in a tour. */
 export interface TourCurrentStep<T> {
+  /** The stable identifier of this step, as declared in the workflow. */
+  readonly id: string;
   /** The step properties as initially configured. */
   readonly initialProps: ReadonlyStepProps<T>;
   /** The current step properties (may have been updated via StepPropsStore). */
@@ -369,8 +371,8 @@ export interface ReadonlyTourState<T> {
 export interface GlowTour<T> {
   /** Create a new workflow builder with the given name. */
   create(name: string, options?: StartOptions<T>): WorkflowBuilder<T>;
-  /** Run a workflow. */
-  run(workflow: WorkflowDefinition<T>): Promise<void>;
+  /** Run a workflow, optionally starting at a specific step. */
+  run(workflow: WorkflowDefinition<T>, options?: RunOptions): Promise<void>;
   /** Advance to the next step. */
   advance(): Promise<void>;
   /** Go to the previous step. */
@@ -385,6 +387,24 @@ export interface GlowTour<T> {
   readonly state: ReadonlyTourState<T>;
 }
 
+/**
+ * Per-run options. Unlike `StartOptions`, these belong to one `run()` call and
+ * are never baked into the reusable workflow definition.
+ */
+export interface RunOptions {
+  /**
+   * Id of the step to start on, instead of the first one. Use it to resume a
+   * tour where the user left off.
+   *
+   * The workflow itself is not truncated: `previous()` can still go back before
+   * this step, and `totalSteps` is unchanged.
+   *
+   * Throws if no step carries this id — a tour that silently restarts from the
+   * beginning is a bug the end user sees.
+   */
+  startAt?: string;
+}
+
 /** Options for creating a GlowTour instance. */
 export interface GlowTourOptions {
   /** Error handler for exceptions thrown in state subscribers. */
@@ -393,6 +413,14 @@ export interface GlowTourOptions {
 
 /** Parameters for defining a tour step. */
 export type StepParameters<T> = {
+  /**
+   * Stable identifier for this step, unique within the workflow.
+   *
+   * Required: it is the only durable way to designate a step across reloads
+   * and navigations (see `RunOptions.startAt`). A positional index is not a
+   * substitute — it breaks as soon as steps are reordered or inserted.
+   */
+  id: string;
   /** The target element or selector for this step. */
   target: TargetResolver;
   /**

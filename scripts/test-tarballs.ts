@@ -380,7 +380,7 @@ const vanillaWorkflow: VanillaWorkflowDefinition | null = null;
 
 const workflow = createCoreGlowTour<string>()
   .create("tarball-consumer")
-  .step({ content: "Content", target: "#target", title: "Title" })
+  .step({ content: "Content", id: "step-1", target: "#target", title: "Title" })
   .wait(0)
   .do(() => true)
   .beforeAdvance(() => {})

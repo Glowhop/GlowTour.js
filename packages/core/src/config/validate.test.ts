@@ -6,7 +6,7 @@ import { validateWorkflowConfig } from "./validate";
 function minimalConfig() {
   return {
     name: "onboarding",
-    steps: [{ target: "#target", title: "Title", content: "Content" }],
+    steps: [{ id: "s1", target: "#target", title: "Title", content: "Content" }],
   };
 }
 
@@ -32,6 +32,7 @@ describe("validateWorkflowConfig", () => {
       onStart: () => {},
       steps: [
         {
+          id: "s2",
           target: "#target",
           title: "Title",
           content: "Content",
@@ -211,6 +212,7 @@ describe("validateWorkflowConfig", () => {
       steps: [
         { title: "Title", content: "Content" },
         {
+          id: "s3",
           target: "#other",
           title: "Title",
           content: "Content",
@@ -236,5 +238,27 @@ describe("validateWorkflowConfig", () => {
       assert.match(error.message, /bogus/);
       assert.match(error.message, /name/);
     }
+  });
+  test("reports a missing step id", () => {
+    const issues = issuesOf({
+      name: "onboarding",
+      steps: [{ target: "#target", title: "T", content: "C" }],
+    });
+
+    assert.ok(issues.some((issue) => issue.path === "steps[0].id"));
+  });
+
+  test("reports a duplicate step id, naming the step that already uses it", () => {
+    const issues = issuesOf({
+      name: "onboarding",
+      steps: [
+        { id: "same", target: "#a", title: "T", content: "C" },
+        { id: "same", target: "#b", title: "T", content: "C" },
+      ],
+    });
+
+    const duplicate = issues.find((issue) => issue.path === "steps[1].id");
+    assert.ok(duplicate);
+    assert.match(duplicate.message, /already used by steps\[0\]/);
   });
 });

@@ -7,16 +7,19 @@ export const nonInteractiveSource = `const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
   .step({
+    id: "workspace-name",
     target: "#workspace-name",
     title: "Start with the workspace name",
     content: "A step can target any element — this one points at a plain field.",
   })
   .step({
+    id: "timezone",
     target: "#timezone",
     title: "Then the timezone",
     content: "Chain as many .step() calls as the tour needs.",
   })
   .step({
+    id: "save-button",
     target: "#save-button",
     title: "A plain, non-interactive walkthrough",
     content: "No special options here — no allowInteraction, no custom behavior.",
@@ -30,11 +33,13 @@ export const advanceOnClickSource = `const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
   .step({
+    id: "progress",
     target: "#progress",
     title: "Step 2 of a 3-step wizard",
     content: "This wizard tracks its own progress — the tour just points it out.",
   })
   .step({
+    id: "continue",
     target: "#continue",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance().",
@@ -43,6 +48,7 @@ const workflow = tour
   })
   .onTargetEvent("click", (event, context) => context.advance())
   .step({
+    id: "continue-2",
     target: "#continue",
     title: "That advanced the tour",
     content: "No popover button was involved.",
@@ -56,24 +62,28 @@ export const placementOrderSource = `const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
   .step({
+    id: "widget-a",
     target: "#widget-a",
     title: "Forcing placement: top",
     content: "popover.placementTryOrder: ['top'] pins this popover above its target.",
     popover: { placementTryOrder: ["top"] },
   })
   .step({
+    id: "widget-b",
     target: "#widget-b",
     title: "Forcing placement: bottom",
     content: "popover.placementTryOrder: ['bottom'] pins this popover below its target.",
     popover: { placementTryOrder: ["bottom"] },
   })
   .step({
+    id: "widget-c",
     target: "#widget-c",
     title: "Forcing placement: left",
     content: "popover.placementTryOrder: ['left'] pins this popover to the left of its target.",
     popover: { placementTryOrder: ["left"] },
   })
   .step({
+    id: "widget-d",
     target: "#widget-d",
     title: "Forcing placement: right",
     content: "popover.placementTryOrder: ['right'] pins this popover to the right of its target.",
@@ -88,18 +98,21 @@ export const waitForAsyncSource = `const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
   .step({
+    id: "load-data",
     target: "#load-data",
     title: "Load the data first",
     content: "The next step waits for an element that doesn't exist yet.",
     behavior: { allowInteraction: true },
   })
   .step({
+    id: "loaded-content",
     target: "#loaded-content",
     title: "The tour waited for this",
     content: "waitUntilElement(selector) held the tour until this element appeared.",
   })
   .waitUntilElement("#loaded-content")
   .step({
+    id: "activity-row-1",
     target: "#activity-row-1",
     title: "Real content, not a skeleton",
     content: "By now the list has actually loaded — this row is the real thing.",
@@ -115,11 +128,13 @@ const workflow = tour
     cancellable: false,
   })
   .step({
+    id: "warning",
     target: "#warning",
     title: "Read this carefully",
     content: "A warning is a good place for a tour step too.",
   })
   .step({
+    id: "delete-account",
     target: "#delete-account",
     title: "This step can't be skipped",
     content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
@@ -141,11 +156,13 @@ const workflow = tour
     },
   })
   .step({
+    id: "project-name",
     target: "#project-name",
     title: "Name your project",
     content: "Try pressing Escape, or clicking Cancel below, at any point in this tour.",
   })
   .step({
+    id: "create-project",
     target: "#create-project",
     title: "Confirm before you leave",
     content: "Cancelling now opens a real confirm() dialog before the tour actually closes.",
@@ -159,12 +176,14 @@ export const overlayClickSource = `const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
   .step({
+    id: "email-notifications",
     target: "#email-notifications",
     title: "Click the overlay to advance",
     content: "behavior.overlayClick: 'advance' — clicking the dimmed backdrop moves forward.",
     behavior: { overlayClick: "advance" },
   })
   .step({
+    id: "push-notifications",
     target: "#push-notifications",
     title: "Now it cancels instead",
     content: "behavior.overlayClick: 'cancel' — clicking the backdrop now cancels the tour.",
@@ -181,11 +200,13 @@ const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
   .step({
+    id: "first-member",
     target: "#first-member",
     title: "This step looks normal",
     content: "Default overlay, popover, and pointer — no overrides here.",
   })
   .step({
+    id: "invite",
     target: "#invite",
     title: "Same tour, fully customized",
     content: "overlay/popover overrides, a custom pointer glyph, and allowInteraction, all at once.",
@@ -219,10 +240,10 @@ const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome")
-  .step({ target: "#company-name", title: "Company name", content: "Step 1." })
-  .step({ target: "#industry", title: "Industry", content: "Step 2." })
-  .step({ target: "#team-size", title: "Team size", content: "Step 3." })
-  .step({ target: "#finish-setup", title: "Finish setup", content: "Step 4." })
+  .step({ id: "company-name", target: "#company-name", title: "Company name", content: "Step 1." })
+  .step({ id: "industry", target: "#industry", title: "Industry", content: "Step 2." })
+  .step({ id: "team-size", target: "#team-size", title: "Team size", content: "Step 3." })
+  .step({ id: "finish-setup", target: "#finish-setup", title: "Finish setup", content: "Step 4." })
   .build();
 
 // A custom popover subcomponent, wired to real tour state:
@@ -257,11 +278,13 @@ export const themeSource = `const tour = createGlowTour();
 const workflow = tour
   .create("billing")
   .step({
+    id: "plan",
     target: "#plan",
     title: "One stylesheet, two palettes",
     content: "default.css ships both. With nothing set, the tour follows the OS preference.",
   })
   .step({
+    id: "update-plan",
     target: "#update-plan",
     title: "Forced from an attribute",
     content: "data-glow-tour-theme on any ancestor pins a theme.",
@@ -281,6 +304,7 @@ export const longContentSource = `const tour = createGlowTour();
 const workflow = tour
   .create("release-notes")
   .step({
+    id: "read-notes",
     target: "#read-notes",
     title: "A step with a lot to say",
     content: "The popover caps its height and scrolls its content, so the footer "

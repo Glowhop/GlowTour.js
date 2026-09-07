@@ -99,6 +99,7 @@ void assertBeforeActionContext;
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
+    id: "step-1",
     content: "Content",
     target: "#target",
     title: "Title",
@@ -138,6 +139,7 @@ describe("WorkflowBuilder public contract", () => {
   test("keeps resetPropsOnEnter outside dynamic step props", () => {
     const definition = new WorkflowBuilder<string>("static-reset-policy")
       .step({
+        id: "step-2",
         content: "Content",
         resetPropsOnEnter: false,
         target: "#target",
@@ -194,7 +196,7 @@ function createContext(
 describe("StepBuilder.onTargetEvent", () => {
   test("infers the DOM event type from one event name", () => {
     new WorkflowBuilder<string>("single-event")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-3", content: "Content", target: "#target", title: "Title" })
       .onTargetEvent("click", (event) => {
         const clickEvent: MouseEvent = event;
         assert.equal(clickEvent.type, event.type);
@@ -203,7 +205,7 @@ describe("StepBuilder.onTargetEvent", () => {
 
   test("infers a union from multiple event names", () => {
     new WorkflowBuilder<string>("multiple-events")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-4", content: "Content", target: "#target", title: "Title" })
       .onTargetEvent(["click", "keydown"], (event) => {
         const domEvent: MouseEvent | KeyboardEvent = event;
         assert.equal(domEvent.type, event.type);
@@ -212,7 +214,7 @@ describe("StepBuilder.onTargetEvent", () => {
 
   test("accepts a typed custom event", () => {
     new WorkflowBuilder<string>("custom-event")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-5", content: "Content", target: "#target", title: "Title" })
       .onTargetEvent<CustomEvent<{ value: number }>>("tour:complete", (event) => {
         const value: number = event.detail.value;
         assert.equal(value, event.detail.value);
@@ -222,7 +224,7 @@ describe("StepBuilder.onTargetEvent", () => {
   test("registers one handler for every event name", () => {
     const callback = () => {};
     const workflow = new WorkflowBuilder<string>("multiple-events")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-6", content: "Content", target: "#target", title: "Title" })
       .onTargetEvent(["click", "keydown"], callback)
       .build();
 
@@ -239,7 +241,7 @@ describe("StepBuilder action contract", () => {
   test("waitUntil retries until its predicate succeeds", async () => {
     let attempts = 0;
     const workflow = new WorkflowBuilder<string>("wait-until")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-7", content: "Content", target: "#target", title: "Title" })
       .waitUntil(
         () => {
           attempts += 1;
@@ -260,7 +262,7 @@ describe("StepBuilder action contract", () => {
   test("waitUntil stops when its signal is aborted", async () => {
     const controller = new AbortController();
     const workflow = new WorkflowBuilder<string>("cancel-wait")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-8", content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => false, { interval: 10, timeout: 100 })
       .build();
     const action = workflow.steps[0].actions[0];
@@ -276,7 +278,7 @@ describe("StepBuilder action contract", () => {
   test("waitUntil aborts while an async predicate is pending", async () => {
     const controller = new AbortController();
     const workflow = new WorkflowBuilder<string>("cancel-pending-predicate")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-9", content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 50)), {
         interval: 1,
         timeout: 100,
@@ -297,7 +299,7 @@ describe("StepBuilder action contract", () => {
 
   test("waitUntil enforces its timeout while an async predicate is pending", async () => {
     const workflow = new WorkflowBuilder<string>("timeout-pending-predicate")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-10", content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 50)), {
         interval: 100,
         timeout: 5,
@@ -314,7 +316,7 @@ describe("StepBuilder action contract", () => {
 
   test("waitUntil throws after its timeout", async () => {
     const workflow = new WorkflowBuilder<string>("timeout-wait")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-11", content: "Content", target: "#target", title: "Title" })
       .waitUntil(() => false, { interval: 1, timeout: 0 })
       .build();
     const action = workflow.steps[0].actions[0];
@@ -335,7 +337,7 @@ describe("StepBuilder action contract", () => {
       },
     } as unknown as HTMLElement;
     const workflow = new WorkflowBuilder<string>("wait-until-element")
-      .step({ content: "Content", target: "#target", title: "Title" })
+      .step({ id: "step-12", content: "Content", target: "#target", title: "Title" })
       .waitUntilElement("#ready", { interval: 1, timeout: 100 })
       .build();
     const action = workflow.steps[0].actions[0];
@@ -348,6 +350,7 @@ describe("StepBuilder action contract", () => {
 
   test("validates timing values when defining the workflow", () => {
     const step = new WorkflowBuilder<string>("validation").step({
+      id: "step-13",
       content: "Content",
       target: "#target",
       title: "Title",
@@ -364,6 +367,7 @@ describe("StepBuilder action contract", () => {
   test("exposes navigation through the action context", async () => {
     const calls: string[] = [];
     const step = new WorkflowBuilder<string>("navigation-actions").step({
+      id: "step-14",
       content: "Content",
       target: "#target",
       title: "Title",
@@ -402,17 +406,19 @@ describe("StepBuilder action contract", () => {
 describe("StepBuilder lifecycle", () => {
   test("rejects mutations through a stale step handle", () => {
     const first = new WorkflowBuilder<string>("stale-step").step({
+      id: "step-15",
       content: "First",
       target: "#first",
       title: "First",
     });
-    first.step({ content: "Second", target: "#second", title: "Second" });
+    first.step({ id: "step-16", content: "Second", target: "#second", title: "Second" });
 
     assert.throws(() => first.do(() => {}), /StepBuilder is no longer active/);
   });
 
   test("rejects mutations after finish", () => {
     const step = new WorkflowBuilder<string>("finished-step").step({
+      id: "step-17",
       content: "Content",
       target: "#target",
       title: "Title",
@@ -427,6 +433,7 @@ describe("StepBuilder.append", () => {
   test("appends an immutable workflow definition", () => {
     const reusable = new WorkflowBuilder<string>("reusable")
       .step({
+        id: "step-18",
         content: "Reusable",
         resetPropsOnEnter: false,
         target: "#reusable",
@@ -434,7 +441,7 @@ describe("StepBuilder.append", () => {
       })
       .build();
     const workflow = new WorkflowBuilder<string>("composed")
-      .step({ content: "First", target: "#first", title: "First" })
+      .step({ id: "step-19", content: "First", target: "#first", title: "First" })
       .append(reusable)
       .build();
 
@@ -449,6 +456,7 @@ describe("StepBuilder.append", () => {
   test("rejects an empty workflow definition", () => {
     const empty = new WorkflowBuilder<string>("empty").build();
     const step = new WorkflowBuilder<string>("composed").step({
+      id: "step-20",
       content: "First",
       target: "#first",
       title: "First",

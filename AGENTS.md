@@ -73,6 +73,18 @@ If an existing project already uses another coherent stack, preserve the existin
 - Add short comments only where the code would otherwise be hard to parse quickly.
 - Avoid speculative refactors unless they are required to complete the task safely.
 
+## API Design Rules — recette plutôt que feature
+Priorité : flexibilité et DX, obtenues en **limitant** la surface d'API publique, pas en l'étendant.
+
+- Avant d'ajouter une API publique, vérifier qu'elle est **impossible à écrire depuis l'extérieur**. Si l'app peut le faire en quelques lignes avec ce que le core expose déjà, c'est une recette à documenter dans `docs/`, pas une option à livrer.
+- Le core fournit des **primitives** (identité, points d'entrée, hooks) ; les **politiques** restent à l'app : stockage, routeur, analytics, i18n, TTL, gestion multi-onglets. Chaque app les veut différentes, et le core ne peut pas deviner mieux qu'elle.
+- Ne jamais coder en dur un global navigateur (`window`, `sessionStorage`, `location`) dans `packages/core`. Laisser l'app y toucher préserve le SSR par construction — c'est un argument de vente, pas un détail.
+- Refuser une seconde façon de faire une chose déjà faisable. Deux chemins pour le même besoin coûtent plus cher qu'une contrainte : ils créent une question à trancher à chaque usage.
+- Préférer un champ requis à un champ optionnel qui crée deux modes (deux branches d'état, deux paragraphes de doc). La contrainte est moins chère que la complexité.
+- Asymétrie à garder en tête : ajouter une API plus tard est additif, la retirer est breaking. En cas de doute, ne pas l'ajouter — et n'absorber dans le core que ce qui est **prouvé** réécrit à l'identique par plusieurs apps.
+- Communication : annoncer ce que la lib fait réellement. « Reprise en deux lignes, avec ton stockage et ton routeur » est plus fort et plus vérifiable que « gère le multi-page ». Ne pas promettre dans le README ce que la doc ne peut pas démontrer.
+- Toute décision d'écarter une API doit être **écrite** (dans `todo.md` ou un ADR) avec sa raison, pour ne pas être reposée trois mois plus tard.
+
 ## Verification Rules
 - Run the smallest useful verification step after changes.
 - Prefer targeted verification before broad test suites.

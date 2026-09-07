@@ -184,8 +184,8 @@ describe("solid adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("reactive state")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-1", content: "First", target, title: "First" })
+      .step({ id: "step-2", content: "Second", target, title: "Second" })
       .build();
     function Observer() {
       const state = useTour();
@@ -234,12 +234,14 @@ describe("solid adapter browser behavior", () => {
       tour
         .create(name)
         .step({
+          id: "step-3",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: "First",
           target,
           title: "First",
         })
         .step({
+          id: "step-4",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: "Second",
           target,
@@ -295,9 +297,9 @@ describe("solid adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("keyboard order")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
-      .step({ content: "Third", target, title: "Third" })
+      .step({ id: "step-5", content: "First", target, title: "First" })
+      .step({ id: "step-6", content: "Second", target, title: "Second" })
+      .step({ id: "step-7", content: "Third", target, title: "Third" })
       .build();
     let setDisabledFirst!: (value: boolean) => void;
     const dispose = render(() => {
@@ -341,8 +343,8 @@ describe("solid adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("dynamic controls")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-8", content: "First", target, title: "First" })
+      .step({ id: "step-9", content: "Second", target, title: "Second" })
       .build();
     let setShowAdvance!: (show: boolean) => void;
     const dispose = render(() => {
@@ -404,8 +406,8 @@ describe("solid adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("toggle disabled")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-10", content: "First", target, title: "First" })
+      .step({ id: "step-11", content: "Second", target, title: "Second" })
       .build();
     let setDisabled!: (disabled: boolean) => void;
     const dispose = render(() => {
@@ -502,8 +504,8 @@ describe("solid adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("trigger updates")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-12", content: "First", target, title: "First" })
+      .step({ id: "step-13", content: "Second", target, title: "Second" })
       .build();
 
     const dispose = render(
@@ -547,11 +549,11 @@ describe("solid adapter browser behavior", () => {
     const [tour, setTour] = createSignal(first.tour);
     const firstWorkflow = first.tour
       .create("first")
-      .step({ content: "First tour", target, title: "First" })
+      .step({ id: "step-14", content: "First tour", target, title: "First" })
       .build();
     const secondWorkflow = second.tour
       .create("second")
-      .step({ content: "Second tour", target, title: "Second" })
+      .step({ id: "step-15", content: "Second tour", target, title: "Second" })
       .build();
 
     const dispose = render(
@@ -603,8 +605,8 @@ describe("solid adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("disabled commands")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-16", content: "First", target, title: "First" })
+      .step({ id: "step-17", content: "Second", target, title: "Second" })
       .build();
     const dispose = render(
       () =>

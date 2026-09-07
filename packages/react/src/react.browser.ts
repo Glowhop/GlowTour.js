@@ -97,7 +97,7 @@ describe("react adapter browser behavior", () => {
     document.body.append(target);
     const workflow = tour
       .create("hydrated")
-      .step({ content: "First", target, title: "First" })
+      .step({ id: "step-1", content: "First", target, title: "First" })
       .build();
     await React.act(async () => {
       await tour.run(workflow);
@@ -175,8 +175,8 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("reactive state")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-2", content: "First", target, title: "First" })
+      .step({ id: "step-3", content: "Second", target, title: "Second" })
       .build();
     function Observer() {
       const state = useTour();
@@ -223,12 +223,14 @@ describe("react adapter browser behavior", () => {
       tour
         .create(name)
         .step({
+          id: "step-4",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: "First",
           target,
           title: "First",
         })
         .step({
+          id: "step-5",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: "Second",
           target,
@@ -284,9 +286,9 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("keyboard order")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
-      .step({ content: "Third", target, title: "Third" })
+      .step({ id: "step-6", content: "First", target, title: "First" })
+      .step({ id: "step-7", content: "Second", target, title: "Second" })
+      .step({ id: "step-8", content: "Third", target, title: "Third" })
       .build();
     let setDisabledFirst!: (value: boolean) => void;
     function Harness() {
@@ -345,12 +347,13 @@ describe("react adapter browser behavior", () => {
     const workflow = tour
       .create("custom shortcuts")
       .step({
+        id: "step-9",
         content: "First",
         popover: { keyboardShortcuts: { advance: ["N"] } },
         target,
         title: "First",
       })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-10", content: "Second", target, title: "Second" })
       .build();
     let show!: () => void;
     function Harness() {
@@ -394,8 +397,8 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("dynamic controls")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-11", content: "First", target, title: "First" })
+      .step({ id: "step-12", content: "Second", target, title: "Second" })
       .build();
     function Harness() {
       return React.createElement(
@@ -473,8 +476,8 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("composed handlers")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-13", content: "First", target, title: "First" })
+      .step({ id: "step-14", content: "Second", target, title: "Second" })
       .build();
     let childClicks = 0;
     let wrapperClicks = 0;
@@ -521,8 +524,8 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("prevented")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-15", content: "First", target, title: "First" })
+      .step({ id: "step-16", content: "Second", target, title: "Second" })
       .build();
     const root = createRoot(container);
 
@@ -562,11 +565,11 @@ describe("react adapter browser behavior", () => {
     let advances = 0;
     const workflow = tour
       .create("nonpreventing")
-      .step({ content: "First", target, title: "First" })
+      .step({ id: "step-17", content: "First", target, title: "First" })
       .beforeAdvance(() => {
         advances += 1;
       })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-18", content: "Second", target, title: "Second" })
       .build();
     const root = createRoot(container);
 
@@ -606,13 +609,13 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const first = tour
       .create("first")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-19", content: "First", target, title: "First" })
+      .step({ id: "step-20", content: "Second", target, title: "Second" })
       .build();
     const replacement = tour
       .create("replacement")
-      .step({ content: "Replacement", target, title: "Replacement" })
-      .step({ content: "Replacement advance", target, title: "Replacement advance" })
+      .step({ id: "step-21", content: "Replacement", target, title: "Replacement" })
+      .step({ id: "step-22", content: "Replacement advance", target, title: "Replacement advance" })
       .build();
     const root = createRoot(container);
 
@@ -652,8 +655,8 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("toggle disabled")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-23", content: "First", target, title: "First" })
+      .step({ id: "step-24", content: "Second", target, title: "Second" })
       .build();
     let setDisabled!: (disabled: boolean) => void;
 
@@ -705,8 +708,8 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("child disabled")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-25", content: "First", target, title: "First" })
+      .step({ id: "step-26", content: "Second", target, title: "Second" })
       .build();
     const root = createRoot(container);
 
@@ -754,8 +757,8 @@ describe("react adapter browser behavior", () => {
     const tour = createGlowTour();
     const workflow = tour
       .create("consumer disabled")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-27", content: "First", target, title: "First" })
+      .step({ id: "step-28", content: "Second", target, title: "Second" })
       .build();
     const root = createRoot(container);
 
@@ -827,11 +830,11 @@ describe("react adapter browser behavior", () => {
     const second = createGlowTour();
     const firstWorkflow = first
       .create("first")
-      .step({ content: "First tour", target, title: "First" })
+      .step({ id: "step-29", content: "First tour", target, title: "First" })
       .build();
     const secondWorkflow = second
       .create("second")
-      .step({ content: "Second tour", target, title: "Second" })
+      .step({ id: "step-30", content: "Second tour", target, title: "Second" })
       .build();
     let replaceTour!: (tour: typeof second) => void;
 

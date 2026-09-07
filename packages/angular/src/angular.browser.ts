@@ -174,8 +174,8 @@ describe("angular adapter browser behavior", () => {
     const app = await bootstrapApplication(TourStateHarness);
     const workflow = tour
       .create("reactive state")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-1", content: "First", target, title: "First" })
+      .step({ id: "step-2", content: "Second", target, title: "Second" })
       .build();
     await tour.run(workflow);
     await settle();
@@ -243,11 +243,11 @@ describe("angular adapter browser behavior", () => {
     let activeProps!: StepContext<AngularTourContent>["props"];
     const workflow = tour
       .create("angular lifecycle")
-      .step({ content: "First content", target, title: "First title" })
+      .step({ id: "step-3", content: "First content", target, title: "First title" })
       .do(({ props }) => {
         activeProps = props;
       })
-      .step({ content: "Second content", target, title: "Second title" })
+      .step({ id: "step-4", content: "Second content", target, title: "Second title" })
       .build();
     await tour.run(workflow);
     await settle();
@@ -347,12 +347,14 @@ describe("angular adapter browser behavior", () => {
       tour
         .create(name)
         .step({
+          id: "step-5",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: "One",
           target,
           title: "One",
         })
         .step({
+          id: "step-6",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: "Two",
           target,
@@ -414,12 +416,14 @@ describe("angular adapter browser behavior", () => {
       tour
         .create(name)
         .step({
+          id: "step-7",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: `${name} one`,
           target,
           title: `${name} one`,
         })
         .step({
+          id: "step-8",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: `${name} two`,
           target,
@@ -573,12 +577,13 @@ describe("angular adapter browser behavior", () => {
     const workflow = tour
       .create("late trigger")
       .step({
+        id: "step-9",
         content: "One",
         popover: { keyboardShortcuts: { advance: ["N"] } },
         target,
         title: "One",
       })
-      .step({ content: "Two", target, title: "Two" })
+      .step({ id: "step-10", content: "Two", target, title: "Two" })
       .build();
     await tour.run(workflow);
     const harness = app.components[0]?.instance;
@@ -695,8 +700,8 @@ describe("angular adapter browser behavior", () => {
     const app = await bootstrapApplication(TriggerInputsHarness);
     const workflow = tour
       .create("dynamic trigger inputs")
-      .step({ content: "One", target, title: "One" })
-      .step({ content: "Two", target, title: "Two" })
+      .step({ id: "step-11", content: "One", target, title: "One" })
+      .step({ id: "step-12", content: "Two", target, title: "Two" })
       .build();
     await tour.run(workflow);
     await settle();
