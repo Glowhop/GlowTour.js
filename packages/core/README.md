@@ -1,6 +1,6 @@
 # @glowhop/core-tour
 
-ESM-only, framework-agnostic workflow controller and DOM driver. Core owns workflow state, navigation, target resolution, and DOM-level tour behavior; adapters provide component rendering and composition. Connecting a root succeeds without a popover; running a non-empty workflow fails if the root or popover is missing. The adapter-author entry point is [`@glowhop/core-tour/adapter`](https://github.com/Glowhop/glow-tour/blob/main/packages/core/src/adapter.ts).
+ESM-only, framework-agnostic workflow controller and DOM driver. Core owns workflow state, navigation, target resolution, and DOM-level tour behavior; adapters provide component rendering and composition. Connecting a root succeeds without a popover; running a non-empty workflow fails if the root or popover is missing. The adapter-author entry point is [`@glowhop/core-tour/adapter`](https://github.com/Glowhop/GlowTour.js/blob/main/packages/core/src/adapter.ts).
 
 Compatibility: framework-independent ESM package. Core provides no SSR-rendered UI; hydration is not applicable to Core itself.
 

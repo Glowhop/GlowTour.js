@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "description": "Angular 18 adapter for GlowTour.js.",
   "license": "MIT",
-  "homepage": "https://github.com/Glowhop/glow-tour#readme",
+  "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
   "bugs": {
-    "url": "https://github.com/Glowhop/glow-tour/issues"
+    "url": "https://github.com/Glowhop/GlowTour.js/issues"
   },
   "keywords": [
     "tour",
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Glowhop/glow-tour.git",
+    "url": "git+https://github.com/Glowhop/GlowTour.js.git",
     "directory": "packages/angular"
   },
   "type": "module",

@@ -126,8 +126,8 @@ function assertPackedArtifact(packageName: PackageName) {
     `${packageName} must keep its description`,
   );
   assert.equal(manifest.license, "MIT");
-  assert.equal(manifest.homepage, "https://github.com/Glowhop/glow-tour#readme");
-  assert.deepEqual(manifest.bugs, { url: "https://github.com/Glowhop/glow-tour/issues" });
+  assert.equal(manifest.homepage, "https://github.com/Glowhop/GlowTour.js#readme");
+  assert.deepEqual(manifest.bugs, { url: "https://github.com/Glowhop/GlowTour.js/issues" });
   assert.ok(
     Array.isArray(manifest.keywords) &&
       manifest.keywords.length > 0 &&
@@ -147,7 +147,7 @@ function assertPackedArtifact(packageName: PackageName) {
   assert.deepEqual(manifest.repository, {
     directory: `packages/${packageName.replace("@glowhop/", "").replace("-tour", "")}`,
     type: "git",
-    url: "git+https://github.com/Glowhop/glow-tour.git",
+    url: "git+https://github.com/Glowhop/GlowTour.js.git",
   });
   assert.match(JSON.stringify(manifest), /"exports"/);
   assert.equal("devDependencies" in manifest, false);

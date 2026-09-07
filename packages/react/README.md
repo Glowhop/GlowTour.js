@@ -1,8 +1,8 @@
 # @glowhop/react-tour
 
-ESM-only React 18/19 adapter with `useSyncExternalStore`-backed state. Content is React content. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
+ESM-only React 18/19 adapter with `useSyncExternalStore`-backed state. Content is React content. See the [Core guide](https://github.com/Glowhop/GlowTour.js/tree/main/packages/core) for workflow options and actions.
 
-Compatibility: React 18 and 19 (`^18.0.0 || ^19.0.0`). SSR: `DefaultTour` renders through `react-dom/server` and package imports are DOM-free; hydration is verified at package level and in a production Next.js app. Full contract: [compatibility](https://github.com/Glowhop/glow-tour/blob/main/docs/compatibility.md).
+Compatibility: React 18 and 19 (`^18.0.0 || ^19.0.0`). SSR: `DefaultTour` renders through `react-dom/server` and package imports are DOM-free; hydration is verified at package level and in a production Next.js app. Full contract: [compatibility](https://github.com/Glowhop/GlowTour.js/blob/main/docs/compatibility.md).
 
 <!-- glow-tour:snippet react-quick-start -->
 ```tsx

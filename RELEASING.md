@@ -26,7 +26,7 @@ Chaque package existant sur npm doit autoriser le workflow GitHub Actions qui r�
 
 - fournisseur : `GitHub Actions`
 - organisation ou utilisateur GitHub : `Glowhop`
-- dépôt : `glow-tour`
+- dépôt : `GlowTour.js`
 - nom du workflow : `release.yml`
 - environnement : aucun
 - action autorisée : `npm publish`
