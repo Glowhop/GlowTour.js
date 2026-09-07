@@ -93,4 +93,13 @@ To verify your tour's accessibility:
 
 ## Compliance notes
 
-GlowTour.js follows the WCAG 2.1 AA standard for the dialog and its keyboard navigation. The default theme's color contrast was verified against AA standards. Custom themes should maintain adequate contrast ratios for text and interactive elements.
+GlowTour.js follows the WCAG 2.1 AA standard for the dialog and its keyboard navigation.
+
+Colour contrast is a different matter. The default palettes — light and dark — are a sensible
+default, not a certified one: contrast depends on the surface you place the tour over and on any
+tokens you override, so it is yours to verify. See the [theming guide](/docs/guides/theming#contrast)
+for which tokens to check.
+
+The implementation-level contract behind this page — the exact source of each ARIA attribute, the
+keyboard handler, and the focus-guard exit paths — is recorded in `docs/accessibility.md` in the
+repository.
