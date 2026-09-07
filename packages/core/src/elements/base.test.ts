@@ -48,6 +48,53 @@ function createAnimation(finished: Promise<void>) {
   } as unknown as Animation;
 }
 
+/**
+ * A document stand-in whose `visibilityState` can be flipped, mirroring the
+ * frozen-timeline behavior a hidden browser tab has.
+ */
+function createOwnerDocument(visibilityState: DocumentVisibilityState = "visible") {
+  const listeners = new Set<() => void>();
+  return {
+    get listenerCount() {
+      return listeners.size;
+    },
+    visibilityState,
+    addEventListener(type: string, listener: () => void) {
+      if (type === "visibilitychange") listeners.add(listener);
+    },
+    removeEventListener(type: string, listener: () => void) {
+      if (type === "visibilitychange") listeners.delete(listener);
+    },
+    hide(this: { visibilityState: DocumentVisibilityState }) {
+      this.visibilityState = "hidden";
+      for (const listener of listeners) listener();
+    },
+  };
+}
+
+/**
+ * An animation that never settles on its own — the way a real one behaves while
+ * the document timeline is frozen — and only resolves when `finish()` is called.
+ */
+function createFrozenAnimation() {
+  let resolveFinished!: () => void;
+  const finished = new Promise<void>((resolve) => {
+    resolveFinished = resolve;
+  });
+  let finishCalls = 0;
+  return {
+    get finishCalls() {
+      return finishCalls;
+    },
+    cancel() {},
+    finish() {
+      finishCalls += 1;
+      resolveFinished();
+    },
+    finished,
+  } as unknown as Animation & { readonly finishCalls: number };
+}
+
 describe("GlowTourElement animation support", () => {
   test("returns a fallback when Web Animations are unavailable", () => {
     const element = new TestElement(createElement());
@@ -101,5 +148,68 @@ describe("GlowTourElement animation support", () => {
     rejectFinished(new Error("cancelled"));
 
     assert.equal(await waiting, false);
+  });
+  test("finishes an animation started while the document is hidden, instead of awaiting a frozen timeline", async () => {
+    const owner = createOwnerDocument("hidden");
+    const element = new TestElement({
+      animate: () => {},
+      ownerDocument: owner,
+    } as unknown as HTMLElement);
+    const animation = createFrozenAnimation();
+
+    // Resolves only because the animation was finished: a hidden document
+    // freezes its timeline, so `finished` would never settle on its own.
+    assert.equal(await element.wait(animation), true);
+    assert.equal(animation.finishCalls, 1);
+  });
+
+  test("finishes an in-flight animation when the document becomes hidden", async () => {
+    const owner = createOwnerDocument("visible");
+    const element = new TestElement({
+      animate: () => {},
+      ownerDocument: owner,
+    } as unknown as HTMLElement);
+    const animation = createFrozenAnimation();
+
+    const waiting = element.wait(animation);
+    assert.equal(animation.finishCalls, 0);
+
+    owner.hide();
+
+    assert.equal(await waiting, true);
+    assert.equal(animation.finishCalls, 1);
+  });
+
+  test("removes its visibility listener once the animation settles", async () => {
+    const owner = createOwnerDocument("visible");
+    const element = new TestElement({
+      animate: () => {},
+      ownerDocument: owner,
+    } as unknown as HTMLElement);
+    const animation = createFrozenAnimation();
+
+    const waiting = element.wait(animation);
+    assert.equal(owner.listenerCount, 1);
+
+    animation.finish();
+    await waiting;
+
+    assert.equal(owner.listenerCount, 0);
+  });
+
+  test("leaves a visible document's animation to run on its own timeline", async () => {
+    const owner = createOwnerDocument("visible");
+    const element = new TestElement({
+      animate: () => {},
+      ownerDocument: owner,
+    } as unknown as HTMLElement);
+    const animation = createFrozenAnimation();
+
+    const waiting = element.wait(animation);
+    await Promise.resolve();
+    assert.equal(animation.finishCalls, 0);
+
+    animation.finish();
+    await waiting;
   });
 });
