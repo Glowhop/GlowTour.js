@@ -1,8 +1,8 @@
 # @glowhop/solid-tour
 
-ESM-only Solid 1.9 adapter with native signals/accessors for reactive state. Content is Solid JSX. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
+ESM-only Solid adapter with native signals/accessors for reactive state. Content is Solid JSX. See the [Core guide](https://github.com/Glowhop/glow-tour/tree/main/packages/core) for workflow options and actions.
 
-Compatibility: Solid 1.9.x (`^1.9.14`). The root can render in SSR; browser work starts on mount. Hydration of an active tour is unverified.
+Compatibility: Solid 1.8+ (`^1.8.0`). SSR: the root renders through Solid's server build and browser work starts on mount; hydration is verified at package level and in a production SolidStart app. Full contract: [compatibility](https://github.com/Glowhop/glow-tour/blob/main/docs/compatibility.md).
 
 <!-- glow-tour:snippet solid-quick-start -->
 ```tsx

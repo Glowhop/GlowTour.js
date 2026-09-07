@@ -7,14 +7,10 @@ export const LAB_CONFIG = {
     options: {
       cancellable: true,
       animated: true,
-      overlay: {
-      },
-      popover: {
-      },
-      indicator: {
-      },
-      behavior: {
-      },
+      overlay: {},
+      popover: {},
+      indicator: {},
+      behavior: {},
     } satisfies StartOptions<unknown>,
   },
   selectors: {

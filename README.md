@@ -5,7 +5,7 @@ GlowTour.js is a cross-framework guided-tour package inspired by Driver.js. The 
 ## Choose a package
 
 - [`@glowhop/core-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/core): workflow controller and DOM driver; it renders through whichever adapter connects a root, so it isn't used standalone.
-- [`@glowhop/styles-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/styles): scoped light theme.
+- [`@glowhop/styles-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/styles): scoped default theme, light and dark.
 - [`@glowhop/react-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/react), [`@glowhop/solid-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/solid), [`@glowhop/vue-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/vue), [`@glowhop/angular-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/angular): native framework adapters.
 - [`@glowhop/vanilla-tour`](https://github.com/Glowhop/glow-tour/tree/main/packages/vanilla): browser custom elements.
 
