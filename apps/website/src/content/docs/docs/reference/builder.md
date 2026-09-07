@@ -274,6 +274,7 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 | `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour starts |
 | `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour is cancelled |
 | `onFinish` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour completes |
+| `onEvent` | `(event: TourEvent) => void` | — | Monitoring callback for this workflow. Cannot abort a transition; see the [Monitoring guide](/docs/guides/monitoring) |
 
 *Animations automatically disable when the browser detects `prefers-reduced-motion`.
 

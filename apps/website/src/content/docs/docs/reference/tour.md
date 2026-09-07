@@ -20,6 +20,7 @@ function createGlowTour(options?: GlowTourOptions): GlowTour
 
 **Parameters**:
 - `options.onSubscriberError` - Called when a state/step subscriber throws an error (optional, no default)
+- `options.onEvent` - Monitoring callback for every tour this instance runs; see the [Monitoring guide](/docs/guides/monitoring) (optional, no default)
 
 **Returns**: Tour controller instance
 
@@ -199,6 +200,7 @@ Controller-related type exports for TypeScript users:
 
 - `GlowTour` - Tour controller interface
 - `GlowTourOptions` - Options for `createGlowTour`
+- `TourEvent`, `TourEventListener`, `TourEventType`, `TourEventSource` - The monitoring contract; see the [Monitoring guide](/docs/guides/monitoring)
 - `TourState` - Immutable state object returned by `tour.state.get()`
 - `TourCurrentStep` - The active step's target and props, part of `TourState`
 

@@ -5,7 +5,7 @@ import {
   type TourViewCommands,
   type TourViewDriver,
 } from "../dom/tour-view-driver";
-import type { BeforeActionStepContext, StepContext, TourCurrentStep } from "../types";
+import type { BeforeActionStepContext, StepContext, TourCurrentStep, TourEvent } from "../types";
 import type { ActiveStep } from "./active-step";
 import { createGlowTour as createPublicGlowTour, TourController } from "./tour-controller";
 
@@ -2696,5 +2696,233 @@ describe("step ids and startAt", () => {
     assert.ok(step);
     assert.equal("id" in step.currentProps, false);
     assert.equal("id" in step.initialProps, false);
+  });
+});
+
+describe("monitoring events", () => {
+  function recorder() {
+    const events: TourEvent[] = [];
+    return { events, onEvent: (event: TourEvent) => events.push(event) };
+  }
+
+  function workflowOf(
+    tour: TourController<string>,
+    options: Parameters<TourController<string>["create"]>[1] = {},
+  ) {
+    return tour
+      .create("onboarding", options)
+      .step({ id: "welcome", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "invite", content: "two", target: targetResolver, title: "two" })
+      .build();
+  }
+
+  test("emits the full sequence of a completed tour, in order", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+
+    await tour.run(workflowOf(tour));
+    await tour.advance();
+    await tour.advance();
+
+    assert.deepEqual(
+      events.map((event) => `${event.type}:${event.stepId ?? "-"}`),
+      [
+        "tour:start:welcome",
+        "step:enter:welcome",
+        "step:leave:welcome",
+        "step:enter:invite",
+        "step:leave:invite",
+        "tour:complete:invite",
+      ],
+    );
+  });
+
+  test("emits tour:cancel after leaving the step the user was on", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+
+    await tour.run(workflowOf(tour));
+    await tour.cancel();
+
+    assert.deepEqual(
+      events.map((event) => event.type),
+      ["tour:start", "step:enter", "step:leave", "tour:cancel"],
+    );
+    assert.equal(events.at(-1)?.stepId, "welcome");
+  });
+
+  test("carries the workflow name, the step position and the step count", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+
+    await tour.run(workflowOf(tour));
+    await tour.advance();
+
+    const entered = events.filter((event) => event.type === "step:enter");
+    assert.deepEqual(
+      entered.map((event) => [event.workflowName, event.stepIndex, event.stepCount]),
+      [
+        ["onboarding", 0, 2],
+        ["onboarding", 1, 2],
+      ],
+    );
+  });
+
+  test("reports the direction of the navigation that led to the step", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+
+    await tour.run(workflowOf(tour));
+    await tour.advance();
+    await tour.previous();
+
+    const entered = events.filter((event) => event.type === "step:enter");
+    assert.deepEqual(
+      entered.map((event) => [event.stepId, event.direction]),
+      [
+        ["welcome", "advance"],
+        ["invite", "advance"],
+        ["welcome", "previous"],
+      ],
+    );
+
+    // A leave reports the navigation that causes it, not the one that brought
+    // the user onto the step.
+    const left = events.filter((event) => event.type === "step:leave");
+    assert.deepEqual(
+      left.map((event) => [event.stepId, event.direction]),
+      [
+        ["welcome", "advance"],
+        ["invite", "previous"],
+      ],
+    );
+  });
+
+  test("reports what triggered the transition", async () => {
+    const { events, onEvent } = recorder();
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver, { onEvent });
+
+    await tour.run(workflowOf(tour));
+    await driver.commands?.advance("keyboard");
+
+    assert.equal(events.find((event) => event.type === "step:leave")?.source, "keyboard");
+    assert.equal(events.at(-1)?.source, "keyboard");
+  });
+
+  test("defaults the source to api for calls made by the consumer's own code", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+
+    await tour.run(workflowOf(tour));
+    await tour.advance();
+
+    assert.ok(events.every((event) => event.source === "api"));
+  });
+
+  test("times the step on step:leave and the whole tour on the terminal event", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+
+    await tour.run(workflowOf(tour));
+    await tour.advance();
+    await tour.advance();
+
+    for (const event of events) {
+      if (event.type === "tour:start" || event.type === "step:enter") {
+        assert.equal(event.durationMs, 0, `${event.type} should report no duration`);
+      } else {
+        assert.ok(event.durationMs >= 0, `${event.type} should report a duration`);
+      }
+    }
+  });
+
+  test("names the step the tour died on, and carries the error", async () => {
+    const { events, onEvent } = recorder();
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver, { onEvent });
+    const workflow = workflowOf(tour);
+
+    await tour.run(workflow);
+    driver.clearError = null;
+    driver.showError = new Error("boom");
+    await assert.rejects(() => tour.advance());
+
+    const failure = events.at(-1);
+    assert.equal(failure?.type, "tour:error");
+    assert.equal(failure?.error?.message, "boom");
+    // The step it died on, not the one it was leaving.
+    assert.equal(failure?.stepId, "welcome");
+  });
+
+  test("emits no step:leave when the tour errors, since the step was never left", async () => {
+    const { events, onEvent } = recorder();
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver, { onEvent });
+
+    await tour.run(workflowOf(tour));
+    events.length = 0;
+    driver.showError = new Error("boom");
+    await assert.rejects(() => tour.advance());
+
+    assert.deepEqual(
+      events.map((event) => event.type),
+      ["step:leave", "tour:error"],
+    );
+  });
+
+  test("calls the instance listener before the workflow listener", async () => {
+    const order: string[] = [];
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
+      onEvent: () => order.push("instance"),
+    });
+
+    await tour.run(workflowOf(tour, { onEvent: () => order.push("workflow") }));
+
+    assert.deepEqual(order.slice(0, 2), ["instance", "workflow"]);
+  });
+
+  test("a throwing listener neither breaks the tour nor reaches its error state", async () => {
+    const reported: Error[] = [];
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
+      onEvent: () => {
+        throw new Error("listener exploded");
+      },
+      onSubscriberError: (error) => {
+        reported.push(error);
+      },
+    });
+
+    await tour.run(workflowOf(tour));
+    await tour.advance();
+    await tour.advance();
+
+    assert.equal(tour.state.get().status, "finished");
+    assert.equal(tour.state.get().error, null);
+    assert.ok(reported.length > 0);
+    assert.equal(reported[0]?.message, "listener exploded");
+  });
+
+  test("emits nothing when no listener is attached", async () => {
+    const tour = new TourController<string>(new NoopTourViewDriver());
+
+    await tour.run(workflowOf(tour));
+    await tour.advance();
+    await tour.advance();
+
+    assert.equal(tour.state.get().status, "finished");
+  });
+
+  test("reports the resumed step on tour:start, so a resume needs no event of its own", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+
+    await tour.run(workflowOf(tour), { startAt: "invite" });
+
+    assert.deepEqual(
+      events.map((event) => `${event.type}:${event.stepId}`),
+      ["tour:start:invite", "step:enter:invite"],
+    );
+    assert.equal(events[0]?.stepIndex, 1);
   });
 });

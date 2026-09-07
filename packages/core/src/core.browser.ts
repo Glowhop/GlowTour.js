@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Window } from "happy-dom";
 import { connectGlowTourRoot } from "./adapter";
 import { createGlowTour } from "./index";
+import type { TourEvent } from "./types";
 
 let foreignWindow: Window;
 let rootWindow: Window;
@@ -186,5 +187,75 @@ describe("core browser realm isolation", () => {
     assert.deepEqual(cancelledFrames, scheduledFrames);
     assert.ok(observedControls > 0);
     assert.equal(disconnectedObservers, observedControls);
+  });
+});
+
+describe("monitoring events through the public entry point", () => {
+  test("delivers events to a listener passed to createGlowTour, and names what triggered each transition", async () => {
+    // Regression guard of the same shape as the `startAt` one: every DOM-free
+    // test drives TourController directly, so a facade that forgets to forward
+    // `onEvent` — or a driver that stops reporting the command source — stays
+    // green everywhere except here.
+    const events: TourEvent[] = [];
+    const tour = createGlowTour<string>({
+      onEvent: (event) => events.push(event),
+    });
+    const document = rootWindow.document as unknown as Document;
+    const root = document.createElement("section");
+    const target = document.createElement("button");
+    const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const popover = document.createElement("aside");
+    const advance = document.createElement("button");
+
+    target.id = "events-target";
+    // Adapters put this attribute on the root element they render; a hand-built
+    // root has to do it too, or trigger clicks are not recognised as ours.
+    root.setAttribute("data-glow-tour-root", "");
+    advance.setAttribute("data-glow-tour-advance-trigger", "");
+    target.getBoundingClientRect = () => rectangle(10, 20, 30, 40);
+    popover.getBoundingClientRect = () => rectangle(0, 0, 100, 60);
+    overlay.append(path);
+    popover.append(advance);
+    root.append(overlay, popover);
+    document.body.append(target, root);
+
+    const binding = connectGlowTourRoot(tour, { idPrefix: "events", root });
+    binding.bindOverlay(overlay);
+    binding.bindPopover(popover);
+    const workflow = tour
+      .create("monitoring", { animated: false })
+      .step({ id: "one", content: "One", target: "#events-target", title: "One" })
+      .step({ id: "two", content: "Two", target: "#events-target", title: "Two" })
+      .step({ id: "three", content: "Three", target: "#events-target", title: "Three" })
+      .build();
+
+    await tour.run(workflow);
+
+    assert.deepEqual(
+      events.map((event) => `${event.type}:${event.stepId}`),
+      ["tour:start:one", "step:enter:one"],
+    );
+
+    advance.dispatchEvent(
+      new rootWindow.MouseEvent("click", { bubbles: true, cancelable: true }) as unknown as Event,
+    );
+    await waitFor(() => tour.state.get().currentStepIndex === 1, "the trigger to advance the tour");
+
+    const fromTrigger = events.filter((event) => event.type === "step:leave").at(-1);
+    assert.equal(fromTrigger?.stepId, "one");
+    assert.equal(fromTrigger?.source, "trigger");
+
+    rootWindow.dispatchEvent(new rootWindow.KeyboardEvent("keydown", { key: "Enter" }));
+    await waitFor(
+      () => tour.state.get().currentStepIndex === 2,
+      "the keyboard to advance the tour",
+    );
+
+    const fromKeyboard = events.filter((event) => event.type === "step:leave").at(-1);
+    assert.equal(fromKeyboard?.stepId, "two");
+    assert.equal(fromKeyboard?.source, "keyboard");
+
+    binding.release();
   });
 });
