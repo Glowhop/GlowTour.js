@@ -95,24 +95,39 @@ Rien de ce qui suit n'est entré dans le core. Ajouter plus tard est additif ; r
 
 ## 3. Hooks d'événements pour le monitoring
 
-**Problème.** Il existe `onStart` / `onCancel` / `onFinish` par tour et `state.subscribe`, mais rien qui décrive proprement "quoi brancher sur une analytics". Pas d'événement par étape (entrée/sortie), pas de direction, pas de durée, pas d'erreur, pas de raison d'abandon. Recomposer ça depuis `subscribe` est possible mais chaque app le réécrit — et le fera différemment.
+**Problème.** Il existait `onStart` / `onCancel` / `onFinish` par tour et `state.subscribe`, mais rien qui décrive proprement « quoi brancher sur une analytics ». Pas d'événement par étape, pas de direction, pas de durée, pas de source d'abandon.
 
-**À trancher.**
-- [ ] **Liste d'événements à figer** (nommage stable, c'est un contrat public) : `tour:start`, `step:enter`, `step:leave`, `step:action-error`, `tour:complete`, `tour:cancel`, `tour:error`, éventuellement `tour:resume` (dépend du chantier 1).
-- [ ] **Payload commun** : `{ workflowName, stepId, stepIndex, stepCount, direction, timestamp, durationMs }`. Décider si on expose la raison de sortie (clic bouton / raccourci clavier / clic overlay / API) — c'est précisément ce qu'on veut mesurer pour un onboarding, et le `tour-view-driver` connaît déjà la source de la commande.
-- [ ] **Forme de l'API** : un `onEvent(event)` unique dans `StartOptions` + `GlowTourOptions` (simple, une seule chose à brancher), plutôt qu'une multiplication de `onXxx`. Vérifier la cohabitation avec les hooks existants — ne pas les dupliquer, ou les déprécier au profit du flux d'événements.
-- [ ] **Sémantique stricte** : ces callbacks sont du monitoring, ils ne doivent **jamais** pouvoir bloquer ni annuler une transition (contrairement à `LifecycleHookContext.abort()`). Une exception jetée dans un listener ne doit pas casser le tour → try/catch + fail silencieux (ou remontée sur `tour:error`).
-- [ ] **Coût** : rien ne doit être calculé quand aucun listener n'est branché.
-- [ ] **Sérialisable ?** décider si le flux d'événements est exprimable depuis le config JSON (nom d'événement + destination), ou strictement côté JS. Cohérent avec `docs/json-config.md`.
-- [ ] **Adapters** : exposer l'équivalent idiomatique (prop React, emit Vue, `Output` Angular, `CustomEvent` sur le custom element vanilla) sans réimplémenter la logique — le core reste la seule source.
-- [ ] Documenter un exemple bout-en-bout (branchement sur une analytics quelconque) dans `docs/`.
+### Périmètre retenu — livré
+
+Branche `feat/monitoring-events`, partie de `feature/step-id-start-at` : le payload est bâti sur `stepId`, qui n'existe pas sur `main`.
+
+- [x] **Six événements**, nommage figé : `tour:start`, `step:enter`, `step:leave`, `tour:complete`, `tour:cancel`, `tour:error`.
+  - **Écart avec le plan — `step:action-error` non livré.** Une action qui jette part déjà dans `handleFailure` et termine le tour : l'exposer aussi comme événement propre donnerait deux noms pour une seule occurrence. `tour:error` porte l'erreur *et* l'étape sur laquelle le tour est mort.
+  - **Écart avec le plan — `tour:resume` non livré.** Une reprise est un tour qui démarre sur une autre étape, et `tour:start` porte déjà `stepId` / `stepIndex` de l'étape d'entrée. Un `stepIndex` non nul *est* la reprise, sans second nom d'événement.
+- [x] **Payload commun et plat** : `{ type, workflowName, stepId, stepIndex, stepCount, direction, source, timestamp, durationMs, error }`.
+  - `durationMs` suit une règle unique et documentable en une ligne : **il chronomètre ce que l'événement nomme**. `step:leave` → temps passé sur l'étape ; `tour:complete` / `tour:cancel` / `tour:error` → temps depuis `run()` ; `tour:start` et `step:enter`, qui sont des débuts, → `0`. Ça évite un champ optionnel ou une union discriminée pour un seul champ.
+- [x] **Raison de sortie livrée**, sous le nom `source` : `"trigger"` (bouton), `"keyboard"`, `"overlay"`, `"api"` (tout appel du code consommateur, y compris `context.advance()` dans une action). C'est le champ le plus utile du lot — un abandon en `"overlay"` et un abandon en `"trigger"` ne racontent pas la même chose. A demandé de faire descendre la source depuis `tour-view-driver` : `TourViewCommands.advance/previous/cancel` prennent désormais un `source`, et les méthodes publiques `advance()` / `previous()` / `cancel()` gardent leur signature publique inchangée (le paramètre est interne, `"api"` par défaut).
+- [x] **Forme de l'API** : un `onEvent` unique, sur `GlowTourOptions` (instance) **et** `StartOptions` (workflow). Les deux sont appelés, l'instance d'abord. Ce n'est pas une seconde façon de faire : l'un est le branchement global, l'autre un ajout ponctuel à un tour.
+- [x] **Hooks existants non dupliqués et non dépréciés** : `onStart` / `onCancel` / `onFinish` peuvent `abort()`, `onEvent` ne peut pas. Ils ne font pas le même travail.
+- [x] **Sémantique stricte** : appelé de façon synchrone, valeur de retour ignorée, ne peut ni bloquer ni annuler. Une exception part sur `onSubscriberError` (puis le reporter non géré) et **jamais** sur `tour:error` — sinon un listener bogué ferait échouer le tour qu'il observe.
+- [x] **Coût nul sans listener** : chaque site d'émission sort avant de construire le payload et avant de lire l'horloge.
+- [x] **Non sérialisable, décidé** : `onEvent` n'est pas une clé de config JSON. La liste blanche de `validate.ts` le rejette déjà. Un workflow construit depuis un config est couvert par le listener d'instance ; l'ajouter au config serait une seconde façon d'enregistrer le même listener.
+- [x] **Adapters : rien à ajouter.** Les cinq passent leur `GlowTourOptions` au core sans le filtrer, donc `createGlowTour({ onEvent })` est déjà la forme idiomatique partout. Une prop React / un emit Vue / un `Output` Angular seraient une seconde façon de brancher la même chose.
+- [x] `docs/` : guide « Monitoring a tour » (les six événements, le payload, `source`, les deux points d'écoute, les garanties de non-blocage, le cas de la reprise) + références `tour` et `builder`.
+
+### Vérification
+
+- [x] 13 tests core sans DOM : séquence complète d'un tour terminé, annulation, position/compte, direction, source, durées, `tour:error` nommant l'étape et portant l'erreur, absence de `step:leave` à l'erreur, ordre instance-puis-workflow, listener qui jette, absence totale d'émission sans listener, reprise via `startAt`.
+- [x] 1 test navigateur (`core.browser.ts`) : le listener passé à `createGlowTour` reçoit bien les événements **et** la source remonte correctement d'un clic de bouton (`"trigger"`) et d'un raccourci clavier (`"keyboard"`). Même garde que celle exigée par le lot 1 : les tests sans DOM pilotent `TourController` directement, donc une façade qui oublierait de transmettre `onEvent` — ou un driver qui cesserait de reporter la source — resterait verte partout ailleurs.
+  - Piège rencontré en écrivant ce test : une racine construite à la main doit porter `data-glow-tour-root`, sinon `ownsTrigger` ne reconnaît pas le clic comme étant le sien. Les adapters posent cet attribut ; le harnais de test ne le faisait pas.
+- [x] 488 tests verts, `bun run check`, `tsc --noEmit`, `bun run test:browser`, build du site.
 
 ---
 
 ## Ordre suggéré
 
 1. ~~**Reprise : `id` + `startAt`**~~ — **livré** (`8fddb54`, `2bd51ef`). L'identité d'étape est en place, le chantier 2 peut la consommer directement.
-2. **Événements de monitoring** — prochain. Petit et purement additif maintenant que `currentStep.id` existe et est garanti non nul.
+2. ~~**Événements de monitoring**~~ — **livré** sur `feat/monitoring-events`, branchée sur le lot 1 dont elle consomme `currentStep.id`.
 3. **Dark mode + galerie** — indépendant du reste, gros gain de perception pour un coût faible.
 
 Périmètre revendicable une fois le lot 1 livré — à respecter dans le README et sur `apps/website` : ids d'étape stables, démarrage à une étape arbitraire, reprise après rechargement ou navigation en ~2 lignes avec le stockage et le routeur de l'app, compatible SSR. **Pas** "pause/reprise", **pas** "gère les workflows multi-pages" : ces deux formulations promettent des API qui n'existeront pas.
