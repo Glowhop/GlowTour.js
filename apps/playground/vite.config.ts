@@ -21,6 +21,8 @@ export default defineConfig({
         vue: resolve(__dirname, "vue/index.html"),
         angular: resolve(__dirname, "angular/index.html"),
         vanilla: resolve(__dirname, "vanilla/index.html"),
+        multipage: resolve(__dirname, "multipage/index.html"),
+        multipageB: resolve(__dirname, "multipage/page-b.html"),
       },
     },
   },
