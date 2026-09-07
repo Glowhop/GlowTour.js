@@ -243,7 +243,7 @@ root.append(overlay, popover);
 document.body.append(root);
 
 // Now you can run tours
-const workflow = tour.create("demo").step({ /* ... */ }).build();
+const workflow = tour.create("demo").step({ id: "step-1", /* ... */ }).build();
 await tour.run(workflow);
 ```
 

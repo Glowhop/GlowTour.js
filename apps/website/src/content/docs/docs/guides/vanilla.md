@@ -51,11 +51,13 @@ const tour = createGlowTour();
 const workflow = tour
   .create("product-tour")
   .step({
+    id: "features",
     target: "#features",
     title: "Explore features",
     content: "Learn about all the capabilities.",
   })
   .step({
+    id: "pricing",
     target: "#pricing",
     title: "Check pricing",
     content: "See plans that fit your needs.",

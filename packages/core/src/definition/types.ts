@@ -22,7 +22,10 @@ export type DeepReadonly<T> = T extends (...arguments_: infer _Arguments) => inf
       : T;
 
 /** Step properties (title, content, and optional display options) excluding target and behavior. */
-export type StepProps<T> = Omit<StepParameters<T>, "target" | "resetPropsOnEnter" | "behavior">;
+export type StepProps<T> = Omit<
+  StepParameters<T>,
+  "id" | "target" | "resetPropsOnEnter" | "behavior"
+>;
 
 /** Immutable step properties. */
 export type ReadonlyStepProps<T> = {
@@ -39,6 +42,8 @@ export type ReadonlyStartOptions<T> = DeepReadonly<StartOptions<T>>;
 
 /** A single step in a tour workflow (immutable). */
 export interface WorkflowStepDefinition<T> {
+  /** Stable identifier, unique within the workflow. */
+  readonly id: string;
   readonly target: TargetResolver;
   readonly resetPropsOnEnter?: boolean;
   readonly behavior?: DeepReadonly<StepBehavior>;

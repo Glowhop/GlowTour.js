@@ -47,6 +47,7 @@ Override the default keyboard shortcuts for a specific step by providing a `keyb
 const workflow = tour
   .create("advanced")
   .step({
+    id: "field",
     target: "#field",
     title: "Custom shortcuts",
     content: "This step has different keyboard shortcuts.",

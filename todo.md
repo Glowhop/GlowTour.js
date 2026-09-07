@@ -33,24 +33,24 @@ Branche `feature/step-id-start-at` : commits `8fddb54` (fonctionnalité) et `2bd
 
 #### 1.1 — `id` obligatoire sur l'étape
 
-- [ ] `id: string` (requis) sur `WorkflowStepDefinition` (`packages/core/src/definition/types.ts`), le builder et le config JSON (`packages/core/src/config/types.ts` + `validate.ts`).
-- [ ] Pas d'id généré, pas d'id positionnel de repli : le `${name}#${index}` est refusé, il donnerait une fausse impression de stabilité et casserait au premier réordonnancement. L'id est écrit par l'auteur du tour, ou le workflow ne se construit pas.
-- [ ] Validation à la **construction** du workflow, pas au `run()` : id non vide, et unicité dans le workflow. Message d'erreur nommant l'étape fautive (index + titre).
-- [ ] `TourState.currentStep.id` est un `string`, jamais `undefined`. Le chantier 3 (événements) consomme la même identité.
+- [x] `id: string` (requis) sur `WorkflowStepDefinition` (`packages/core/src/definition/types.ts`), le builder et le config JSON (`packages/core/src/config/types.ts` + `validate.ts`).
+- [x] Pas d'id généré, pas d'id positionnel de repli : le `${name}#${index}` est refusé, il donnerait une fausse impression de stabilité et casserait au premier réordonnancement. L'id est écrit par l'auteur du tour, ou le workflow ne se construit pas.
+- [x] Validation à la **construction** du workflow, pas au `run()` : id non vide, et unicité dans le workflow. Message d'erreur nommant l'étape fautive (index + titre).
+- [x] `TourState.currentStep.id` est un `string`, jamais `undefined`. Le chantier 3 (événements) consomme la même identité.
   - Ajout non prévu au plan : `id` est **exclu de `StepProps`** (`Omit<StepParameters, "id" | …>`), sinon l'identité serait mutable en cours de tour via `StepPropsStore`.
-- [ ] Migration dans le même lot : 265 sites d'appel (core, adapters, playground, scripts) + 106 exemples de doc, ids dérivés des sélecteurs.
-- [ ] Note de migration rédigée dans le changeset `.changeset/step-id-start-at.md`.
+- [x] Migration dans le même lot : 265 sites d'appel (core, adapters, playground, scripts) + 106 exemples de doc, ids dérivés des sélecteurs.
+- [x] Note de migration rédigée dans le changeset `.changeset/step-id-start-at.md`.
 
 #### 1.2 — `startAt` optionnel
 
-- [ ] `startAt?: string` (id d'étape), résolu dans `TourController.run` avant l'initialisation de `this.index`.
+- [x] `startAt?: string` (id d'étape), résolu dans `TourController.run` avant l'initialisation de `this.index`.
   - **Écart avec le plan** : pas sur `StartOptions`, qui est figé dans la définition réutilisable du workflow — une position de reprise appartient à un appel, pas au workflow. D'où un nouveau `RunOptions` en second argument : `run(workflow, { startAt })`.
-- [ ] Pas d'index numérique accepté : une seule forme, stable, à documenter.
-- [ ] Absent → chemin de code identique à aujourd'hui.
-- [ ] Id introuvable → **erreur dure**. L'option `fallback` n'a pas été ajoutée, conformément à la recommandation : aucun besoin réel démontré.
-- [ ] `onStart` reçoit l'étape réellement entrée ; doc de `LifecycleHookContext` corrigée.
-- [ ] Le workflow reste entier : `previous()` remonte avant l'étape de reprise, `totalSteps` inchangé. Couvert par un test.
-- [ ] Tests unitaires core, sans DOM.
+- [x] Pas d'index numérique accepté : une seule forme, stable, à documenter.
+- [x] Absent → chemin de code identique à aujourd'hui.
+- [x] Id introuvable → **erreur dure**. L'option `fallback` n'a pas été ajoutée, conformément à la recommandation : aucun besoin réel démontré.
+- [x] `onStart` reçoit l'étape réellement entrée ; doc de `LifecycleHookContext` corrigée.
+- [x] Le workflow reste entier : `previous()` remonte avant l'étape de reprise, `totalSteps` inchangé. Couvert par un test.
+- [x] Tests unitaires core, sans DOM.
 
 **Bug trouvé et corrigé pendant le lot.** La façade publique `createGlowTour` déclarait `run: (workflow) => controller.run(workflow)` et jetait donc silencieusement `startAt`. TypeScript accepte une signature plus étroite, et tous les tests pilotent `TourController` directement : types verts, tests verts, fonctionnalité inopérante pour tout consommateur réel (les cinq adapters passent par cette façade). Seule la vérification navigateur l'a révélé. Un test passant par l'entrée publique le couvre désormais — validé en le faisant échouer sur le code non corrigé.
 
@@ -60,18 +60,18 @@ Branche `feature/step-id-start-at` : commits `8fddb54` (fonctionnalité) et `2bd
 
 Rien de ce qui suit n'est entré dans le core. Ajouter plus tard est additif ; retirer est breaking.
 
-- [ ] **Persistance** : aucun `TourStorage`, `storage`, `persist`, TTL, `snapshot()` ni `resume()` livré. La recette de deux lignes est dans le guide "Resuming a tour" ; c'est l'app qui touche `sessionStorage`, donc le core reste sans garde `typeof window`.
-- [ ] **Navigation multi-page** (`step.navigate` / `onNavigate`) : non livré, chantier distinct. À rouvrir seulement si la recette se révèle insuffisante en usage réel.
-- [ ] **`pause()` / `resume()`** : écarté. `waitUntil`, les `eventHandlers` et `beforeAdvance` couvrent déjà le besoin ; ce serait une seconde façon de faire la même chose.
-- [ ] **Cas limites traités dans la doc, pas dans le code** : cible disparue, workflow modifié, retour tardif, deux onglets — section "Cases worth handling yourself" du guide.
+- [x] **Persistance** : aucun `TourStorage`, `storage`, `persist`, TTL, `snapshot()` ni `resume()` livré. La recette de deux lignes est dans le guide "Resuming a tour" ; c'est l'app qui touche `sessionStorage`, donc le core reste sans garde `typeof window`.
+- [x] **Navigation multi-page** (`step.navigate` / `onNavigate`) : non livré, chantier distinct. À rouvrir seulement si la recette se révèle insuffisante en usage réel.
+- [x] **`pause()` / `resume()`** : écarté. `waitUntil`, les `eventHandlers` et `beforeAdvance` couvrent déjà le besoin ; ce serait une seconde façon de faire la même chose.
+- [x] **Cas limites traités dans la doc, pas dans le code** : cible disparue, workflow modifié, retour tardif, deux onglets — section "Cases worth handling yourself" du guide.
 
 ### Vérification
 
-- [ ] Core, sans DOM : `startAt` (id valide / introuvable / absent), rejet d'un id manquant ou dupliqué à la construction, `currentStep.id`, `id` absent des props. 475 tests verts, `bun run check` et `tsc --noEmit` propres.
-- [ ] Non-régression : la suite existante passe, le diff sur les fixtures se limite à l'ajout d'`id`.
-- [ ] SSR : les trois harnais `apps/ssr-react`, `apps/ssr-solid`, `apps/ssr-vue` passent (6 tests Playwright). **Surface oubliée au premier passage** : ces apps sont hors du tsconfig racine, donc `tsc` ne les couvrait pas et leurs 6 `.step({` non migrés auraient cassé au runtime. Toute future contrainte sur le builder doit inclure ce grep.
-- [ ] Migrer `apps/playground/multipage/` sur `id` + `startAt` : fait, `page-b.ts` perd `goToStep()` et son préfixe d'étapes `skip` au profit d'un seul `run(workflow, { startAt })`.
-- [ ] `docs/` : guide "Resuming a tour" (limite de sérialisation en tête, recette, SPA vs reload, cas limites), + références `builder` / `tour` / `json-config`.
+- [x] Core, sans DOM : `startAt` (id valide / introuvable / absent), rejet d'un id manquant ou dupliqué à la construction, `currentStep.id`, `id` absent des props. 475 tests verts, `bun run check` et `tsc --noEmit` propres.
+- [x] Non-régression : la suite existante passe, le diff sur les fixtures se limite à l'ajout d'`id`.
+- [x] SSR : les trois harnais `apps/ssr-react`, `apps/ssr-solid`, `apps/ssr-vue` passent (6 tests Playwright). **Surface oubliée au premier passage** : ces apps sont hors du tsconfig racine, donc `tsc` ne les couvrait pas et leurs 6 `.step({` non migrés auraient cassé au runtime. Toute future contrainte sur le builder doit inclure ce grep.
+- [x] Migrer `apps/playground/multipage/` sur `id` + `startAt` : fait, `page-b.ts` perd `goToStep()` et son préfixe d'étapes `skip` au profit d'un seul `run(workflow, { startAt })`.
+- [x] `docs/` : guide "Resuming a tour" (limite de sérialisation en tête, recette, SPA vs reload, cas limites), + références `builder` / `tour` / `json-config`.
 - [ ] **Reste à faire — automatiser la reprise multi-page en Playwright.** Les deux scénarios ont été vérifiés manuellement en navigateur (reprise après reload dur : `resumed: status=active step=reload-settings` ; SPA : `spa-dashboard` → `?view=profile` → `spa-profile`), mais aucun test automatisé ne les couvre. Rien ne garantit la non-régression aujourd'hui.
 
 **Piège.** `TourController` a déjà un champ privé `snapshot` (l'état publié) : ne pas réutiliser ce nom si un jour une API publique de snapshot revient sur la table.

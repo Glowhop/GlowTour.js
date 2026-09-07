@@ -17,6 +17,7 @@ const TOP_LEVEL_KEYS = [
 ] as const;
 
 const STEP_KEYS = [
+  "id",
   "target",
   "resetPropsOnEnter",
   "overlay",
@@ -172,8 +173,19 @@ function validateWorkflowConfigShape(
     issues.push({ path: "steps", message: "steps must be an array" });
     return;
   }
+  const seenIds = new Map<string, number>();
   for (const [index, step] of value.steps.entries()) {
     validateStepConfigShape(step, `steps[${index}]`, issues, validateContent);
+    if (isPlainObject(step) && typeof step.id === "string" && step.id.length > 0) {
+      const duplicate = seenIds.get(step.id);
+      if (duplicate === undefined) seenIds.set(step.id, index);
+      else {
+        issues.push({
+          path: `steps[${index}].id`,
+          message: `id "${step.id}" is already used by steps[${duplicate}]. Step ids must be unique.`,
+        });
+      }
+    }
   }
 }
 
@@ -197,6 +209,12 @@ function validateStepConfigShape(
 
   assertNoUnknownKeys(value, STEP_KEYS, path, issues);
 
+  if (typeof value.id !== "string" || value.id.length === 0) {
+    issues.push({
+      path: `${path}.id`,
+      message: "id must be a non-empty string, unique within the workflow",
+    });
+  }
   if (typeof value.target !== "string" || value.target.length === 0) {
     issues.push({
       path: `${path}.target`,

@@ -58,12 +58,7 @@ function definition(options: {
       gap: 18,
     },
   })
-    .step({
-      content: "content",
-      target: "#target",
-      title: "title",
-      ...options,
-    })
+    .step({ id: "step-1", content: "content", target: "#target", title: "title", ...options })
     .build();
 }
 
@@ -162,7 +157,7 @@ describe("ActiveStep target resolution", () => {
     const element = realm.element();
     (element as unknown as { isConnected: boolean }).isConnected = false;
     const workflow = new WorkflowBuilder<string>("detached-direct")
-      .step({ content: "content", target: element, title: "title" })
+      .step({ id: "step-2", content: "content", target: element, title: "title" })
       .build();
     const step = new ActiveStep(
       workflow.steps[0],
@@ -182,7 +177,7 @@ describe("ActiveStep target resolution", () => {
     const element = realm.element();
     (element as unknown as { isConnected: boolean }).isConnected = false;
     const workflow = new WorkflowBuilder<string>("detached-resolver")
-      .step({ content: "content", target: () => element, title: "title" })
+      .step({ id: "step-3", content: "content", target: () => element, title: "title" })
       .build();
     const step = new ActiveStep(
       workflow.steps[0],
@@ -199,7 +194,7 @@ describe("ActiveStep target resolution", () => {
     const rootRealm = createRealmDocument();
     const foreignElement = createRealmDocument().element();
     const workflow = new WorkflowBuilder<string>("foreign-direct")
-      .step({ content: "content", target: foreignElement, title: "title" })
+      .step({ id: "step-4", content: "content", target: foreignElement, title: "title" })
       .build();
     const step = new ActiveStep(
       workflow.steps[0],
@@ -219,7 +214,7 @@ describe("ActiveStep target resolution", () => {
     const rootRealm = createRealmDocument();
     const foreignElement = createRealmDocument().element();
     const workflow = new WorkflowBuilder<string>("foreign-resolver")
-      .step({ content: "content", target: () => foreignElement, title: "title" })
+      .step({ id: "step-5", content: "content", target: () => foreignElement, title: "title" })
       .build();
     const step = new ActiveStep(
       workflow.steps[0],

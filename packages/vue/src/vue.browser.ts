@@ -72,7 +72,7 @@ describe("vue adapter browser behavior", () => {
 
     const workflow = tour
       .create("hydrated")
-      .step({ content: "First", target, title: "First" })
+      .step({ id: "step-1", content: "First", target, title: "First" })
       .build();
     await tour.run(workflow);
     assert.equal(container.querySelector("[data-glow-tour-content]")?.textContent, "First");
@@ -135,8 +135,8 @@ describe("vue adapter browser behavior", () => {
     const tour = runtime.createGlowTour();
     const workflow = tour
       .create("reactive state")
-      .step({ content: "First", target, title: "First" })
-      .step({ content: "Second", target, title: "Second" })
+      .step({ id: "step-2", content: "First", target, title: "First" })
+      .step({ id: "step-3", content: "Second", target, title: "Second" })
       .build();
     const Observer = defineComponent({
       setup() {
@@ -369,12 +369,14 @@ describe("vue adapter browser behavior", () => {
       tour
         .create(name)
         .step({
+          id: "step-4",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: "One",
           target,
           title: "One",
         })
         .step({
+          id: "step-5",
           behavior: allowInteraction ? { allowInteraction: true } : undefined,
           content: "Two",
           target,
@@ -423,12 +425,13 @@ describe("vue adapter browser behavior", () => {
     const workflow = tour
       .create("dynamic controls")
       .step({
+        id: "step-6",
         content: "One",
         popover: { keyboardShortcuts: { advance: ["N"] } },
         target,
         title: "One",
       })
-      .step({ content: "Two", target, title: "Two" })
+      .step({ id: "step-7", content: "Two", target, title: "Two" })
       .build();
     const showAdvance = ref(false);
     const blockAdvance = ref(true);
@@ -505,7 +508,7 @@ describe("vue adapter browser behavior", () => {
     let activeProps!: StepContext<VueTourContent>["props"];
     const workflow = tour
       .create("dynamic step")
-      .step({ content: "Original content", target, title: "Original title" })
+      .step({ id: "step-8", content: "Original content", target, title: "Original title" })
       .do(({ props }) => {
         activeProps = props;
       })

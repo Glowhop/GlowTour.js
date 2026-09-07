@@ -163,8 +163,8 @@ describe("core browser realm isolation", () => {
     binding.bindPopover(popover);
     const workflow = tour
       .create("root realm", { animated: false })
-      .step({ content: "One", target: "#realm-target", title: "One" })
-      .step({ content: "Two", target: "#realm-target", title: "Two" })
+      .step({ id: "step-1", content: "One", target: "#realm-target", title: "One" })
+      .step({ id: "step-2", content: "Two", target: "#realm-target", title: "Two" })
       .build();
 
     await tour.run(workflow);

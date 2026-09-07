@@ -65,6 +65,7 @@ function workflow(
   return tour
     .create(name)
     .step({
+      id: "step-1",
       behavior: allowInteraction ? { allowInteraction: true } : undefined,
       content: `${name} one`,
       target,
@@ -72,6 +73,7 @@ function workflow(
     })
     .do(({ props }) => captureProps?.(props))
     .step({
+      id: "step-2",
       behavior: allowInteraction ? { allowInteraction: true } : undefined,
       content: `${name} two`,
       target,
@@ -359,7 +361,7 @@ describe("vanilla adapter browser behavior", () => {
     await tour.run(
       tour
         .create("dynamic")
-        .step({ content: "One", target, title: "Title" })
+        .step({ id: "step-3", content: "One", target, title: "Title" })
         .do(({ props }) => {
           activeProps = props;
         })
@@ -569,7 +571,9 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(button.textContent, "Authored text");
     element.append(trigger);
     element.append(generatedTrigger);
-    await tour.run(tour.create("reconnect").step({ content: "One", target, title: "One" }).build());
+    await tour.run(
+      tour.create("reconnect").step({ id: "step-4", content: "One", target, title: "One" }).build(),
+    );
     await settle();
     assert.equal(button.getAttribute("aria-label"), "Authored advance");
     assert.equal(button.textContent, "Authored text");
@@ -587,8 +591,8 @@ describe("vanilla adapter browser behavior", () => {
     await settle();
     const tourWorkflow = tour
       .create("controls", { popover: { keyboardShortcuts: { advance: ["N"] } } })
-      .step({ content: "One", target, title: "One" })
-      .step({ content: "Two", target, title: "Two" })
+      .step({ id: "step-5", content: "One", target, title: "One" })
+      .step({ id: "step-6", content: "Two", target, title: "Two" })
       .build();
     await tour.run(tourWorkflow);
     const firstBack = element.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");

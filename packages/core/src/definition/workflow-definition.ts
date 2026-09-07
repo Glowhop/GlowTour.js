@@ -15,6 +15,7 @@ import type {
 } from "./types";
 
 export interface WorkflowStepDraft<T> {
+  id: string;
   target: StepParameters<T>["target"];
   resetPropsOnEnter?: boolean;
   props: StepProps<T>;
@@ -81,6 +82,7 @@ function freezeIndicator(options: StepParameters<unknown>["indicator"]) {
 
 function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
   return freezeRecord({
+    id: draft.id,
     target: draft.target,
     resetPropsOnEnter: draft.resetPropsOnEnter,
     props: freezeStepProps(draft.props),
@@ -130,6 +132,27 @@ export function cloneWorkflowStepDraft<T>(
 }
 
 /**
+ * Validates that every step carries a non-empty id and that ids are unique.
+ * Runs at construction time so a malformed workflow can never reach `run()`.
+ */
+function assertUniqueStepIds<T>(name: string, drafts: readonly WorkflowStepDraft<T>[]): void {
+  const seen = new Map<string, number>();
+  for (const [index, draft] of drafts.entries()) {
+    const label = `step ${index}${draft.props.title ? ` ("${String(draft.props.title)}")` : ""}`;
+    if (typeof draft.id !== "string" || draft.id.length === 0) {
+      throw new Error(`Workflow "${name}": ${label} is missing a non-empty "id".`);
+    }
+    const duplicate = seen.get(draft.id);
+    if (duplicate !== undefined) {
+      throw new Error(
+        `Workflow "${name}": ${label} reuses the id "${draft.id}" already used by step ${duplicate}. Step ids must be unique.`,
+      );
+    }
+    seen.set(draft.id, index);
+  }
+}
+
+/**
  * Creates a frozen workflow definition from a name, options, and step drafts.
  * @param name The workflow name.
  * @param options Tour start options and lifecycle hooks.
@@ -141,6 +164,7 @@ export function createWorkflowDefinition<T>(
   options: StartOptions<T>,
   drafts: readonly WorkflowStepDraft<T>[],
 ): WorkflowDefinition<T> {
+  assertUniqueStepIds(name, drafts);
   return freezeRecord({
     name,
     options: freezeOptions(options),
