@@ -1,19 +1,25 @@
 import { useState } from "react";
-import { examples } from "../lib/examples";
+import { examples, pickExamples } from "../lib/examples";
 
 interface ExamplesGalleryProps {
   codeHtml: readonly string[];
+  /**
+   * Labels of the examples to show, in order. Omit for the whole gallery. `codeHtml` must be
+   * pre-rendered in this same order — the page derives both from one list, so they cannot drift.
+   */
+  labels?: readonly string[];
 }
 
-export function ExamplesGallery({ codeHtml }: ExamplesGalleryProps) {
+export function ExamplesGallery({ codeHtml, labels }: ExamplesGalleryProps) {
+  const shown = labels ? pickExamples(labels) : examples;
   const [activeIndex, setActiveIndex] = useState(0);
-  const active = examples[activeIndex];
+  const active = shown[activeIndex];
   const ActiveDemo = active.Demo;
 
   return (
     <div>
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Examples">
-        {examples.map((example, index) => (
+        {shown.map((example, index) => (
           <button
             key={example.label}
             type="button"
