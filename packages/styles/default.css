@@ -1,3 +1,91 @@
+/*
+ * Theme tokens.
+ *
+ * Declared at `:where(:root)` rather than on the tour root, and at zero
+ * specificity, so that every documented way to re-theme GlowTour keeps working:
+ * an override on any ancestor of the tour (`.onboarding { --glow-tour-*: … }`)
+ * wins by proximity, and an override on `:root` itself wins on specificity.
+ * Declaring these on `[data-glow-tour-root]` would silently beat the first, and
+ * declaring them on a bare `:root` would silently beat the second.
+ *
+ * `light-dark()` is deliberately not used: it resolves against the `color-scheme`
+ * property, which the host page owns and most apps never set — an unset
+ * `color-scheme` yields the light value even on a dark OS. A media query plus an
+ * attribute we own keeps the default OS-aware without depending on a property the
+ * host page uses for its own theme. Consumers writing their own tokens are free to
+ * use `light-dark()`; that is their browser floor to choose, not ours.
+ */
+:where(:root),
+:where([data-glow-tour-root][data-glow-tour-theme="light"]) {
+  color-scheme: light;
+
+  --glow-tour-color-accent: #4c35fd;
+  --glow-tour-color-accent-active: #3522c7;
+  --glow-tour-color-accent-hover: #3f2be0;
+  --glow-tour-color-border: #dedee3;
+  --glow-tour-color-on-accent: #ffffff;
+  --glow-tour-color-surface: #ffffff;
+  --glow-tour-color-surface-muted: #f6f6f7;
+  --glow-tour-color-text: #1f1f23;
+  --glow-tour-color-text-muted: #5f5f66;
+  --glow-tour-overlay-color: #000000;
+  --glow-tour-shadow: 0 4px 12px rgb(0 0 0 / 8%);
+}
+
+:where(:root) {
+  --glow-tour-control-height: 32px;
+  --glow-tour-popover-width: 352px;
+  --glow-tour-radius: 8px;
+  --glow-tour-spacing: 8px;
+  --glow-tour-transition-duration: 120ms;
+  --glow-tour-transition-easing: ease-out;
+  --glow-tour-viewport-gap: 16px;
+}
+
+/*
+ * Dark palette. Applied from the OS preference unless the page opts out, and from
+ * `[data-glow-tour-theme="dark"]` regardless of the OS. The attribute is read both
+ * on `:root` (the common case) and on the tour root itself, so a portaled tour — or
+ * a single demo on a page — can carry a theme of its own; the tour root sits closer
+ * to the popover, so it always wins over the page-level value.
+ *
+ * In dark, elevation is carried by the border rather than the shadow: a shadow over
+ * a dark ground is close to invisible whatever its opacity. The backdrop keeps the
+ * same black fill in both themes — it dims the page, it does not tint it.
+ */
+@media (prefers-color-scheme: dark) {
+  :where(:root:not([data-glow-tour-theme="light"])) {
+    color-scheme: dark;
+
+    --glow-tour-color-accent: #6d5bff;
+    --glow-tour-color-accent-active: #4f3ce0;
+    --glow-tour-color-accent-hover: #5d4bf0;
+    --glow-tour-color-border: #3a3a44;
+    --glow-tour-color-on-accent: #ffffff;
+    --glow-tour-color-surface: #1c1c21;
+    --glow-tour-color-surface-muted: #26262d;
+    --glow-tour-color-text: #f2f2f4;
+    --glow-tour-color-text-muted: #a8a8b3;
+    --glow-tour-shadow: 0 8px 24px rgb(0 0 0 / 56%);
+  }
+}
+
+:where(:root[data-glow-tour-theme="dark"]),
+:where([data-glow-tour-root][data-glow-tour-theme="dark"]) {
+  color-scheme: dark;
+
+  --glow-tour-color-accent: #6d5bff;
+  --glow-tour-color-accent-active: #4f3ce0;
+  --glow-tour-color-accent-hover: #5d4bf0;
+  --glow-tour-color-border: #3a3a44;
+  --glow-tour-color-on-accent: #ffffff;
+  --glow-tour-color-surface: #1c1c21;
+  --glow-tour-color-surface-muted: #26262d;
+  --glow-tour-color-text: #f2f2f4;
+  --glow-tour-color-text-muted: #a8a8b3;
+  --glow-tour-shadow: 0 8px 24px rgb(0 0 0 / 56%);
+}
+
 :where([data-glow-tour-root]) [data-glow-tour-popover],
 :where([data-glow-tour-root]) [data-glow-tour-popover] *,
 :where([data-glow-tour-root]) [data-glow-tour-pointer],
@@ -8,6 +96,15 @@
 :where([data-glow-tour-root]) [data-glow-tour-overlay] {
   display: block;
   overflow: visible;
+}
+
+/*
+ * The backdrop is a single SVG path. Its opacity is written inline by the core on
+ * every frame, so only the fill is themeable from CSS; use `step.overlay.opacity`
+ * to change how much it dims.
+ */
+:where([data-glow-tour-root]) [data-glow-tour-overlay] path {
+  fill: var(--glow-tour-overlay-color, #000000);
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-popover] {
