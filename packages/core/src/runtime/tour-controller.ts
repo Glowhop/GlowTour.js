@@ -11,6 +11,10 @@ import type {
   StartOptions,
   StepContext,
   TourDirection,
+  TourEvent,
+  TourEventListener,
+  TourEventSource,
+  TourEventType,
   TourState,
   TourStatus,
 } from "../types";
@@ -78,6 +82,9 @@ export class TourController<T> {
   private retainedPresentation: TourPresentation<T> | null = null;
   private readonly stateListeners = new Set<(state: TourState<T>) => void>();
   private readonly stepPropsSubscriptions: Array<() => void> = [];
+  private tourStartedAt = 0;
+  private stepEnteredAt = 0;
+  private commandSource: TourEventSource = "api";
 
   readonly state = Object.freeze({
     get: () => this.snapshot,
@@ -98,15 +105,15 @@ export class TourController<T> {
   ) {
     this.snapshot = this.createSnapshot();
     this.driver.setCommands?.({
-      advance: () => this.advance(),
+      advance: (source) => this.advance(source),
       canAdvance: () => this.canNavigate("advance"),
       canCancel: () => this.status === "active" && this.isCancelAvailable(),
       canPrevious: () => this.canNavigate("previous"),
-      cancel: () => this.cancel(),
+      cancel: (source) => this.cancel(source),
       isAdvanceDisabled: () => !this.isPresentedAdvanceAvailable(),
       isCancelDisabled: () => !this.isPresentedCancelAvailable(),
       isPreviousDisabled: () => !this.isPresentedPreviousAvailable(),
-      previous: () => this.previous(),
+      previous: (source) => this.previous(source),
       reportError: async (error) => {
         if (this.disposed || this.status === "idle") return;
         const operation = this.beginOperation();
@@ -156,6 +163,7 @@ export class TourController<T> {
     }
     this.index = -1;
     this.error = null;
+    this.commandSource = "api";
     this.retainedPresentation = retainedPresentation;
 
     try {
@@ -170,6 +178,8 @@ export class TourController<T> {
         this.resetToIdle();
         return;
       }
+      this.tourStartedAt = Date.now();
+      this.emit("tour:start", this.steps[startIndex] ?? null, 0);
       if (this.steps.length === 0) {
         await this.finish(operation);
         return;
@@ -180,14 +190,14 @@ export class TourController<T> {
     }
   }
 
-  async advance() {
+  async advance(source: TourEventSource = "api") {
     this.assertNotDisposed();
-    await this.transitionFromPublic("advance");
+    await this.transitionFromPublic("advance", undefined, source);
   }
 
-  async previous() {
+  async previous(source: TourEventSource = "api") {
     this.assertNotDisposed();
-    await this.transitionFromPublic("previous");
+    await this.transitionFromPublic("previous", undefined, source);
   }
 
   async goToStep(index: number) {
@@ -197,12 +207,13 @@ export class TourController<T> {
       throw new Error(`Step index ${index} is out of bounds`);
     }
     const direction = index > this.index ? "advance" : "previous";
-    await this.transitionFromPublic(direction, index);
+    await this.transitionFromPublic(direction, index, "api");
   }
 
-  async cancel() {
+  async cancel(source: TourEventSource = "api") {
     this.assertNotDisposed();
     if (!this.workflow || !this.canCancel()) return;
+    this.commandSource = source;
     const operation = this.beginOperation();
     try {
       await this.cancelCurrent(operation);
@@ -253,6 +264,7 @@ export class TourController<T> {
   }
 
   private async enter(index: number, direction: TourDirection, operation: number): Promise<void> {
+    this.emitStepLeave(this.currentStep());
     this.direction = direction;
     this.setStatus("transitioning");
     this.assertCurrent(operation);
@@ -280,11 +292,18 @@ export class TourController<T> {
     commitStep();
     this.setStatus("active");
     this.assertCurrent(operation);
+    this.stepEnteredAt = Date.now();
+    this.emit("step:enter", step, 0);
     await this.runActions(operation);
   }
 
-  private async transitionFromPublic(direction: TourDirection, destination?: number) {
+  private async transitionFromPublic(
+    direction: TourDirection,
+    destination?: number,
+    source: TourEventSource = "api",
+  ) {
     if (!this.canNavigate(direction, destination)) return;
+    this.commandSource = source;
     const operation = this.beginOperation();
     try {
       await this.transition(direction, operation, destination);
@@ -434,10 +453,12 @@ export class TourController<T> {
       else this.resetToIdle();
       return;
     }
+    this.emitStepLeave(step);
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
     this.retainedPresentation = null;
     this.setStatus("finished");
+    this.emit("tour:complete", step, Date.now() - this.tourStartedAt);
     this.assertCurrent(operation);
   }
 
@@ -454,10 +475,12 @@ export class TourController<T> {
       this.setStatus("active");
       return;
     }
+    this.emitStepLeave(step);
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
     this.retainedPresentation = null;
     this.setStatus("cancelled");
+    this.emit("tour:cancel", step, Date.now() - this.tourStartedAt);
     this.assertCurrent(operation);
   }
 
@@ -495,6 +518,9 @@ export class TourController<T> {
     this.error = error;
     this.retainedPresentation = null;
     this.setStatus("error");
+    // No `step:leave` here: the step was not left, the tour died on it. The
+    // event names that step so the pair still reconciles in an analytics funnel.
+    this.emit("tour:error", this.currentStep(), Date.now() - this.tourStartedAt, error);
     if (!this.isCurrent(operation)) throw error;
     try {
       await this.driver.clear(this.signalFor(operation));
@@ -656,6 +682,58 @@ export class TourController<T> {
     }
   }
 
+  /**
+   * True when at least one listener is attached. Every emission site checks this
+   * first so that a tour with no monitoring builds no payloads and reads no clock.
+   */
+  private hasEventListeners() {
+    return Boolean(this.options.onEvent ?? this.workflow?.options.onEvent);
+  }
+
+  private emit(
+    type: TourEventType,
+    step: ActiveStep<T> | null,
+    durationMs: number,
+    error: Error | null = null,
+  ) {
+    const instanceListener = this.options.onEvent;
+    const workflowListener = this.workflow?.options.onEvent;
+    if (!instanceListener && !workflowListener) return;
+    const index = step ? this.steps.indexOf(step) : -1;
+    const event: TourEvent = Object.freeze({
+      direction: this.direction,
+      durationMs,
+      error,
+      source: this.commandSource,
+      stepCount: this.steps.length,
+      stepId: step?.definition.id ?? null,
+      stepIndex: index,
+      timestamp: Date.now(),
+      type,
+      workflowName: this.workflow?.name ?? "",
+    });
+    // A listener must never be able to break a tour: it cannot abort a
+    // transition, and anything it throws is routed to the subscriber-error
+    // channel rather than the tour's own error path.
+    this.notifyEventListener(instanceListener, event);
+    this.notifyEventListener(workflowListener, event);
+  }
+
+  private notifyEventListener(listener: TourEventListener | undefined, event: TourEvent) {
+    if (!listener) return;
+    try {
+      listener(event);
+    } catch (error) {
+      this.reportSubscriberError(error);
+    }
+  }
+
+  /** Emits `step:leave` for the step being left, with the time spent on it. */
+  private emitStepLeave(step: ActiveStep<T> | null) {
+    if (!step || !this.hasEventListeners()) return;
+    this.emit("step:leave", step, Date.now() - this.stepEnteredAt);
+  }
+
   private reportSubscriberError(reason: unknown) {
     const error = normalizedError(reason);
     const onSubscriberError = this.options.onSubscriberError;
@@ -734,8 +812,9 @@ export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
 
   const controller = new TourController<T>(driver, {
     assertCanRun: (workflow) => bridge.assertCanRun(workflow),
-    onSubscriberError: options.onSubscriberError,
     onDispose: () => bridge.release(),
+    onEvent: options.onEvent,
+    onSubscriberError: options.onSubscriberError,
   });
 
   const tour: GlowTour<T> = {

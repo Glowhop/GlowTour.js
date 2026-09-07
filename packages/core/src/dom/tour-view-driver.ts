@@ -5,7 +5,7 @@ import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
 import { focusableElementsOwnedBy } from "../state/focusable";
 import { ScrollLock } from "../state/scroll-lock";
-import type { TourDirection } from "../types";
+import type { TourDirection, TourEventSource } from "../types";
 import {
   isElement,
   isHTMLElement,
@@ -30,15 +30,15 @@ interface InertBranch {
 }
 
 export interface TourViewCommands {
-  advance(): Promise<void>;
+  advance(source: TourEventSource): Promise<void>;
   canAdvance(): boolean;
   canCancel(): boolean;
   canPrevious(): boolean;
   isAdvanceDisabled(): boolean;
   isCancelDisabled(): boolean;
   isPreviousDisabled(): boolean;
-  previous(): Promise<void>;
-  cancel(): Promise<void>;
+  previous(source: TourEventSource): Promise<void>;
+  cancel(source: TourEventSource): Promise<void>;
   reportError(error: unknown): Promise<void>;
   targetDisconnected(target: HTMLElement): Promise<void>;
   subscribeCapabilities?(listener: (active: boolean) => void): () => void;
@@ -571,7 +571,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.canCommand("cancel", step)
     ) {
       event.preventDefault();
-      void this.command("cancel");
+      void this.command("cancel", "keyboard");
       return;
     }
     if (isEditable(event.target, this.root)) return;
@@ -580,13 +580,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.canCommand("advance", step)
     ) {
       event.preventDefault();
-      void this.command("advance");
+      void this.command("advance", "keyboard");
     } else if (
       (shortcuts?.previous ?? DEFAULT_SHORTCUTS.previous).includes(event.key) &&
       this.canCommand("previous", step)
     ) {
       event.preventDefault();
-      void this.command("previous");
+      void this.command("previous", "keyboard");
     }
   }
 
@@ -604,9 +604,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     const overlayClick = step.behavior?.overlayClick ?? "none";
     if (overlayClick === "advance" && this.canCommand("advance", step)) {
-      void this.command("advance");
+      void this.command("advance", "overlay");
     } else if (overlayClick === "cancel" && this.canCommand("cancel", step)) {
-      void this.command("cancel");
+      void this.command("cancel", "overlay");
     }
   }
 
@@ -651,7 +651,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         !this.canCommand(pending.command, step)
       )
         return;
-      void this.commandForGeneration(pending.command, generation);
+      void this.commandForGeneration(pending.command, generation, "keyboard");
     });
   }
 
@@ -787,7 +787,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         !this.canCommand(command, step, trigger)
       )
         return;
-      void this.commandForGeneration(command, generation);
+      void this.commandForGeneration(command, generation, "trigger");
     });
   }
 
@@ -825,19 +825,26 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     return trigger.closest("[data-glow-tour-root]") === owner;
   }
 
-  private async command(command: TourViewCommand) {
+  private async command(command: TourViewCommand, source: TourEventSource) {
     if (this.disposed) return;
-    if (command === "advance") await this.commands?.advance();
-    else if (command === "previous") await this.commands?.previous();
-    else await this.commands?.cancel();
+    if (command === "advance") await this.commands?.advance(source);
+    else if (command === "previous") await this.commands?.previous(source);
+    else await this.commands?.cancel(source);
   }
 
-  private commandForGeneration(command: TourViewCommand, generation: number) {
-    return this.isCurrentGeneration(generation) ? this.command(command) : Promise.resolve();
+  private commandForGeneration(
+    command: TourViewCommand,
+    generation: number,
+    source: TourEventSource,
+  ) {
+    return this.isCurrentGeneration(generation) ? this.command(command, source) : Promise.resolve();
   }
 
   private commandForStep(command: TourViewCommand, step: ActiveStep<T>, signal: AbortSignal) {
-    return !signal.aborted && this.currentStep === step ? this.command(command) : Promise.resolve();
+    // Reached from a step action's `context.advance()` — the consumer's own code.
+    return !signal.aborted && this.currentStep === step
+      ? this.command(command, "api")
+      : Promise.resolve();
   }
 
   private canCommand(

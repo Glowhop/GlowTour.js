@@ -232,6 +232,14 @@ export interface StartOptions<T> {
   onCancel?: (context: LifecycleHookContext<T>) => void | Promise<void>;
   /** Lifecycle hook called when the tour finishes. */
   onFinish?: (context: LifecycleHookContext<T>) => void | Promise<void>;
+
+  /**
+   * Monitoring callback for this workflow. See `TourEvent`.
+   *
+   * Monitoring only: it cannot abort a transition — that is what the `onStart` /
+   * `onCancel` / `onFinish` hooks and their `abort()` are for.
+   */
+  onEvent?: TourEventListener;
 }
 
 /** Update to step properties, either as a full replacement or via a function. */
@@ -405,10 +413,85 @@ export interface RunOptions {
   startAt?: string;
 }
 
+/**
+ * What triggered a transition.
+ *
+ * `"api"` covers every call your own code makes — `advance()`, `previous()`,
+ * `goToStep()`, `cancel()`, and the `context.advance()` available inside a step
+ * action. The other three are the user acting on the tour UI directly.
+ */
+export type TourEventSource = "api" | "trigger" | "keyboard" | "overlay";
+
+/** Name of a monitoring event. */
+export type TourEventType =
+  | "tour:start"
+  | "step:enter"
+  | "step:leave"
+  | "tour:complete"
+  | "tour:cancel"
+  | "tour:error";
+
+/**
+ * A monitoring event, as handed to `onEvent`.
+ *
+ * This is a stable, public contract: the names and the fields below are meant to
+ * be written straight into an analytics payload.
+ */
+export interface TourEvent {
+  /** Which event this is. */
+  readonly type: TourEventType;
+  /** Name of the running workflow, as passed to `create()`. */
+  readonly workflowName: string;
+  /**
+   * Id of the step the event is about, or `null` when no step applies — a
+   * workflow with no steps, or a tour that failed before entering one.
+   */
+  readonly stepId: string | null;
+  /** Index of that step (0-based), or `-1` when `stepId` is `null`. */
+  readonly stepIndex: number;
+  /** Total number of steps in the workflow. */
+  readonly stepCount: number;
+  /** Direction of the navigation that led here. */
+  readonly direction: TourDirection;
+  /** What triggered the transition — a button, the keyboard, the overlay, or your code. */
+  readonly source: TourEventSource;
+  /** `Date.now()` when the event was emitted. */
+  readonly timestamp: number;
+  /**
+   * How long the thing this event names had been running, in milliseconds.
+   *
+   * For `step:leave`, the time spent on that step. For `tour:complete`,
+   * `tour:cancel` and `tour:error`, the time since `run()` was called. For
+   * `tour:start` and `step:enter` — the beginnings — always `0`.
+   */
+  readonly durationMs: number;
+  /**
+   * The error that ended the tour. Only ever set on `tour:error`.
+   */
+  readonly error: Error | null;
+}
+
+/**
+ * Monitoring callback. Receives every event of a running tour.
+ *
+ * Monitoring only: unlike the lifecycle hooks, it cannot abort or delay a
+ * transition. It is called synchronously and its return value is ignored; if it
+ * throws, the error goes to `onSubscriberError` and the tour carries on.
+ */
+export type TourEventListener = (event: TourEvent) => void;
+
 /** Options for creating a GlowTour instance. */
 export interface GlowTourOptions {
   /** Error handler for exceptions thrown in state subscribers. */
   onSubscriberError?: (error: Error) => void | Promise<void>;
+  /**
+   * Monitoring callback for every tour this instance runs. Use it to wire the
+   * tour to analytics once, rather than per workflow.
+   *
+   * A workflow can add its own listener through `StartOptions.onEvent`; both are
+   * called, this one first.
+   */
+  onEvent?: TourEventListener;
 }
 
 /** Parameters for defining a tour step. */
