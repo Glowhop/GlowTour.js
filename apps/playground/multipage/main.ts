@@ -77,7 +77,7 @@ const spaWorkflow = tour
     log("beforePrevious — pushState back to the dashboard");
     navigate("dashboard");
   })
-  
+
   .step({
     target: "#profile-save",
     title: "Save",
