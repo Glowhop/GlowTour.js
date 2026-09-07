@@ -446,9 +446,13 @@ function createStep(
       id: "step-1",
       behavior: options.overlayClick ? { overlayClick: options.overlayClick } : undefined,
       content: "content",
-      popover: options.advanceShortcuts
-        ? { keyboardShortcuts: { advance: options.advanceShortcuts } }
-        : undefined,
+      // Pin the gap so the transform expectations below stay independent of the default.
+      popover: {
+        gap: 14,
+        ...(options.advanceShortcuts
+          ? { keyboardShortcuts: { advance: options.advanceShortcuts } }
+          : {}),
+      },
       target: "#target",
       title: "title",
     })
@@ -1433,7 +1437,7 @@ describe("DomTourViewDriver", () => {
 
     createdAnimations[animationStart]?.resolve();
     await flushMicrotasks();
-    assert.equal(elements.popover.style.transform, "translate(430px, 272px)");
+    assert.equal(elements.popover.style.transform, "translate(430px, 254px)");
     assert.equal(createdAnimations.length, animationStart + 2);
     resolveAnimations(animationStart + 1);
   });
@@ -1454,7 +1458,7 @@ describe("DomTourViewDriver", () => {
     createdAnimations[animationStart]?.resolve();
     await flushMicrotasks();
 
-    assert.equal(elements.popover.style.transform, "translate(430px, 172px)");
+    assert.equal(elements.popover.style.transform, "translate(430px, 154px)");
     assert.equal(createdAnimations.length, animationStart + 2);
     resolveAnimations(animationStart + 1);
   });
@@ -1472,7 +1476,7 @@ describe("DomTourViewDriver", () => {
     flushFrame();
     createdAnimations[animationStart]?.resolve();
     await flushMicrotasks();
-    assert.equal(elements.popover.style.transform, "translate(430px, 203px)");
+    assert.equal(elements.popover.style.transform, "translate(430px, 185px)");
 
     target.setRect({ height: 20, left: 500, top: 220, width: 20 });
     flushFrame();
@@ -1482,7 +1486,7 @@ describe("DomTourViewDriver", () => {
     await flushMicrotasks();
 
     assert.equal(createdAnimations.length, animationStart + 2);
-    assert.equal(elements.popover.style.transform, "translate(430px, 203px)");
+    assert.equal(elements.popover.style.transform, "translate(430px, 185px)");
   });
   test("cancels an active popover reposition without late geometry writes", async () => {
     const { driver, elements } = installDriver(),

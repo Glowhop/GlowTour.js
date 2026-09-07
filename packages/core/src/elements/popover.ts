@@ -5,7 +5,11 @@ import GlowTourElement, { type TourElementStep } from "./base";
 import { POPOVER_IDLE_ATTRIBUTES, POPOVER_IDLE_STYLE } from "./idle-presentation";
 import { ensurePopoverArrowStyles } from "./popover-arrow-styles";
 
-const DEFAULT_POPOVER_GAP = 32;
+// Matches `--glow-tour-viewport-gap` (16px) in the default theme, which caps the popover at
+// `100vw - 2 * gap`. The two have to agree: this constant is also the minimum margin the popover
+// keeps from the viewport edges, so a larger value than the CSS cap makes a max-width popover
+// unplaceable and forces the centered fallback on narrow viewports.
+const DEFAULT_POPOVER_GAP = 16;
 const DEFAULT_ARROW_EDGE_PADDING = 16;
 const DEFAULT_TRY_ORDER = ["bottom", "top", "right", "left"] as const;
 const REPLACEMENT_DIFF = 50; // pixels

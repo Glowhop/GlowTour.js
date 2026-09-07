@@ -23,7 +23,7 @@ document.body.append(createDefaultTourElement(tour));
  */
 const workflow = tour
   .create("reload-multipage", {
-    animated: false,
+    // animated: false,
     onStart: ({ step }) => log(`onStart — resumed on "${step?.id}"`),
     onFinish: () => log("onFinish"),
     onCancel: () => log("onCancel"),
