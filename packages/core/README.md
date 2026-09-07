@@ -9,7 +9,7 @@ Compatibility: framework-independent ESM package. Core provides no SSR-rendered 
 import { createGlowTour } from "@glowhop/core-tour";
 
 const tour = createGlowTour();
-const workflow = tour.create("intro").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build();
+const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
 // Pass tour to a mounted adapter/default composition, then call:
 // await tour.run(workflow);
 ```
