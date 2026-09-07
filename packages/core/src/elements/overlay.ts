@@ -1,8 +1,9 @@
 import { ownerWindow, roundedRectPath, viewportDimensions } from "../utils/utils";
 import GlowTourElement, { type TourElementStep } from "./base";
+import { OVERLAY_IDLE_ATTRIBUTES, OVERLAY_IDLE_STYLE } from "./idle-presentation";
 
-const DEFAULT_OVERLAY_PADDING = 16;
-const DEFAULT_OVERLAY_RADIUS = 12;
+const DEFAULT_OVERLAY_PADDING = 8;
+const DEFAULT_OVERLAY_RADIUS = 8;
 
 interface OverlayVisualState {
   color: string | undefined;
@@ -130,31 +131,13 @@ export default class OverlayElement extends GlowTourElement {
     }
     const viewport = viewportDimensions(el);
 
-    el.style.setProperty("position", "fixed");
-    el.style.setProperty("z-index", "10000");
-    el.style.setProperty("top", "0px");
-    el.style.setProperty("left", "0px");
-    el.style.setProperty("width", "100%");
-    el.style.setProperty("height", "100%");
-    el.style.setProperty("fill-rule", "evenodd");
-    el.style.setProperty("clip-rule", "evenodd");
-    el.style.setProperty("stroke-linejoin", "round");
-    el.style.setProperty("stroke-miterlimit", "2");
-    el.style.setProperty("pointer-events", "none");
-
-    el.setAttribute("aria-hidden", "true");
-    el.setAttribute("data-glow-tour-allow-interaction", "false");
-    el.setAttribute("viewBox", `0 0 ${viewport.width} ${viewport.height}`);
-    el.setAttribute("inert", "true");
-
-    const path = el.querySelector("path");
-    if (!path) {
-      return;
+    for (const [property, value] of Object.entries(OVERLAY_IDLE_STYLE)) {
+      el.style.setProperty(property, value);
     }
-
-    path.setAttribute("opacity", "0");
-    path.setAttribute("pointer-events", "auto");
-    path.setAttribute("cursor", "auto");
+    for (const [name, value] of Object.entries(OVERLAY_IDLE_ATTRIBUTES)) {
+      el.setAttribute(name, value);
+    }
+    el.setAttribute("viewBox", `0 0 ${viewport.width} ${viewport.height}`);
   }
 
   private _getPathElement(): SVGPathElement | null {

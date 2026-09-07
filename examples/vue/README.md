@@ -1,6 +1,6 @@
 # Vue Example
 
-Minimal Vue 3 example showing how to use Glow Tour with the Vue adapter.
+Minimal Vue 3 example showing how to use GlowTour.js with the Vue adapter.
 
 ## Quick Start
 

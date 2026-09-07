@@ -105,6 +105,57 @@ describe("react adapter contract", () => {
     assert.doesNotMatch(html, /id="glow-tour/);
   });
 
+  test("renders the idle presentation into the DefaultTour markup before any binding runs", () => {
+    // The bug this guards: DefaultTour renders overlay/pointer/popover
+    // unconditionally, and the idle (out-of-flow, invisible) presentation used
+    // to be applied only imperatively by each core element's initializeProps()
+    // once an adapter binds it. That left server-rendered (and pre-hydration)
+    // markup fully visible. Runs out-of-process like the SSR test above so it
+    // genuinely exercises react-dom/server without any DOM globals.
+    const script = [
+      "delete globalThis.document;",
+      "delete globalThis.window;",
+      "delete globalThis.HTMLElement;",
+      "const { renderToString } = await import('react-dom/server');",
+      "const React = await import('react');",
+      "const runtime = await import('./index.ts');",
+      "const tour = runtime.createGlowTour();",
+      "const html = renderToString(React.createElement(runtime.DefaultTour, { idPrefix: 'react-idle', tour }));",
+      "process.stdout.write(html);",
+    ].join("\n");
+    const result = Bun.spawnSync({
+      cmd: ["bun", "-e", script],
+      cwd: import.meta.dir,
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+
+    assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
+    const html = new TextDecoder().decode(result.stdout);
+
+    const popoverMatch = html.match(/<section[^>]*data-glow-tour-popover[^>]*>/);
+    assert.ok(popoverMatch, "expected a rendered popover section");
+    const popoverTag = popoverMatch[0];
+    assert.match(popoverTag, /style="[^"]*position:fixed[^"]*"/);
+    assert.match(popoverTag, /style="[^"]*opacity:0[^"]*"/);
+    assert.match(popoverTag, /aria-hidden="true"/);
+    assert.match(popoverTag, /inert=""/);
+
+    const pointerMatch = html.match(/<div[^>]*data-glow-tour-pointer[^>]*>/);
+    assert.ok(pointerMatch, "expected a rendered pointer div");
+    const pointerTag = pointerMatch[0];
+    assert.match(pointerTag, /style="[^"]*position:fixed[^"]*"/);
+    assert.match(pointerTag, /style="[^"]*opacity:0[^"]*"/);
+    assert.match(pointerTag, /aria-hidden="true"/);
+
+    const overlayPathMatch = html.match(/<path[^>]*data-glow-tour-overlay-path[^>]*>/);
+    assert.ok(overlayPathMatch, "expected a rendered overlay path");
+    const overlayPathTag = overlayPathMatch[0];
+    assert.match(overlayPathTag, /opacity="0"/);
+    assert.match(overlayPathTag, /pointer-events="auto"/);
+    assert.match(overlayPathTag, /cursor="auto"/);
+  });
+
   test("forwards subscriber error handlers to the core tour", () => {
     const errors: Error[] = [];
     const tour = runtime.createGlowTour({

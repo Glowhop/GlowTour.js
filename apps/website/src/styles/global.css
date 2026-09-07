@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+/*
+ * Marketing design tokens derived from the default GlowTour.js theme
+ * (packages/styles/default.css) — same accent, surface, text, border, radius, and shadow scale
+ * the tour popover itself uses, so the site and the product look like one thing.
+ */
+@theme {
+  --color-accent: #4c35fd;
+  --color-accent-hover: #3f2be0;
+  --color-accent-active: #3522c7;
+  --color-on-accent: #ffffff;
+
+  /*
+   * Second accent, used only for the stage-light motifs (sparkles, wand trail, small marks).
+   * Purple + gold is the shorthand the whole art direction leans on; it never carries text or
+   * interactive state, so it is exempt from the contrast budget the accent color has to meet.
+   */
+  --color-spark: #d9a327;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f6f7;
+  --color-text: #1f1f23;
+  --color-text-muted: #5f5f66;
+  --color-border: #dedee3;
+
+  --radius-glow: 8px;
+  --shadow-glow: 0 4px 12px rgb(0 0 0 / 8%);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+}
+
+/*
+ * Tailwind v4's @theme directive is only meant to be used at the top level: nesting it inside
+ * @media (as an earlier version of this file did) gets flattened away during Tailwind's build, so
+ * the dark values silently won and light mode never rendered. Overriding the same custom
+ * properties on :root in a plain (non-@theme) media query works correctly, since Tailwind's
+ * generated utilities just reference var(--color-*) and pick up whatever value is cascading.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-accent: #7c6bff;
+    --color-accent-hover: #9384ff;
+    --color-accent-active: #ac9fff;
+    --color-on-accent: #10101a;
+
+    --color-spark: #f5c451;
+
+    /*
+     * Night-indigo rather than a neutral near-black: the dark theme is meant to read as a stage
+     * at night, which is what the spotlight/sparkle motifs are lit against.
+     */
+    --color-surface: #12102a;
+    --color-surface-muted: #1a1636;
+    --color-text: #f3f1ff;
+    --color-text-muted: #a9a3cc;
+    --color-border: #2e2952;
+
+    --shadow-glow: 0 4px 16px rgb(0 0 0 / 40%);
+  }
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/*
+ * Fraunces is a display serif reserved for the home page's h1/h2 — a deliberate break from the
+ * system-sans body text, applied opt-in via this utility rather than globally on every heading
+ * site-wide. SOFT/WONK are dialed up so the terminals stay a little unruly (the art direction
+ * leans on stage magic), while the body copy stays a plain, sober sans.
+ */
+.font-heading {
+  font-variation-settings:
+    "SOFT" 40,
+    "WONK" 1;
+  font-family: var(--font-heading);
+}
+
+a,
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"] {
+  cursor: pointer;
+}
+
+/*
+ * Astro's <Code> component (astro:components) is set to theme="css-variables" everywhere on
+ * this site: Shiki's bundled named themes load via per-theme dynamic imports that don't resolve
+ * correctly under this workspace's package-manager layout, so the CSS-variables theme (a
+ * synthetic theme generated in-process, no dynamic import involved) is used instead. Code blocks
+ * render on a fixed dark background regardless of site theme, which keeps contrast predictable
+ * in both light and dark mode.
+ */
+[data-code-block] pre.astro-code {
+  --astro-code-foreground: #e4e4ea;
+  --astro-code-background: transparent;
+  --astro-code-token-constant: #7fd9c4;
+  --astro-code-token-string: #a8d67f;
+  --astro-code-token-comment: #7a7a85;
+  --astro-code-token-keyword: #c893ff;
+  --astro-code-token-parameter: #e4e4ea;
+  --astro-code-token-function: #7cb7ff;
+  --astro-code-token-string-expression: #a8d67f;
+  --astro-code-token-punctuation: #9c9ca6;
+  --astro-code-token-link: #7cb7ff;
+  color: var(--astro-code-foreground);
+  background: var(--astro-code-background);
+}
+
+/*
+ * <DefaultTour> renders <Pointer /> with no children (packages/react/src/components/default-tour.tsx),
+ * so [data-glow-tour-pointer-content] is an empty div by default — nothing is visible. Give every
+ * demo on this site a default pointing-finger glyph via :empty so DefaultTour's pointer isn't blank,
+ * without changing the library's own default. Demos that pass real children to <Pointer> (the
+ * "Custom indicator" example) render that content instead, since the div is no longer :empty.
+ */
+[data-glow-tour-pointer-content]:empty::before {
+  content: "👆";
+}

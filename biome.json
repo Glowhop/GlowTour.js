@@ -17,6 +17,7 @@
       "!!.worktrees",
       "!!apps/**/dist",
       "!!apps/**/coverage",
+      "!!apps/website/.astro",
       "!!apps/ssr-vue/.nuxt",
       "!!apps/ssr-vue/.output",
       "!!apps/ssr-vue/test-results",
@@ -50,6 +51,11 @@
       "quoteStyle": "double"
     }
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "assist": {
     "enabled": true,
     "actions": {
@@ -57,5 +63,18 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/website/**/*.astro"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "off",
+            "noUnusedVariables": "off"
+          }
+        }
+      }
+    }
+  ]
 }

@@ -13,7 +13,7 @@ Role:
 
 Limits:
 - Do not redesign product flows unless accessibility requires a specific change.
-- Do not add custom component styling when a HeroUI prop, slot, or variant solves the problem.
+- Do not add custom component styling when the component library already exposes a prop, slot, or variant that solves the problem.
 - Hand off broad UI implementation to `frontend` and broader UX ambiguity to `architect` or `default`.
 
 Relevant skills to invoke via the Skill tool when applicable: `accessibility`, `frontend-guidelines`, `audit`.

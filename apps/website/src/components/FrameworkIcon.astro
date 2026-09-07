@@ -1,0 +1,24 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  name: "react" | "vue" | "solid" | "angular" | "vanilla";
+  class?: string;
+}
+
+const { name, class: className = "h-5 w-5" } = Astro.props;
+
+// Full-color official brand logos from the "logos" iconify set (@iconify-json/logos).
+// Solid and Angular have both a wordmark ("solidjs"/"angular") and an icon-only mark
+// ("solidjs-icon"/"angular-icon") — the icon-only ones are used here to stay square.
+// There's no framework for "vanilla" JS, so it uses the plain JavaScript logo instead.
+const iconNames = {
+  react: "logos:react",
+  vue: "logos:vue",
+  solid: "logos:solidjs-icon",
+  angular: "logos:angular-icon",
+  vanilla: "logos:javascript",
+} as const;
+---
+
+<Icon name={iconNames[name]} class={className} />

@@ -183,6 +183,7 @@ function assertPackedArtifact(packageName: PackageName) {
     assert.deepEqual(manifest.exports, {
       ".": { import: "./index.js", types: "./index.d.ts" },
       "./auto": { import: "./auto.js", types: "./auto.d.ts" },
+      "./config": { import: "./config.js", types: "./config.d.ts" },
     });
   }
 }
@@ -269,7 +270,18 @@ import { createDefaultTourElement, createGlowTour } from "@glowhop/vanilla-tour"
 import { registerGlowTourElements } from "@glowhop/vanilla-tour/auto";
 
 assert.deepEqual(Object.keys(CoreTour), ["createGlowTour"]);
-assert.deepEqual(Object.keys(CoreAdapter), ["connectGlowTourRoot"]);
+assert.deepEqual(Object.keys(CoreAdapter), [
+  "OVERLAY_IDLE_ATTRIBUTES",
+  "OVERLAY_IDLE_STYLE",
+  "OVERLAY_PATH_IDLE_ATTRIBUTES",
+  "POINTER_IDLE_ATTRIBUTES",
+  "POINTER_IDLE_STYLE",
+  "POPOVER_IDLE_ATTRIBUTES",
+  "POPOVER_IDLE_STYLE",
+  "connectGlowTourRoot",
+  "styleRecordToCamelCase",
+  "styleRecordToCssText",
+]);
 assert.equal(typeof ReactGlowTour.Root, "function");
 assert.equal(typeof ReactDefaultTour, "function");
 assert.equal(ReactGlowTour.Default, ReactDefaultTour);

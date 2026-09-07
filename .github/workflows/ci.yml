@@ -36,3 +36,4 @@ jobs:
           bun run pack
           bun run test:tarballs
           bun run --cwd apps/playground build
+          bun run --cwd apps/website build

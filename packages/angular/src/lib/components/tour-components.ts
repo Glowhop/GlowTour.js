@@ -21,8 +21,23 @@ import {
   ViewChild,
 } from "@angular/core";
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
-import { type AdapterRootBinding, connectGlowTourRoot } from "@glowhop/core-tour/adapter";
+import {
+  type AdapterRootBinding,
+  connectGlowTourRoot,
+  OVERLAY_IDLE_ATTRIBUTES,
+  OVERLAY_IDLE_STYLE,
+  OVERLAY_PATH_IDLE_ATTRIBUTES,
+  POINTER_IDLE_ATTRIBUTES,
+  POINTER_IDLE_STYLE,
+  POPOVER_IDLE_ATTRIBUTES,
+  POPOVER_IDLE_STYLE,
+  styleRecordToCssText,
+} from "@glowhop/core-tour/adapter";
 import type { AngularTourContent } from "../glow-tour";
+
+const OVERLAY_IDLE_STYLE_TEXT = styleRecordToCssText(OVERLAY_IDLE_STYLE);
+const POINTER_IDLE_STYLE_TEXT = styleRecordToCssText(POINTER_IDLE_STYLE);
+const POPOVER_IDLE_STYLE_TEXT = styleRecordToCssText(POPOVER_IDLE_STYLE);
 
 type Tour = CoreGlowTour<AngularTourContent>;
 
@@ -109,7 +124,7 @@ abstract class GlowTourReactiveComponent {
   providers: [GlowTourScope, { provide: GLOW_TOUR_SCOPE, useExisting: GlowTourScope }],
   template: "<ng-content />",
 })
-/** Root container component for Glow Tour. Provides tour context and manages the root binding. */
+/** Root container component for GlowTour.js. Provides tour context and manages the root binding. */
 export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
   /** The tour controller instance to display. */
   @Input({ required: true }) tour!: Tour;
@@ -252,13 +267,21 @@ abstract class GlowTourBoundElement<T extends Element> {
 @Component({
   selector: "glow-tour-popover",
   standalone: true,
+  // The idle attributes/style come from imported `@glowhop/core-tour/adapter`
+  // constants, so ngc's AOT template analyzer (NG1010) cannot inline them as
+  // string-interpolated literals in the template. Bound via component fields
+  // instead; the values are still static, so server and client render
+  // byte-identical output.
   template: `
     <section #tourElement
+      [attr.aria-hidden]="idleAriaHidden"
       data-glow-tour-popover
       [attr.aria-describedby]="scope.binding()?.ids?.description"
       [attr.aria-labelledby]="scope.binding()?.ids?.title"
       [id]="scope.binding()?.ids?.popover"
+      [attr.inert]="idleInert"
       role="dialog"
+      [style]="idleStyle"
       tabindex="-1"
     ><ng-content /></section>
   `,
@@ -266,6 +289,9 @@ abstract class GlowTourBoundElement<T extends Element> {
 /** Popover component containing the tour content with accessibility attributes. */
 export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<HTMLElement>;
+  protected readonly idleAriaHidden = POPOVER_IDLE_ATTRIBUTES["aria-hidden"];
+  protected readonly idleInert = POPOVER_IDLE_ATTRIBUTES.inert;
+  protected readonly idleStyle = POPOVER_IDLE_STYLE_TEXT;
 
   ngOnInit() {
     this.bind(this.element.nativeElement, (binding, element) => binding.bindPopover(element));
@@ -277,7 +303,7 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <div #tourElement data-glow-tour-pointer aria-hidden="true">
+    <div #tourElement data-glow-tour-pointer [attr.aria-hidden]="idleAriaHidden" [style]="idleStyle">
       @for (direction of directions; track direction) {
         <div [attr.data-glow-tour-pointer-direction]="direction">
           @if (asTemplate(content()[direction]); as template) {
@@ -294,6 +320,8 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
 export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<HTMLElement>;
   private readonly directionContentValue = signal<PointerDirectionContent | undefined>(undefined);
+  protected readonly idleAriaHidden = POINTER_IDLE_ATTRIBUTES["aria-hidden"];
+  protected readonly idleStyle = POINTER_IDLE_STYLE_TEXT;
 
   protected readonly directions = POINTER_DIRECTIONS;
   readonly content = computed(() => ({
@@ -319,14 +347,37 @@ export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implement
   selector: "glow-tour-overlay",
   standalone: true,
   template: `
-    <svg #tourElement data-glow-tour-overlay aria-hidden="true" focusable="false" role="presentation" viewBox="0 0 0 0">
-      <path data-glow-tour-overlay-path fill-rule="evenodd" /><ng-content />
+    <svg #tourElement
+      [attr.aria-hidden]="idleAriaHidden"
+      [attr.data-glow-tour-allow-interaction]="idleAllowInteraction"
+      data-glow-tour-overlay
+      focusable="false"
+      [attr.inert]="idleInert"
+      role="presentation"
+      [style]="idleStyle"
+      viewBox="0 0 0 0"
+    >
+      <path
+        [attr.cursor]="idlePathCursor"
+        data-glow-tour-overlay-path
+        fill-rule="evenodd"
+        [attr.opacity]="idlePathOpacity"
+        [attr.pointer-events]="idlePathPointerEvents"
+      /><ng-content />
     </svg>
   `,
 })
 /** Overlay component rendering a clipped SVG mask highlighting the target element. */
 export class GlowTourOverlay extends GlowTourBoundElement<SVGSVGElement> implements OnInit {
   @ViewChild("tourElement", { static: true }) private readonly element!: ElementRef<SVGSVGElement>;
+  protected readonly idleAriaHidden = OVERLAY_IDLE_ATTRIBUTES["aria-hidden"];
+  protected readonly idleAllowInteraction =
+    OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"];
+  protected readonly idleInert = OVERLAY_IDLE_ATTRIBUTES.inert;
+  protected readonly idleStyle = OVERLAY_IDLE_STYLE_TEXT;
+  protected readonly idlePathCursor = OVERLAY_PATH_IDLE_ATTRIBUTES.cursor;
+  protected readonly idlePathOpacity = OVERLAY_PATH_IDLE_ATTRIBUTES.opacity;
+  protected readonly idlePathPointerEvents = OVERLAY_PATH_IDLE_ATTRIBUTES["pointer-events"];
 
   ngOnInit() {
     this.bind(this.element.nativeElement, (binding, element) => binding.bindOverlay(element));

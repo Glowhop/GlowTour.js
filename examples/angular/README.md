@@ -1,6 +1,6 @@
 # Angular Example
 
-Minimal Angular example showing how to use Glow Tour with the Angular adapter.
+Minimal Angular example showing how to use GlowTour.js with the Angular adapter.
 
 ## Quick Start
 

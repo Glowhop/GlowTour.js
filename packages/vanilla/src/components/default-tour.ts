@@ -24,7 +24,7 @@ export function createDefaultTourElement(
 ): GlowTourRootElement {
   if (!areGlowTourElementsRegistered()) {
     throw new Error(
-      'Glow Tour custom elements are not registered. Call registerGlowTourElements() or import "@glowhop/vanilla-tour/auto" before creating a default tour.',
+      'GlowTour.js custom elements are not registered. Call registerGlowTourElements() or import "@glowhop/vanilla-tour/auto" before creating a default tour.',
     );
   }
   const root = document.createElement("glow-tour-root");

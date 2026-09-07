@@ -1,0 +1,84 @@
+---
+interface Props {
+  items: readonly string[];
+}
+
+const { items } = Astro.props;
+
+/*
+ * The track is two identical groups translated by -50%, which only loops seamlessly while a
+ * single group is wider than the viewport — with five short claims it isn't, so wide screens saw
+ * the gap between groups. Repeating the claims inside each group makes a group comfortably wider
+ * than any realistic viewport, so the seam never enters view: five passes measure ~4200px, which
+ * clears a full-width 4K window. Below that width the extra passes simply scroll past unseen.
+ */
+const group = [...items, ...items, ...items, ...items, ...items];
+
+/* Only the first group is exposed to assistive tech; the rest is duplicated decoration. */
+const groups = [group, group];
+---
+
+<div class="marquee border-y border-[var(--color-border)] bg-[var(--color-surface-muted)] py-3">
+  <div class="marquee-track">
+    {
+      groups.map((groupItems, groupIndex) => (
+        <div class="marquee-group" aria-hidden={groupIndex > 0 ? "true" : undefined}>
+          {groupItems.map((item) => (
+            <span class="flex items-center gap-6">
+              <span class="text-sm font-medium text-[var(--color-text-muted)] whitespace-nowrap">
+                {item}
+              </span>
+              <span
+                aria-hidden="true"
+                class="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-accent)]"
+              />
+            </span>
+          ))}
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .marquee {
+    overflow: hidden;
+  }
+
+  /*
+   * One cycle travels exactly one group (~4200px), so the duration has to scale with the group
+   * width to keep the scroll speed constant: ~140s holds the original ~30px/s. Changing how many
+   * times the claims repeat above means changing this too.
+   */
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll 140s linear infinite;
+  }
+
+  .marquee-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  @keyframes marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+
+    .marquee-group:last-child {
+      display: none;
+    }
+  }
+</style>

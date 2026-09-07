@@ -1,6 +1,6 @@
 ---
 name: frontend-guidelines
-description: Use for React, Next.js, HeroUI, Tailwind, component composition, styling, and user-facing behavior.
+description: Use for React, Next.js, Tailwind, component composition, styling, and user-facing behavior.
 ---
 
 # Frontend Guidelines
@@ -9,7 +9,6 @@ Apply these rules to frontend implementation, review, accessibility, testing, an
 
 ## Component Rules
 
-- Prefer HeroUI components when they cover the use case.
 - Do not add custom styles to library components unless the user explicitly asks or a documented gap requires it.
 - Favor library props, variants, slots, and theme tokens over ad hoc CSS.
 - Split UI into focused components with clear props and ownership.

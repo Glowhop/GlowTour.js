@@ -1,6 +1,6 @@
 # Release process
 
-Glow Tour is released only from a stable GitHub Release. Local commands build and validate release
+GlowTour.js is released only from a stable GitHub Release. Local commands build and validate release
 artifacts, but they must not publish to npm.
 
 ## Versioning

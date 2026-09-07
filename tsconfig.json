@@ -15,15 +15,21 @@
     "forceConsistentCasingInFileNames": true,
     "paths": {
       "@glowhop/angular-tour": ["packages/angular/src/public-api.ts"],
+      "@glowhop/angular-tour/config": ["packages/angular/config/public-api.ts"],
       "@glowhop/core-tour": ["packages/core/src/index.ts"],
       "@glowhop/core-tour/adapter": ["packages/core/src/adapter.ts"],
+      "@glowhop/core-tour/config": ["packages/core/src/config/index.ts"],
       "@glowhop/react-tour": ["packages/react/src/index.ts"],
+      "@glowhop/react-tour/config": ["packages/react/src/config.ts"],
       "@glowhop/solid-tour": ["packages/solid/src/index.ts"],
+      "@glowhop/solid-tour/config": ["packages/solid/src/config.ts"],
       "@glowhop/vanilla-tour": ["packages/vanilla/src/index.ts"],
       "@glowhop/vanilla-tour/auto": ["packages/vanilla/src/auto.ts"],
-      "@glowhop/vue-tour": ["packages/vue/src/index.ts"]
+      "@glowhop/vanilla-tour/config": ["packages/vanilla/src/config.ts"],
+      "@glowhop/vue-tour": ["packages/vue/src/index.ts"],
+      "@glowhop/vue-tour/config": ["packages/vue/src/config.ts"]
     }
   },
   "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts"],
-  "exclude": ["services", "apps/ssr-react", "apps/ssr-vue", "apps/ssr-solid"]
+  "exclude": ["services", "apps/ssr-react", "apps/ssr-vue", "apps/ssr-solid", "apps/website"]
 }

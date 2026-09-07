@@ -97,6 +97,37 @@ describe("solid adapter contract", () => {
     assert.doesNotMatch(html, /aria-describedby/);
   });
 
+  test("renders the idle presentation into the DefaultTour markup before any binding runs", () => {
+    // The bug this guards: DefaultTour renders overlay/pointer/popover
+    // unconditionally, and the idle (out-of-flow, invisible) presentation used
+    // to be applied only imperatively by each core element's initializeProps()
+    // once an adapter binds it, leaving server-rendered markup fully visible.
+    const tour = runtime.createGlowTour();
+    const html = renderToString(() => runtime.DefaultTour({ idPrefix: "solid-idle", tour }));
+
+    const popoverMatch = html.match(/<section[^>]*data-glow-tour-popover[^>]*>/);
+    assert.ok(popoverMatch, "expected a rendered popover section");
+    const popoverTag = popoverMatch?.[0] ?? "";
+    assert.match(popoverTag, /style="[^"]*position:fixed[^"]*"/);
+    assert.match(popoverTag, /style="[^"]*opacity:0[^"]*"/);
+    assert.match(popoverTag, /aria-hidden="true"/);
+    assert.match(popoverTag, /\binert\b/);
+
+    const pointerMatch = html.match(/<div[^>]*data-glow-tour-pointer[^>]*>/);
+    assert.ok(pointerMatch, "expected a rendered pointer div");
+    const pointerTag = pointerMatch?.[0] ?? "";
+    assert.match(pointerTag, /style="[^"]*position:fixed[^"]*"/);
+    assert.match(pointerTag, /style="[^"]*opacity:0[^"]*"/);
+    assert.match(pointerTag, /aria-hidden="true"/);
+
+    const overlayPathMatch = html.match(/<path[^>]*data-glow-tour-overlay-path[^>]*>/);
+    assert.ok(overlayPathMatch, "expected a rendered overlay path");
+    const overlayPathTag = overlayPathMatch?.[0] ?? "";
+    assert.match(overlayPathTag, /opacity="0"/);
+    assert.match(overlayPathTag, /pointer-events="auto"/);
+    assert.match(overlayPathTag, /cursor="auto"/);
+  });
+
   test("exposes every instance-scoped component including cancellation", () => {
     for (const [namespaceComponent, namedComponent] of [
       [runtime.GlowTour.Root, runtime.Root],

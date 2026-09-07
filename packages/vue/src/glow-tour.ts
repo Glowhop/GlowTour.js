@@ -23,7 +23,7 @@ export type WorkflowDefinition = CoreWorkflowDefinition<VueTourContent>;
 export type StartOptions = CoreStartOptions<VueTourContent>;
 
 /**
- * Creates a new Glow Tour instance for Vue.
+ * Creates a new GlowTour.js instance for Vue.
  * @param options Tour options for error handling.
  * @returns A tour controller ready to run Vue workflows.
  */
