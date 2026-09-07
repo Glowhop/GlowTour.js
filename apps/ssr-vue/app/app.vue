@@ -6,11 +6,13 @@ const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
   .step({
+    id: "tour-target",
     content: "This step is rendered by the SSR verification harness.",
     target: "#tour-target",
     title: "Step one",
   })
   .step({
+    id: "tour-trigger",
     content: "Clicking advance again finishes the tour.",
     target: "#tour-trigger",
     title: "Step two",

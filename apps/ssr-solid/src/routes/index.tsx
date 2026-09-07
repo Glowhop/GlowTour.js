@@ -5,8 +5,8 @@ import { createGlowTour, DefaultTour } from "@glowhop/solid-tour";
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#tour-target", title: "Welcome", content: "This is the first step." })
-  .step({ target: "#tour-trigger", title: "Trigger", content: "This is the second step." })
+  .step({ id: "tour-target", target: "#tour-target", title: "Welcome", content: "This is the first step." })
+  .step({ id: "tour-trigger", target: "#tour-trigger", title: "Trigger", content: "This is the second step." })
   .build();
 
 export default function Home() {
