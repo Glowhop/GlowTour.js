@@ -1,0 +1,43 @@
+# GlowTour.js
+
+> GlowTour.js is a cross-framework guided-tour library: one core workflow engine with native
+> adapters for React, Vue, Solid, Angular, and vanilla JavaScript. It renders accessible,
+> SSR-safe product tours and onboarding flows, and ships as ESM only.
+
+Packages: `@glowhop/core-tour` (framework-agnostic engine, no presentation), plus
+`@glowhop/react-tour`, `@glowhop/vue-tour`, `@glowhop/solid-tour`, `@glowhop/angular-tour`,
+`@glowhop/vanilla-tour`, and `@glowhop/styles-tour` (default theme). Source and issues:
+https://github.com/Glowhop/glow-tour
+
+## Docs
+
+- [Overview](https://glowtour.dev/docs): Introduction to GlowTour.js guided tours library.
+- [Getting started](https://glowtour.dev/docs/getting-started): Install GlowTour.js and build your first guided tour.
+- [Compatibility](https://glowtour.dev/docs/compatibility): Framework versions and SSR support verified for each adapter.
+
+## Framework guides
+
+- [React](https://glowtour.dev/docs/guides/react)
+- [Vue](https://glowtour.dev/docs/guides/vue)
+- [Solid](https://glowtour.dev/docs/guides/solid)
+- [Angular](https://glowtour.dev/docs/guides/angular)
+- [Vanilla JS](https://glowtour.dev/docs/guides/vanilla)
+
+## Guides
+
+- [Theming](https://glowtour.dev/docs/guides/theming)
+- [Accessibility](https://glowtour.dev/docs/guides/accessibility)
+- [Positioning](https://glowtour.dev/docs/guides/positioning)
+- [Programmatic control](https://glowtour.dev/docs/guides/programmatic-control)
+- [JSON config](https://glowtour.dev/docs/guides/json-config): Build tours from a plain, JSON-serializable object instead of the JS builder.
+- [SSR](https://glowtour.dev/docs/guides/ssr)
+
+## Reference
+
+- [Builder API](https://glowtour.dev/docs/reference/builder)
+- [Tour API](https://glowtour.dev/docs/reference/tour)
+- [React API](https://glowtour.dev/docs/reference/react)
+- [Vue API](https://glowtour.dev/docs/reference/vue)
+- [Solid API](https://glowtour.dev/docs/reference/solid)
+- [Angular API](https://glowtour.dev/docs/reference/angular)
+- [Vanilla API](https://glowtour.dev/docs/reference/vanilla)
