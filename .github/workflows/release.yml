@@ -25,6 +25,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22.14.0
+          registry-url: https://registry.npmjs.org
       - name: Reject prereleases explicitly
         env:
           RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
@@ -62,4 +63,8 @@ jobs:
           bun run --cwd apps/playground build
           bun run release:prepare -- --expected-version "$RELEASE_VERSION"
       - name: Publish missing packages in order
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
         run: bun run release:publish
+        
