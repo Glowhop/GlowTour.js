@@ -1,0 +1,35 @@
+---
+import { experimental_AstroContainer as AstroContainer } from "astro/container";
+import CodeBlock from "../components/CodeBlock.astro";
+import { ExamplesGallery } from "../components/ExamplesGallery";
+import MarketingLayout from "../layouts/MarketingLayout.astro";
+import { examples } from "../lib/examples";
+
+// Same build-time highlighting as the home page: Astro's Shiki integration only runs inside
+// .astro files, so the snippets are pre-rendered here and handed to the island as strings.
+const container = await AstroContainer.create();
+const exampleCodeHtml = await Promise.all(
+  examples.map(({ source }) =>
+    container.renderToString(CodeBlock, { props: { code: source, lang: "tsx" } }),
+  ),
+);
+---
+
+<MarketingLayout
+  title="Examples — GlowTour.js"
+  description="Every GlowTour.js example, running for real, next to the code that produced it."
+>
+  <section class="mx-auto max-w-6xl px-6 pt-16 pb-20">
+    <h1
+      class="font-heading text-center text-4xl font-semibold tracking-tight text-[var(--color-text)]"
+    >
+      Examples
+    </h1>
+    <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
+      Every example runs for real, in this page — the code beside it is exactly what produced it.
+    </p>
+    <div class="mt-10">
+      <ExamplesGallery client:load codeHtml={exampleCodeHtml} />
+    </div>
+  </section>
+</MarketingLayout>

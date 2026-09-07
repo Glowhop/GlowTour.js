@@ -251,3 +251,46 @@ function LiveProgress() {
 </Root>;
 
 tour.run(workflow);`;
+
+export const themeSource = `const tour = createGlowTour();
+
+const workflow = tour
+  .create("billing")
+  .step({
+    target: "#plan",
+    title: "One stylesheet, two palettes",
+    content: "default.css ships both. With nothing set, the tour follows the OS preference.",
+  })
+  .step({
+    target: "#update-plan",
+    title: "Forced from an attribute",
+    content: "data-glow-tour-theme on any ancestor pins a theme.",
+  })
+  .build();
+
+// Nothing to configure for the OS preference. To pin a theme, put the
+// attribute on <html> for the whole page, or on a wrapper for one tour:
+<div data-glow-tour-theme="dark">
+  <GlowTour.Default tour={tour} />
+</div>;
+
+tour.run(workflow);`;
+
+export const longContentSource = `const tour = createGlowTour();
+
+const workflow = tour
+  .create("release-notes")
+  .step({
+    target: "#read-notes",
+    title: "A step with a lot to say",
+    content: "The popover caps its height and scrolls its content, so the footer "
+      + "buttons stay reachable on a short window.",
+  })
+  .build();
+
+// Every token can be overridden from any ancestor of the tour:
+<div style={{ "--glow-tour-popover-width": "260px" }}>
+  <GlowTour.Default tour={tour} />
+</div>;
+
+tour.run(workflow);`;
