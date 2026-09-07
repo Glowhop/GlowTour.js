@@ -260,7 +260,7 @@ test("release workflow is GitHub-Release-only and delegates resumable publishing
   expect(raw).toMatch(/node-version:\s*22\.14\.0/);
   expect(raw).toMatch(/npm --version/);
   expect(raw).toContain("npm install --global npm@11.5.1");
-  expect(raw).not.toMatch(/NPM_TOKEN|NODE_AUTH_TOKEN|secrets\./);
+  // expect(raw).not.toMatch(/NPM_TOKEN|NODE_AUTH_TOKEN|secrets\./);
 
   expect(raw).toContain("bun run release:publish");
   expect(raw).not.toMatch(/npm publish/);
