@@ -24,6 +24,7 @@ Control where the popover tries to appear relative to the target:
 const workflow = tour
   .create("placement-test")
   .step({
+    id: "feature",
     target: "#feature",
     title: "Where's the popover?",
     content: "Try positioning it around the target.",
@@ -44,6 +45,7 @@ Control where the pointer/indicator tries to appear:
 const workflow = tour
   .create("pointer-placement")
   .step({
+    id: "button",
     target: "#button",
     title: "Indicator position",
     content: "The pointer indicates the target element.",
@@ -82,6 +84,7 @@ const tour = createGlowTour({
 const workflow = tour
   .create("tight-layout")
   .step({
+    id: "corner",
     target: "#corner",
     title: "Tight space",
     content: "In this corner, we have minimal space.",
@@ -109,6 +112,7 @@ Here's a tour that adapts its positioning to different UI elements:
 const workflow = tour
   .create("adaptive-tour")
   .step({
+    id: "header-logo",
     target: "#header-logo",
     title: "Welcome",
     content: "Click the logo to return home.",
@@ -117,6 +121,7 @@ const workflow = tour
     },
   })
   .step({
+    id: "sidebar-menu",
     target: "#sidebar-menu",
     title: "Navigation",
     content: "The menu is always available on the left.",
@@ -125,6 +130,7 @@ const workflow = tour
     },
   })
   .step({
+    id: "main-content",
     target: "#main-content",
     title: "Your content",
     content: "This is where your data lives.",

@@ -443,6 +443,7 @@ function createStep(
     },
   })
     .step({
+      id: "step-1",
       behavior: options.overlayClick ? { overlayClick: options.overlayClick } : undefined,
       content: "content",
       popover: options.advanceShortcuts
@@ -1219,6 +1220,7 @@ describe("DomTourViewDriver", () => {
     const denied = tour
       .create("overlay-click-denied", { cancellable: false })
       .step({
+        id: "step-2",
         behavior: { overlayClick: "cancel" },
         content: "content",
         target: () => target as unknown as HTMLElement,
@@ -1682,7 +1684,12 @@ describe("DomTourViewDriver", () => {
     elements.popover.append(cancel);
     const denied = tour
       .create("denied", { cancellable: false })
-      .step({ content: "content", target: () => target as unknown as HTMLElement, title: "title" })
+      .step({
+        id: "step-3",
+        content: "content",
+        target: () => target as unknown as HTMLElement,
+        title: "title",
+      })
       .build();
     await tour.run(denied);
     const escapeEvent = new MockKeyboardEvent("keydown", {
@@ -1704,7 +1711,12 @@ describe("DomTourViewDriver", () => {
 
     const allowed = tour
       .create("allowed", { cancellable: true })
-      .step({ content: "content", target: () => target as unknown as HTMLElement, title: "title" })
+      .step({
+        id: "step-4",
+        content: "content",
+        target: () => target as unknown as HTMLElement,
+        title: "title",
+      })
       .build();
     await tour.run(allowed);
     window.dispatchEvent(
@@ -1982,8 +1994,14 @@ describe("DomTourViewDriver", () => {
       tour = new TourController(driver),
       workflow = tour
         .create("focus-order")
-        .step({ content: "one", target: () => firstTarget as unknown as HTMLElement, title: "one" })
         .step({
+          id: "step-5",
+          content: "one",
+          target: () => firstTarget as unknown as HTMLElement,
+          title: "one",
+        })
+        .step({
+          id: "step-6",
           content: "two",
           target: () => secondTarget as unknown as HTMLElement,
           title: "two",
@@ -2234,7 +2252,7 @@ describe("DomTourViewDriver", () => {
       targetA = createTarget(),
       targetB = createTarget(),
       workflowA = new WorkflowBuilder<string>("focus-reentrant")
-        .step({ content: "a", target: "#a", title: "a" })
+        .step({ id: "step-7", content: "a", target: "#a", title: "a" })
         .onTargetEvent("click", (_event, { advance }) => advance())
         .build(),
       definitionA = workflowA.steps[0],
@@ -2306,7 +2324,7 @@ describe("DomTourViewDriver", () => {
       targetA = createTarget(),
       targetB = createTarget(),
       workflowA = new WorkflowBuilder<string>("event-generation")
-        .step({ content: "a", target: "#a", title: "a" })
+        .step({ id: "step-8", content: "a", target: "#a", title: "a" })
         .onTargetEvent("click", async (_event, { advance }) => {
           await handlerGate;
           await advance();
@@ -2332,7 +2350,7 @@ describe("DomTourViewDriver", () => {
     const { calls, driver } = installDriver();
     const target = createTarget();
     const workflow = new WorkflowBuilder<string>("event-context")
-      .step({ content: "a", target: "#a", title: "a" })
+      .step({ id: "step-9", content: "a", target: "#a", title: "a" })
       .onTargetEvent("click", (_event, context) => {
         assert.equal(context.target, target);
         assert.equal(context.signal, controller.signal);
@@ -2360,7 +2378,7 @@ describe("DomTourViewDriver", () => {
     const targetA = createTarget();
     const targetB = createTarget();
     const workflowA = new WorkflowBuilder<string>("stale-event-error")
-      .step({ content: "a", target: "#a", title: "a" })
+      .step({ id: "step-10", content: "a", target: "#a", title: "a" })
       .onTargetEvent("click", async () => {
         await handlerGate;
         throw new Error("stale event failed");
@@ -2391,7 +2409,7 @@ describe("DomTourViewDriver", () => {
     const { calls, driver } = installDriver();
     const target = createTarget();
     const workflow = new WorkflowBuilder<string>("aborted-event-error")
-      .step({ content: "a", target: "#a", title: "a" })
+      .step({ id: "step-11", content: "a", target: "#a", title: "a" })
       .onTargetEvent("click", async () => {
         await handlerGate;
         throw new Error("aborted event failed");
@@ -2420,7 +2438,7 @@ describe("DomTourViewDriver", () => {
     const { calls, driver } = installDriver();
     const target = createTarget();
     const workflow = new WorkflowBuilder<string>("remounted-event-error")
-      .step({ content: "a", target: "#a", title: "a" })
+      .step({ id: "step-12", content: "a", target: "#a", title: "a" })
       .onTargetEvent("click", async () => {
         await handlerGate;
         throw new Error("live event failed");
@@ -2450,7 +2468,7 @@ describe("DomTourViewDriver", () => {
     const { calls, driver } = installDriver();
     const target = createTarget();
     const workflow = new WorkflowBuilder<string>("remounted-event-command")
-      .step({ content: "a", target: "#a", title: "a" })
+      .step({ id: "step-13", content: "a", target: "#a", title: "a" })
       .onTargetEvent("click", async (_event, { advance }) => {
         await handlerGate;
         await advance();
@@ -2504,7 +2522,7 @@ describe("DomTourViewDriver", () => {
       animated: true,
       behavior: { scroll: { behavior: "smooth" } },
     })
-      .step({ content: "content", target: "#target", title: "title" })
+      .step({ id: "step-14", content: "content", target: "#target", title: "title" })
       .build();
     const definition = workflow.steps[0];
     if (!definition) throw new Error("Expected one workflow step");

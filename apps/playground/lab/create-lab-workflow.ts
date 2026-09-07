@@ -13,6 +13,7 @@ export function createLabWorkflow<TContent>(
   const appendedWorkflow = tour
     .create(workflow.appendedName)
     .step({
+      id: "step-1",
       target: selectors.customEvent,
       title: content.title("append() + onTargetEvent<T>()"),
       content: content.paragraph(copy.appended),
@@ -36,6 +37,7 @@ export function createLabWorkflow<TContent>(
       onFinish: () => actions.log("create.onFinish — API Lab terminé"),
     })
     .step({
+      id: "step-2",
       target: selectors.start,
       title: content.title("create() + step()"),
       content: content.paragraph(copy.intro),
@@ -45,6 +47,7 @@ export function createLabWorkflow<TContent>(
     .beforeAdvance(({ data }) => actions.log(`onAdvance — ${String(data?.api)}`))
     .beforeCancel(() => actions.log("onCancel — étape d’introduction"))
     .step({
+      id: "step-3",
       target: elements.focusInput,
       title: content.title("focusTarget() + exec()"),
       content: content.paragraph(copy.focus),
@@ -72,6 +75,7 @@ export function createLabWorkflow<TContent>(
     .focusTarget()
     .beforePrevious(() => actions.log("onBack — retour vers l’introduction"))
     .step({
+      id: "step-4",
       target: selectors.revealButton,
       title: content.title("clickTarget() + waitUntilElement()"),
       content: content.paragraph(copy.reveal),
@@ -113,6 +117,7 @@ export function createLabWorkflow<TContent>(
       }, 1000);
     })
     .step({
+      id: "step-5",
       target: async ({ signal }) => {
         if (signal.aborted) return null;
         return document.querySelector<HTMLElement>(selectors.revealed);
@@ -129,6 +134,7 @@ export function createLabWorkflow<TContent>(
     .wait(timing.resolverWait)
     .do(() => actions.log(`wait — pause de ${timing.resolverWait} ms terminée`))
     .step({
+      id: "step-6",
       target: selectors.condition,
       title: content.title("waitUntil() + advance()"),
       content: content.paragraph(copy.condition),
@@ -149,6 +155,7 @@ export function createLabWorkflow<TContent>(
     .do(({ advance }) => advance())
     .beforeCancel(() => actions.cancelPending())
     .step({
+      id: "step-7",
       target: selectors.actions,
       title: content.title("action(): true | false"),
       content: content.paragraph(copy.actions),
@@ -169,6 +176,7 @@ export function createLabWorkflow<TContent>(
     })
     .do(() => actions.log("Erreur: cette action sentinelle ne doit pas s’exécuter"))
     .step({
+      id: "step-8",
       target: selectors.eventField,
       title: content.title("onTargetEvent([...])"),
       content: content.paragraph(copy.eventField),
@@ -179,6 +187,7 @@ export function createLabWorkflow<TContent>(
       actions.log(`onTargetEvent([...]) — ${targetEvent.type}`);
     })
     .step({
+      id: "step-9",
       target: selectors.clickAdvance,
       title: content.title("onTargetEvent('click')"),
       content: content.paragraph(copy.clickAdvance),
@@ -191,6 +200,7 @@ export function createLabWorkflow<TContent>(
       void context.advance();
     })
     .step({
+      id: "step-10",
       target: selectors.return,
       title: content.title("action() + advance()"),
       content: content.paragraph(copy.automaticReturn),
@@ -199,6 +209,7 @@ export function createLabWorkflow<TContent>(
     .do(() => session.consumeAutomaticReturn())
     .do(({ advance }) => advance())
     .step({
+      id: "step-11",
       target: selectors.previous,
       title: content.title("previous()"),
       content: content.paragraph(copy.previous),
@@ -218,6 +229,7 @@ export function createLabWorkflow<TContent>(
     .do(({ previous }) => previous())
     .beforeAdvance(() => actions.log("onAdvance — sortie de la démonstration previous"))
     .step({
+      id: "step-12",
       target: selectors.autoAdvance,
       title: content.title("wait() + advance()"),
       content: content.paragraph(copy.autoAdvance),

@@ -166,7 +166,7 @@ describe("instance-first TourController", () => {
     });
     const workflow = tour
       .create("root-document")
-      .step({ content: "one", target: "#root-only", title: "one" })
+      .step({ id: "step-1", content: "one", target: "#root-only", title: "one" })
       .build();
 
     await tour.run(workflow);
@@ -178,7 +178,7 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("invalid", { overlay: { opacity: 1.1 } })
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-2", content: "one", target: targetResolver, title: "one" })
       .build();
 
     await assert.rejects(() => tour.run(workflow), {
@@ -207,6 +207,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("invalid")
       .step({
+        id: "step-3",
         behavior: { targetTimeout: Number.NaN },
         content: "one",
         target: targetResolver,
@@ -233,7 +234,7 @@ describe("instance-first TourController", () => {
           onStartCalls += 1;
         },
       })
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-4", content: "one", target: targetResolver, title: "one" })
       .build();
 
     await assert.rejects(() => tour.run(workflow), /presentation unavailable/);
@@ -253,7 +254,7 @@ describe("instance-first TourController", () => {
             receivedStep = context.step;
           },
         })
-        .step({ content: "content-one", target: targetResolver, title: "title-one" })
+        .step({ id: "step-5", content: "content-one", target: targetResolver, title: "title-one" })
         .build();
 
       await tour.run(workflow);
@@ -285,7 +286,7 @@ describe("instance-first TourController", () => {
             context.abort();
           },
         })
-        .step({ content: "content", target: targetResolver, title: "title" })
+        .step({ id: "step-6", content: "content", target: targetResolver, title: "title" })
         .build();
 
       await tour.run(workflow);
@@ -339,7 +340,7 @@ describe("instance-first TourController", () => {
             secondRunFinishes += 1;
           },
         })
-        .step({ content: "content", target: targetResolver, title: "title" })
+        .step({ id: "step-7", content: "content", target: targetResolver, title: "title" })
         .build();
 
       await tour.run(secondWorkflow);
@@ -362,7 +363,7 @@ describe("instance-first TourController", () => {
             await Promise.resolve();
           },
         })
-        .step({ content: "content", target: targetResolver, title: "title" })
+        .step({ id: "step-8", content: "content", target: targetResolver, title: "title" })
         .build();
 
       await tour.run(workflow);
@@ -380,7 +381,7 @@ describe("instance-first TourController", () => {
             calls += 1;
           },
         })
-        .step({ content: "content", target: targetResolver, title: "title" })
+        .step({ id: "step-9", content: "content", target: targetResolver, title: "title" })
         .build();
 
       await tour.run(workflow);
@@ -401,7 +402,7 @@ describe("instance-first TourController", () => {
             context.abort();
           },
         })
-        .step({ content: "content", target: targetResolver, title: "cancel-title" })
+        .step({ id: "step-10", content: "content", target: targetResolver, title: "cancel-title" })
         .build();
 
       await tour.run(workflow);
@@ -422,7 +423,7 @@ describe("instance-first TourController", () => {
             calls += 1;
           },
         })
-        .step({ content: "content", target: targetResolver, title: "title" })
+        .step({ id: "step-11", content: "content", target: targetResolver, title: "title" })
         .build();
 
       await tour.run(workflow);
@@ -442,7 +443,7 @@ describe("instance-first TourController", () => {
             await Promise.resolve();
           },
         })
-        .step({ content: "content", target: targetResolver, title: "title" })
+        .step({ id: "step-12", content: "content", target: targetResolver, title: "title" })
         .build();
 
       await tour.run(workflow);
@@ -461,7 +462,7 @@ describe("instance-first TourController", () => {
             context.abort();
           },
         })
-        .step({ content: "content", target: targetResolver, title: "last-title" })
+        .step({ id: "step-13", content: "content", target: targetResolver, title: "last-title" })
         .build();
 
       await tour.run(workflow);
@@ -481,7 +482,7 @@ describe("instance-first TourController", () => {
             calls += 1;
           },
         })
-        .step({ content: "content", target: targetResolver, title: "title" })
+        .step({ id: "step-14", content: "content", target: targetResolver, title: "title" })
         .build();
 
       await tour.run(workflow);
@@ -500,7 +501,7 @@ describe("instance-first TourController", () => {
             await Promise.resolve();
           },
         })
-        .step({ content: "content", target: targetResolver, title: "title" })
+        .step({ id: "step-15", content: "content", target: targetResolver, title: "title" })
         .build();
 
       await tour.run(workflow);
@@ -525,6 +526,7 @@ describe("instance-first TourController", () => {
         popover: { arrow: { color: "#4c35fd" }, keyboardShortcuts: { advance: ["Enter"] } },
       })
       .step({
+        id: "step-16",
         content: "content",
         data: { count: 1 },
         overlay: { animation: { duration: 100, easing: "linear" } },
@@ -578,7 +580,7 @@ describe("instance-first TourController", () => {
     await tour.run(
       tour
         .create("frozen-facade")
-        .step({ content: "one", target: targetResolver, title: "one" })
+        .step({ id: "step-17", content: "one", target: targetResolver, title: "one" })
         .build(),
     );
 
@@ -594,7 +596,7 @@ describe("instance-first TourController", () => {
     const unsubscribe = tour.state.subscribe((state) => snapshots.push(state.status));
     const workflow = tour
       .create("lifecycle")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-18", content: "one", target: targetResolver, title: "one" })
       .build();
 
     await tour.run(workflow);
@@ -640,9 +642,9 @@ describe("instance-first TourController", () => {
       const tour = new TourController<string>(driver);
       const workflow = tour
         .create(`staged-${scenario.name}`)
-        .step({ content: "zero", target: targetResolver, title: "zero" })
-        .step({ content: "one", target: targetResolver, title: "one" })
-        .step({ content: "two", target: targetResolver, title: "two" })
+        .step({ id: "step-19", content: "zero", target: targetResolver, title: "zero" })
+        .step({ id: "step-20", content: "one", target: targetResolver, title: "one" })
+        .step({ id: "step-21", content: "two", target: targetResolver, title: "two" })
         .build();
       await tour.run(workflow);
       if (scenario.start === 1) await tour.advance();
@@ -686,8 +688,9 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const workflow = tour
       .create("staged-capabilities", { cancellable: true })
-      .step({ content: "zero", target: targetResolver, title: "zero" })
+      .step({ id: "step-22", content: "zero", target: targetResolver, title: "zero" })
       .step({
+        id: "step-23",
         content: "one",
         popover: { disableAdvanceButton: true },
         target: targetResolver,
@@ -745,18 +748,20 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("programmatic-navigation")
       .step({
+        id: "step-24",
         content: "zero",
         popover: { disableAdvanceButton: true },
         target: targetResolver,
         title: "zero",
       })
       .step({
+        id: "step-25",
         content: "one",
         popover: { disablePreviousButton: true },
         target: targetResolver,
         title: "one",
       })
-      .step({ content: "two", target: targetResolver, title: "two" })
+      .step({ id: "step-26", content: "two", target: targetResolver, title: "two" })
       .build();
 
     await tour.run(workflow);
@@ -786,6 +791,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("action-context-navigation")
       .step({
+        id: "step-27",
         content: "zero",
         popover: { disableAdvanceButton: true },
         target: targetResolver,
@@ -796,6 +802,7 @@ describe("instance-first TourController", () => {
         return false;
       })
       .step({
+        id: "step-28",
         content: "one",
         popover: { disablePreviousButton: true },
         target: targetResolver,
@@ -820,11 +827,12 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const active = tour
       .create("active", { cancellable: true })
-      .step({ content: "active", target: targetResolver, title: "active" })
+      .step({ id: "step-29", content: "active", target: targetResolver, title: "active" })
       .build();
     const replacement = tour
       .create("replacement", { cancellable: false })
       .step({
+        id: "step-30",
         content: "replacement",
         popover: { disableAdvanceButton: true },
         target: targetResolver,
@@ -868,11 +876,11 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const active = tour
       .create("active")
-      .step({ content: "active", target: targetResolver, title: "active" })
+      .step({ id: "step-31", content: "active", target: targetResolver, title: "active" })
       .build();
     const finalWorkflow = tour
       .create("final")
-      .step({ content: "final", target: targetResolver, title: "final" })
+      .step({ id: "step-32", content: "final", target: targetResolver, title: "final" })
       .build();
     let finalRun: Promise<void> | null = null;
     const replacedDuringStart = tour
@@ -881,7 +889,7 @@ describe("instance-first TourController", () => {
           finalRun = tour.run(finalWorkflow);
         },
       })
-      .step({ content: "stale", target: targetResolver, title: "stale" })
+      .step({ id: "step-33", content: "stale", target: targetResolver, title: "stale" })
       .build();
     await tour.run(active);
     driver.pauseAdvanceShow();
@@ -905,8 +913,8 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const workflow = tour
       .create("cancel-staged-content", { cancellable: true })
-      .step({ content: "old", target: targetResolver, title: "old" })
-      .step({ content: "stale", target: targetResolver, title: "stale" })
+      .step({ id: "step-34", content: "old", target: targetResolver, title: "old" })
+      .step({ id: "step-35", content: "stale", target: targetResolver, title: "stale" })
       .build();
     await tour.run(workflow);
     driver.pauseAdvanceShow();
@@ -926,7 +934,7 @@ describe("instance-first TourController", () => {
     const cancellable = createGlowTour<string>();
     const allowed = cancellable
       .create("allowed", { cancellable: true })
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-36", content: "one", target: targetResolver, title: "one" })
       .build();
     await cancellable.run(allowed);
     await cancellable.previous();
@@ -935,7 +943,7 @@ describe("instance-first TourController", () => {
     const nonCancellable = createGlowTour<string>();
     const denied = nonCancellable
       .create("denied", { cancellable: false })
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-37", content: "one", target: targetResolver, title: "one" })
       .build();
     await nonCancellable.run(denied);
     await nonCancellable.previous();
@@ -947,7 +955,7 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("hooks")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-38", content: "one", target: targetResolver, title: "one" })
       .beforeAdvance(async () => {
         calls += 1;
       })
@@ -959,7 +967,7 @@ describe("instance-first TourController", () => {
     const failingTour = createGlowTour<string>();
     const failing = failingTour
       .create("failing-hook")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-39", content: "one", target: targetResolver, title: "one" })
       .beforeAdvance(() => {
         throw new TypeError("hook failed");
       })
@@ -980,6 +988,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("readonly-hook-contexts", { cancellable: true })
       .step({
+        id: "step-40",
         content: "first content",
         data: { count: 1 },
         overlay: { animation: { duration: 100, easing: "linear" }, color: "red" },
@@ -997,7 +1006,12 @@ describe("instance-first TourController", () => {
       })
       .beforeAdvance(capture)
       .beforeCancel(capture)
-      .step({ content: "second content", target: targetResolver, title: "second title" })
+      .step({
+        id: "step-41",
+        content: "second content",
+        target: targetResolver,
+        title: "second title",
+      })
       .beforePrevious(capture)
       .build();
 
@@ -1038,7 +1052,7 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("concurrent")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-42", content: "one", target: targetResolver, title: "one" })
       .beforeAdvance(() => gate.promise)
       .build();
     await tour.run(workflow);
@@ -1059,6 +1073,7 @@ describe("instance-first TourController", () => {
     const oldWorkflow = tour
       .create("old")
       .step({
+        id: "step-43",
         content: "old",
         target: ({ signal }) => {
           resolverStarted.resolve();
@@ -1072,7 +1087,7 @@ describe("instance-first TourController", () => {
       .build();
     const current = tour
       .create("current")
-      .step({ content: "current", target: targetResolver, title: "current" })
+      .step({ id: "step-44", content: "current", target: targetResolver, title: "current" })
       .build();
 
     const oldRun = tour.run(oldWorkflow);
@@ -1093,6 +1108,7 @@ describe("instance-first TourController", () => {
     const waiting = cancelTour
       .create("cancel")
       .step({
+        id: "step-45",
         content: "one",
         target: ({ signal }) => {
           cancelResolverStarted.resolve();
@@ -1119,6 +1135,7 @@ describe("instance-first TourController", () => {
     const disposable = disposeTour
       .create("dispose")
       .step({
+        id: "step-46",
         content: "one",
         target: ({ signal }) => {
           disposeResolverStarted.resolve();
@@ -1149,6 +1166,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("abort-wait", { cancellable: true })
       .step({
+        id: "step-47",
         behavior: { missingTargetStrategy: "wait", targetTimeout: 60_000 },
         content: "one",
         target: ({ signal }) => {
@@ -1187,7 +1205,7 @@ describe("instance-first TourController", () => {
       await selectorTour.run(
         selectorTour
           .create("selector")
-          .step({ content: "one", target: "#found", title: "one" })
+          .step({ id: "step-48", content: "one", target: "#found", title: "one" })
           .build(),
       );
       assert.equal(selectorTour.state.get().currentStep?.target, target);
@@ -1196,7 +1214,7 @@ describe("instance-first TourController", () => {
       await syncTour.run(
         syncTour
           .create("sync")
-          .step({ content: "one", target: () => target, title: "one" })
+          .step({ id: "step-49", content: "one", target: () => target, title: "one" })
           .build(),
       );
       assert.equal(syncTour.state.get().status, "active");
@@ -1205,7 +1223,7 @@ describe("instance-first TourController", () => {
       await asyncTour.run(
         asyncTour
           .create("async")
-          .step({ content: "one", target: async () => target, title: "one" })
+          .step({ id: "step-50", content: "one", target: async () => target, title: "one" })
           .build(),
       );
       assert.equal(asyncTour.state.get().status, "active");
@@ -1216,7 +1234,7 @@ describe("instance-first TourController", () => {
           errorTour.run(
             errorTour
               .create("error")
-              .step({ content: "one", target: () => null, title: "one" })
+              .step({ id: "step-51", content: "one", target: () => null, title: "one" })
               .build(),
           ),
         /Missing target/,
@@ -1228,12 +1246,13 @@ describe("instance-first TourController", () => {
         skipTour
           .create("skip")
           .step({
+            id: "step-52",
             behavior: { missingTargetStrategy: "skip" },
             content: "one",
             target: () => null,
             title: "one",
           })
-          .step({ content: "two", target: targetResolver, title: "two" })
+          .step({ id: "step-53", content: "two", target: targetResolver, title: "two" })
           .build(),
       );
       assert.equal(skipTour.state.get().currentStepIndex, 1);
@@ -1244,6 +1263,7 @@ describe("instance-first TourController", () => {
         waitTour
           .create("wait")
           .step({
+            id: "step-54",
             behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
             content: "one",
             target: () => (++attempts === 2 ? target : null),
@@ -1266,7 +1286,13 @@ describe("instance-first TourController", () => {
     let activeProps!: StepContext<string>["props"];
     const workflow = tour
       .create("update")
-      .step({ content: "one", data: { value: 1 }, target: targetResolver, title: "one" })
+      .step({
+        id: "step-55",
+        content: "one",
+        data: { value: 1 },
+        target: targetResolver,
+        title: "one",
+      })
       .do(({ props }) => {
         activeProps = props;
       })
@@ -1284,6 +1310,7 @@ describe("instance-first TourController", () => {
       const workflow = tour
         .create("reset-on-reentry")
         .step({
+          id: "step-56",
           content: "one",
           resetPropsOnEnter,
           target: targetResolver,
@@ -1292,7 +1319,7 @@ describe("instance-first TourController", () => {
         .do(({ props }) => {
           activeProps = props;
         })
-        .step({ content: "two", target: targetResolver, title: "two" })
+        .step({ id: "step-57", content: "two", target: targetResolver, title: "two" })
         .build();
 
       await tour.run(workflow);
@@ -1341,7 +1368,7 @@ describe("instance-first TourController", () => {
     });
     const workflow = tour
       .create("actions")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-58", content: "one", target: targetResolver, title: "one" })
       .do(async ({ props }) => {
         assert.equal(typeof props.set, "function");
         calls.push(String(props.get().title));
@@ -1349,7 +1376,7 @@ describe("instance-first TourController", () => {
         return true;
       })
       .do(({ advance }) => advance())
-      .step({ content: "two", target: targetResolver, title: "two" })
+      .step({ id: "step-59", content: "two", target: targetResolver, title: "two" })
       .build();
 
     await tour.run(workflow);
@@ -1367,16 +1394,21 @@ describe("instance-first TourController", () => {
       const tour = createGlowTour<string>();
       let actionStep = tour
         .create(`context-${command}`, { cancellable: true })
-        .step({ content: "one", target: targetResolver, title: "one" });
+        .step({ id: "step-60", content: "one", target: targetResolver, title: "one" });
       if (command === "previous") {
-        actionStep = actionStep.step({ content: "two", target: targetResolver, title: "two" });
+        actionStep = actionStep.step({
+          id: "step-61",
+          content: "two",
+          target: targetResolver,
+          title: "two",
+        });
       }
       const workflow = actionStep
         .do((context) => context[command]())
         .do(() => {
           calls.push("stale");
         })
-        .step({ content: "three", target: targetResolver, title: "three" })
+        .step({ id: "step-62", content: "three", target: targetResolver, title: "three" })
         .build();
 
       if (command === "previous") {
@@ -1396,7 +1428,7 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const workflow = tour
       .create("action-error")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-63", content: "one", target: targetResolver, title: "one" })
       .do(() => {
         throw new TypeError("action failed");
       })
@@ -1415,7 +1447,7 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const workflow = tour
       .create("event-error")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-64", content: "one", target: targetResolver, title: "one" })
       .build();
     await tour.run(workflow);
 
@@ -1437,6 +1469,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("recover-wait")
       .step({
+        id: "step-65",
         behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
         content: "one",
         target: () => resolvedTarget,
@@ -1476,6 +1509,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("recover-direct")
       .step({
+        id: "step-66",
         behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
         content: "one",
         target: directTarget,
@@ -1505,12 +1539,13 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("recover-skip")
       .step({
+        id: "step-67",
         behavior: { missingTargetStrategy: "skip" },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
       })
-      .step({ content: "two", target: () => secondTarget, title: "two" })
+      .step({ id: "step-68", content: "two", target: () => secondTarget, title: "two" })
       .build();
     await tour.run(workflow);
     assert.ok(driver.commands);
@@ -1533,6 +1568,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("recover-reverse-skip", { cancellable: true })
       .step({
+        id: "step-69",
         behavior: { missingTargetStrategy: "skip" },
         content: "one",
         target: () => resolvedTarget,
@@ -1541,7 +1577,7 @@ describe("instance-first TourController", () => {
       .beforeCancel(({ target }) => {
         cancelTarget = target;
       })
-      .step({ content: "two", target: () => secondTarget, title: "two" })
+      .step({ id: "step-70", content: "two", target: () => secondTarget, title: "two" })
       .build();
     await tour.run(workflow);
     await tour.advance();
@@ -1564,12 +1600,13 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("recover-reverse-fixed", { cancellable: false })
       .step({
+        id: "step-71",
         behavior: { missingTargetStrategy: "skip" },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
       })
-      .step({ content: "two", target: () => secondTarget, title: "two" })
+      .step({ id: "step-72", content: "two", target: () => secondTarget, title: "two" })
       .build();
     await tour.run(workflow);
     await tour.advance();
@@ -1593,7 +1630,7 @@ describe("instance-first TourController", () => {
     let resolvedTarget: HTMLElement | null = initialTarget;
     const workflow = tour
       .create("recover-error")
-      .step({ content: "one", target: () => resolvedTarget, title: "one" })
+      .step({ id: "step-73", content: "one", target: () => resolvedTarget, title: "one" })
       .build();
     await tour.run(workflow);
     assert.ok(driver.commands);
@@ -1614,6 +1651,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("recover-timeout")
       .step({
+        id: "step-74",
         behavior: { missingTargetStrategy: "wait", targetTimeout: 0 },
         content: "one",
         target: () => resolvedTarget,
@@ -1637,8 +1675,8 @@ describe("instance-first TourController", () => {
     const secondTarget = {} as HTMLElement;
     const workflow = tour
       .create("recover-stale")
-      .step({ content: "one", target: () => firstTarget, title: "one" })
-      .step({ content: "two", target: () => secondTarget, title: "two" })
+      .step({ id: "step-75", content: "one", target: () => firstTarget, title: "one" })
+      .step({ id: "step-76", content: "two", target: () => secondTarget, title: "two" })
       .build();
     await tour.run(workflow);
     await tour.advance();
@@ -1662,6 +1700,7 @@ describe("instance-first TourController", () => {
     const oldWorkflow = tour
       .create("recover-old")
       .step({
+        id: "step-77",
         behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
         content: "one",
         target: () => resolvedTarget,
@@ -1670,7 +1709,12 @@ describe("instance-first TourController", () => {
       .build();
     const replacementWorkflow = tour
       .create("recover-new")
-      .step({ content: "two", target: () => replacementWorkflowTarget, title: "two" })
+      .step({
+        id: "step-78",
+        content: "two",
+        target: () => replacementWorkflowTarget,
+        title: "two",
+      })
       .build();
     await tour.run(oldWorkflow);
     assert.ok(driver.commands);
@@ -1693,6 +1737,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("disabled-navigation")
       .step({
+        id: "step-79",
         content: "one",
         popover: { disableAdvanceButton: true },
         target: targetResolver,
@@ -1702,6 +1747,7 @@ describe("instance-first TourController", () => {
         firstStepProps = props;
       })
       .step({
+        id: "step-80",
         content: "two",
         popover: { disablePreviousButton: true },
         target: targetResolver,
@@ -1729,12 +1775,12 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("go-to-hook")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-81", content: "one", target: targetResolver, title: "one" })
       .beforeAdvance(() => {
         calls += 1;
         return hook.promise;
       })
-      .step({ content: "two", target: targetResolver, title: "two" })
+      .step({ id: "step-82", content: "two", target: targetResolver, title: "two" })
       .build();
     await tour.run(workflow);
 
@@ -1754,7 +1800,7 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const workflow = tour
       .create("view-error")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-83", content: "one", target: targetResolver, title: "one" })
       .build();
 
     await assert.rejects(() => tour.run(workflow), /view failed/);
@@ -1773,7 +1819,7 @@ describe("instance-first TourController", () => {
     tour.state.subscribe((state) => statuses.push(state.status));
     const workflow = tour
       .create("rendering-error")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-84", content: "one", target: targetResolver, title: "one" })
       .build();
 
     await assert.rejects(
@@ -1802,7 +1848,7 @@ describe("instance-first TourController", () => {
     });
     const workflow = tour
       .create("dispose")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-85", content: "one", target: targetResolver, title: "one" })
       .build();
     await tour.run(workflow);
 
@@ -1857,14 +1903,15 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("reverse-skip")
-      .step({ content: "zero", target: targetResolver, title: "zero" })
+      .step({ id: "step-86", content: "zero", target: targetResolver, title: "zero" })
       .step({
+        id: "step-87",
         behavior: { missingTargetStrategy: "skip" },
         content: "one",
         target: () => null,
         title: "one",
       })
-      .step({ content: "two", target: targetResolver, title: "two" })
+      .step({ id: "step-88", content: "two", target: targetResolver, title: "two" })
       .build();
 
     await tour.run(workflow);
@@ -1880,6 +1927,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("unexpected-abort")
       .step({
+        id: "step-89",
         content: "one",
         target: () => {
           throw new DOMException("resolver aborted itself", "AbortError");
@@ -1897,9 +1945,9 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("cancel-transition", { cancellable: true })
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-90", content: "one", target: targetResolver, title: "one" })
       .beforeAdvance(() => hook.promise)
-      .step({ content: "two", target: targetResolver, title: "two" })
+      .step({ id: "step-91", content: "two", target: targetResolver, title: "two" })
       .build();
     await tour.run(workflow);
 
@@ -1944,7 +1992,7 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const workflow = tour
       .create("dispose-reentrant")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-92", content: "one", target: targetResolver, title: "one" })
       .beforeAdvance(() => {
         oldHookCalls += 1;
       })
@@ -1965,14 +2013,14 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const oldWorkflow = tour
       .create("old")
-      .step({ content: "old", target: targetResolver, title: "old" })
+      .step({ id: "step-93", content: "old", target: targetResolver, title: "old" })
       .beforeAdvance(() => {
         oldHookCalls += 1;
       })
       .build();
     const newWorkflow = tour
       .create("new")
-      .step({ content: "new", target: targetResolver, title: "new" })
+      .step({ id: "step-94", content: "new", target: targetResolver, title: "new" })
       .build();
     await tour.run(oldWorkflow);
     let newRun: Promise<void> | null = null;
@@ -1995,7 +2043,7 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("cancel-reentrant", { cancellable: true })
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-95", content: "one", target: targetResolver, title: "one" })
       .beforeAdvance(() => {
         oldHookCalls += 1;
       })
@@ -2017,7 +2065,7 @@ describe("instance-first TourController", () => {
     const cancellableTour = createGlowTour<string>();
     const cancellable = cancellableTour
       .create("cancellable", { cancellable: true })
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-96", content: "one", target: targetResolver, title: "one" })
       .build();
     await cancellableTour.run(cancellable);
     assert.equal(cancellableTour.state.get().canPrevious, false);
@@ -2025,7 +2073,7 @@ describe("instance-first TourController", () => {
     const fixedTour = createGlowTour<string>();
     const fixed = fixedTour
       .create("fixed", { cancellable: false })
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-97", content: "one", target: targetResolver, title: "one" })
       .build();
     await fixedTour.run(fixed);
     assert.equal(fixedTour.state.get().canPrevious, false);
@@ -2038,6 +2086,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("retry-listener")
       .step({
+        id: "step-98",
         behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
         content: "one",
         target: ({ signal }) => {
@@ -2064,6 +2113,7 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("delay-listener")
       .step({
+        id: "step-99",
         content: "one",
         target: ({ signal }) => {
           trackAbortListeners(signal, listenerCounts);
@@ -2085,7 +2135,7 @@ describe("instance-first TourController", () => {
     let attempts = 0;
     const workflow = tour
       .create("wait-condition")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-100", content: "one", target: targetResolver, title: "one" })
       .waitUntil(
         ({ props }) => {
           assert.equal(props.get().title, "one");
@@ -2110,7 +2160,7 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("wait-element")
-      .step({ content: "one", target: () => target, title: "one" })
+      .step({ id: "step-101", content: "one", target: () => target, title: "one" })
       .waitUntilElement("#ready", { interval: 1, timeout: 100 })
       .build();
 
@@ -2126,7 +2176,7 @@ describe("instance-first TourController", () => {
     const tour = new TourController<string>(driver);
     const workflow = tour
       .create("wait-timeout")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-102", content: "one", target: targetResolver, title: "one" })
       .waitUntil(() => false, { interval: 1, timeout: 0 })
       .build();
 
@@ -2148,7 +2198,7 @@ describe("instance-first TourController", () => {
       const tour = new TourController<string>(driver);
       const workflow = tour
         .create("async-wait-timeout")
-        .step({ content: "one", target: targetResolver, title: "one" })
+        .step({ id: "step-103", content: "one", target: targetResolver, title: "one" })
         .waitUntil(predicate, { interval: 1, timeout: 1 })
         .build();
 
@@ -2165,7 +2215,7 @@ describe("instance-first TourController", () => {
     const waiting = tour.run(
       tour
         .create("waiting")
-        .step({ content: "one", target: targetResolver, title: "one" })
+        .step({ id: "step-104", content: "one", target: targetResolver, title: "one" })
         .waitUntil(
           () => {
             attempts += 1;
@@ -2194,7 +2244,7 @@ describe("instance-first TourController", () => {
     const cancelRun = cancellable.run(
       cancellable
         .create("cancel-wait", { cancellable: true })
-        .step({ content: "one", target: targetResolver, title: "one" })
+        .step({ id: "step-105", content: "one", target: targetResolver, title: "one" })
         .waitUntil(
           () => {
             cancelAttempts += 1;
@@ -2220,7 +2270,7 @@ describe("instance-first TourController", () => {
     const disposeRun = disposable.run(
       disposable
         .create("dispose-wait")
-        .step({ content: "one", target: targetResolver, title: "one" })
+        .step({ id: "step-106", content: "one", target: targetResolver, title: "one" })
         .waitUntil(
           () => {
             disposeAttempts += 1;
@@ -2246,7 +2296,7 @@ describe("instance-first TourController", () => {
       const tour = new TourController<string>(driver);
       const step = tour
         .create(`failing-${failureSource}`)
-        .step({ content: "old", target: targetResolver, title: "old" });
+        .step({ id: "step-107", content: "old", target: targetResolver, title: "old" });
       const failingWorkflow =
         failureSource === "action"
           ? step
@@ -2263,7 +2313,7 @@ describe("instance-first TourController", () => {
             : step.build();
       const replacement = tour
         .create(`replacement-${failureSource}`)
-        .step({ content: "new", target: targetResolver, title: "new" })
+        .step({ id: "step-108", content: "new", target: targetResolver, title: "new" })
         .build();
       if (failureSource === "view") driver.showError = boom;
       let replacementRun: Promise<void> | null = null;
@@ -2291,7 +2341,7 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const workflow = tour
       .create("nested-subscribe")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-109", content: "one", target: targetResolver, title: "one" })
       .build();
     let nestedStartingNotifications = 0;
     let nestedSubscribed = false;
@@ -2316,11 +2366,11 @@ describe("instance-first TourController", () => {
     const tour = createGlowTour<string>();
     const oldWorkflow = tour
       .create("old-publication")
-      .step({ content: "old", target: targetResolver, title: "old" })
+      .step({ id: "step-110", content: "old", target: targetResolver, title: "old" })
       .build();
     const replacement = tour
       .create("replacement-publication")
-      .step({ content: "new", target: targetResolver, title: "new" })
+      .step({ id: "step-111", content: "new", target: targetResolver, title: "new" })
       .build();
     let replacementRun: Promise<void> | null = null;
     const firstUnsubscribe = tour.state.subscribe((state) => {
@@ -2378,7 +2428,7 @@ describe("instance-first TourController", () => {
     });
     const workflow = tour
       .create("state-listeners")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-112", content: "one", target: targetResolver, title: "one" })
       .build();
     tour.state.subscribe(() => {
       throw "state subscriber failure";
@@ -2406,7 +2456,7 @@ describe("instance-first TourController", () => {
     });
     const workflow = tour
       .create("props-listeners")
-      .step({ content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-113", content: "one", target: targetResolver, title: "one" })
       .do(({ props }) => {
         props.subscribe(() => {
           throw "props subscriber failure";
@@ -2482,6 +2532,23 @@ describe("instance-first TourController", () => {
     );
   });
 
+  test("the public createGlowTour facade forwards run options to the controller", async () => {
+    // Regression: the facade used to declare `run: (workflow) => ...`, silently
+    // dropping `startAt`. TypeScript accepts the narrower signature, and every
+    // test that drives TourController directly stays green, so only a run
+    // through the public entry point catches it.
+    const tour = createPublicGlowTour<string>();
+    const workflow = tour
+      .create("public-facade")
+      .step({ id: "first", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "second", content: "two", target: targetResolver, title: "two" })
+      .build();
+
+    await assert.rejects(() => tour.run(workflow, { startAt: "nope" }), {
+      message: 'Workflow "public-facade" has no step with id "nope" to start at.',
+    });
+  });
+
   test("sends sync and async subscriber error hook failures to the unhandled reporter", async () => {
     const unhandled: Error[] = [];
     const sync = new TourController<string>(new NoopTourViewDriver(), {
@@ -2513,5 +2580,121 @@ describe("instance-first TourController", () => {
       "async hook failure",
       "sync hook failure",
     ]);
+  });
+});
+
+describe("step ids and startAt", () => {
+  function threeSteps() {
+    return createGlowTour<string>();
+  }
+
+  function workflowOf(tour: ReturnType<typeof threeSteps>) {
+    return tour
+      .create("onboarding")
+      .step({ id: "welcome", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "invite", content: "two", target: targetResolver, title: "two" })
+      .step({ id: "done", content: "three", target: targetResolver, title: "three" })
+      .build();
+  }
+
+  test("exposes the declared step id on the current step", async () => {
+    const tour = threeSteps();
+
+    await tour.run(workflowOf(tour));
+
+    assert.equal(tour.state.get().currentStep?.id, "welcome");
+  });
+
+  test("starts on the step carrying the requested id", async () => {
+    const tour = threeSteps();
+
+    await tour.run(workflowOf(tour), { startAt: "invite" });
+
+    assert.equal(tour.state.get().currentStep?.id, "invite");
+    assert.equal(tour.state.get().currentStepIndex, 1);
+  });
+
+  test("keeps the workflow whole when resuming: totalSteps is unchanged and previous() goes back before the resume point", async () => {
+    const tour = threeSteps();
+
+    await tour.run(workflowOf(tour), { startAt: "invite" });
+    assert.equal(tour.state.get().totalSteps, 3);
+    assert.equal(tour.state.get().isFirstStep, false);
+
+    await tour.previous();
+
+    assert.equal(tour.state.get().currentStep?.id, "welcome");
+    assert.equal(tour.state.get().isFirstStep, true);
+  });
+
+  test("passes the resumed step, not the first one, to onStart", async () => {
+    const tour = createGlowTour<string>();
+    const seen: (string | null)[] = [];
+    const workflow = tour
+      .create("onboarding", {
+        onStart: ({ step }) => {
+          seen.push(step?.id ?? null);
+        },
+      })
+      .step({ id: "welcome", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "invite", content: "two", target: targetResolver, title: "two" })
+      .build();
+
+    await tour.run(workflow, { startAt: "invite" });
+
+    assert.deepEqual(seen, ["invite"]);
+  });
+
+  test("throws on an unknown startAt rather than silently restarting from the beginning", async () => {
+    const tour = threeSteps();
+    const workflow = workflowOf(tour);
+
+    await assert.rejects(() => tour.run(workflow, { startAt: "removed-step" }), {
+      message: 'Workflow "onboarding" has no step with id "removed-step" to start at.',
+    });
+    assert.equal(tour.state.get().status, "idle");
+  });
+
+  test("starts at the first step when startAt is omitted", async () => {
+    const tour = threeSteps();
+
+    await tour.run(workflowOf(tour), {});
+
+    assert.equal(tour.state.get().currentStepIndex, 0);
+  });
+
+  test("rejects a workflow whose steps reuse an id", () => {
+    const tour = createGlowTour<string>();
+    const builder = tour
+      .create("duplicates")
+      .step({ id: "same", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "same", content: "two", target: targetResolver, title: "two" });
+
+    assert.throws(() => builder.build(), {
+      message:
+        'Workflow "duplicates": step 1 ("two") reuses the id "same" already used by step 0. Step ids must be unique.',
+    });
+  });
+
+  test("rejects a workflow with an empty step id", () => {
+    const tour = createGlowTour<string>();
+    const builder = tour
+      .create("blank")
+      .step({ id: "", content: "one", target: targetResolver, title: "one" });
+
+    assert.throws(() => builder.build(), {
+      message: 'Workflow "blank": step 0 ("one") is missing a non-empty "id".',
+    });
+  });
+
+  test("keeps the id out of step props so it cannot be mutated mid-tour", async () => {
+    const tour = threeSteps();
+
+    await tour.run(workflowOf(tour));
+
+    const step = tour.state.get().currentStep;
+    assert.ok(step);
+    assert.equal("id" in step.currentProps, false);
+    assert.equal("id" in step.initialProps, false);
   });
 });

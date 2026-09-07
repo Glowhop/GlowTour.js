@@ -1,10 +1,15 @@
 /** Session storage key holding the tour to resume after a full page reload. */
 export const RESUME_KEY = "glowtour:multipage";
 
-/** Snapshot of a running tour, persisted across a full page navigation. */
+/**
+ * Snapshot of a running tour, persisted across a full page navigation.
+ *
+ * Only the workflow name and a stable step id: the workflow itself is rebuilt
+ * from code on the next page, since a step's callbacks cannot be serialized.
+ */
 export interface PersistedTour {
   readonly workflow: string;
-  readonly stepIndex: number;
+  readonly stepId: string;
 }
 
 export function persistTour(state: PersistedTour): void {

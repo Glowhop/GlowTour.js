@@ -85,6 +85,8 @@ export interface EventHandlerConfig<T = string> {
  * framework's content type (e.g. `StepConfig<ReactNode>`) to pass rich content straight through.
  */
 export interface StepConfig<T = string> {
+  /** Stable identifier for this step, unique within the workflow. Required. */
+  readonly id: string;
   /** CSS selector for the step's target. Functions and `HTMLElement` are not supported in config form. */
   readonly target: string;
   readonly resetPropsOnEnter?: boolean;

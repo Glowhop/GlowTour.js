@@ -31,16 +31,19 @@ const nonInteractiveTour = createGlowTour();
 const nonInteractiveWorkflow = nonInteractiveTour
   .create("hero-non-interactive")
   .step({
+    id: "non-interactive-field-name",
     target: "#hero-non-interactive-field-name",
     title: "Start with the workspace name",
     content: "A step can target any element — this one points at a plain field.",
   })
   .step({
+    id: "non-interactive-field-timezone",
     target: "#hero-non-interactive-field-timezone",
     title: "Then the timezone",
     content: "Chain as many .step() calls as the tour needs.",
   })
   .step({
+    id: "non-interactive-target",
     target: "#hero-non-interactive-target",
     title: "A plain, non-interactive walkthrough",
     content: "No special options here — no allowInteraction, no custom behavior. Just steps.",
@@ -88,11 +91,13 @@ const advanceOnClickTour = createGlowTour();
 const advanceOnClickWorkflow = advanceOnClickTour
   .create("hero-advance-on-click")
   .step({
+    id: "advance-progress",
     target: "#hero-advance-progress",
     title: "Step 2 of a 3-step wizard",
     content: "This wizard tracks its own progress — the tour just points it out.",
   })
   .step({
+    id: "advance-on-click-target",
     target: "#hero-advance-on-click-target",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance() from a real DOM click.",
@@ -101,6 +106,7 @@ const advanceOnClickWorkflow = advanceOnClickTour
   })
   .onTargetEvent("click", (_event, context) => context.advance())
   .step({
+    id: "advance-on-click-target-2",
     target: "#hero-advance-on-click-target",
     title: "That advanced the tour",
     content:
@@ -147,24 +153,28 @@ const placementOrderTour = createGlowTour();
 const placementOrderWorkflow = placementOrderTour
   .create("hero-placement-order")
   .step({
+    id: "placement-target-top",
     target: "#hero-placement-target-top",
     title: "Forcing placement: top",
     content: "popover.placementTryOrder: ['top'] pins this popover above its target.",
     popover: { placementTryOrder: ["top"] },
   })
   .step({
+    id: "placement-target-bottom",
     target: "#hero-placement-target-bottom",
     title: "Forcing placement: bottom",
     content: "popover.placementTryOrder: ['bottom'] pins this popover below its target.",
     popover: { placementTryOrder: ["bottom"] },
   })
   .step({
+    id: "placement-target-left",
     target: "#hero-placement-target-left",
     title: "Forcing placement: left",
     content: "popover.placementTryOrder: ['left'] pins this popover to the left of its target.",
     popover: { placementTryOrder: ["left"] },
   })
   .step({
+    id: "placement-target-right",
     target: "#hero-placement-target-right",
     title: "Forcing placement: right",
     content: "popover.placementTryOrder: ['right'] pins this popover to the right of its target.",
@@ -214,18 +224,21 @@ const waitForAsyncTour = createGlowTour();
 const waitForAsyncWorkflow = waitForAsyncTour
   .create("hero-wait-for-async")
   .step({
+    id: "wait-for-async-target",
     target: "#hero-wait-for-async-target",
     title: "Load the data first",
     content: 'Click "Load data" — the next step waits for an element that doesn\'t exist yet.',
     behavior: { allowInteraction: true },
   })
   .step({
+    id: "wait-for-async-loaded",
     target: "#hero-wait-for-async-loaded",
     title: "The tour waited for this",
     content: "waitUntilElement(selector) held the tour until this element appeared in the DOM.",
   })
   .waitUntilElement("#hero-wait-for-async-loaded")
   .step({
+    id: "wait-for-async-row-1",
     target: "#hero-wait-for-async-row-1",
     title: "Real content, not a skeleton",
     content: "By now the list has actually loaded — this row is the real thing.",
@@ -296,11 +309,13 @@ const cancellableWorkflow = cancellableTour
     cancellable: false,
   })
   .step({
+    id: "cancellable-warning",
     target: "#hero-cancellable-warning",
     title: "Read this carefully",
     content: "A warning is a good place for a tour step too.",
   })
   .step({
+    id: "cancellable-target",
     target: "#hero-cancellable-target",
     title: "This step can't be skipped",
     content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
@@ -353,11 +368,13 @@ const confirmCancelWorkflow = confirmCancelTour
     },
   })
   .step({
+    id: "confirm-cancel-field",
     target: "#hero-confirm-cancel-field",
     title: "Name your project",
     content: "Try pressing Escape, or clicking Cancel below, at any point in this tour.",
   })
   .step({
+    id: "confirm-cancel-target",
     target: "#hero-confirm-cancel-target",
     title: "Confirm before you leave",
     content:
@@ -400,6 +417,7 @@ const overlayClickTour = createGlowTour();
 const overlayClickWorkflow = overlayClickTour
   .create("hero-overlay-click")
   .step({
+    id: "overlay-click-target-1",
     target: "#hero-overlay-click-target-1",
     title: "Click the overlay to advance",
     content:
@@ -407,6 +425,7 @@ const overlayClickWorkflow = overlayClickTour
     behavior: { overlayClick: "advance" },
   })
   .step({
+    id: "overlay-click-target-2",
     target: "#hero-overlay-click-target-2",
     title: "Now it cancels instead",
     content:
@@ -455,11 +474,13 @@ const customStyledIndicatorTour = createGlowTour();
 const customStyledIndicatorWorkflow = customStyledIndicatorTour
   .create("hero-custom-styled-indicator")
   .step({
+    id: "custom-styled-member",
     target: "#hero-custom-styled-member",
     title: "This step looks normal",
     content: "Default overlay, popover, and pointer — no overrides here.",
   })
   .step({
+    id: "custom-styled-target",
     target: "#hero-custom-styled-target",
     title: "Same tour, fully customized",
     content:
@@ -533,21 +554,25 @@ const liveProgressTour = createGlowTour();
 const liveProgressWorkflow = liveProgressTour
   .create("hero-live-progress")
   .step({
+    id: "live-progress-field-1",
     target: "#hero-live-progress-field-1",
     title: "Company name",
     content: "The counter above this title is real state from useTour(), not a hardcoded label.",
   })
   .step({
+    id: "live-progress-field-2",
     target: "#hero-live-progress-field-2",
     title: "Industry",
     content: "Advance again — the counter updates because it reads useTour().currentStepIndex.",
   })
   .step({
+    id: "live-progress-field-3",
     target: "#hero-live-progress-field-3",
     title: "Team size",
     content: "Same custom popover component, still driven by live tour state.",
   })
   .step({
+    id: "live-progress-target",
     target: "#hero-live-progress-target",
     title: "Finish setup",
     content: "Last step — the counter now reads the final index.",

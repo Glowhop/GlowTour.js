@@ -113,6 +113,7 @@ export class WorkflowBuilder<T> {
     this.assertBuilding();
     this.commitCurrentStep();
     this.currentStep = new WorkflowStepBuilder(this, {
+      id: options.id,
       target: options.target,
       resetPropsOnEnter: options.resetPropsOnEnter,
       props: {

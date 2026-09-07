@@ -123,14 +123,14 @@ export async function runAdapterAcceptance<TContent>(
   ) =>
     tour
       .create(workflowName)
-      .step({
+      .step({ id: "step-1",
         behavior: allowInteraction ? { allowInteraction: true } : undefined,
         content: content("First content"),
         target,
         title: content("First title"),
       })
       .do(({ props }) => captureProps?.(props))
-      .step({
+      .step({ id: "step-2",
         behavior: { allowInteraction: true },
         content: content("Second content"),
         target,
@@ -206,8 +206,8 @@ export async function runDefaultTourAcceptance<TContent>(
   const workflow = () =>
     tour
       .create(`${name} workflow`)
-      .step({ content: content("First content"), target, title: content("First title") })
-      .step({ content: content("Second content"), target, title: content("Second title") })
+      .step({ id: "step-3", content: content("First content"), target, title: content("First title") })
+      .step({ id: "step-4", content: content("Second content"), target, title: content("Second title") })
       .build();
 
   await tour.run(workflow());

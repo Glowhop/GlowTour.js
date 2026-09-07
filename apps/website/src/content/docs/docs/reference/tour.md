@@ -43,18 +43,21 @@ Starts building a new workflow on this controller. See the [Builder reference](/
 create(name: string, options?: StartOptions): WorkflowBuilder
 ```
 
-### `tour.run(workflow)`
+### `tour.run(workflow, options?)`
 
 Runs a workflow built with `.build()`. Any previous run or navigation on this controller is cancelled first.
 
 **Signature**:
 ```typescript
-run(workflow: WorkflowDefinition): Promise<void>
+run(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
 ```
+
+**Options**:
+- `startAt` - Id of the step to start on, instead of the first one. Throws if no step carries that id. The workflow is not truncated: `totalSteps` is unchanged and `previous()` can go back before this step. See [Resuming a tour](/docs/guides/resuming).
 
 **Usage**:
 ```typescript
-const workflow = tour.create("welcome").step({ target: "#save-button", title: "Save", content: "Click here to save." }).build();
+const workflow = tour.create("welcome").step({ id: "save-button", target: "#save-button", title: "Save", content: "Click here to save." }).build();
 
 await tour.run(workflow);
 ```
