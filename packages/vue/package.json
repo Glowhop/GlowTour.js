@@ -1,7 +1,7 @@
 {
   "name": "@glowhop/vue-tour",
   "version": "0.1.0",
-  "description": "Vue 3 adapter for Glow Tour.",
+  "description": "Vue 3 adapter for GlowTour.js.",
   "license": "MIT",
   "homepage": "https://github.com/Glowhop/glow-tour#readme",
   "bugs": {
@@ -33,6 +33,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
     }
   },
   "dependencies": {

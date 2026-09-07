@@ -15,7 +15,7 @@ Apply this skill to user-facing UI changes and reviews.
 - Check focus order, modal focus trapping, escape behavior, and restoration when relevant.
 - Verify color contrast and do not rely on color alone.
 - Respect reduced-motion needs for animations.
-- Keep accessibility fixes aligned with HeroUI patterns by default. If a generated project explicitly adopts another UI library, follow that library's accessibility patterns.
+- Keep accessibility fixes aligned with the accessibility patterns of whichever UI library the project actually uses.
 
 ## Output
 

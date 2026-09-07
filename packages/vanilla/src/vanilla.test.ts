@@ -174,7 +174,7 @@ describe("vanilla adapter public contract", () => {
       const pureRuntime = await import(`./index?default=${Date.now()}`);
       assert.throws(() => pureRuntime.createDefaultTourElement(runtime.createGlowTour()), {
         message:
-          'Glow Tour custom elements are not registered. Call registerGlowTourElements() or import "@glowhop/vanilla-tour/auto" before creating a default tour.',
+          'GlowTour.js custom elements are not registered. Call registerGlowTourElements() or import "@glowhop/vanilla-tour/auto" before creating a default tour.',
       });
       assert.equal(created, 0);
     } finally {

@@ -317,7 +317,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const document = root.ownerDocument;
     const owner = ACTIVE_MODAL_BY_DOCUMENT.get(document);
     if (owner && owner !== this.modalToken) {
-      throw new Error("Glow Tour only supports one active modal tour per document");
+      throw new Error("GlowTour.js only supports one active modal tour per document");
     }
     ACTIVE_MODAL_BY_DOCUMENT.set(document, this.modalToken);
     this.modalDocument = document;

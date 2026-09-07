@@ -36,7 +36,7 @@ export const bundleScenarios: readonly BundleScenario[] = [
   {
     entry: 'import { createGlowTour } from "@glowhop/core-tour"; createGlowTour();',
     externalPackages: [],
-    gzipBudget: 18.5 * KIB,
+    gzipBudget: 19.25 * KIB,
     name: "Core index",
     outputExtension: "js",
   },
@@ -48,6 +48,13 @@ export const bundleScenarios: readonly BundleScenario[] = [
     outputExtension: "js",
   },
   {
+    entry: 'export { createWorkflowFromConfig } from "@glowhop/core-tour/config";',
+    externalPackages: [],
+    gzipBudget: 5.25 * KIB,
+    name: "Core config",
+    outputExtension: "js",
+  },
+  {
     entry: 'import { createGlowTour } from "@glowhop/react-tour"; createGlowTour();',
     externalPackages: ["@glowhop/core-tour", "react", "react/*"],
     gzipBudget: 2.5 * KIB,
@@ -56,12 +63,26 @@ export const bundleScenarios: readonly BundleScenario[] = [
     requiresPrunedPresentation: true,
   },
   {
+    entry: 'export { createWorkflowFromConfig } from "@glowhop/react-tour/config";',
+    externalPackages: ["@glowhop/core-tour", "@glowhop/core-tour/*"],
+    gzipBudget: 0.5 * KIB,
+    name: "React config",
+    outputExtension: "js",
+  },
+  {
     entry: 'import { createGlowTour } from "@glowhop/vue-tour"; createGlowTour();',
     externalPackages: ["@glowhop/core-tour", "vue", "vue/*"],
     gzipBudget: 2.75 * KIB,
     name: "Vue",
     outputExtension: "js",
     requiresPrunedPresentation: true,
+  },
+  {
+    entry: 'export { createWorkflowFromConfig } from "@glowhop/vue-tour/config";',
+    externalPackages: ["@glowhop/core-tour", "@glowhop/core-tour/*"],
+    gzipBudget: 0.5 * KIB,
+    name: "Vue config",
+    outputExtension: "js",
   },
   {
     entry: 'import { createGlowTour } from "@glowhop/angular-tour"; createGlowTour();',
@@ -81,12 +102,34 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // Raw esbuild runs before that linker, so the immutable FESM budget is the stable proxy here.
   },
   {
+    entry: 'export { createWorkflowFromConfig } from "@glowhop/angular-tour/config";',
+    externalPackages: [
+      "@angular/common",
+      "@angular/common/*",
+      "@angular/core",
+      "@angular/core/*",
+      "@glowhop/core-tour",
+      "@glowhop/core-tour/*",
+      "tslib",
+    ],
+    gzipBudget: 0.5 * KIB,
+    name: "Angular config",
+    outputExtension: "js",
+  },
+  {
     entry: 'import { createGlowTour } from "@glowhop/solid-tour"; createGlowTour();',
     externalPackages: ["@glowhop/core-tour", "solid-js", "solid-js/*"],
     gzipBudget: 2.5 * KIB,
     name: "Solid",
     outputExtension: "js",
     requiresPrunedPresentation: true,
+  },
+  {
+    entry: 'export { createWorkflowFromConfig } from "@glowhop/solid-tour/config";',
+    externalPackages: ["@glowhop/core-tour", "@glowhop/core-tour/*"],
+    gzipBudget: 0.5 * KIB,
+    name: "Solid config",
+    outputExtension: "js",
   },
   {
     entry: 'import { createGlowTour } from "@glowhop/vanilla-tour"; createGlowTour();',
@@ -103,6 +146,13 @@ export const bundleScenarios: readonly BundleScenario[] = [
     name: "Vanilla /auto",
     outputExtension: "js",
     requiresAutoRegistration: true,
+  },
+  {
+    entry: 'export { createWorkflowFromConfig } from "@glowhop/vanilla-tour/config";',
+    externalPackages: ["@glowhop/core-tour"],
+    gzipBudget: 0.5 * KIB,
+    name: "Vanilla config",
+    outputExtension: "js",
   },
   {
     entry: 'import "@glowhop/styles-tour/default.css";',

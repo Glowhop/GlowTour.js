@@ -1,0 +1,135 @@
+---
+import Sparkle from "./Sparkle.astro";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+
+/*
+ * Sparkle field: kept deliberately sparse and varied in size. A dense field reads as noise behind
+ * the headline, which is what the earlier dot grid did.
+ */
+const sparkles = [
+  { top: "12%", left: "13%", size: "h-6 w-6", tone: "spark", opacity: 0.75 },
+  { top: "26%", left: "84%", size: "h-4 w-4", tone: "accent", opacity: 0.6 },
+  { top: "66%", left: "8%", size: "h-3 w-3", tone: "spark", opacity: 0.5 },
+  { top: "74%", left: "89%", size: "h-5 w-5", tone: "accent", opacity: 0.6 },
+  { top: "44%", left: "74%", size: "h-3 w-3", tone: "spark", opacity: 0.35 },
+];
+---
+
+{/*
+  Decorative hero backdrop, three layers, no hard edges:
+  1. A stage-light cone falling from the top of the section.
+  2. A pool of light where that cone lands, sitting behind the CTA row.
+  3. A sparse sparkle field.
+  Purely decorative: aria-hidden, pointer-events-none, and low enough opacity that heading and
+  body text keep full contrast in both color schemes.
+*/}
+<div class={`spotlight-motif pointer-events-none select-none ${className}`} aria-hidden="true">
+  <div class="spotlight-motif__cone"></div>
+  <div class="spotlight-motif__pool"></div>
+  {
+    sparkles.map((sparkle) => (
+      <Sparkle
+        class={`spotlight-motif__sparkle absolute ${sparkle.size} ${
+          sparkle.tone === "spark" ? "text-[var(--color-spark)]" : "text-[var(--color-accent)]"
+        }`}
+        style={`top:${sparkle.top};left:${sparkle.left};opacity:${sparkle.opacity}`}
+      />
+    ))
+  }
+</div>
+
+<style>
+  .spotlight-motif {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .spotlight-motif__cone {
+    position: absolute;
+    top: -8%;
+    left: 50%;
+    translate: -50% 0;
+    width: min(78%, 760px);
+    height: 118%;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-accent) 14%, transparent),
+      color-mix(in oklab, var(--color-accent) 5%, transparent) 45%,
+      transparent 78%
+    );
+    clip-path: polygon(41% 0, 59% 0, 100% 100%, 0 100%);
+    filter: blur(26px);
+  }
+
+  .spotlight-motif__pool {
+    position: absolute;
+    left: 50%;
+    bottom: 8%;
+    translate: -50% 0;
+    width: min(62%, 600px);
+    height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--color-accent) 16%, transparent),
+      transparent 100%
+    );
+    filter: blur(18px);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .spotlight-motif__cone {
+      background: linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--color-accent) 22%, transparent),
+        color-mix(in oklab, var(--color-accent) 8%, transparent) 45%,
+        transparent 78%
+      );
+    }
+
+    .spotlight-motif__pool {
+      background: radial-gradient(
+        closest-side,
+        color-mix(in oklab, var(--color-accent) 24%, transparent),
+        transparent 100%
+      );
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .spotlight-motif__sparkle {
+      animation: spotlight-motif-twinkle 5.5s ease-in-out infinite;
+    }
+
+    .spotlight-motif__sparkle:nth-of-type(2) {
+      animation-delay: -1.4s;
+    }
+    .spotlight-motif__sparkle:nth-of-type(3) {
+      animation-delay: -2.8s;
+    }
+    .spotlight-motif__sparkle:nth-of-type(4) {
+      animation-delay: -0.7s;
+    }
+    .spotlight-motif__sparkle:nth-of-type(5) {
+      animation-delay: -3.6s;
+    }
+  }
+
+  @keyframes spotlight-motif-twinkle {
+    0%,
+    100% {
+      scale: 1;
+      filter: brightness(1);
+    }
+    50% {
+      scale: 1.18;
+      filter: brightness(1.25);
+    }
+  }
+</style>

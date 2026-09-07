@@ -23,7 +23,7 @@ export default function Page() {
 
   return (
     <main style={{ padding: 40, fontFamily: "sans-serif" }}>
-      <h1>Glow Tour SSR verification (Next.js / React)</h1>
+      <h1>GlowTour.js SSR verification (Next.js / React)</h1>
       <p>
         This page exists to prove <code>@glowhop/react-tour</code> server-renders and hydrates
         correctly inside a real Next.js app.

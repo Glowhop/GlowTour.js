@@ -78,7 +78,7 @@ export const LAB_CONFIG = {
   },
   copy: {
     heading: "Builder API Lab",
-    description: "Un parcours exécutable couvrant chaque API du builder Glow Tour.",
+    description: "Un parcours exécutable couvrant chaque API du builder GlowTour.js.",
     targetsHeading: "Cibles du parcours",
     targetsSummary: "12 étapes · 17 méthodes",
     intro: "Le workflow démarre avec ses options globales et une cible par sélecteur CSS.",

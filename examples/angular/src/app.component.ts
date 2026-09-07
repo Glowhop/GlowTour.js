@@ -8,7 +8,7 @@ import { createGlowTour, GlowTourDefault } from "@glowhop/angular-tour";
   selector: "app-root",
   template: `
     <div style="padding: 20px">
-      <h1>Glow Tour - Angular Example</h1>
+      <h1>GlowTour.js - Angular Example</h1>
       <button
         id="welcome"
         type="button"

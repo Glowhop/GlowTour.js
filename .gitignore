@@ -14,6 +14,7 @@ coverage/
 .turbo/
 .cache/
 .worktrees/
+.superpowers/
 
 # Environment files
 .env
@@ -35,3 +36,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# Astro
+
+.astro/

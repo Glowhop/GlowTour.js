@@ -173,6 +173,77 @@ describe("vanilla adapter browser behavior", () => {
     );
   });
 
+  test("applies the idle presentation as soon as popover/pointer/overlay elements upgrade", async () => {
+    // The bug this guards: these custom elements used to get their idle
+    // (out-of-flow, invisible) presentation only once a tour bound to them
+    // via core's initializeProps(). Markup that had upgraded but whose tour
+    // had not yet run (the window this closes) was fully visible. The tour
+    // below is created but never run, so binding is live but the elements
+    // stay idle throughout this assertion.
+    const tour = runtime.createGlowTour();
+    const rootElement = root(tour, "vanilla-idle");
+    const popover = document.createElement("glow-tour-popover");
+    const pointer = document.createElement("glow-tour-pointer");
+    const overlay = document.createElement("glow-tour-overlay");
+    rootElement.append(popover, pointer, overlay);
+    document.body.append(rootElement);
+    await settle();
+
+    assert.equal(popover.style.position, "fixed");
+    assert.equal(popover.style.opacity, "0");
+    assert.equal(popover.getAttribute("aria-hidden"), "true");
+    assert.equal(popover.hasAttribute("inert"), true);
+
+    assert.equal(pointer.style.position, "fixed");
+    assert.equal(pointer.style.opacity, "0");
+    assert.equal(pointer.getAttribute("aria-hidden"), "true");
+
+    const overlayPath = overlay.querySelector<SVGPathElement>("[data-glow-tour-overlay-path]");
+    assert.ok(overlayPath);
+    assert.equal(overlayPath?.getAttribute("opacity"), "0");
+    assert.equal(overlayPath?.getAttribute("pointer-events"), "auto");
+    assert.equal(overlayPath?.getAttribute("cursor"), "auto");
+
+    rootElement.remove();
+  });
+
+  test("keeps the popover's connect-time semantics without a bound tour", async () => {
+    // The bug this guards: connectedCallback() registered role/tabindex/aria-hidden/inert
+    // through ManagedAttributes before calling super.connectedCallback(), whose rebind()
+    // starts by restoring every managed attribute — reverting each one to its pre-managed
+    // value (absent) on the spot. `tabindex`, `aria-hidden` and `inert` masked the damage
+    // because core's PopoverElement.initializeProps() re-applies them once a tour binds,
+    // so only `role` was visibly lost. Asserting with no tour bound isolates the
+    // connect-time path from that fallback.
+    const rootElement = document.createElement("glow-tour-root");
+    const popover = document.createElement("glow-tour-popover");
+    rootElement.append(popover);
+    document.body.append(rootElement);
+    await settle();
+
+    assert.equal(popover.getAttribute("role"), "dialog");
+    assert.equal(popover.getAttribute("tabindex"), "-1");
+    assert.equal(popover.getAttribute("aria-hidden"), "true");
+    assert.equal(popover.hasAttribute("inert"), true);
+
+    rootElement.remove();
+  });
+
+  test("leaves caller-authored popover semantics alone", async () => {
+    const rootElement = document.createElement("glow-tour-root");
+    const popover = document.createElement("glow-tour-popover");
+    popover.setAttribute("role", "alertdialog");
+    popover.setAttribute("tabindex", "0");
+    rootElement.append(popover);
+    document.body.append(rootElement);
+    await settle();
+
+    assert.equal(popover.getAttribute("role"), "alertdialog");
+    assert.equal(popover.getAttribute("tabindex"), "0");
+
+    rootElement.remove();
+  });
+
   test("connects a tour supplied before or after root connection and releases it on null/remount", async () => {
     const first = runtime.createGlowTour();
     const second = runtime.createGlowTour();
