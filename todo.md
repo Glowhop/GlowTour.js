@@ -120,6 +120,7 @@ Branche `feat/monitoring-events`, partie de `feature/step-id-start-at` : le payl
 - [x] 13 tests core sans DOM : séquence complète d'un tour terminé, annulation, position/compte, direction, source, durées, `tour:error` nommant l'étape et portant l'erreur, absence de `step:leave` à l'erreur, ordre instance-puis-workflow, listener qui jette, absence totale d'émission sans listener, reprise via `startAt`.
 - [x] 1 test navigateur (`core.browser.ts`) : le listener passé à `createGlowTour` reçoit bien les événements **et** la source remonte correctement d'un clic de bouton (`"trigger"`) et d'un raccourci clavier (`"keyboard"`). Même garde que celle exigée par le lot 1 : les tests sans DOM pilotent `TourController` directement, donc une façade qui oublierait de transmettre `onEvent` — ou un driver qui cesserait de reporter la source — resterait verte partout ailleurs.
   - Piège rencontré en écrivant ce test : une racine construite à la main doit porter `data-glow-tour-root`, sinon `ownsTrigger` ne reconnaît pas le clic comme étant le sien. Les adapters posent cet attribut ; le harnais de test ne le faisait pas.
+- [x] **Défaut trouvé en relisant ma propre implémentation** : `step:leave` était émis avant la mise à jour de `this.direction`, donc un retour arrière rapportait `direction: "advance"` — la direction d'arrivée sur l'étape, pas celle qui la fait quitter. Corrigé, et le test correspondant validé en le faisant échouer sur le code non corrigé.
 - [x] 488 tests verts, `bun run check`, `tsc --noEmit`, `bun run test:browser`, build du site.
 
 ---

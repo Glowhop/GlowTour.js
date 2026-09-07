@@ -264,8 +264,10 @@ export class TourController<T> {
   }
 
   private async enter(index: number, direction: TourDirection, operation: number): Promise<void> {
-    this.emitStepLeave(this.currentStep());
+    // The direction is set first on purpose: `step:leave` must report the
+    // navigation that causes the departure, not the one that brought the user in.
     this.direction = direction;
+    this.emitStepLeave(this.currentStep());
     this.setStatus("transitioning");
     this.assertCurrent(operation);
     const step = this.steps[index];
