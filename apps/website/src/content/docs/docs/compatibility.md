@@ -84,9 +84,10 @@ All adapters follow the same rule: one tour controller can be connected to one l
 
 ## Package distribution
 
-- **Framework adapters** (`react`, `vue`, `solid`, `angular`, `vanilla`) are distributed as ESM-only packages.
+- **Framework adapters** (`react`, `vue`, `solid`, `angular`, `vanilla`) are distributed as ESM-only packages. Each declares its framework as a peer dependency and keeps a development copy in its own workspace manifest.
+- **Angular** is additionally shipped in Angular Package Format with partial compilation (`fesm2022`), so it links against your own Angular version at build time.
 - **Core** (`core-tour`) is ESM-only and framework-agnostic.
 - **Styles** (`styles-tour`) is CSS-only.
 - **Type definitions** are included in each package.
 
-All packages are published to npm under the `@glowhop` scope.
+All packages are published to npm under the `@glowhop` scope. The repository's `apps/playground` exercises every adapter but is private and is not a published compatibility target.

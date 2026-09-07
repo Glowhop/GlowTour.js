@@ -27,6 +27,9 @@ Deepen your understanding with our guides:
 - **[Accessibility](/docs/guides/accessibility)** — Build inclusive tours
 - **[Positioning](/docs/guides/positioning)** — Control popover placement
 - **[Programmatic control](/docs/guides/programmatic-control)** — Control tours with code
+- **[Resuming a tour](/docs/guides/resuming)** — Persist the position and restart on a given step
+- **[Monitoring](/docs/guides/monitoring)** — Send tour events to your analytics
+- **[JSON config](/docs/guides/json-config)** — Build tours from a plain, serializable object
 - **[SSR](/docs/guides/ssr)** — Server-side rendering support
 
 ## API Reference

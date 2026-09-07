@@ -1,4 +1,10 @@
-# Accessibility
+# Accessibility: implementation contract
+
+> **Scope.** This is the internal contract and audit record, written against the source. The
+> user-facing guide is a separate document — published at <https://glowtour.dev/docs/guides/accessibility>,
+> source in [`apps/website/src/content/docs/docs/guides/accessibility.md`](../apps/website/src/content/docs/docs/guides/accessibility.md).
+> Keep behavioural claims here (they cite the files that implement them); put anything a consumer
+> needs to read in the guide, not in both.
 
 This document is the accessibility contract for GlowTour.js: the ARIA semantics every adapter
 renders, the keyboard shortcuts the core engine supports, and the focus-restoration behavior
@@ -86,7 +92,8 @@ being trapped. Coverage: `packages/core/src/state/focus-guard.test.ts` includes
   `driver.clear()`, and by grepping every adapter's `tour-components.ts(x)` for keyboard handling
   (none exists outside core).
 - An axe-core pass was run against a live `apps/playground` preview (React lab) using the
-  project's Browser preview tooling. It found and fixed three real WCAG AA color-contrast
+  project's Browser preview tooling. It covered the **light** palette only; the dark palette
+  shipped later and has had no equivalent pass. It found and fixed three real WCAG AA color-contrast
   violations in `apps/playground/lab/lab.css` (`.lab-card-number`, `.lab-inspector-list dt`,
   `.lab-empty-log` — all under 4.5:1 against their backgrounds). It also flagged the Advance
   trigger's own contrast; that flag was traced to the preview tab running backgrounded

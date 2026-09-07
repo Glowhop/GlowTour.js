@@ -6,7 +6,9 @@ tested code, exposed through the `@glowhop/core-tour/config` entry point.
 ## Format
 
 A `WorkflowConfig<T = string>` is a plain JSON object: a `name`, the usual tour-level
-display/behavior options, and `steps`. Content (`title`/`content`) is generic over `T`, defaulting
+display/behavior options, and `steps`. Every step carries a required `id`, unique within the
+workflow — it is what `run(workflow, { startAt })` resolves against, so it is validated at build
+time like any other required field. Content (`title`/`content`) is generic over `T`, defaulting
 to `string` for the untrusted-JSON path (`JSON.parse()` output). No i18n either way; put
 translation keys in `content` and interpolation params in `data`. `target` is a CSS selector
 string only.
@@ -34,6 +36,7 @@ a plain function — see "Mapping problems" below for why.
   "cancellable": true,
   "steps": [
     {
+      "id": "invite",
       "target": "#invite-button",
       "title": "onboarding.invite.title",
       "content": "onboarding.invite.body",
@@ -50,6 +53,7 @@ a plain function — see "Mapping problems" below for why.
       ]
     },
     {
+      "id": "done",
       "target": "#done-banner",
       "title": "onboarding.done.title",
       "content": "onboarding.done.body",
