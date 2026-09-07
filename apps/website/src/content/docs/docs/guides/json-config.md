@@ -33,6 +33,7 @@ await createGlowTour().run(workflow);
   "popover": { "gap": 16 },
   "steps": [
     {
+      "id": "invite-button",
       "target": "#invite-button",
       "title": "Invite your team",
       "content": "Send an invite to get started.",
@@ -46,6 +47,7 @@ await createGlowTour().run(workflow);
       ]
     },
     {
+      "id": "done-banner",
       "target": "#done-banner",
       "title": "All set!",
       "content": "You're ready to go.",
@@ -56,7 +58,7 @@ await createGlowTour().run(workflow);
 ```
 
 - `name` and `steps` are required.
-- Every step requires `target`, `title`, and `content`.
+- Every step requires `id`, `target`, `title`, and `content`. Step ids must be unique within the workflow; they are what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
 - `target` is a CSS selector. Function and `HTMLElement` targets remain builder-only.
 - `title` and `content` are strings for JSON loaded from a CMS or API.
 - `overlay`, `popover`, `indicator`, and `behavior` use the same options as the builder, globally or per step.

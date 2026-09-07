@@ -16,6 +16,15 @@ GlowTour.js is a cross-framework guided-tour library (core engine + React/Solid/
 - `packages/core` has no presentation; framework adapters (`packages/react`, `packages/vue`, `packages/angular`, `packages/solid`, `packages/vanilla`) consume it. `packages/styles` provides the default theme.
 - Changesets versions the public packages together; see [docs/release.md](docs/release.md) and [RELEASING.md](RELEASING.md).
 
+## Conception d'API — recette plutôt que feature
+
+Priorité : flexibilité et DX, obtenues en **limitant** la surface d'API publique, pas en l'étendant. Détail complet dans [AGENTS.md](AGENTS.md#api-design-rules--recette-plutôt-que-feature).
+
+- N'ajouter une API publique que si elle est impossible à écrire depuis l'extérieur. Faisable en quelques lignes côté app avec ce que le core expose déjà = recette à documenter dans `docs/`, pas option à livrer.
+- Le core fournit des primitives ; les politiques restent à l'app (stockage, routeur, analytics, TTL, multi-onglets). Aucun global navigateur (`window`, `sessionStorage`, `location`) codé en dur dans `packages/core` — c'est ce qui préserve le SSR par construction.
+- Pas de seconde façon de faire une chose déjà faisable. Un champ requis vaut mieux qu'un champ optionnel qui crée deux modes.
+- Ajouter plus tard est additif, retirer est breaking : dans le doute, ne pas ajouter. Écrire la décision et sa raison dans `todo.md`.
+
 ## Verification before finishing
 
 - Run the relevant subset of `bun run check`, `bunx tsc -p tsconfig.json --noEmit`, and `bun test` for anything touched.

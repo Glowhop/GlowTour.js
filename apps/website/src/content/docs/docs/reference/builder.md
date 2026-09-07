@@ -32,7 +32,7 @@ const workflow = tour
     onStart: () => console.log("Tour started"),
     onFinish: () => console.log("Tour finished")
   })
-  .step({ /* ... */ })
+  .step({ id: "step-1", /* ... */ })
   .build();
 ```
 
@@ -46,6 +46,7 @@ step(params: StepParameters): WorkflowStepBuilder
 ```
 
 **Parameters**:
+- `id` - Stable identifier, unique within the workflow (required). Validated at `.build()` time. It is what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour, so prefer a name that survives reordering.
 - `target` - CSS selector, HTMLElement, or resolver function (required)
 - `title` - Step title displayed in popover (required)
 - `content` - Step description displayed in popover (required)
@@ -59,6 +60,7 @@ step(params: StepParameters): WorkflowStepBuilder
 **Usage**:
 ```typescript
 .step({
+  id: "feature",
   target: "#feature",
   title: "Meet the new feature",
   content: "This will help you be more productive",
@@ -83,6 +85,7 @@ do(fn: () => void | Promise<void>): WorkflowStepBuilder
   await fetchData();
 })
 .step({
+  id: "results",
   target: "#results",
   title: "Results loaded",
   content: "Data is now available"
@@ -100,9 +103,9 @@ wait(ms: number): WorkflowStepBuilder
 
 **Usage**:
 ```typescript
-.step({ /* ... */ })
+.step({ id: "step-4", /* ... */ })
 .wait(2000)  // Wait 2 seconds
-.step({ /* ... */ })
+.step({ id: "step-5", /* ... */ })
 ```
 
 ### `.waitUntil(fn, options?)`
@@ -128,6 +131,7 @@ waitUntil(
   timeout: 5000
 })
 .step({
+  id: "data",
   target: "#data",
   title: "Here's your data",
   content: "The data has loaded"
@@ -154,6 +158,7 @@ waitUntilElement(
 ```typescript
 .waitUntilElement("#modal", { timeout: 3000 })
 .step({
+  id: "modal",
   target: "#modal",
   title: "Modal opened",
   content: "The modal is now visible"
@@ -175,6 +180,7 @@ onTargetEvent(
 **Usage**:
 ```typescript
 .step({
+  id: "form",
   target: "#form",
   title: "Submit the form",
   content: "Click the submit button"
@@ -201,6 +207,7 @@ build(): WorkflowDefinition
 const workflow = tour
   .create("onboarding")
   .step({
+    id: "welcome",
     target: "#welcome",
     title: "Welcome",
     content: "Let's get started"
@@ -220,6 +227,7 @@ beforeAdvance?(context: StepContext): void | Promise<void>
 **Usage**:
 ```typescript
 .step({
+  id: "button",
   target: "#button",
   title: "Step 1",
   content: "Description",

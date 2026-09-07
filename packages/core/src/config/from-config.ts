@@ -74,6 +74,7 @@ function applyStepConfig<T>(
   path: string,
 ): void {
   const step = builder.step({
+    id: stepConfig.id,
     target: stepConfig.target,
     resetPropsOnEnter: stepConfig.resetPropsOnEnter,
     overlay: stepConfig.overlay,
@@ -183,7 +184,7 @@ function resolveEventHandlerAction<T>(ref: StepActionRef<T>, path: string): Step
   if (typeof ref === "function") return ref;
 
   const scratch = new WorkflowBuilder<string>("__config_event_handler_scratch__");
-  const scratchStep = scratch.step({ target: "*", title: "", content: "" });
+  const scratchStep = scratch.step({ id: "scratch", target: "*", title: "", content: "" });
   applyBuiltinAction(scratchStep, ref, path);
   const [instruction] = scratch.build().steps[0]?.actions ?? [];
   if (instruction === undefined) {

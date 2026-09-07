@@ -17,7 +17,7 @@ import "@glowhop/styles-tour/default.css";
 import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
-const workflow = tour.create("welcome").step({ target: "#welcome", title: "Welcome", content: "Hello." }).build();
+const workflow = tour.create("welcome").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
 createRoot(document.getElementById("app")!).render(<><button id="welcome">Welcome</button><button type="button" onClick={() => void tour.run(workflow)}>Start tour</button><DefaultTour tour={tour} /></>);
 ```
 

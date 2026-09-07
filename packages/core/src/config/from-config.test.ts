@@ -36,6 +36,7 @@ describe("createWorkflowFromConfig", () => {
       onStart,
       steps: [
         {
+          id: "invite",
           target: "#invite-button",
           title: "Invite",
           content: "Invite your team",
@@ -49,6 +50,7 @@ describe("createWorkflowFromConfig", () => {
 
     const expected = new WorkflowBuilder<string>("onboarding", { cancellable: true, onStart })
       .step({
+        id: "invite",
         target: "#invite-button",
         title: "Invite",
         content: "Invite your team",
@@ -85,6 +87,7 @@ describe("createWorkflowFromConfig", () => {
       name: "wait",
       steps: [
         {
+          id: "s3",
           target: "#target",
           title: "Title",
           content: "Content",
@@ -101,6 +104,7 @@ describe("createWorkflowFromConfig", () => {
       name: "click",
       steps: [
         {
+          id: "s4",
           target: "#target",
           title: "Title",
           content: "Content",
@@ -125,6 +129,7 @@ describe("createWorkflowFromConfig", () => {
       name: "focus",
       steps: [
         {
+          id: "s5",
           target: "#target",
           title: "Title",
           content: "Content",
@@ -149,6 +154,7 @@ describe("createWorkflowFromConfig", () => {
       name: "wait-until-element",
       steps: [
         {
+          id: "s6",
           target: "#target",
           title: "Title",
           content: "Content",
@@ -173,6 +179,7 @@ describe("createWorkflowFromConfig", () => {
       name: "event-handler-builtin",
       steps: [
         {
+          id: "s7",
           target: "#target",
           title: "Title",
           content: "Content",
@@ -195,7 +202,7 @@ describe("createWorkflowFromConfig", () => {
   test("attaches the original config as a frozen deep copy, leaving the caller's object untouched", () => {
     const config: WorkflowConfig = {
       name: "source-test",
-      steps: [{ target: "#target", title: "Title", content: "Content" }],
+      steps: [{ id: "step-3", target: "#target", title: "Title", content: "Content" }],
     };
 
     const definition = createWorkflowFromConfig(config);
@@ -231,7 +238,7 @@ describe("createWorkflowFromConfig", () => {
     const definition = createWorkflowFromConfig<RichContent | typeof content>(
       {
         name: "rich-source",
-        steps: [{ target: "#target", title, content }],
+        steps: [{ id: "s8", target: "#target", title, content }],
       },
       { validateContent: () => null },
     );
@@ -261,7 +268,7 @@ describe("createWorkflowFromConfig", () => {
       const tour = createGlowTour<string>();
       const workflow = createWorkflowFromConfig({
         name: "bare-core",
-        steps: [{ target: "#a", title: "T", content: "C" }],
+        steps: [{ id: "s9", target: "#a", title: "T", content: "C" }],
       });
       await assert.rejects(() => tour.run(workflow), /connected root/i);
     });
@@ -270,7 +277,10 @@ describe("createWorkflowFromConfig", () => {
       type StandInContent = string | number | null;
       const tour = createGlowTour<StandInContent>();
       const workflow = createWorkflowFromConfig<StandInContent>(
-        { name: "adapter-stand-in", steps: [{ target: "#a", title: "T", content: "C" }] },
+        {
+          name: "adapter-stand-in",
+          steps: [{ id: "s10", target: "#a", title: "T", content: "C" }],
+        },
         { validateContent: () => null },
       );
       await assert.rejects(() => tour.run(workflow), /connected root/i);

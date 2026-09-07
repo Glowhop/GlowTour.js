@@ -61,6 +61,7 @@ export default defineConfig({
             { label: "Accessibility", link: "/docs/guides/accessibility" },
             { label: "Positioning", link: "/docs/guides/positioning" },
             { label: "Programmatic control", link: "/docs/guides/programmatic-control" },
+            { label: "Resuming a tour", link: "/docs/guides/resuming" },
             { label: "JSON config", link: "/docs/guides/json-config" },
             { label: "SSR", link: "/docs/guides/ssr" },
           ],

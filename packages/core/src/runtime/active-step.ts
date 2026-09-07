@@ -69,6 +69,7 @@ export class ActiveStep<T> {
 
   snapshot() {
     return Object.freeze({
+      id: this.definition.id,
       initialProps: freezeStepProps(this.initialProps),
       currentProps: freezeStepProps(this.props.get()),
       target: this.target,

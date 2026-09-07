@@ -64,7 +64,7 @@ unsubscribe();
 ### Basic run
 
 ```typescript
-const workflow = tour.create("intro").step({ /* ... */ }).build();
+const workflow = tour.create("intro").step({ id: "step-1", /* ... */ }).build();
 await tour.run(workflow);
 console.log("Tour completed");
 ```
@@ -109,7 +109,7 @@ const workflow = tour
       console.log("Tour completed all steps, last step:", context.step?.initialProps.title);
     },
   })
-  .step({ /* ... */ })
+  .step({ id: "step1", /* ... */ })
   .build();
 ```
 
@@ -122,6 +122,7 @@ inside it — they attach to the step that precedes them:
 const workflow = tour
   .create("transitions")
   .step({
+    id: "step1-2",
     target: "#step1",
     title: "First",
     content: "Step 1",
@@ -132,6 +133,7 @@ const workflow = tour
     await saveProgress();
   })
   .step({
+    id: "step2",
     target: "#step2",
     title: "Second",
     content: "Step 2",
@@ -140,6 +142,7 @@ const workflow = tour
     console.log("About to go back to step 1");
   })
   .step({
+    id: "step3",
     target: "#step3",
     title: "Third",
     content: "Step 3",
@@ -160,6 +163,7 @@ Sequence work between steps using `.do()`, `.wait()`, and other action methods:
 const workflow = tour
   .create("with-actions")
   .step({
+    id: "field",
     target: "#field",
     title: "Enter data",
     content: "Type something in this field.",
@@ -169,6 +173,7 @@ const workflow = tour
   })
   .wait(1000) // Wait 1 second
   .step({
+    id: "submit",
     target: "#submit",
     title: "Submit",
     content: "Click the submit button.",
@@ -178,6 +183,7 @@ const workflow = tour
     return document.querySelector("form")?.dataset.submitted === "true";
   })
   .step({
+    id: "success",
     target: "#success",
     title: "Done!",
     content: "Your form was submitted.",
@@ -202,14 +208,14 @@ define reusable fragments once and reuse them across tours:
 ```typescript
 const profileSteps = tour
   .create("profile-fragment")
-  .step({ target: "#profile", title: "Your profile", content: "Complete it to continue." })
+  .step({ id: "profile", target: "#profile", title: "Your profile", content: "Complete it to continue." })
   .build();
 
 const workflow = tour
   .create("onboarding")
-  .step({ target: "#welcome", title: "Welcome", content: "Let's get started!" })
+  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Let's get started!" })
   .append(profileSteps)
-  .step({ target: "#dashboard", title: "You're ready!", content: "Explore your dashboard." })
+  .step({ id: "dashboard", target: "#dashboard", title: "You're ready!", content: "Explore your dashboard." })
   .build();
 ```
 
@@ -221,6 +227,7 @@ React to DOM events on the current target:
 const workflow = tour
   .create("events")
   .step({
+    id: "button",
     target: "#button",
     title: "Click me",
     content: "This button triggers an action.",
@@ -229,6 +236,7 @@ const workflow = tour
     console.log("Target was clicked during this step");
   })
   .step({
+    id: "next",
     target: "#next",
     title: "Next",
     content: "Continue the tour.",
@@ -288,6 +296,7 @@ const workflow = tour
     },
   })
   .step({
+    id: "welcome-2",
     target: "#welcome",
     title: "Welcome",
     content: "Let's get started!",
@@ -297,6 +306,7 @@ const workflow = tour
   })
   .wait(500)
   .step({
+    id: "profile-2",
     target: "#profile",
     title: "Your profile",
     content: "Complete your profile to unlock all features.",
@@ -308,6 +318,7 @@ const workflow = tour
     await api.submitProfile();
   })
   .step({
+    id: "dashboard-2",
     target: "#dashboard",
     title: "You're ready!",
     content: "Explore your dashboard.",

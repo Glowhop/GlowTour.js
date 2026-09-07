@@ -290,7 +290,7 @@ describe("private root bridge", () => {
           onStartCalls += 1;
         },
       })
-      .step({ content: "content", target: () => root(), title: "title" })
+      .step({ id: "step-1", content: "content", target: () => root(), title: "title" })
       .build();
 
     await assert.rejects(() => tour.run(definition), /connected popover/i);
@@ -308,6 +308,7 @@ describe("private root bridge", () => {
     const definition = tour
       .create("with-popover")
       .step({
+        id: "step-2",
         behavior: { missingTargetStrategy: "skip" },
         content: "content",
         target: () => null,
@@ -327,7 +328,7 @@ describe("private root bridge", () => {
     const releasePopover = binding.bindPopover(child(mount));
     const definition = tour
       .create("removed-popover")
-      .step({ content: "content", target: () => root(), title: "title" })
+      .step({ id: "step-3", content: "content", target: () => root(), title: "title" })
       .build();
 
     releasePopover();
@@ -507,6 +508,7 @@ describe("private root bridge", () => {
         tour
           .create("replacement-popover")
           .step({
+            id: "step-4",
             behavior: { missingTargetStrategy: "skip" },
             content: "content",
             target: () => null,
@@ -621,7 +623,7 @@ describe("private root bridge", () => {
     const target = child(mount, "button");
     const definition = tour
       .create("active", { onStart: () => releasePopover() })
-      .step({ content: "content", target: () => target, title: "title" })
+      .step({ id: "step-5", content: "content", target: () => target, title: "title" })
       .build();
 
     await tour.run(definition);
@@ -649,7 +651,7 @@ describe("private root bridge", () => {
         },
         onStart: () => binding.release(),
       })
-      .step({ content: "content", target: () => root(), title: "title" })
+      .step({ id: "step-6", content: "content", target: () => root(), title: "title" })
       .build();
 
     await tour.run(definition);
@@ -667,6 +669,7 @@ describe("private root bridge", () => {
       resolverTour
         .create("release-target", { onStart: releaseResolverPopover })
         .step({
+          id: "step-7",
           content: "content",
           target: () => {
             resolverBinding.release();
@@ -684,7 +687,7 @@ describe("private root bridge", () => {
     const releaseHookPopover = hookBinding.bindPopover(child(hookMount));
     const hookDefinition = hookTour
       .create("release-hook", { onStart: releaseHookPopover })
-      .step({ content: "content", target: () => root(), title: "title" })
+      .step({ id: "step-8", content: "content", target: () => root(), title: "title" })
       .beforeAdvance(() => hookBinding.release())
       .build();
     await hookTour.run(hookDefinition);
@@ -699,7 +702,7 @@ describe("private root bridge", () => {
     let releasePopover = binding.bindPopover(child(mount));
     const definition = tour
       .create("release-remount", { onStart: () => releasePopover() })
-      .step({ content: "content", target: () => root(), title: "title" })
+      .step({ id: "step-9", content: "content", target: () => root(), title: "title" })
       .build();
     await tour.run(definition);
     let remounts = 0;

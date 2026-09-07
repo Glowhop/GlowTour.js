@@ -7,6 +7,7 @@ import type {
   GlowTour,
   GlowTourOptions,
   LifecycleHookContext,
+  RunOptions,
   StartOptions,
   StepContext,
   TourDirection,
@@ -19,6 +20,24 @@ import { attachRootBridge } from "./root-bridge";
 
 const DEFAULT_TARGET_TIMEOUT = 3000;
 const DISPOSED_ERROR_MESSAGE = "Tour controller is disposed";
+
+/**
+ * Resolves `RunOptions.startAt` to a step index. Throws rather than silently
+ * falling back to the first step: a stale id means the caller's stored position
+ * no longer matches the workflow, and restarting an onboarding from the
+ * beginning without saying so is a bug the end user sees.
+ */
+function resolveStartIndex<T>(
+  workflow: WorkflowDefinition<T>,
+  startAt: string | undefined,
+): number {
+  if (startAt === undefined) return 0;
+  const index = workflow.steps.findIndex((step) => step.id === startAt);
+  if (index === -1) {
+    throw new Error(`Workflow "${workflow.name}" has no step with id "${startAt}" to start at.`);
+  }
+  return index;
+}
 
 function normalizedError(error: unknown) {
   if (error instanceof Error) return error;
@@ -109,9 +128,10 @@ export class TourController<T> {
     return new WorkflowBuilder<T>(name, options);
   }
 
-  async run(workflow: WorkflowDefinition<T>) {
+  async run(workflow: WorkflowDefinition<T>, runOptions: RunOptions = {}) {
     this.assertNotDisposed();
     validateWorkflowOptions(workflow);
+    const startIndex = resolveStartIndex(workflow, runOptions.startAt);
     const rootDocument = this.options.assertCanRun?.(workflow) ?? undefined;
     const retainedPresentation = this.capturePresentation();
     const operation = this.beginOperation();
@@ -142,7 +162,7 @@ export class TourController<T> {
       this.setStatus("starting");
       this.assertCurrent(operation);
       const { context: startContext, isAborted: isStartAborted } = this.createLifecycleHookContext(
-        this.steps[0] ?? null,
+        this.steps[startIndex] ?? null,
       );
       await workflow.options.onStart?.(startContext);
       this.assertCurrent(operation);
@@ -154,7 +174,7 @@ export class TourController<T> {
         await this.finish(operation);
         return;
       }
-      await this.enter(0, "advance", operation);
+      await this.enter(startIndex, "advance", operation);
     } catch (error) {
       await this.handleFailure(error, operation);
     }
@@ -725,7 +745,7 @@ export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
     dispose: () => controller.dispose(),
     goToStep: (index) => controller.goToStep(index),
     previous: () => controller.previous(),
-    run: (workflow) => controller.run(workflow),
+    run: (workflow, runOptions) => controller.run(workflow, runOptions),
     state: controller.state,
   };
   bridge = attachRootBridge(
