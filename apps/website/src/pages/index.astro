@@ -9,16 +9,21 @@ import Marquee from "../components/Marquee.astro";
 import SpotlightMotif from "../components/SpotlightMotif.astro";
 import StepDivider from "../components/StepDivider.astro";
 import MarketingLayout from "../layouts/MarketingLayout.astro";
-import { examples } from "../lib/examples";
+import { FEATURED_EXAMPLE_LABELS, pickExamples } from "../lib/examples";
 
 // The Examples gallery pairs each live demo with its highlighted source code, but Astro's Shiki
 // integration (astro:components' <Code>) only works at build time inside .astro files, not inside
 // a React island. Pre-rendering CodeBlock.astro through the container API here produces the same
 // highlighted HTML markup as the rest of the site's code blocks, which is then passed into the
 // island as static strings — the island just swaps which one is visible.
+//
+// The home page shows a taster, not the whole gallery: /examples is the page that lists every
+// one of them, and rendering all of them here too shipped a second copy of every demo and
+// snippet to visitors who never scroll this far.
+const featuredExamples = pickExamples(FEATURED_EXAMPLE_LABELS);
 const container = await AstroContainer.create();
 const exampleCodeHtml = await Promise.all(
-  examples.map(({ source }) =>
+  featuredExamples.map(({ source }) =>
     container.renderToString(CodeBlock, { props: { code: source, lang: "tsx" } }),
   ),
 );
@@ -206,7 +211,10 @@ const jsonLd = {
       Every example below runs for real — the code beside it is exactly what produced it.
     </p>
     <div class="mt-10">
-      <ExamplesGallery client:load codeHtml={exampleCodeHtml} />
+      <ExamplesGallery client:load codeHtml={exampleCodeHtml} labels={FEATURED_EXAMPLE_LABELS} />
+    </div>
+    <div class="mt-8 text-center">
+      <Button href="/examples" variant="secondary">See all examples</Button>
     </div>
   </section>
 

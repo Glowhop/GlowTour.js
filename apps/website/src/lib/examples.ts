@@ -126,3 +126,23 @@ export const examples: readonly Example[] = [
     title: "Live step counter",
   },
 ];
+
+/**
+ * Resolves example labels to entries, in the order given. The gallery island cannot receive
+ * `Example` objects as props — they hold component references, and Astro serializes island props
+ * to JSON — so a page picks a subset by label and the island looks it up on this side.
+ */
+export function pickExamples(labels: readonly string[]): readonly Example[] {
+  return labels.map((label) => {
+    const example = examples.find((candidate) => candidate.label === label);
+    if (!example) throw new Error(`Unknown example label: ${label}`);
+    return example;
+  });
+}
+
+/** The subset shown on the home page; the full gallery lives on /examples. */
+export const FEATURED_EXAMPLE_LABELS = [
+  "Simple walkthrough",
+  "Click to continue",
+  "Light and dark",
+] as const;
