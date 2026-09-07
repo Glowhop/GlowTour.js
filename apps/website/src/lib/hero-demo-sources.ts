@@ -278,11 +278,13 @@ export const themeSource = `const tour = createGlowTour();
 const workflow = tour
   .create("billing")
   .step({
+    id: "plan",
     target: "#plan",
     title: "One stylesheet, two palettes",
     content: "default.css ships both. With nothing set, the tour follows the OS preference.",
   })
   .step({
+    id: "update-plan",
     target: "#update-plan",
     title: "Forced from an attribute",
     content: "data-glow-tour-theme on any ancestor pins a theme.",
@@ -302,6 +304,7 @@ export const longContentSource = `const tour = createGlowTour();
 const workflow = tour
   .create("release-notes")
   .step({
+    id: "read-notes",
     target: "#read-notes",
     title: "A step with a lot to say",
     content: "The popover caps its height and scrolls its content, so the footer "
