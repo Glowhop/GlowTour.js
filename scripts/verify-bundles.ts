@@ -36,7 +36,9 @@ export const bundleScenarios: readonly BundleScenario[] = [
   {
     entry: 'import { createGlowTour } from "@glowhop/core-tour"; createGlowTour();',
     externalPackages: [],
-    gzipBudget: 20 * KIB,
+    // Raised from 20 KiB for the cutout tween that carries the overlay
+    // animation on WebKit, where `d` cannot be animated by the engine.
+    gzipBudget: 20.75 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

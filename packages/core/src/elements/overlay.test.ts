@@ -381,28 +381,21 @@ describe("OverlayElement on engines without the CSS `d` property", () => {
  * `run(timestamp)` plays back every frame queued so far at that timestamp.
  */
 function frameScheduler() {
-  let nextId = 1;
-  const pending = new Map<number, FrameRequestCallback>();
-  const cancelled: number[] = [];
+  let pending: FrameRequestCallback[] = [];
 
   return {
-    cancelled,
-    cancelAnimationFrame(id: number) {
-      cancelled.push(id);
-      pending.delete(id);
-    },
     get pendingCount() {
-      return pending.size;
+      return pending.length;
     },
     requestAnimationFrame(callback: FrameRequestCallback) {
-      const id = nextId++;
-      pending.set(id, callback);
-      return id;
+      pending.push(callback);
+      return pending.length;
     },
-    run(timestamp: number) {
-      const frames = [...pending.entries()];
-      pending.clear();
-      for (const [, callback] of frames) callback(timestamp);
+    /** Plays back every frame queued so far. */
+    run() {
+      const frames = pending;
+      pending = [];
+      for (const callback of frames) callback(0);
     },
   };
 }
@@ -412,15 +405,31 @@ function settledAnimation() {
   return { cancel() {}, finished: Promise.resolve() } as unknown as Animation;
 }
 
-/** Resolves only once the caller explicitly finishes it. */
-function pendingAnimation() {
+/**
+ * An animation whose clock the test drives. The cutout tween reads its eased
+ * progress rather than keeping a clock of its own, so this is what moves the
+ * shape; `progress` reads `null` once an animation is over, which is the
+ * tween's cue to land on its target and stop.
+ */
+function steerableAnimation() {
   let settle = () => {};
   const finished = new Promise<void>((resolve) => {
     settle = resolve;
   });
+  const timing: { progress: number | null } = { progress: 0 };
   return {
-    animation: { cancel: () => settle(), finished } as unknown as Animation,
-    finish: () => settle(),
+    animation: {
+      cancel: () => settle(),
+      effect: { getComputedTiming: () => timing },
+      finished,
+    } as unknown as Animation,
+    finish: () => {
+      timing.progress = null;
+      settle();
+    },
+    seek: (progress: number) => {
+      timing.progress = progress;
+    },
   };
 }
 
@@ -428,7 +437,7 @@ describe("OverlayElement cutout tween on engines without the CSS `d` property", 
   /**
    * WebKit cannot animate `d` at all, as a CSS property or as a WAAPI value,
    * so the cutout has to be walked to its target by hand — one interpolated
-   * `d` attribute per frame, the way driver.js moves its stage. Without it the
+   * rectangle per frame, the way driver.js moves its stage. Without it the
    * highlight teleports between steps on every browser on iOS.
    */
   function setupWebKit(frames: ReturnType<typeof frameScheduler>) {
@@ -436,7 +445,6 @@ describe("OverlayElement cutout tween on engines without the CSS `d` property", 
       configurable: true,
       value: {
         CSS: { supports: () => false },
-        cancelAnimationFrame: frames.cancelAnimationFrame,
         devicePixelRatio: 1,
         innerHeight: 600,
         innerWidth: 800,
@@ -450,31 +458,30 @@ describe("OverlayElement cutout tween on engines without the CSS `d` property", 
     setupWebKit(frames);
     const element = new MockOverlay();
     element.path.animate = settledAnimation;
-    const overlay = new OverlayElement(element as unknown as SVGSVGElement, {
-      duration: 100,
-      easing: "linear",
-    });
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement, { duration: 100 });
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), {});
     const start = element.path.attributes.get("d");
     assert.match(start ?? "", /Z M92,100 /);
 
-    const { animation, finish } = pendingAnimation();
-    element.path.animate = () => animation;
+    const clock = steerableAnimation();
+    element.path.animate = () => clock.animation;
     const move = overlay.moveToTarget(rect(300, 100, 40, 20), {});
-    frames.run(0);
-    // The tween owns the geometry now, so the shape must not have jumped to the
-    // destination the moment the animation started.
+
+    frames.run();
+    // The tween owns the geometry now, so the shape must not have jumped to
+    // the destination the moment the animation started.
     assert.equal(element.path.attributes.get("d"), start);
 
-    frames.run(50);
+    clock.seek(0.5);
+    frames.run();
     assert.match(element.path.attributes.get("d") ?? "", /Z M192,100 /);
 
-    frames.run(100);
+    clock.finish();
+    frames.run();
     assert.match(element.path.attributes.get("d") ?? "", /Z M292,100 /);
     assert.equal(frames.pendingCount, 0);
 
-    finish();
     await move;
     assert.match(element.path.attributes.get("d") ?? "", /Z M292,100 /);
   });
@@ -511,28 +518,27 @@ describe("OverlayElement cutout tween on engines without the CSS `d` property", 
     assert.match(element.path.attributes.get("d") ?? "", /Z M292,100 /);
   });
 
-  test("drops the tween when the overlay is released mid-flight", async () => {
+  test("leaves the shape where it got to when the overlay is released mid-flight", async () => {
     const frames = frameScheduler();
     setupWebKit(frames);
     const element = new MockOverlay();
     element.path.animate = settledAnimation;
-    const overlay = new OverlayElement(element as unknown as SVGSVGElement, {
-      duration: 100,
-      easing: "linear",
-    });
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement, { duration: 100 });
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), {});
-    const { animation } = pendingAnimation();
-    element.path.animate = () => animation;
+    const clock = steerableAnimation();
+    element.path.animate = () => clock.animation;
     void overlay.moveToTarget(rect(300, 100, 40, 20), {});
-    frames.run(0);
-    assert.ok(frames.pendingCount > 0);
+    clock.seek(0.5);
+    frames.run();
+    assert.match(element.path.attributes.get("d") ?? "", /Z M192,100 /);
 
     overlay.release();
-
-    assert.ok(frames.cancelled.length > 0);
     assert.equal(element.path.attributes.has("d"), false);
-    frames.run(50);
+
+    // A frame belonging to a dropped tween must not resurrect the cutout.
+    clock.seek(0.9);
+    frames.run();
     assert.equal(element.path.attributes.has("d"), false);
   });
 });

@@ -16,6 +16,7 @@ overdraw rather than letterbox, and the element is sized to `100lvh` where that
 unit exists so it always spans the visible area.
 
 The cutout now animates on WebKit. Safari — and therefore every browser on iOS —
-cannot animate `d` through the Web Animations API, so the shape is tweened frame
-by frame into the `d` attribute using the step's own duration and easing, instead
-of snapping to each target.
+cannot animate `d` through the Web Animations API, so the rectangle is
+interpolated frame by frame and the path regenerated from it, clocked by the
+eased progress of the animation already running on the same element, instead of
+snapping to each target.
