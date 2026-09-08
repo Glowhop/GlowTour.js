@@ -1,6 +1,6 @@
 {
   "name": "@glowhop/core-tour",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Framework-agnostic tour controller and DOM runtime for GlowTour.js.",
   "license": "MIT",
   "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
