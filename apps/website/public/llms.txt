@@ -6,7 +6,8 @@
 
 Packages: `@glowhop/core-tour` (framework-agnostic engine, no presentation), plus
 `@glowhop/react-tour`, `@glowhop/vue-tour`, `@glowhop/solid-tour`, `@glowhop/angular-tour`,
-`@glowhop/vanilla-tour`, and `@glowhop/styles-tour` (default theme). Source and issues:
+`@glowhop/vanilla-tour`, and `@glowhop/styles-tour` (default theme). All are published on npm,
+e.g. https://www.npmjs.com/package/@glowhop/core-tour. Source and issues:
 https://github.com/Glowhop/GlowTour.js
 
 ## Docs
