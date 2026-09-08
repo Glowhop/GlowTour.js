@@ -3,6 +3,7 @@ import {
   CancellableDemo,
   ConfirmCancelDemo,
   CustomStyledIndicatorDemo,
+  CustomThemeDemo,
   LiveProgressDemo,
   LongContentDemo,
   NonInteractiveDemo,
@@ -16,6 +17,7 @@ import {
   cancellableSource,
   confirmCancelSource,
   customStyledIndicatorSource,
+  customThemeSource,
   liveProgressSource,
   longContentSource,
   nonInteractiveSource,
@@ -117,6 +119,14 @@ export const examples: readonly Example[] = [
     label: "Custom look",
     source: customStyledIndicatorSource,
     title: "Custom look",
+  },
+  {
+    Demo: CustomThemeDemo,
+    description:
+      "The same DefaultTour, re-skinned entirely from CSS: --glow-tour-* tokens and an inherited font.",
+    label: "Custom theme",
+    source: customThemeSource,
+    title: "Custom theme",
   },
   {
     Demo: LiveProgressDemo,
