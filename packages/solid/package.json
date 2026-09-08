@@ -1,6 +1,6 @@
 {
   "name": "@glowhop/solid-tour",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Solid adapter for GlowTour.js.",
   "license": "MIT",
   "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
