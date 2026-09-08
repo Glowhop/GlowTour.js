@@ -29,6 +29,9 @@ const {
   title,
   description,
 } = Astro.props;
+
+const npmPackage = `@glowhop/${packageName}-tour`;
+const npmUrl = `https://www.npmjs.com/package/${npmPackage}`;
 ---
 
 <MarketingLayout title={title} description={description}>
@@ -54,6 +57,23 @@ const {
       <div class="mt-3 overflow-x-auto rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 font-mono text-sm">
         {installCommand}
       </div>
+      <p class="mt-3 text-sm text-[var(--color-text-muted)]">
+        <a
+          href={npmUrl}
+          rel="noopener"
+          class="underline underline-offset-4 transition-colors hover:text-[var(--color-text)]"
+        >
+          {npmPackage} on npm
+        </a>
+        {" · "}
+        <a
+          href="https://www.npmjs.com/package/@glowhop/styles-tour"
+          rel="noopener"
+          class="underline underline-offset-4 transition-colors hover:text-[var(--color-text)]"
+        >
+          @glowhop/styles-tour on npm
+        </a>
+      </p>
     </div>
 
     <div class="mt-10">

@@ -39,6 +39,22 @@ bun add @glowhop/angular-tour @glowhop/styles-tour
 bun add @glowhop/vanilla-tour @glowhop/styles-tour
 ```
 
+### Published packages
+
+All packages are published on npm under the `@glowhop` scope:
+
+| Package | npm |
+| --- | --- |
+| `@glowhop/core-tour` | [npmjs.com/package/@glowhop/core-tour](https://www.npmjs.com/package/@glowhop/core-tour) |
+| `@glowhop/react-tour` | [npmjs.com/package/@glowhop/react-tour](https://www.npmjs.com/package/@glowhop/react-tour) |
+| `@glowhop/vue-tour` | [npmjs.com/package/@glowhop/vue-tour](https://www.npmjs.com/package/@glowhop/vue-tour) |
+| `@glowhop/solid-tour` | [npmjs.com/package/@glowhop/solid-tour](https://www.npmjs.com/package/@glowhop/solid-tour) |
+| `@glowhop/angular-tour` | [npmjs.com/package/@glowhop/angular-tour](https://www.npmjs.com/package/@glowhop/angular-tour) |
+| `@glowhop/vanilla-tour` | [npmjs.com/package/@glowhop/vanilla-tour](https://www.npmjs.com/package/@glowhop/vanilla-tour) |
+| `@glowhop/styles-tour` | [npmjs.com/package/@glowhop/styles-tour](https://www.npmjs.com/package/@glowhop/styles-tour) |
+
+The adapters depend on `@glowhop/core-tour`; you only install it directly if you build your own adapter.
+
 ## Quick start
 
 ### React
