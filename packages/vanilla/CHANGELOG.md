@@ -1,5 +1,12 @@
 # @glowhop/vanilla-tour
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [5aa8cdf]
+  - @glowhop/core-tour@1.0.2
+
 ## 1.0.1
 
 ### Patch Changes
