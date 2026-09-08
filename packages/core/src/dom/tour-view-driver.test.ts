@@ -256,6 +256,8 @@ class MockWindow extends MockEventTarget {
   devicePixelRatio = 1;
   innerHeight = 800;
   innerWidth = 1200;
+  /** A Chromium-like realm: the CSS `d` property exists, so cutouts can morph. */
+  CSS = { supports: () => true };
   getComputedStyle(element: MockElement) {
     return {
       display: element.hidden ? "none" : element.display,
