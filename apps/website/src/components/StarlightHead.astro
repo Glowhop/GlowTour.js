@@ -1,0 +1,66 @@
+---
+import Default from "@astrojs/starlight/components/Head.astro";
+
+// Starlight's own <Head> emits title/description/canonical/og:title/og:description, but no
+// og:image and no Twitter title/description/image — so docs pages unfurled as a bare text card
+// while the marketing pages (MarketingLayout.astro) had full cards. This override renders
+// Starlight's head as-is and appends the social + structured-data tags it leaves out.
+const { entry } = Astro.locals.starlightRoute;
+
+const title = `${entry.data.title} | GlowTour.js`;
+const description = entry.data.description ?? "";
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL("/mascot-wizard.png", Astro.site);
+
+// Breadcrumbs from the URL: "/docs/guides/react/" -> Docs > Guides > React guide. Google uses
+// this to render the path under the result instead of a raw URL.
+const segments = Astro.url.pathname.split("/").filter(Boolean);
+const breadcrumbs = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: segments.map((segment, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name:
+      index === segments.length - 1
+        ? entry.data.title
+        : segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " "),
+    item: new URL(`/${segments.slice(0, index + 1).join("/")}/`, Astro.site).href,
+  })),
+};
+
+const article = {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  headline: entry.data.title,
+  description,
+  url: canonicalURL.href,
+  inLanguage: "en",
+  isPartOf: {
+    "@type": "WebSite",
+    name: "GlowTour.js",
+    url: Astro.site?.href,
+  },
+  about: {
+    "@type": "SoftwareSourceCode",
+    name: "GlowTour.js",
+    codeRepository: "https://github.com/Glowhop/GlowTour.js",
+    programmingLanguage: "TypeScript",
+  },
+};
+---
+
+<Default />
+
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1024" />
+<meta property="og:image:height" content="749" />
+<meta property="og:image:alt" content="The GlowTour.js wizard mascot" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+<meta name="twitter:image:alt" content="The GlowTour.js wizard mascot" />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+
+<script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbs)} />
+<script type="application/ld+json" is:inline set:html={JSON.stringify(article)} />

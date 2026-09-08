@@ -32,9 +32,39 @@ const {
 
 const npmPackage = `@glowhop/${packageName}-tour`;
 const npmUrl = `https://www.npmjs.com/package/${npmPackage}`;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+// Each adapter page is a distinct package landing page; describing it as its own
+// SoftwareSourceCode (plus a breadcrumb back to the site root) keeps the five of them from
+// looking like near-duplicates of the home page to a crawler.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      name: npmPackage,
+      description,
+      url: canonicalURL.href,
+      codeRepository: "https://github.com/Glowhop/GlowTour.js",
+      downloadUrl: npmUrl,
+      programmingLanguage: "TypeScript",
+      runtimePlatform: name,
+      license: "https://github.com/Glowhop/GlowTour.js/blob/main/LICENSE",
+      isPartOf: { "@id": "https://glowtour.dev/#website" },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "GlowTour.js", item: Astro.site?.href },
+        { "@type": "ListItem", position: 2, name, item: canonicalURL.href },
+      ],
+    },
+  ],
+};
 ---
 
 <MarketingLayout title={title} description={description}>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
   <section class="mx-auto max-w-4xl px-6 py-16 sm:py-24">
     <div class="flex items-center gap-2">
       <FrameworkIcon name={icon} class="h-5 w-5 text-[var(--color-accent)]" />

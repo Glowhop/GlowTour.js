@@ -23,6 +23,7 @@ export default defineConfig({
       },
       components: {
         SiteTitle: "./src/components/StarlightSiteTitle.astro",
+        Head: "./src/components/StarlightHead.astro",
       },
       head: [
         {
@@ -84,7 +85,20 @@ export default defineConfig({
     }),
     react(),
     icon(),
-    sitemap(),
+    // Search engines drop <lastmod>-less entries into a "crawl whenever" bucket; stamping the
+    // build date on every URL is honest here because the whole site is rebuilt from source on
+    // each deploy. Priorities rank the marketing entry points above deep reference pages.
+    sitemap({
+      serialize(item) {
+        const path = new URL(item.url).pathname;
+        return {
+          ...item,
+          lastmod: new Date().toISOString(),
+          changefreq: path.startsWith("/docs") ? "weekly" : "monthly",
+          priority: path === "/" ? 1 : path.startsWith("/docs/reference") ? 0.5 : 0.8,
+        };
+      },
+    }),
   ],
   vite: {
     plugins: [tailwindcss()],
