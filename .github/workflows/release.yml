@@ -63,6 +63,5 @@ jobs:
           bun run --cwd apps/playground build
           bun run release:prepare -- --expected-version "$RELEASE_VERSION"
       - name: Publish missing packages in order
-        env:
         run: bun run release:publish
         
