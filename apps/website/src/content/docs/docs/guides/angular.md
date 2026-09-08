@@ -10,7 +10,7 @@ The GlowTour.js Angular adapter provides components and a DI-scoped tour instanc
 Install the package and import the default theme:
 
 ```bash
-bun add @glowhop/angular-tour @glowhop/styles-tour
+npm i @glowhop/angular-tour @glowhop/styles-tour
 ```
 
 ```typescript
