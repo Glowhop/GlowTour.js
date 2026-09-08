@@ -23,7 +23,26 @@ export function isNode(value: unknown, context?: Node | null): value is Node {
   return typeof Node === "function" && value instanceof Node;
 }
 
+/**
+ * The layout viewport, in CSS pixels — the box every `position: fixed` tour
+ * element is sized and positioned against, and the frame that
+ * `getBoundingClientRect()` reports coordinates in.
+ *
+ * Deliberately not `innerWidth`/`innerHeight`: those measure the *visual*
+ * viewport, which on mobile shrinks and grows with the browser's URL bar and on
+ * desktop includes the classic scrollbar. Either gap skews the overlay's
+ * `viewBox` against its own `100%`-sized box, and the default
+ * `preserveAspectRatio` then scales and centres the backdrop — leaving undimmed
+ * bands and a cutout that no longer lines up with its target.
+ */
 export function viewportDimensions(context?: Node | null) {
+  const root = ownerDocument(context)?.documentElement;
+  const width = root?.clientWidth;
+  const height = root?.clientHeight;
+  if (typeof width === "number" && width > 0 && typeof height === "number" && height > 0) {
+    return { width, height };
+  }
+
   const currentWindow = ownerWindow(context);
   return {
     width: currentWindow?.innerWidth ?? 1024,

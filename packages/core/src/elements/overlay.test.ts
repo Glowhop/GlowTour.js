@@ -4,6 +4,7 @@ import type { TourElementStep } from "./base";
 import OverlayElement from "./overlay";
 
 class MockPath {
+  readonly attributes = new Map<string, string>();
   readonly styles = new Map<string, string>();
   animate?: (
     keyframes: Keyframe[] | PropertyIndexedKeyframes,
@@ -14,6 +15,18 @@ class MockPath {
     removeProperty: (name: string) => this.styles.delete(name),
     setProperty: (name: string, value: string) => this.styles.set(name, value),
   };
+
+  getAttribute(name: string) {
+    return this.attributes.get(name) ?? null;
+  }
+
+  setAttribute(name: string, value: string) {
+    this.attributes.set(name, value);
+  }
+
+  removeAttribute(name: string) {
+    this.attributes.delete(name);
+  }
 }
 
 class MockOverlay {
@@ -53,12 +66,15 @@ function rect(left: number, top: number, width: number, height: number): DOMRect
   };
 }
 
+/** Chromium-like: the CSS `d` property exists, so the cutout can morph. */
+const cssSupportingPathD = { supports: () => true };
+
 const originalWindow = globalThis.window;
 
 beforeEach(() => {
   Object.defineProperty(globalThis, "window", {
     configurable: true,
-    value: { devicePixelRatio: 1, innerHeight: 600, innerWidth: 800 },
+    value: { CSS: cssSupportingPathD, devicePixelRatio: 1, innerHeight: 600, innerWidth: 800 },
   });
 });
 
@@ -84,6 +100,7 @@ describe("OverlayElement animation fallbacks", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
+        CSS: cssSupportingPathD,
         devicePixelRatio: 1,
         getComputedStyle: () => ({ getPropertyValue: () => "rgb(0, 0, 0)" }),
         innerHeight: 600,
@@ -111,6 +128,7 @@ describe("OverlayElement animation fallbacks", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
+        CSS: cssSupportingPathD,
         devicePixelRatio: 1,
         getComputedStyle: () => ({ getPropertyValue: () => "foreign-fill" }),
         innerHeight: 600,
@@ -121,7 +139,7 @@ describe("OverlayElement animation fallbacks", () => {
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), {});
 
-    assert.equal(element.path.styles.get("fill"), "");
+    assert.equal(element.path.styles.get("fill") ?? "", "");
   });
 
   test("does not use a global fill when the owner window is unavailable", async () => {
@@ -138,6 +156,7 @@ describe("OverlayElement animation fallbacks", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
+        CSS: cssSupportingPathD,
         devicePixelRatio: 1,
         getComputedStyle: () => ({ getPropertyValue: () => "foreign-fill" }),
         innerHeight: 600,
@@ -148,7 +167,7 @@ describe("OverlayElement animation fallbacks", () => {
 
     await overlay.moveToTarget(rect(100, 100, 40, 20), {});
 
-    assert.equal(element.path.styles.get("fill"), "");
+    assert.equal(element.path.styles.get("fill") ?? "", "");
   });
 
   test("resolves the computed fill after a previous step supplied an explicit color", async () => {
@@ -156,6 +175,7 @@ describe("OverlayElement animation fallbacks", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
+        CSS: cssSupportingPathD,
         devicePixelRatio: 1,
         getComputedStyle: () => ({ getPropertyValue: () => "rgb(0, 0, 0)" }),
         innerHeight: 600,
@@ -213,6 +233,7 @@ describe("OverlayElement animation fallbacks", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
+        CSS: cssSupportingPathD,
         devicePixelRatio: 1,
         getComputedStyle: () => ({
           getPropertyValue: (name: string) =>
@@ -242,6 +263,7 @@ describe("OverlayElement animation fallbacks", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
+        CSS: cssSupportingPathD,
         devicePixelRatio: 1,
         getComputedStyle: (path: MockPath) => ({
           getPropertyValue: (name: string) => path.style.getPropertyValue(name),
@@ -284,5 +306,66 @@ describe("OverlayElement animation fallbacks", () => {
     await overlay.animateTo(rect(200, 200, 40, 20), {});
 
     assert.equal(cancelCalls, 0);
+  });
+});
+
+describe("OverlayElement on engines without the CSS `d` property", () => {
+  /**
+   * WebKit — and therefore every browser on iOS, Chrome included — does not
+   * implement the CSS `d` property: an inline `d: path(...)` is dropped and the
+   * backdrop never draws. The geometry has to reach the `d` attribute instead.
+   */
+  beforeEach(() => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        CSS: { supports: () => false },
+        devicePixelRatio: 1,
+        innerHeight: 600,
+        innerWidth: 800,
+      },
+    });
+  });
+
+  test("writes the cutout to the `d` attribute", async () => {
+    const element = new MockOverlay();
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+
+    assert.match(element.path.attributes.get("d") ?? "", /^M0,0 H800 V600 H0 Z/);
+    assert.equal(element.path.attributes.get("d")?.includes("path("), false);
+  });
+
+  test("commits the geometry up front and animates the rest", async () => {
+    const element = new MockOverlay();
+    const frames: (Keyframe[] | PropertyIndexedKeyframes)[] = [];
+    element.path.animate = (keyframes) => {
+      frames.push(keyframes);
+      return { cancel() {}, finished: Promise.resolve() } as unknown as Animation;
+    };
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+    const firstCutout = element.path.attributes.get("d");
+    await overlay.moveToTarget(rect(200, 200, 40, 20), {});
+
+    assert.notEqual(element.path.attributes.get("d"), firstCutout);
+    assert.match(element.path.attributes.get("d") ?? "", /M192,200 /);
+    for (const keyframe of frames.flat() as Keyframe[]) {
+      assert.equal("d" in keyframe, false);
+    }
+  });
+
+  test("clears the attribute when the overlay is released", async () => {
+    const element = new MockOverlay();
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+    assert.ok(element.path.attributes.has("d"));
+
+    overlay.release();
+
+    assert.equal(element.path.attributes.has("d"), false);
   });
 });
