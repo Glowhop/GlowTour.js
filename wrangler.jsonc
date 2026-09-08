@@ -1,0 +1,13 @@
+{
+  "name": "glowtour-website",
+  "compatibility_date": "2026-09-08",
+  // Static-only Worker: no "main" entrypoint, so every request is served straight from the
+  // uploaded assets. `apps/website/dist` is produced by the two-step build (packages first,
+  // then Astro) — see the "Build command" configured in Workers Builds.
+  "assets": {
+    "directory": "apps/website/dist",
+    // Astro emits directory-style pages (`/docs/index.html`), which matches wrangler's default
+    // trailing-slash handling; unmatched paths fall through to Astro's own 404 page.
+    "not_found_handling": "404-page"
+  }
+}
