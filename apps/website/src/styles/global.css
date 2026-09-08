@@ -126,3 +126,62 @@ button:not(:disabled),
 [data-glow-tour-pointer-content]:empty::before {
   content: "👆";
 }
+
+/*
+ * The long-content example demonstrates that the popover caps its height and scrolls its content.
+ * The library's own cap is the viewport, which on a tall screen leaves the text short of
+ * overflowing — the demo would show a full-height popover and no scroll at all. Capping the
+ * popover here keeps the demo honest on any window size; `:where()` in the default theme makes
+ * this a zero-specificity override.
+ */
+.demo-long-content [data-glow-tour-popover] {
+  max-height: min(320px, calc(100dvh - (var(--glow-tour-viewport-gap, 16px) * 2)));
+}
+
+/*
+ * "Custom theme" example. Every visual choice below is CSS on an ancestor of the tour — the demo
+ * renders the same <DefaultTour /> as the rest of the gallery. The `--glow-tour-*` tokens are
+ * declared at zero specificity in the default theme, so a plain class wins by proximity, and the
+ * popover's `font: inherit` is what lets the monospace face come from `font-family` here rather
+ * than from a token of its own.
+ */
+.demo-custom-theme {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --glow-tour-color-accent: #35f0a0;
+  --glow-tour-color-accent-active: #24d489;
+  --glow-tour-color-accent-hover: #5cf5b5;
+  --glow-tour-color-border: #1d5c3e;
+  --glow-tour-color-on-accent: #04150d;
+  --glow-tour-color-surface: #071a12;
+  --glow-tour-color-surface-muted: #0d2a1d;
+  --glow-tour-color-text: #d6ffe9;
+  --glow-tour-color-text-muted: #6fbb94;
+  --glow-tour-overlay-color: #001b0e;
+  --glow-tour-shadow: 0 0 0 1px rgb(53 240 160 / 24%), 0 18px 40px rgb(0 0 0 / 55%);
+
+  --glow-tour-control-height: 30px;
+  --glow-tour-popover-width: 320px;
+  --glow-tour-radius: 2px;
+  --glow-tour-spacing: 10px;
+  --glow-tour-transition-duration: 200ms;
+  --glow-tour-transition-easing: steps(5, end);
+}
+
+/*
+ * The footer is a plain flex row, so stacking its buttons full-width is a flex-direction change
+ * on the same wrapper — no popover subcomponent has to be re-composed to change the layout.
+ */
+.demo-custom-theme [data-glow-tour-footer] {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+/*
+ * The default theme pushes the cancel button away from the other two with `margin-inline-end:
+ * auto`, which in a column footer is a cross-axis auto margin and would keep that one button
+ * shrink-to-fit while the other two stretch.
+ */
+.demo-custom-theme [data-glow-tour-cancel-trigger] {
+  margin-inline-end: 0;
+}
