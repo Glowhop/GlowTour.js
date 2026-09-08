@@ -15,6 +15,7 @@ interface OverlayVisualState {
 export default class OverlayElement extends GlowTourElement {
   private currentTransition: Animation | null = null;
   private visualState: OverlayVisualState | null = null;
+  private cssPathDSupported: boolean | null = null;
 
   setInteractionAllowed(allowed: boolean) {
     this.element.style.setProperty("pointer-events", allowed ? "none" : "auto");
@@ -32,12 +33,9 @@ export default class OverlayElement extends GlowTourElement {
     const keyframe = this.getRenderedTargetStyles(path, this._getNextStyles(nextPosition, step));
     this.visualState = nextVisualState;
 
-    if (!path.style.getPropertyValue("d")) {
-      for (const [property, value] of Object.entries(keyframe)) {
-        if (property !== "opacity" && value != null) {
-          path.style.setProperty(property, String(value));
-        }
-      }
+    if (!this.readPathD(path)) {
+      const { opacity: _initialOpacity, ...geometry } = keyframe;
+      this.applyStyles(path, geometry);
 
       const opacity = keyframe.opacity == null ? "0.7" : String(keyframe.opacity);
       path.style.setProperty("opacity", "0");
@@ -55,12 +53,12 @@ export default class OverlayElement extends GlowTourElement {
     }
 
     const baseStyle = {
-      d: path.style.getPropertyValue("d") ?? "",
+      d: this.readPathD(path),
       fill: path.style.getPropertyValue("fill") ?? "",
       opacity: path.style.getPropertyValue("opacity") ?? "0",
     };
 
-    const animation = this._startAnimation(
+    const animation = this._startPathAnimation(
       [baseStyle, keyframe],
       {
         ...this._getAnimationOptions(),
@@ -80,7 +78,7 @@ export default class OverlayElement extends GlowTourElement {
 
     const from = this.getCurrentRenderedStyles(path);
     const finalStyles = this.getRenderedTargetStyles(path, this._getNextStyles(position, step));
-    const animation = this._startAnimation(
+    const animation = this._startPathAnimation(
       [from, finalStyles],
       {
         ...this._getAnimationOptions(),
@@ -148,7 +146,7 @@ export default class OverlayElement extends GlowTourElement {
     this.currentTransition = null;
     this.visualState = null;
     const path = this._getPathElement();
-    path?.style.removeProperty("d");
+    if (path) this.writePathD(path, null);
     path?.style.removeProperty("fill");
     path?.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
@@ -194,9 +192,77 @@ export default class OverlayElement extends GlowTourElement {
     super.cancelAnimations();
   }
 
+  /**
+   * Starts an animation whose keyframes carry the cutout geometry.
+   *
+   * WebKit ignores `d` both as a CSS property and as an animatable value, so
+   * there the shape is committed up front and only the remaining properties
+   * are animated: the cutout snaps instead of morphing, which is the whole
+   * point of {@link writePathD}'s attribute fallback.
+   */
+  private _startPathAnimation(
+    keyframes: Keyframe[],
+    options: KeyframeAnimationOptions,
+    path: SVGPathElement,
+  ): Animation | null {
+    if (this.supportsCssPathD()) return this._startAnimation(keyframes, options, path);
+
+    const finalGeometry = keyframes[keyframes.length - 1]?.d;
+    if (finalGeometry != null) this.writePathD(path, String(finalGeometry));
+
+    return this._startAnimation(
+      keyframes.map(({ d: _geometry, ...rest }) => rest),
+      options,
+      path,
+    );
+  }
+
+  /**
+   * Whether this document implements the CSS `d` property. Safari/WebKit — and
+   * therefore every browser on iOS, Chrome included — does not: an inline
+   * `d: path(...)` is dropped on the floor and the backdrop never draws.
+   */
+  private supportsCssPathD(): boolean {
+    if (this.cssPathDSupported === null) {
+      const currentWindow = ownerWindow(this.element);
+      try {
+        this.cssPathDSupported = currentWindow?.CSS?.supports?.("d", 'path("M0 0")') === true;
+      } catch {
+        this.cssPathDSupported = false;
+      }
+    }
+    return this.cssPathDSupported;
+  }
+
+  /**
+   * Writes the cutout geometry. The `d` attribute is the source of truth since
+   * every engine honours it; the CSS property is mirrored where it exists,
+   * because that is what makes the shape animatable and what wins the cascade.
+   */
+  private writePathD(path: SVGPathElement, value: string | null) {
+    if (value == null || value === "") {
+      path.style.removeProperty("d");
+      path.removeAttribute("d");
+      return;
+    }
+    path.style.setProperty("d", value);
+    path.setAttribute("d", pathDataFromCssValue(value));
+  }
+
+  /** The current geometry, as the `path("...")` CSS value the keyframes use. */
+  private readPathD(path: SVGPathElement): string {
+    const inline = path.style.getPropertyValue("d");
+    if (inline) return inline;
+    const attribute = path.getAttribute("d");
+    return attribute ? `path("${attribute}")` : "";
+  }
+
   private applyStyles(path: SVGPathElement, styles: Keyframe) {
     for (const [property, value] of Object.entries(styles)) {
-      if (value == null) {
+      if (property === "d") {
+        const next = value == null ? null : String(value);
+        if (this.readPathD(path) !== (next ?? "")) this.writePathD(path, next);
+      } else if (value == null) {
         if (path.style.getPropertyValue(property)) path.style.removeProperty(property);
       } else if (path.style.getPropertyValue(property) !== String(value)) {
         path.style.setProperty(property, String(value));
@@ -216,7 +282,7 @@ export default class OverlayElement extends GlowTourElement {
   private getCurrentRenderedStyles(path: SVGPathElement): Keyframe {
     const computed = computedStyle(path);
     return {
-      d: computed?.getPropertyValue("d") || path.style.getPropertyValue("d"),
+      d: computed?.getPropertyValue("d") || this.readPathD(path),
       fill: computed?.getPropertyValue("fill") || path.style.getPropertyValue("fill"),
       opacity: computed?.getPropertyValue("opacity") || path.style.getPropertyValue("opacity"),
     };
@@ -292,11 +358,16 @@ export default class OverlayElement extends GlowTourElement {
 
     if (animation && !(await this._waitForAnimation(animation))) return;
 
-    path.style.removeProperty("d");
+    this.writePathD(path, null);
     path.style.removeProperty("fill");
     path.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
   }
+}
+
+/** Unwraps `path("M0 0 ...")` into the raw path data the `d` attribute takes. */
+function pathDataFromCssValue(value: string): string {
+  return value.replace(/^path\(\s*(["'])([\s\S]*)\1\s*\)$/, "$2");
 }
 
 function computedStyle(element: Element): CSSStyleDeclaration | null {
