@@ -32,11 +32,22 @@ export const OVERLAY_IDLE_STYLE: CssStyleRecord = {
   "z-index": "10000",
 };
 
-/** Idle attributes for the overlay `<svg>` element. */
+/**
+ * Idle attributes for the overlay `<svg>` element.
+ *
+ * `preserveAspectRatio` is the load-bearing one: the default (`xMidYMid meet`)
+ * letterboxes the backdrop the moment the `viewBox` and the element's own box
+ * disagree, which is exactly what a mobile URL bar causes as it retracts —
+ * undimmed bands above and below the overlay. `slice` overdraws instead, so a
+ * `viewBox` that is momentarily stale costs a few scaled pixels rather than a
+ * hole in the backdrop, and `xMinYMin` anchors that overdraw at the origin the
+ * cutout coordinates are measured from.
+ */
 export const OVERLAY_IDLE_ATTRIBUTES = {
   "aria-hidden": "true",
   "data-glow-tour-allow-interaction": "false",
   inert: "true",
+  preserveAspectRatio: "xMinYMin slice",
 } as const;
 
 /**

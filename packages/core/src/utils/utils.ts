@@ -50,6 +50,30 @@ export function viewportDimensions(context?: Node | null) {
   };
 }
 
+/**
+ * The box the overlay `<svg>` is actually painted into, in CSS pixels.
+ *
+ * The overlay is `position: fixed` and sized to `100%`, and its `viewBox` has
+ * to match that box exactly. Any mismatch makes the SVG scale its contents, and
+ * `preserveAspectRatio` then either letterboxes the backdrop — the undimmed
+ * bands mobile browsers show once a retracting URL bar moves the layout
+ * viewport out of step with the initial containing block, which is what sizes
+ * the element — or slices the cutout away from its target.
+ *
+ * Measuring the element sidesteps the question of which of the two each engine
+ * resizes: whatever box it gave the overlay is the box the overlay draws in.
+ * {@link viewportDimensions} stays the fallback for an element that has no box
+ * yet — detached nodes, server-rendered markup, test doubles.
+ */
+export function paintedBoxDimensions(element?: Element | null) {
+  const measure = element?.getBoundingClientRect;
+  if (typeof measure === "function") {
+    const rect = measure.call(element);
+    if (rect.width > 0 && rect.height > 0) return { height: rect.height, width: rect.width };
+  }
+  return viewportDimensions(element);
+}
+
 export function isInViewport(
   rect: { left: number; top: number; right: number; bottom: number },
   context?: Node | null,
@@ -97,6 +121,53 @@ export function roundedRectPath(
     `Q${x},${bottom} ${x},${bottom - corner}`,
     "Z",
   ].join(" ");
+}
+
+/**
+ * Every number in a path, with the sign that belongs to it. Path data packs
+ * commands tightly (`h-120a5,5`), so the sign has to be read as part of the
+ * number rather than as a separator.
+ */
+const PATH_NUMBER = /-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?/g;
+
+/**
+ * A path reduced to its command structure, with every number blanked out and
+ * every separator dropped. Path data lets commas and whitespace stand in for
+ * one another, and the two sides of a tween rarely agree: one is serialized by
+ * {@link roundedRectPath}, the other often comes back from `getComputedStyle`
+ * in whatever shape the engine prefers.
+ */
+function pathShape(data: string) {
+  return data.replace(PATH_NUMBER, "#").replace(/[\s,]+/g, "");
+}
+
+/**
+ * Whether two paths can be tweened number by number: same commands, in the
+ * same order, taking the same operands. Everything {@link roundedRectPath}
+ * emits satisfies this, so a mismatch means the geometry came from somewhere
+ * else and should be committed rather than interpolated.
+ */
+export function canInterpolatePathData(from: string, to: string) {
+  return from !== "" && to !== "" && pathShape(from) === pathShape(to);
+}
+
+/**
+ * Linearly interpolates the operands of two structurally identical paths.
+ *
+ * Callers pass already-eased progress; this is the geometry half of a tween,
+ * not its timing.
+ */
+export function interpolatePathData(from: string, to: string, progress: number) {
+  const fromNumbers = from.match(PATH_NUMBER);
+  if (!fromNumbers) return to;
+
+  let index = 0;
+  return to.replace(PATH_NUMBER, (value) => {
+    const start = Number(fromNumbers[index++]);
+    const end = Number(value);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return value;
+    return String(Math.round((start + (end - start) * progress) * 1000) / 1000);
+  });
 }
 
 export async function resolveTargetElement(
