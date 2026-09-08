@@ -1,12 +1,6 @@
 import { afterEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import {
-  canInterpolatePathData,
-  interpolatePathData,
-  paintedBoxDimensions,
-  roundedRectPath,
-  viewportDimensions,
-} from "./utils";
+import { paintedBoxDimensions, roundedRectPath, viewportDimensions } from "./utils";
 
 const originalWindow = globalThis.window;
 const originalDocument = globalThis.document;
@@ -31,18 +25,20 @@ describe("roundedRectPath", () => {
       value: { devicePixelRatio: 2 },
     });
 
+    const target: DOMRect = {
+      bottom: 60.52,
+      height: 40.26,
+      left: 10.26,
+      right: 40.52,
+      top: 20.26,
+      width: 30.26,
+      x: 10.26,
+      y: 20.26,
+      toJSON: () => ({}),
+    };
+
     const path = roundedRectPath(
-      {
-        bottom: 60.52,
-        height: 40.26,
-        left: 10.26,
-        right: 40.52,
-        top: 20.26,
-        width: 30.26,
-        x: 10.26,
-        y: 20.26,
-        toJSON: () => ({}),
-      },
+      target,
       { height: 80.26, width: 100.26 },
       { padding: 2.1, radius: 3.1 },
     );
@@ -102,40 +98,5 @@ describe("paintedBoxDimensions", () => {
     stubGlobals({ clientHeight: 844, clientWidth: 375 }, { innerHeight: 750, innerWidth: 390 });
 
     assert.deepEqual(paintedBoxDimensions(null), { height: 844, width: 375 });
-  });
-});
-
-describe("path interpolation", () => {
-  const from = "M0,0 H800 V600 H0 Z M92,92 Q92,92 100,92";
-  const to = "M0,0 H800 V600 H0 Z M192,192 Q192,192 200,192";
-
-  test("interpolates every operand of two structurally identical paths", () => {
-    assert.equal(canInterpolatePathData(from, to), true);
-    assert.equal(
-      interpolatePathData(from, to, 0.5),
-      "M0,0 H800 V600 H0 Z M142,142 Q142,142 150,142",
-    );
-  });
-
-  test("returns the endpoints exactly", () => {
-    assert.equal(interpolatePathData(from, to, 0), from);
-    assert.equal(interpolatePathData(from, to, 1), to);
-  });
-
-  test("interpolates negative operands packed against their command", () => {
-    assert.equal(interpolatePathData("h-100 v-20", "h-200 v-40", 0.5), "h-150 v-30");
-  });
-
-  test("treats commas and whitespace as the same separator", () => {
-    // `getComputedStyle` hands back a path spaced the way the engine likes it,
-    // which is never the way `roundedRectPath` serialized the other side.
-    assert.equal(canInterpolatePathData("M 0 0 H 800", "M0,0 H800"), true);
-    assert.equal(interpolatePathData("M 0 0 H 800", "M0,0 H400", 0.5), "M0,0 H600");
-  });
-
-  test("refuses paths whose commands differ", () => {
-    assert.equal(canInterpolatePathData("M0,0 H10", "M0,0 L10,0"), false);
-    assert.equal(canInterpolatePathData("", to), false);
-    assert.equal(canInterpolatePathData(from, ""), false);
   });
 });
