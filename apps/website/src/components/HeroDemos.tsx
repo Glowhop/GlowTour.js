@@ -715,14 +715,14 @@ const longContentWorkflow = longContentTour
     target: "#hero-long-content-target",
     title: "A step with a lot to say",
     content:
-      "The popover never grows past the viewport: it caps its own height and scrolls its content, keeping the header and the footer buttons in place. That matters on a short window or a phone, where an unbounded popover would push its own Next button off-screen. The width here comes from --glow-tour-popover-width, set to 260px on the wrapper around this demo rather than in the library — every token can be overridden the same way, from any ancestor of the tour. The rest of this paragraph exists only to make the scroll real rather than described. A step's content is whatever your framework renders, so it can be a paragraph, a list, an image, or a whole component; the popover does not try to measure or truncate it. It gives the content the room that is left once the header and footer are laid out, then lets it scroll inside that box. Scrolling is contained, too: reaching the end of the content does not start scrolling the page behind the tour. On a short viewport the same step simply gets a smaller box and more scrolling, which is the behaviour you want when someone opens your onboarding on a laptop with a browser window half the height of yours.",
+      "The popover never grows past the viewport: it caps its own height and scrolls its content, keeping the header and the footer buttons in place. That matters on a short window or a phone, where an unbounded popover would push its own Next button off-screen. This demo caps the popover at 320px instead, so you can see that scroll on a tall screen too; the width comes the same way, from --glow-tour-popover-width set to 260px on the wrapper around this demo rather than in the library. The rest of this paragraph exists only to make the scroll real rather than described. A step's content is whatever your framework renders, so it can be a paragraph, a list, an image, or a whole component; the popover does not try to measure or truncate it. It gives the content the room that is left once the header and footer are laid out, then lets it scroll inside that box. Scrolling is contained, too: reaching the end of the content does not start scrolling the page behind the tour. On a short viewport the same step simply gets a smaller box and more scrolling, which is the behaviour you want when someone opens your onboarding on a laptop with a browser window half the height of yours.",
   })
   .build();
 
 export function LongContentDemo() {
   return (
     <div
-      className="flex w-full flex-col items-center gap-4"
+      className="demo-long-content flex w-full flex-col items-center gap-4"
       style={{ "--glow-tour-popover-width": "260px" } as CSSProperties}
     >
       <DemoCard className="p-5">
@@ -746,6 +746,67 @@ export function LongContentDemo() {
         Run this demo
       </button>
       <DefaultTour tour={longContentTour} />
+    </div>
+  );
+}
+
+// 12. A fully re-skinned tour, from CSS alone ---------------------------------
+
+const customThemeTour = createGlowTour();
+const customThemeWorkflow = customThemeTour
+  .create("hero-custom-theme")
+  .step({
+    id: "custom-theme-branch",
+    target: "#hero-custom-theme-branch",
+    title: "$ theming --from-css",
+    content:
+      "Same <DefaultTour /> as every other example on this page. Nothing about this step is styled from JS.",
+  })
+  .step({
+    id: "custom-theme-target",
+    target: "#hero-custom-theme-target",
+    title: "$ tokens --list",
+    content:
+      "The surface, text, border, accent, overlay tint, shadow, radius, spacing, control height and transition easing all come from --glow-tour-* declared on the wrapper. The monospace face is not a token at all: the popover is font: inherit, so it wears whatever font-family its ancestors set.",
+  })
+  .build();
+
+const customThemeCardClass =
+  "w-full max-w-sm rounded-[2px] border border-[#1d5c3e] bg-[#071a12] p-4 text-[#d6ffe9] shadow-[0_18px_40px_rgb(0_0_0/45%)]";
+
+export function CustomThemeDemo() {
+  return (
+    <div className="demo-custom-theme flex w-full flex-col items-center gap-4">
+      <div className={customThemeCardClass}>
+        <p className="text-xs text-[#6fbb94]">acme-ci — deploy</p>
+        <dl className="mt-3 space-y-2 text-xs">
+          <div id="hero-custom-theme-branch" className="flex justify-between gap-4 py-1">
+            <dt className="text-[#6fbb94]">branch</dt>
+            <dd>release/2.4.0</dd>
+          </div>
+          <div className="flex justify-between gap-4 py-1">
+            <dt className="text-[#6fbb94]">commit</dt>
+            <dd>a83c7d7</dd>
+          </div>
+        </dl>
+        <div className="mt-4 flex justify-end border-t border-[#1d5c3e] pt-4">
+          <button
+            id="hero-custom-theme-target"
+            type="button"
+            className="rounded-[2px] bg-[#35f0a0] px-3 py-1.5 text-xs font-semibold text-[#04150d]"
+          >
+            Ship it
+          </button>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => void customThemeTour.run(customThemeWorkflow)}
+        className={runButtonClass}
+      >
+        Run this demo
+      </button>
+      <DefaultTour tour={customThemeTour} />
     </div>
   );
 }

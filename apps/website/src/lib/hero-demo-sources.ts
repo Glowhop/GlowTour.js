@@ -312,9 +312,65 @@ const workflow = tour
   })
   .build();
 
-// Every token can be overridden from any ancestor of the tour:
-<div style={{ "--glow-tour-popover-width": "260px" }}>
+// Every token can be overridden from any ancestor of the tour. The default
+// max-height is the viewport; this demo caps it lower so the scroll is visible
+// on any screen:
+//   .demo-long-content [data-glow-tour-popover] { max-height: min(320px, 100dvh); }
+<div className="demo-long-content" style={{ "--glow-tour-popover-width": "260px" }}>
   <GlowTour.Default tour={tour} />
 </div>;
+
+tour.run(workflow);`;
+
+export const customThemeSource = `const tour = createGlowTour();
+
+const workflow = tour
+  .create("deploy")
+  .step({
+    id: "branch",
+    target: "#branch",
+    title: "$ theming --from-css",
+    content: "The same <GlowTour.Default /> as every other example. No styling from JS.",
+  })
+  .build();
+
+<div className="terminal-tour">
+  <GlowTour.Default tour={tour} />
+</div>;
+
+/* The whole skin is CSS on an ancestor — the tokens are declared at zero
+   specificity, so a plain class wins by proximity: */
+.terminal-tour {
+  /* not a token: the popover is \`font: inherit\` */
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+
+  --glow-tour-color-accent: #35f0a0;
+  --glow-tour-color-on-accent: #04150d;
+  --glow-tour-color-surface: #071a12;
+  --glow-tour-color-surface-muted: #0d2a1d;
+  --glow-tour-color-text: #d6ffe9;
+  --glow-tour-color-text-muted: #6fbb94;
+  --glow-tour-color-border: #1d5c3e;
+  --glow-tour-overlay-color: #001b0e;
+  --glow-tour-shadow: 0 0 0 1px rgb(53 240 160 / 24%);
+
+  --glow-tour-radius: 2px;
+  --glow-tour-spacing: 10px;
+  --glow-tour-control-height: 30px;
+  --glow-tour-popover-width: 320px;
+  --glow-tour-transition-duration: 200ms;
+  --glow-tour-transition-easing: steps(5, end);
+}
+
+/* The footer is a plain flex row, so its buttons stack full-width from CSS too: */
+.terminal-tour [data-glow-tour-footer] {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* the default theme pushes Skip away with an inline-end auto margin */
+.terminal-tour [data-glow-tour-cancel-trigger] {
+  margin-inline-end: 0;
+}
 
 tour.run(workflow);`;
