@@ -40,3 +40,6 @@ Thumbs.db
 # Astro
 
 .astro/
+
+# Wrangler
+.wrangler/
