@@ -40,7 +40,7 @@ export class ActiveStep<T> {
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
-    this.allowScroll = defaults.allowScroll === true;
+    this.allowScroll = defaults.allowScroll !== false;
   }
 
   reset() {
