@@ -319,6 +319,7 @@ export function Overlay(props: OverlayProps): JSX.Element {
       "data-glow-tour-overlay": "",
       focusable: "false",
       inert: OVERLAY_IDLE_ATTRIBUTES.inert,
+      preserveAspectRatio: OVERLAY_IDLE_ATTRIBUTES.preserveAspectRatio,
       ref,
       role: "presentation",
       get style() {

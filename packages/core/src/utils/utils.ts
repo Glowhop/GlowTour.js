@@ -50,6 +50,27 @@ export function viewportDimensions(context?: Node | null) {
   };
 }
 
+/**
+ * The box the overlay `<svg>` is actually painted into, in CSS pixels.
+ *
+ * The overlay is `position: fixed` and sized to `100%`, and its `viewBox` has
+ * to match that box exactly. Any mismatch makes the SVG scale its contents, and
+ * `preserveAspectRatio` then either letterboxes the backdrop — the undimmed
+ * bands mobile browsers show once a retracting URL bar moves the layout
+ * viewport out of step with the initial containing block, which is what sizes
+ * the element — or slices the cutout away from its target.
+ *
+ * Measuring the element sidesteps the question of which of the two each engine
+ * resizes: whatever box it gave the overlay is the box the overlay draws in.
+ * {@link viewportDimensions} stays the fallback for an element that has no box
+ * yet — detached nodes, server-rendered markup, test doubles.
+ */
+export function paintedBoxDimensions(element?: Element | null) {
+  const rect = element?.getBoundingClientRect?.();
+  if (rect && rect.width > 0 && rect.height > 0) return { height: rect.height, width: rect.width };
+  return viewportDimensions(element);
+}
+
 export function isInViewport(
   rect: { left: number; top: number; right: number; bottom: number },
   context?: Node | null,
@@ -69,8 +90,11 @@ export function roundByDPR(value: number, context?: Node | null) {
   return Math.round(value * dpr) / dpr;
 }
 
+/** The only part of a `DOMRect` the cutout geometry reads. */
+export type RectGeometry = Pick<DOMRect, "height" | "left" | "top" | "width">;
+
 export function roundedRectPath(
-  rect: DOMRect,
+  rect: RectGeometry,
   viewport: { width: number; height: number },
   options: { padding: number; radius: number },
   context?: Node | null,

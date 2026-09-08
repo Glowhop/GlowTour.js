@@ -1,4 +1,9 @@
-import { ownerWindow, roundedRectPath, viewportDimensions } from "../utils/utils";
+import {
+  ownerWindow,
+  paintedBoxDimensions,
+  type RectGeometry,
+  roundedRectPath,
+} from "../utils/utils";
 import GlowTourElement, { type TourElementStep } from "./base";
 import { OVERLAY_IDLE_ATTRIBUTES, OVERLAY_IDLE_STYLE } from "./idle-presentation";
 
@@ -14,6 +19,9 @@ interface OverlayVisualState {
 
 export default class OverlayElement extends GlowTourElement {
   private currentTransition: Animation | null = null;
+  private geometryTween: object | null = null;
+  /** Where the cutout is now — the tween's starting point on the next move. */
+  private cutout: RectGeometry | null = null;
   private visualState: OverlayVisualState | null = null;
   private cssPathDSupported: boolean | null = null;
 
@@ -32,6 +40,8 @@ export default class OverlayElement extends GlowTourElement {
     }
     const keyframe = this.getRenderedTargetStyles(path, this._getNextStyles(nextPosition, step));
     this.visualState = nextVisualState;
+    const previousCutout = this.cutout;
+    this.cutout = nextPosition;
 
     if (!this.readPathD(path)) {
       const { opacity: _initialOpacity, ...geometry } = keyframe;
@@ -65,6 +75,9 @@ export default class OverlayElement extends GlowTourElement {
         fill: "none",
       },
       path,
+      previousCutout,
+      nextPosition,
+      step,
     );
 
     if (!animation || (await this._waitForAnimation(animation))) this.applyStyles(path, keyframe);
@@ -76,6 +89,8 @@ export default class OverlayElement extends GlowTourElement {
 
     this.commitAndCancelCurrentTransition(path);
 
+    const previousCutout = this.cutout;
+    this.cutout = position;
     const from = this.getCurrentRenderedStyles(path);
     const finalStyles = this.getRenderedTargetStyles(path, this._getNextStyles(position, step));
     const animation = this._startPathAnimation(
@@ -85,6 +100,9 @@ export default class OverlayElement extends GlowTourElement {
         fill: "none",
       },
       path,
+      previousCutout,
+      position,
+      step,
     );
     if (!animation) {
       this.applyStyles(path, finalStyles);
@@ -103,23 +121,24 @@ export default class OverlayElement extends GlowTourElement {
   }
 
   _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe {
-    const { padding, radius, color, opacity } = step.overlay || {};
+    return {
+      d: this._cutoutPath(position, step),
+      fill: step.overlay?.color,
+      opacity: step.overlay?.opacity != null ? String(step.overlay.opacity) : 0.7,
+    };
+  }
 
-    const path = roundedRectPath(
+  /** The backdrop with a hole punched around `position`, as a CSS `d` value. */
+  private _cutoutPath(position: RectGeometry, step: TourElementStep) {
+    return `path("${roundedRectPath(
       position,
-      viewportDimensions(this.element),
+      paintedBoxDimensions(this.element),
       {
-        padding: padding ?? DEFAULT_OVERLAY_PADDING,
-        radius: radius ?? DEFAULT_OVERLAY_RADIUS,
+        padding: step.overlay?.padding ?? DEFAULT_OVERLAY_PADDING,
+        radius: step.overlay?.radius ?? DEFAULT_OVERLAY_RADIUS,
       },
       this.element,
-    );
-
-    return {
-      d: `path("${path}")`,
-      fill: color,
-      opacity: opacity != null ? String(opacity) : 0.7,
-    };
+    )}")`;
   }
 
   initializeProps() {
@@ -127,15 +146,20 @@ export default class OverlayElement extends GlowTourElement {
     if (!el) {
       return;
     }
-    const viewport = viewportDimensions(el);
-
     for (const [property, value] of Object.entries(OVERLAY_IDLE_STYLE)) {
       el.style.setProperty(property, value);
     }
     for (const [name, value] of Object.entries(OVERLAY_IDLE_ATTRIBUTES)) {
       el.setAttribute(name, value);
     }
-    el.setAttribute("viewBox", `0 0 ${viewport.width} ${viewport.height}`);
+    // `100%` resolves against the initial containing block, which mobile
+    // engines keep at whatever the viewport measures with the URL bar in its
+    // current state — so the backdrop stops short of the bottom of the screen
+    // as soon as that bar retracts. `100lvh` is the *largest* viewport by
+    // definition and therefore always spans the visible area; where it is not
+    // understood the declaration is dropped and the `100%` above still stands.
+    el.style.setProperty("height", "100lvh");
+    this.syncViewBox();
   }
 
   private _getPathElement(): SVGPathElement | null {
@@ -144,7 +168,9 @@ export default class OverlayElement extends GlowTourElement {
 
   protected _release() {
     this.currentTransition = null;
+    this._stopGeometryTween();
     this.visualState = null;
+    this.cutout = null;
     const path = this._getPathElement();
     if (path) this.writePathD(path, null);
     path?.style.removeProperty("fill");
@@ -173,14 +199,24 @@ export default class OverlayElement extends GlowTourElement {
       const transition = this.animateTo(nextPosition, step);
       if (onTransition) onTransition(transition);
       else void transition.catch(() => {});
-    } else
+    } else {
       this.applyStyles(
         path,
         this.getRenderedTargetStyles(path, this._getNextStyles(nextPosition, step)),
       );
+      this.cutout = nextPosition;
+    }
     this.visualState = nextVisualState;
 
-    const viewport = viewportDimensions(this.element);
+    this.syncViewBox();
+  }
+
+  /**
+   * Pins the `viewBox` to the element's own box, so one SVG unit is one CSS
+   * pixel and the cutout lands where `getBoundingClientRect()` said it should.
+   */
+  private syncViewBox() {
+    const viewport = paintedBoxDimensions(this.element);
     const viewBox = `0 0 ${viewport.width} ${viewport.height}`;
     if (this.element.getAttribute("viewBox") !== viewBox) {
       this.element.setAttribute("viewBox", viewBox);
@@ -189,6 +225,7 @@ export default class OverlayElement extends GlowTourElement {
 
   override cancelAnimations() {
     this.currentTransition = null;
+    this._stopGeometryTween();
     super.cancelAnimations();
   }
 
@@ -196,25 +233,82 @@ export default class OverlayElement extends GlowTourElement {
    * Starts an animation whose keyframes carry the cutout geometry.
    *
    * WebKit ignores `d` both as a CSS property and as an animatable value, so
-   * there the shape is committed up front and only the remaining properties
-   * are animated: the cutout snaps instead of morphing, which is the whole
-   * point of {@link writePathD}'s attribute fallback.
+   * there the geometry is stripped from the keyframes — the engine animates
+   * fill and opacity — and {@link _startGeometryTween} moves the shape instead.
+   * When it cannot, the target shape is committed up front, which is the old
+   * snap-and-be-correct behaviour.
    */
   private _startPathAnimation(
     keyframes: Keyframe[],
     options: KeyframeAnimationOptions,
     path: SVGPathElement,
+    from: RectGeometry | null,
+    position: DOMRect,
+    step: TourElementStep,
   ): Animation | null {
+    this._stopGeometryTween();
     if (this.supportsCssPathD()) return this._startAnimation(keyframes, options, path);
 
-    const finalGeometry = keyframes[keyframes.length - 1]?.d;
-    if (finalGeometry != null) this.writePathD(path, String(finalGeometry));
-
-    return this._startAnimation(
+    const animation = this._startAnimation(
       keyframes.map(({ d: _geometry, ...rest }) => rest),
       options,
       path,
     );
+    const geometry = keyframes[keyframes.length - 1]?.d;
+    if (
+      geometry != null &&
+      !(animation && from && this._startGeometryTween(path, from, position, step, animation))
+    )
+      this.writePathD(path, String(geometry));
+
+    return animation;
+  }
+
+  /**
+   * Morphs the cutout by hand, one frame at a time, the way driver.js moves its
+   * stage: the rectangle is interpolated and the path regenerated from it.
+   *
+   * The clock is the animation that is already running on the same element, so
+   * the shape, the backdrop and anything else the engine is easing stay in step
+   * without this having to re-implement a timing function. Its progress reads
+   * `null` once it is over, which is the tween's cue to land and stop.
+   *
+   * @returns Whether the tween took ownership of the geometry. `false` leaves
+   *   the caller to commit the final shape.
+   */
+  private _startGeometryTween(
+    path: SVGPathElement,
+    from: RectGeometry,
+    to: RectGeometry,
+    step: TourElementStep,
+    animation: Animation,
+  ): boolean {
+    const request = ownerWindow(this.element)?.requestAnimationFrame;
+    const effect = animation.effect;
+    if (typeof request !== "function" || typeof effect?.getComputedTiming !== "function")
+      return false;
+
+    // Identity is the whole cancellation mechanism: a frame belonging to a
+    // tween that is no longer the current one returns without drawing, so
+    // there is nothing to unschedule when one is dropped.
+    const tween = {};
+    const draw = () => {
+      if (this.geometryTween !== tween) return;
+      const progress = effect.getComputedTiming().progress;
+      const done = typeof progress !== "number";
+      this.cutout = betweenRects(from, to, done ? 1 : progress);
+      this.writePathD(path, this._cutoutPath(this.cutout, step));
+      if (done) this.geometryTween = null;
+      else request(draw);
+    };
+    this.geometryTween = tween;
+    request(draw);
+    return true;
+  }
+
+  /** Drops the running cutout tween, leaving the shape wherever it got to. */
+  private _stopGeometryTween() {
+    this.geometryTween = null;
   }
 
   /**
@@ -261,7 +355,12 @@ export default class OverlayElement extends GlowTourElement {
     for (const [property, value] of Object.entries(styles)) {
       if (property === "d") {
         const next = value == null ? null : String(value);
-        if (this.readPathD(path) !== (next ?? "")) this.writePathD(path, next);
+        // Geometry set outright supersedes a tween still walking towards it;
+        // otherwise the next frame would drag the cutout back.
+        if (this.readPathD(path) !== (next ?? "")) {
+          this._stopGeometryTween();
+          this.writePathD(path, next);
+        }
       } else if (value == null) {
         if (path.style.getPropertyValue(property)) path.style.removeProperty(property);
       } else if (path.style.getPropertyValue(property) !== String(value)) {
@@ -274,6 +373,7 @@ export default class OverlayElement extends GlowTourElement {
     const animation = this.currentTransition;
     if (!animation) return;
 
+    this._stopGeometryTween();
     this.applyStyles(path, this.getCurrentRenderedStyles(path));
     this.currentTransition = null;
     this._cancelAnimation(animation);
@@ -327,6 +427,7 @@ export default class OverlayElement extends GlowTourElement {
     }
 
     const finalStyles = this.getRenderedTargetStyles(path, this._getNextStyles(position, step));
+    this.cutout = position;
     const opacity = String(finalStyles.opacity ?? "0.7");
     this.applyStyles(path, { ...finalStyles, opacity: "0" });
     const animation = this._startAnimation(
@@ -348,6 +449,7 @@ export default class OverlayElement extends GlowTourElement {
       return Promise.resolve();
     }
 
+    this._stopGeometryTween();
     const animation = this._startAnimation(
       {
         opacity: "0",
@@ -359,10 +461,21 @@ export default class OverlayElement extends GlowTourElement {
     if (animation && !(await this._waitForAnimation(animation))) return;
 
     this.writePathD(path, null);
+    this.cutout = null;
     path.style.removeProperty("fill");
     path.style.setProperty("opacity", "0");
     this.element.style.setProperty("pointer-events", "none");
   }
+}
+
+/** The rectangle `progress` of the way from one cutout to the next. */
+function betweenRects(from: RectGeometry, to: RectGeometry, progress: number): RectGeometry {
+  return {
+    height: from.height + (to.height - from.height) * progress,
+    left: from.left + (to.left - from.left) * progress,
+    top: from.top + (to.top - from.top) * progress,
+    width: from.width + (to.width - from.width) * progress,
+  };
 }
 
 /** Unwraps `path("M0 0 ...")` into the raw path data the `d` attribute takes. */

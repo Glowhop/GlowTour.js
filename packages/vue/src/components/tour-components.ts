@@ -304,6 +304,7 @@ export const GlowTourOverlay = /* @__PURE__ */ defineComponent({
           "data-glow-tour-overlay": "",
           focusable: props.focusable,
           inert: OVERLAY_IDLE_ATTRIBUTES.inert,
+          preserveAspectRatio: OVERLAY_IDLE_ATTRIBUTES.preserveAspectRatio,
           ref: element,
           role: "presentation",
           viewBox: props.viewBox,
