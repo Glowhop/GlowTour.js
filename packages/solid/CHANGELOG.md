@@ -1,5 +1,12 @@
 # @glowhop/solid-tour
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [358c4b1]
+  - @glowhop/core-tour@1.0.1
+
 ## 1.0.0
 
 ### Major Changes
