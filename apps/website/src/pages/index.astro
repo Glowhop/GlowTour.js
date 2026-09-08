@@ -126,16 +126,45 @@ const features = [
   },
 ];
 
+const SITE_DESCRIPTION =
+  "A guided-tour engine for React, Vue, Solid, Angular, and vanilla apps. One core, real accessibility, real SSR support.";
+
+// One @graph rather than three separate <script> blocks: the WebSite node is what lets search
+// engines attach the site name to every result, and the nodes cross-reference each other by @id.
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "SoftwareSourceCode",
-  name: "GlowTour.js",
-  description:
-    "A guided-tour engine for React, Vue, Solid, Angular, and vanilla apps. One core, real accessibility, real SSR support.",
-  codeRepository: "https://github.com/Glowhop/GlowTour.js",
-  downloadUrl: "https://www.npmjs.com/package/@glowhop/core-tour",
-  programmingLanguage: "TypeScript",
-  license: "https://github.com/Glowhop/GlowTour.js/blob/main/LICENSE",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://glowtour.dev/#website",
+      name: "GlowTour.js",
+      url: "https://glowtour.dev/",
+      description: SITE_DESCRIPTION,
+      inLanguage: "en",
+      publisher: { "@id": "https://glowtour.dev/#organization" },
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://glowtour.dev/#organization",
+      name: "Glowhop",
+      url: "https://glowtour.dev/",
+      logo: "https://glowtour.dev/glow-tour-logo.png",
+      sameAs: ["https://github.com/Glowhop/GlowTour.js", "https://www.npmjs.com/org/glowhop"],
+    },
+    {
+      "@type": "SoftwareSourceCode",
+      "@id": "https://glowtour.dev/#software",
+      name: "GlowTour.js",
+      description: SITE_DESCRIPTION,
+      codeRepository: "https://github.com/Glowhop/GlowTour.js",
+      downloadUrl: "https://www.npmjs.com/package/@glowhop/core-tour",
+      programmingLanguage: "TypeScript",
+      runtimePlatform: "JavaScript",
+      license: "https://github.com/Glowhop/GlowTour.js/blob/main/LICENSE",
+      isPartOf: { "@id": "https://glowtour.dev/#website" },
+      author: { "@id": "https://glowtour.dev/#organization" },
+    },
+  ],
 };
 ---
 
@@ -143,7 +172,7 @@ const jsonLd = {
   title="GlowTour.js — a cross-framework guided-tour library"
   description="A guided-tour engine for React, Vue, Solid, Angular, and vanilla apps. One core, real accessibility, real SSR support."
 >
-  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
   <section class="relative isolate overflow-hidden px-6 pt-20 pb-0 sm:pt-28">
     <SpotlightMotif class="-z-10" />
     <div class="mx-auto max-w-3xl text-center">

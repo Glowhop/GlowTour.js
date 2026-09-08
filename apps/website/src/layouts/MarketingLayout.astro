@@ -7,9 +7,15 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  imageAlt?: string;
 }
 
-const { title, description, image = "/mascot-wizard.png" } = Astro.props;
+const {
+  title,
+  description,
+  image = "/mascot-wizard.png",
+  imageAlt = "The GlowTour.js wizard mascot",
+} = Astro.props;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const ogImageURL = new URL(image, Astro.site);
 ---
@@ -24,6 +30,8 @@ const ogImageURL = new URL(image, Astro.site);
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="theme-color" content="#0b0a10" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="GlowTour.js" />
@@ -31,11 +39,14 @@ const ogImageURL = new URL(image, Astro.site);
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={ogImageURL} />
+    <meta property="og:image:alt" content={imageAlt} />
+    <meta property="og:locale" content="en_US" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageURL} />
+    <meta name="twitter:image:alt" content={imageAlt} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
