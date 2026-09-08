@@ -1,6 +1,6 @@
 import { afterEach, describe, test } from "bun:test";
 import assert from "node:assert/strict";
-import { roundedRectPath, viewportDimensions } from "./utils";
+import { paintedBoxDimensions, roundedRectPath, viewportDimensions } from "./utils";
 
 const originalWindow = globalThis.window;
 const originalDocument = globalThis.document;
@@ -25,18 +25,20 @@ describe("roundedRectPath", () => {
       value: { devicePixelRatio: 2 },
     });
 
+    const target: DOMRect = {
+      bottom: 60.52,
+      height: 40.26,
+      left: 10.26,
+      right: 40.52,
+      top: 20.26,
+      width: 30.26,
+      x: 10.26,
+      y: 20.26,
+      toJSON: () => ({}),
+    };
+
     const path = roundedRectPath(
-      {
-        bottom: 60.52,
-        height: 40.26,
-        left: 10.26,
-        right: 40.52,
-        top: 20.26,
-        width: 30.26,
-        x: 10.26,
-        y: 20.26,
-        toJSON: () => ({}),
-      },
+      target,
       { height: 80.26, width: 100.26 },
       { padding: 2.1, radius: 3.1 },
     );
@@ -67,5 +69,34 @@ describe("viewportDimensions", () => {
     stubGlobals(null, undefined);
 
     assert.deepEqual(viewportDimensions(), { height: 768, width: 1024 });
+  });
+});
+
+describe("paintedBoxDimensions", () => {
+  test("measures the element rather than the layout viewport", () => {
+    // The mismatch this exists for: a mobile URL bar has moved the layout
+    // viewport away from the initial containing block the overlay is sized
+    // against, so `clientHeight` would leave an undimmed band at the bottom.
+    stubGlobals({ clientHeight: 750, clientWidth: 390 }, { innerHeight: 750, innerWidth: 390 });
+    const element = {
+      getBoundingClientRect: () => ({ height: 844, width: 390 }),
+    } as unknown as Element;
+
+    assert.deepEqual(paintedBoxDimensions(element), { height: 844, width: 390 });
+  });
+
+  test("falls back to the viewport for an element that has no box yet", () => {
+    stubGlobals({ clientHeight: 844, clientWidth: 375 }, { innerHeight: 750, innerWidth: 390 });
+    const element = {
+      getBoundingClientRect: () => ({ height: 0, width: 0 }),
+    } as unknown as Element;
+
+    assert.deepEqual(paintedBoxDimensions(element), { height: 844, width: 375 });
+  });
+
+  test("falls back to the viewport when the element cannot be measured", () => {
+    stubGlobals({ clientHeight: 844, clientWidth: 375 }, { innerHeight: 750, innerWidth: 390 });
+
+    assert.deepEqual(paintedBoxDimensions(null), { height: 844, width: 375 });
   });
 });

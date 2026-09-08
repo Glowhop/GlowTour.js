@@ -33,6 +33,12 @@ class MockOverlay {
   readonly attributes = new Map<string, string>();
   readonly styles = new Map<string, string>();
   readonly path = new MockPath();
+  /** Zero by default, which is how an unlaid-out element measures. */
+  box = { height: 0, width: 0 };
+
+  getBoundingClientRect() {
+    return this.box;
+  }
   readonly style = {
     getPropertyValue: (name: string) => this.styles.get(name) ?? "",
     removeProperty: (name: string) => this.styles.delete(name),
@@ -367,5 +373,208 @@ describe("OverlayElement on engines without the CSS `d` property", () => {
     overlay.release();
 
     assert.equal(element.path.attributes.has("d"), false);
+  });
+});
+
+/**
+ * A frame scheduler the tests drive by hand, standing in for the browser's.
+ * `run(timestamp)` plays back every frame queued so far at that timestamp.
+ */
+function frameScheduler() {
+  let pending: FrameRequestCallback[] = [];
+
+  return {
+    get pendingCount() {
+      return pending.length;
+    },
+    requestAnimationFrame(callback: FrameRequestCallback) {
+      pending.push(callback);
+      return pending.length;
+    },
+    /** Plays back every frame queued so far. */
+    run() {
+      const frames = pending;
+      pending = [];
+      for (const callback of frames) callback(0);
+    },
+  };
+}
+
+/** An animation that is over before the caller can await it. */
+function settledAnimation() {
+  return { cancel() {}, finished: Promise.resolve() } as unknown as Animation;
+}
+
+/**
+ * An animation whose clock the test drives. The cutout tween reads its eased
+ * progress rather than keeping a clock of its own, so this is what moves the
+ * shape; `progress` reads `null` once an animation is over, which is the
+ * tween's cue to land on its target and stop.
+ */
+function steerableAnimation() {
+  let settle = () => {};
+  const finished = new Promise<void>((resolve) => {
+    settle = resolve;
+  });
+  const timing: { progress: number | null } = { progress: 0 };
+  return {
+    animation: {
+      cancel: () => settle(),
+      effect: { getComputedTiming: () => timing },
+      finished,
+    } as unknown as Animation,
+    finish: () => {
+      timing.progress = null;
+      settle();
+    },
+    seek: (progress: number) => {
+      timing.progress = progress;
+    },
+  };
+}
+
+describe("OverlayElement cutout tween on engines without the CSS `d` property", () => {
+  /**
+   * WebKit cannot animate `d` at all, as a CSS property or as a WAAPI value,
+   * so the cutout has to be walked to its target by hand — one interpolated
+   * rectangle per frame, the way driver.js moves its stage. Without it the
+   * highlight teleports between steps on every browser on iOS.
+   */
+  function setupWebKit(frames: ReturnType<typeof frameScheduler>) {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        CSS: { supports: () => false },
+        devicePixelRatio: 1,
+        innerHeight: 600,
+        innerWidth: 800,
+        requestAnimationFrame: frames.requestAnimationFrame,
+      },
+    });
+  }
+
+  test("walks the cutout to its target instead of snapping", async () => {
+    const frames = frameScheduler();
+    setupWebKit(frames);
+    const element = new MockOverlay();
+    element.path.animate = settledAnimation;
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement, { duration: 100 });
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+    const start = element.path.attributes.get("d");
+    assert.match(start ?? "", /Z M92,100 /);
+
+    const clock = steerableAnimation();
+    element.path.animate = () => clock.animation;
+    const move = overlay.moveToTarget(rect(300, 100, 40, 20), {});
+
+    frames.run();
+    // The tween owns the geometry now, so the shape must not have jumped to
+    // the destination the moment the animation started.
+    assert.equal(element.path.attributes.get("d"), start);
+
+    clock.seek(0.5);
+    frames.run();
+    assert.match(element.path.attributes.get("d") ?? "", /Z M192,100 /);
+
+    clock.finish();
+    frames.run();
+    assert.match(element.path.attributes.get("d") ?? "", /Z M292,100 /);
+    assert.equal(frames.pendingCount, 0);
+
+    await move;
+    assert.match(element.path.attributes.get("d") ?? "", /Z M292,100 /);
+  });
+
+  test("keeps the geometry out of the keyframes it hands to the engine", async () => {
+    const frames = frameScheduler();
+    setupWebKit(frames);
+    const element = new MockOverlay();
+    const keyframes: (Keyframe[] | PropertyIndexedKeyframes)[] = [];
+    element.path.animate = (frame) => {
+      keyframes.push(frame);
+      return settledAnimation();
+    };
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement, { duration: 100 });
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+    await overlay.moveToTarget(rect(300, 100, 40, 20), {});
+
+    for (const keyframe of keyframes.flat() as Keyframe[]) assert.equal("d" in keyframe, false);
+  });
+
+  test("commits the target shape when there is no frame scheduler to tween with", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: { CSS: { supports: () => false }, devicePixelRatio: 1 },
+    });
+    const element = new MockOverlay();
+    element.path.animate = settledAnimation;
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement, { duration: 100 });
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+    await overlay.moveToTarget(rect(300, 100, 40, 20), {});
+
+    assert.match(element.path.attributes.get("d") ?? "", /Z M292,100 /);
+  });
+
+  test("leaves the shape where it got to when the overlay is released mid-flight", async () => {
+    const frames = frameScheduler();
+    setupWebKit(frames);
+    const element = new MockOverlay();
+    element.path.animate = settledAnimation;
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement, { duration: 100 });
+
+    await overlay.moveToTarget(rect(100, 100, 40, 20), {});
+    const clock = steerableAnimation();
+    element.path.animate = () => clock.animation;
+    void overlay.moveToTarget(rect(300, 100, 40, 20), {});
+    clock.seek(0.5);
+    frames.run();
+    assert.match(element.path.attributes.get("d") ?? "", /Z M192,100 /);
+
+    overlay.release();
+    assert.equal(element.path.attributes.has("d"), false);
+
+    // A frame belonging to a dropped tween must not resurrect the cutout.
+    clock.seek(0.9);
+    frames.run();
+    assert.equal(element.path.attributes.has("d"), false);
+  });
+});
+
+describe("OverlayElement viewBox", () => {
+  test("tracks the box the overlay is actually painted into", () => {
+    const element = new MockOverlay();
+    element.box = { height: 844, width: 390 };
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
+
+    overlay.initializeProps();
+
+    // Not `innerHeight` (600) — a mobile URL bar moves the two apart, and a
+    // viewBox that disagrees with the element's box letterboxes the backdrop.
+    assert.equal(element.attributes.get("viewBox"), "0 0 390 844");
+    assert.equal(element.attributes.get("preserveAspectRatio"), "xMinYMin slice");
+  });
+
+  test("resyncs the viewBox when the box changes under it", () => {
+    const element = new MockOverlay();
+    element.box = { height: 844, width: 390 };
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
+
+    overlay.initializeProps();
+    element.box = { height: 750, width: 390 };
+    overlay.updatePosition(rect(100, 100, 40, 20), {});
+
+    assert.equal(element.attributes.get("viewBox"), "0 0 390 750");
+  });
+
+  test("spans the largest viewport where the unit is understood", () => {
+    const element = new MockOverlay();
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
+
+    overlay.initializeProps();
+
+    assert.equal(element.styles.get("height"), "100lvh");
   });
 });
