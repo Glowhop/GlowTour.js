@@ -64,7 +64,5 @@ jobs:
           bun run release:prepare -- --expected-version "$RELEASE_VERSION"
       - name: Publish missing packages in order
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"
         run: bun run release:publish
         
