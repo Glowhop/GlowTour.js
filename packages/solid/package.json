@@ -10,8 +10,16 @@
   "keywords": [
     "tour",
     "guided-tour",
+    "product-tour",
+    "onboarding",
+    "walkthrough",
+    "user-onboarding",
+    "tooltip",
+    "spotlight",
+    "typescript",
     "solid",
-    "onboarding"
+    "solidjs",
+    "solid-tour"
   ],
   "engines": {
     "node": ">=18.19.1"
