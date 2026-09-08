@@ -353,6 +353,7 @@ export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implement
       data-glow-tour-overlay
       focusable="false"
       [attr.inert]="idleInert"
+      [attr.preserveAspectRatio]="idlePreserveAspectRatio"
       role="presentation"
       [style]="idleStyle"
       viewBox="0 0 0 0"
@@ -374,6 +375,7 @@ export class GlowTourOverlay extends GlowTourBoundElement<SVGSVGElement> impleme
   protected readonly idleAllowInteraction =
     OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"];
   protected readonly idleInert = OVERLAY_IDLE_ATTRIBUTES.inert;
+  protected readonly idlePreserveAspectRatio = OVERLAY_IDLE_ATTRIBUTES.preserveAspectRatio;
   protected readonly idleStyle = OVERLAY_IDLE_STYLE_TEXT;
   protected readonly idlePathCursor = OVERLAY_PATH_IDLE_ATTRIBUTES.cursor;
   protected readonly idlePathOpacity = OVERLAY_PATH_IDLE_ATTRIBUTES.opacity;

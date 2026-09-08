@@ -267,6 +267,7 @@ export function Overlay({ children, style, viewBox = "0 0 0 0", ...props }: Over
       data-glow-tour-allow-interaction={OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"]}
       data-glow-tour-overlay
       focusable="false"
+      preserveAspectRatio={OVERLAY_IDLE_ATTRIBUTES.preserveAspectRatio}
       ref={ref}
       role="presentation"
       style={style ?? OVERLAY_IDLE_STYLE_REACT}
