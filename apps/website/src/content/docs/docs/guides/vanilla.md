@@ -10,7 +10,7 @@ The GlowTour.js Vanilla adapter uses native custom elements. Content is HTML and
 Install the package and import the default theme:
 
 ```bash
-bun add @glowhop/vanilla-tour @glowhop/styles-tour
+npm i @glowhop/vanilla-tour @glowhop/styles-tour
 ```
 
 ```typescript

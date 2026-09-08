@@ -12,31 +12,31 @@ Install the adapter and default theme for your framework:
 ### React
 
 ```bash
-bun add @glowhop/react-tour @glowhop/styles-tour
+npm i @glowhop/react-tour @glowhop/styles-tour
 ```
 
 ### Vue
 
 ```bash
-bun add @glowhop/vue-tour @glowhop/styles-tour
+npm i @glowhop/vue-tour @glowhop/styles-tour
 ```
 
 ### Solid
 
 ```bash
-bun add @glowhop/solid-tour @glowhop/styles-tour
+npm i @glowhop/solid-tour @glowhop/styles-tour
 ```
 
 ### Angular
 
 ```bash
-bun add @glowhop/angular-tour @glowhop/styles-tour
+npm i @glowhop/angular-tour @glowhop/styles-tour
 ```
 
 ### Vanilla
 
 ```bash
-bun add @glowhop/vanilla-tour @glowhop/styles-tour
+npm i @glowhop/vanilla-tour @glowhop/styles-tour
 ```
 
 ### Published packages
