@@ -143,7 +143,7 @@ document.body.append(root);
 Each custom element exposes properties and follows standard DOM patterns:
 
 - **`glow-tour-root`**: Set `tour` property to the tour instance.
-- **Triggers** (`glow-tour-advance-trigger`, `glow-tour-cancel-trigger`, `glow-tour-previous-trigger`): Set `disabled` to control availability from your code.
+- **Triggers** (`glow-tour-advance-trigger`, `glow-tour-cancel-trigger`, `glow-tour-back-trigger`): Set `disabled` to control availability from your code.
 - **All elements**: Use standard `addEventListener` and DOM APIs for styling and interaction.
 
 ## Modern browsers

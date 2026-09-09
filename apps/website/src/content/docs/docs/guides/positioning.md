@@ -108,7 +108,7 @@ const workflow = tour
 If you don't specify a `placementTryOrder`, the default is:
 
 - Popover: `["bottom", "top", "right", "left"]`
-- Pointer: `["top", "bottom", "right", "left"]`
+- Pointer: `["left", "right", "top", "bottom"]`
 
 These defaults are chosen to work well in most layouts but can be overridden per step or per tour.
 
