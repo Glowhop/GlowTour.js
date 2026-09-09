@@ -37,8 +37,10 @@ export const bundleScenarios: readonly BundleScenario[] = [
     entry: 'import { createGlowTour } from "@glowhop/core-tour"; createGlowTour();',
     externalPackages: [],
     // Raised from 20 KiB for the cutout tween that carries the overlay
-    // animation on WebKit, where `d` cannot be animated by the engine.
-    gzipBudget: 20.75 * KIB,
+    // animation on WebKit, where `d` cannot be animated by the engine, then
+    // from 20.75 KiB for freezing a step on its last position while a lost
+    // target comes back instead of tearing the presentation down.
+    gzipBudget: 21 * KIB,
     name: "Core index",
     outputExtension: "js",
   },
