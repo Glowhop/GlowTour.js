@@ -60,17 +60,14 @@ Vue's adapter fully supports server-side rendering.
 
 ```typescript
 import { renderToString } from "@vue/server-renderer";
-import { createApp } from "vue";
+import { createApp, h } from "vue";
 import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
 
 const tour = createGlowTour();
 
 const html = await renderToString(
   createApp({
-    render() {
-      return <YourApp />;
-      <GlowTourDefault tour={tour} />;
-    },
+    render: () => [h(YourApp), h(GlowTourDefault, { tour })],
   })
 );
 ```
@@ -80,18 +77,13 @@ const html = await renderToString(
 On the client, use `createSSRApp` for hydration:
 
 ```typescript
-import { createSSRApp } from "vue";
+import { createSSRApp, h } from "vue";
 import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
 
 const tour = createGlowTour();
 
 createSSRApp({
-  render() {
-    return <>
-      <YourApp />
-      <GlowTourDefault :tour="tour" />
-    </>;
-  },
+  render: () => [h(YourApp), h(GlowTourDefault, { tour })],
 }).mount("#app");
 
 // Tour is now interactive with no hydration warnings

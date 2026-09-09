@@ -165,7 +165,7 @@ footer.append(button);
 **Properties**:
 - `disabled: boolean` - Disable the button
 
-### `glow-tour-previous-trigger`
+### `glow-tour-back-trigger`
 
 "Previous" button to go back to the previous step.
 
@@ -178,18 +178,18 @@ Constant of all registered element names:
 
 **Signature**:
 ```typescript
-const GLOW_TOUR_ELEMENT_NAMES: {
-  root: "glow-tour-root"
-  overlay: "glow-tour-overlay"
-  popover: "glow-tour-popover"
-  pointer: "glow-tour-pointer"
-  header: "glow-tour-header"
-  content: "glow-tour-content"
-  footer: "glow-tour-footer"
-  advanceTrigger: "glow-tour-advance-trigger"
-  cancelTrigger: "glow-tour-cancel-trigger"
-  previousTrigger: "glow-tour-previous-trigger"
-}
+const GLOW_TOUR_ELEMENT_NAMES: readonly [
+  "glow-tour-root",
+  "glow-tour-header",
+  "glow-tour-content",
+  "glow-tour-footer",
+  "glow-tour-popover",
+  "glow-tour-pointer",
+  "glow-tour-back-trigger",
+  "glow-tour-advance-trigger",
+  "glow-tour-cancel-trigger",
+  "glow-tour-overlay",
+]
 ```
 
 ## Auto-registration
@@ -256,6 +256,5 @@ await tour.run(workflow);
 - `StepPropsStore` - Step state store
 - `GlowTourRootElement` - Root element type
 - `GlowTourPointerElement` - Pointer element type
-- `PointerDirectionValue` - Value type for pointer directions (`string | Node`)
 - `PointerDirectionContent` - Content configuration for pointer directions
 - `CreateDefaultTourElementOptions` - Options for `createDefaultTourElement`

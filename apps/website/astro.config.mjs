@@ -11,7 +11,6 @@ import icon from "astro-icon";
 // file path relative to `src/content/docs/`, so nesting one more `docs/` folder in there produces
 // `/docs/...` URLs while leaving the site root free for the marketing pages in `src/pages/`.
 export default defineConfig({
-  // TODO: replace with the real production domain once it's chosen.
   site: "https://glowtour.dev",
   integrations: [
     starlight({
@@ -64,6 +63,7 @@ export default defineConfig({
             { label: "Programmatic control", link: "/docs/guides/programmatic-control" },
             { label: "Resuming a tour", link: "/docs/guides/resuming" },
             { label: "Monitoring", link: "/docs/guides/monitoring" },
+            { label: "Handling errors", link: "/docs/guides/handling-errors" },
             { label: "JSON config", link: "/docs/guides/json-config" },
             { label: "SSR", link: "/docs/guides/ssr" },
           ],

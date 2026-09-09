@@ -71,13 +71,13 @@ export interface IndicatorOptions extends BaseOptions {
   disabled?: boolean;
   /** Gap between the target and the indicator in pixels. */
   gap?: number;
-  /** Placement preference order when positioning the indicator. @default ["bottom", "top", "right", "left"] */
+  /** Placement preference order when positioning the indicator. @default ["left", "right", "top", "bottom"] */
   placementTryOrder?: readonly TryOrderOptions[];
 }
 
 /** Configures the darkened overlay backdrop that highlights the target. */
 export interface OverlayOptions extends BaseOptions {
-  /** Color of the overlay backdrop (CSS color). @default "rgba(0, 0, 0, 0.5)" */
+  /** Color of the overlay backdrop (CSS color). Falls back to the `--glow-tour-overlay-color` theme variable when unset. */
   color?: string;
   /** Opacity of the overlay (0-1). @default 0.7 */
   opacity?: number;
@@ -95,11 +95,11 @@ export interface PopoverArrowOptions {
   color?: string;
   /** Size of the arrow in pixels. @default 12 */
   size?: number;
-  /** Border width of the arrow in pixels. @default 0 */
+  /** Border width of the arrow in pixels. Falls back to the `--glow-tour-arrow-border-width` theme variable (`1px`) when unset. */
   borderWidth?: number;
   /** Border radius of the arrow in pixels. @default 0 */
   borderRadius?: number;
-  /** Gap between arrow tip and the target edge in pixels. @default 8 */
+  /** Minimum gap the arrow keeps from the popover edges, in pixels. A placement whose arrow would fall inside this margin is rejected in favour of the next one. @default 16 */
   edgePadding?: number;
   /**
    * CSP nonce applied to the `<style>` element GlowTour.js injects for the
@@ -117,7 +117,7 @@ export interface PopoverArrowOptions {
 
 /** Configures the popover box that displays content for each step. */
 export interface PopoverOptions extends BaseOptions {
-  /** Placement preference order for the popover around the target. @default ["top", "bottom", "right", "left"] */
+  /** Placement preference order for the popover around the target. @default ["bottom", "top", "right", "left"] */
   placementTryOrder?: readonly TryOrderOptions[];
   /** Arrow configuration. */
   arrow?: PopoverArrowOptions;
@@ -158,7 +158,7 @@ export interface PopoverOptions extends BaseOptions {
 
 /** Scroll behavior options passed to Element.scrollIntoView(). */
 export interface ScrollOptions {
-  /** Scroll animation. @default "auto" */
+  /** Scroll animation. Forced to `"instant"` when the user prefers reduced motion. @default "smooth" */
   behavior?: "auto" | "smooth";
   /** Vertical alignment of the target in the viewport. @default "center" */
   block?: "start" | "center" | "end" | "nearest";

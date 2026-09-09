@@ -15,6 +15,10 @@ const packageNames = [
 ] as const;
 const packageIds = ["core", "styles", "react", "vue", "angular", "solid", "vanilla"] as const;
 const repositoryUrl = "git+https://github.com/Glowhop/GlowTour.js.git";
+// Documents the build copies next to `dist/` in every package (see `scripts/build-packages.ts`,
+// covered by the shared-documents test below). A relative README link to one of these still
+// resolves inside a published tarball; a link to anything else does not.
+const packagedRootDocuments = new Set(["README.md", "LICENSE", "CHANGELOG.md"]);
 const actionPins = [
   "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", // v4.2.2
   "oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6", // v2.2.0
@@ -124,7 +128,10 @@ test("the published README links only to packaged files or absolute repository U
   const relativeLinks = [...readme.matchAll(/\[[^\]]+\]\((?!https?:\/\/|#)([^)]+)\)/g)].map(
     (match) => match[1],
   );
-  expect(relativeLinks).toEqual([]);
+  const unpackagedLinks = relativeLinks.filter(
+    (link) => !packagedRootDocuments.has(link.replace(/^\.\//, "").replace(/#.*$/, "")),
+  );
+  expect(unpackagedLinks).toEqual([]);
 });
 
 test("the private playground stays outside all package build, pack, release, and tarball sets", () => {

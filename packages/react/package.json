@@ -10,8 +10,17 @@
   "keywords": [
     "tour",
     "guided-tour",
+    "product-tour",
+    "onboarding",
+    "walkthrough",
+    "user-onboarding",
+    "tooltip",
+    "spotlight",
+    "typescript",
     "react",
-    "onboarding"
+    "react-tour",
+    "joyride",
+    "driver-js-alternative"
   ],
   "engines": {
     "node": ">=18.19.1"
