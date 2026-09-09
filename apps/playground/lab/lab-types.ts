@@ -20,6 +20,7 @@ export interface LabActions {
   cancelPending(): void;
   isConditionReady(): boolean;
   log(message: string): void;
+  relocateTarget(): void;
   scheduleCondition(): void;
 }
 

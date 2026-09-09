@@ -239,6 +239,19 @@ export function createLabWorkflow<TContent>(
     .do(() => actions.log("advance — transition automatique imminente"))
     .wait(timing.autoAdvanceWait)
     .do(({ advance }) => advance())
+    .step({
+      id: "step-13",
+      target: selectors.nomad,
+      title: content.title("missingTargetStrategy: 'wait'"),
+      content: content.paragraph(copy.relocate),
+      behavior: {
+        missingTargetStrategy: "wait",
+        targetTimeout: timing.targetTimeout,
+      },
+      data: { api: "missingTargetStrategy", strategy: "wait" },
+    })
+    .do(() => actions.relocateTarget())
+    .beforeCancel(() => actions.cancelPending())
     .append(appendedWorkflow)
     .build();
 }
