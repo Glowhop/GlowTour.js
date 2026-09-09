@@ -171,6 +171,10 @@ async function flushMicrotasks() {
   for (let index = 0; index < 5; index += 1) await Promise.resolve();
 }
 
+async function delay(durationMs: number) {
+  await new Promise((resolve) => setTimeout(resolve, durationMs));
+}
+
 describe("instance-first TourController", () => {
   test("uses the document returned by assertCanRun for selector targets", async () => {
     const realm = createRealmDocument();
@@ -1759,6 +1763,44 @@ describe("instance-first TourController", () => {
     await flushMicrotasks();
     // Still frozen, still "active": the advance button reads as usable.
     assert.equal(tour.state.get().status, "active");
+
+    await tour.advance();
+    await recovery;
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().currentStep?.target, secondTarget);
+  });
+
+  test("keeps the popover usable during a wait freeze that outlives the grace period", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const firstTarget = {} as HTMLElement;
+    const secondTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = firstTarget;
+    const workflow = tour
+      .create("recover-wait-command")
+      .step({
+        id: "step-wait-cmd-1",
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "one",
+      })
+      .step({ id: "step-wait-cmd-2", content: "two", target: () => secondTarget, title: "two" })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    const recovery = driver.commands.targetDisconnected(firstTarget);
+    await delay(TARGET_LOSS_GRACE_MS * 2);
+
+    // Past the grace period the step is deep into its "wait" budget, yet the
+    // presentation is still frozen on screen. A frozen popover whose buttons
+    // have gone dead is the trap this guards against.
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(driver.clearCalls, 0);
 
     await tour.advance();
     await recovery;

@@ -426,12 +426,13 @@ export class TourController<T> {
    * engaged) and stopped polling geometry — this only decides how long to
    * keep it frozen and what to do once that budget runs out.
    *
-   * The public status stays "active" for the grace period: a same-frame or
-   * next-frame remount, the dominant case, must not flicker into
-   * "transitioning" and back. Only a "wait" strategy that outlives the grace
-   * period flips to "transitioning", since that is a genuine wait rather
-   * than a frozen instant — see TARGET_LOSS_GRACE_MS for why the grace
-   * period itself doesn't count as one.
+   * The public status stays "active" for the whole freeze, "wait" included.
+   * A frozen presentation isn't a transition: nothing is animating, the step
+   * and its index are unchanged, and the popover is still on screen. Calling
+   * it "transitioning" would close `canNavigate` and leave the user staring
+   * at a live-looking popover whose buttons are dead for the rest of the
+   * budget — the popover is the escape hatch out of a target that never
+   * comes back, so it has to keep working.
    */
   private async recoverDisconnectedTarget(target: HTMLElement) {
     if (this.disposed || this.status !== "active" || this.recoveringTarget === target) return;
@@ -465,8 +466,6 @@ export class TourController<T> {
       // The grace period counts against the "wait" budget rather than
       // extending it — a longer configured timeout is the only way to wait
       // longer overall, `targetTimeout` is never silently doubled.
-      this.setStatus("transitioning");
-      this.assertCurrent(operation);
       const timeout = step.behavior?.targetTimeout ?? DEFAULT_TARGET_TIMEOUT;
       const recoveredAfterWait = await this.pollForTarget(
         step,
@@ -478,7 +477,7 @@ export class TourController<T> {
       step.target = recoveredAfterWait;
       await this.driver.retarget(step, this.signalFor(operation));
       this.assertCurrent(operation);
-      this.setStatus("active");
+      this.publish();
     } catch (error) {
       try {
         await this.handleFailure(error, operation);
