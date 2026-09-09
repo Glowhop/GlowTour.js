@@ -1,5 +1,12 @@
 # @glowhop/vue-tour
 
+## 1.1.0
+
+### Patch Changes
+
+- Updated dependencies [165797b]
+  - @glowhop/core-tour@1.1.0
+
 ## 1.0.2
 
 ### Patch Changes
