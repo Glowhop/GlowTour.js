@@ -14,6 +14,11 @@ export interface LabView {
   logList: HTMLOListElement;
   liveRegion: HTMLElement;
   navigation: HTMLElement;
+  nomadTarget: HTMLButtonElement;
+  relocateAway: HTMLElement;
+  relocateDelayInput: HTMLInputElement;
+  relocateDelayValue: HTMLOutputElement;
+  relocateHome: HTMLElement;
   rendererRoot: HTMLElement;
   revealButton: HTMLButtonElement;
   revealedHost: HTMLElement;
@@ -23,7 +28,7 @@ export interface LabView {
 }
 
 export function createLabView(root: HTMLElement, framework: string): LabView {
-  const { copy, event, selectors } = LAB_CONFIG;
+  const { copy, event, selectors, timing } = LAB_CONFIG;
   root.innerHTML = `
     <main class="lab-shell">
       <header class="lab-header">
@@ -85,8 +90,33 @@ export function createLabView(root: HTMLElement, framework: string): LabView {
             ${targetCard(selectorId(selectors.return), "09", "advance guard")}
             ${targetCard(selectorId(selectors.previous), "10", "previous")}
             ${targetCard(selectorId(selectors.autoAdvance), "11", "auto advance")}
-            <article class="lab-target-card lab-final-card">
+            <article class="lab-target-card lab-relocate-card" id="${selectorId(selectors.relocate)}">
               ${cardNumber("12")}
+              <span>missingTargetStrategy: wait</span>
+              <div class="lab-relocate-slots">
+                <div class="lab-relocate-slot" data-lab-relocate-home>
+                  <button id="${selectorId(selectors.nomad)}" type="button">Cible nomade</button>
+                </div>
+                <div class="lab-relocate-slot lab-relocate-slot-away" data-lab-relocate-away>
+                  <span>${copy.relocateAway}</span>
+                </div>
+              </div>
+              <label class="lab-relocate-delay" for="${selectorId(selectors.relocateDelay)}">
+                ${copy.relocateDelayLabel}
+                <output data-lab-relocate-delay-value>${timing.relocateDelay} ms</output>
+              </label>
+              <input
+                id="${selectorId(selectors.relocateDelay)}"
+                type="range"
+                min="${timing.relocateDelayMin}"
+                max="${timing.relocateDelayMax}"
+                step="${timing.relocateDelayStep}"
+                value="${timing.relocateDelay}"
+              />
+              <small class="lab-relocate-hint">${copy.relocateHint}</small>
+            </article>
+            <article class="lab-target-card lab-final-card">
+              ${cardNumber("13")}
               <span>append / custom event / finish</span>
               <button id="${selectorId(selectors.customEvent)}" type="button">Envoyer ${event.completion}</button>
             </article>
@@ -144,6 +174,11 @@ export function createLabView(root: HTMLElement, framework: string): LabView {
     logList: required(root, "[data-lab-log-list]", HTMLOListElement),
     liveRegion: required(root, "[data-lab-live]", HTMLElement),
     navigation: required(root, "[data-lab-navigation]", HTMLElement),
+    nomadTarget: required(root, selectors.nomad, HTMLButtonElement),
+    relocateAway: required(root, "[data-lab-relocate-away]", HTMLElement),
+    relocateDelayInput: required(root, selectors.relocateDelay, HTMLInputElement),
+    relocateDelayValue: required(root, "[data-lab-relocate-delay-value]", HTMLOutputElement),
+    relocateHome: required(root, "[data-lab-relocate-home]", HTMLElement),
     rendererRoot: required(root, "[data-lab-renderer]", HTMLElement),
     revealButton: required(root, selectors.revealButton, HTMLButtonElement),
     revealedHost: required(root, "[data-lab-revealed-host]", HTMLElement),
