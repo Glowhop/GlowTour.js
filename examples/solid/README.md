@@ -8,8 +8,8 @@ From the monorepo root:
 
 ```bash
 cd examples/solid
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
 Open `http://localhost:5173` in your browser.

@@ -10,7 +10,7 @@ GlowTour.js provides a complete default theme via `@glowhop/styles-tour/default.
 The following properties control the tour's appearance. Override them in your stylesheet or inline style.
 
 :::note
-All the properties below are only *read* inside `@glowhop/styles-tour/default.css` itself — they have no effect unless you actually import that stylesheet (or redefine the same selectors yourself). The one exception is the arrow's `--glow-tour-arrow-color`, `--glow-tour-arrow-border-width`, `--glow-tour-arrow-border-radius`, `--glow-tour-arrow-size`, and `--glow-tour-arrow-offset` — `@glowhop/core-tour` sets and reads those directly (via an injected `<style>` element and inline styles), so they work regardless of which theme, or no theme, you use. See `popover.arrow` in the [Builder reference](/docs/reference/builder#arrow-options) for the JS-level equivalent of those.
+All the properties below are only *read* inside `@glowhop/styles-tour/default.css` itself — they have no effect unless you actually import that stylesheet (or redefine the same selectors yourself). The [arrow properties](#arrow) are the exception: `@glowhop/core-tour` injects their rules itself, so they work regardless of which theme, or no theme, you use.
 :::
 
 ### Colors
@@ -45,6 +45,37 @@ All the properties below are only *read* inside `@glowhop/styles-tour/default.cs
 | `--glow-tour-shadow` | `0 4px 12px rgb(0 0 0 / 8%)` in light, `0 8px 24px rgb(0 0 0 / 56%)` in dark | Popover box shadow |
 | `--glow-tour-transition-duration` | `120ms` | Hover/state color-transition duration for the Cancel/Previous/Advance buttons — not the popover's fade/slide, which is a separate JS-driven animation (see the `animation` option, default 180ms, in the [Builder reference](/docs/reference/builder#animation-options)) |
 | `--glow-tour-transition-easing` | `ease-out` | Easing function for that same button color transition |
+
+### Arrow
+
+The arrow is a rotated square drawn as a `::before` pseudo-element on the popover. Unlike
+every other property on this page, these are injected by `@glowhop/core-tour` itself, so
+they apply with no stylesheet imported.
+
+| Property | Default | Purpose |
+| --- | --- | --- |
+| `--glow-tour-arrow-color` | `--glow-tour-color-surface`, else `#ffffff` | Arrow fill, normally matching the popover background |
+| `--glow-tour-arrow-border-color` | `--glow-tour-color-border`, else `#dedee3` | Arrow border, normally matching the popover border |
+| `--glow-tour-arrow-border-width` | `1px` | Arrow border width |
+| `--glow-tour-arrow-border-radius` | `0px` | Rounding of the arrow tip |
+| `--glow-tour-arrow-size` | `12px` | Width and height of the square before rotation |
+
+`--glow-tour-arrow-offset` is **not** in that list: the core computes it on every
+reposition and writes it inline to centre the arrow on the target. It is an output, not a
+setting, and any value you assign is overwritten on the next frame.
+
+:::caution
+Four of these five have a JavaScript equivalent under `popover.arrow` in the
+[Builder reference](/docs/reference/builder#arrow-options). Those options are written as
+inline custom properties, so they **win over your stylesheet** for the same property. Set a
+given property in one channel or the other, not both. `--glow-tour-arrow-border-color` has
+no JS equivalent and is only settable from CSS.
+:::
+
+To change the arrow's *shape* rather than its values, set `popover.arrow.disableAutoStyles`
+to skip the injected rules entirely and write your own. The popover carries a
+`data-glow-tour-placement` attribute, and the computed `--glow-tour-arrow-offset`, to
+position whatever you draw.
 
 ## Customizing the theme
 

@@ -10,8 +10,17 @@
   "keywords": [
     "tour",
     "guided-tour",
+    "product-tour",
     "onboarding",
-    "dom"
+    "walkthrough",
+    "user-onboarding",
+    "tooltip",
+    "spotlight",
+    "typescript",
+    "dom",
+    "headless",
+    "framework-agnostic",
+    "ssr"
   ],
   "engines": {
     "node": ">=18.19.1"

@@ -10,7 +10,16 @@
   "keywords": [
     "tour",
     "guided-tour",
-    "css"
+    "product-tour",
+    "onboarding",
+    "walkthrough",
+    "user-onboarding",
+    "tooltip",
+    "spotlight",
+    "typescript",
+    "css",
+    "theme",
+    "css-variables"
   ],
   "engines": {
     "node": ">=18.19.1"
