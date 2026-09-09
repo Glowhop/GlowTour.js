@@ -6,6 +6,7 @@ export const LAB_CONFIG = {
     appendedName: "api-lab-appended",
     options: {
       cancellable: true,
+      allowScroll: true,
       animated: true,
       overlay: {},
       popover: {},

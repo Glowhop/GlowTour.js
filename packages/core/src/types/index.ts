@@ -209,10 +209,10 @@ export interface StartOptions<T> {
   /** Allow users to cancel the tour. @default true */
   cancellable?: boolean;
   /**
-   * Locks page scroll while the tour is active, restoring it on finish,
-   * cancel, error, or dispose.
+   * Leaves page scroll available while the tour is active. Set `false` to lock
+   * scroll instead, restoring it on finish, cancel, error, or dispose.
    *
-   * @default false
+   * @default true
    */
   allowScroll?: boolean;
   /** Default overlay options for all steps. */
