@@ -270,7 +270,7 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 | `popover` | PopoverOptions | — | Popover appearance (see [Popover options](#popover-options)) |
 | `indicator` | IndicatorOptions | — | Indicator appearance (see [Indicator options](#indicator-options)) |
 | `behavior` | StepBehavior | — | Step behavior (see [Behavior options](#behavior-options)) |
-| `allowScroll` | boolean | `false` | Page scroll is locked by default while the tour is active (restored on finish/cancel/error/dispose); set `true` to let the page scroll during the tour |
+| `allowScroll` | boolean | `true` | The page stays scrollable during the tour; set `false` to lock page scroll while the tour is active (restored on finish/cancel/error/dispose) |
 | `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour starts |
 | `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour is cancelled |
 | `onFinish` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour completes |
