@@ -431,6 +431,7 @@ function createToggleableCommands() {
 function createStep(
   options: {
     allowInteraction?: boolean;
+    allowScroll?: boolean;
     animated?: boolean;
     cancellable?: boolean;
     advanceShortcuts?: readonly string[];
@@ -438,6 +439,7 @@ function createStep(
   } = {},
 ) {
   const workflow = new WorkflowBuilder<string>("dom-driver", {
+    allowScroll: options.allowScroll,
     animated: options.animated,
     cancellable: options.cancellable,
     behavior: {
@@ -2808,5 +2810,164 @@ describe("DomTourViewDriver", () => {
     await flushMicrotasks();
 
     assert.deepEqual(calls, []);
+  });
+
+  describe("frozen presentation recovery", () => {
+    test("freezes on a lost target without disappearing, and keeps focus guard and scroll lock engaged", async () => {
+      const { calls, driver, elements } = installDriver();
+      // `allowScroll` defaults to true, so the lock only engages on a step
+      // that opts out — the point here is that freezing keeps whatever the
+      // step asked for, not that a lock is engaged by default.
+      const step = createStep({ allowScroll: false });
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      const overlayPath = elements.overlay.querySelector("path");
+      assert.ok(overlayPath);
+      const framedPath = overlayPath.style.getPropertyValue("d");
+      const internals = driver as unknown as {
+        focusGuard: { active: boolean };
+        scrollLock: { active: boolean };
+      };
+      assert.equal(internals.focusGuard.active, true);
+      assert.equal(internals.scrollLock.active, true);
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+
+      assert.deepEqual(calls, ["targetDisconnected"]);
+      // Still mounted at its last known position: no disappear animation ran,
+      // and the loop that would keep polling a dead target has stopped.
+      assert.equal(overlayPath.style.getPropertyValue("d"), framedPath);
+      assert.equal(animationFrames.length, 0);
+      assert.equal(internals.focusGuard.active, true);
+      assert.equal(internals.scrollLock.active, true);
+    });
+
+    test("animates the cutout to the new target instead of snapping or replaying appear()", async () => {
+      const { driver, elements } = installDriver();
+      const step = createStep();
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      const overlayPath = elements.overlay.querySelector("path");
+      assert.ok(overlayPath);
+      const updates = countDriverPositionUpdates(driver);
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+      assert.equal(animationFrames.length, 0);
+
+      createdAnimations.length = 0;
+      const newTarget = createTarget();
+      newTarget.setRect({ height: 40, left: 200, top: 200, width: 40 });
+      step.target = newTarget as unknown as HTMLElement;
+      await driver.retarget(step, new AbortController().signal);
+
+      // A target that reappears elsewhere is a pure geometry jump, which the
+      // per-frame loop would snap through: the cutout has to be walked over.
+      const move = createdAnimations.filter((animation) => animation.target === overlayPath);
+      assert.equal(move.length, 1);
+      // Not an appear-in: the popover repositions, it does not fade back from
+      // scratch, and the loop is resumed with exactly one frame armed.
+      assert.equal(updates.popover.count, 1);
+      assert.equal(animationFrames.length, 1);
+
+      // The resumed frame must not re-apply the box the move is heading for.
+      flushFrame();
+      assert.equal(updates.overlay.count, 0);
+      assert.equal(
+        createdAnimations.filter((animation) => animation.target === overlayPath).length,
+        1,
+      );
+    });
+
+    test("moves the cutout without animating when the step is not animated", async () => {
+      const { driver, elements } = installDriver();
+      const step = createStep({ animated: false });
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      const overlayPath = elements.overlay.querySelector("path");
+      assert.ok(overlayPath);
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+
+      createdAnimations.length = 0;
+      const newTarget = createTarget();
+      newTarget.setRect({ height: 40, left: 200, top: 200, width: 40 });
+      step.target = newTarget as unknown as HTMLElement;
+      await driver.retarget(step, new AbortController().signal);
+
+      assert.equal(
+        createdAnimations.filter((animation) => animation.target === overlayPath).length,
+        0,
+      );
+      assert.match(overlayPath.style.getPropertyValue("d"), /^path\(/);
+    });
+
+    test("forces interaction off while frozen even when the step allows it, and restores it once retargeted", async () => {
+      const { driver, elements } = installDriver();
+      const step = createStep({ allowInteraction: true });
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      assert.equal(elements.popover.hasAttribute("aria-modal"), false);
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+
+      assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+
+      const newTarget = createTarget();
+      step.target = newTarget as unknown as HTMLElement;
+      await driver.retarget(step, new AbortController().signal);
+
+      assert.equal(elements.popover.hasAttribute("aria-modal"), false);
+    });
+
+    test("keeps popover triggers live while frozen so the user can still leave the tour", async () => {
+      const { calls, driver, elements } = installDriver();
+      const step = createStep();
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+      assert.deepEqual(calls, ["targetDisconnected"]);
+
+      elements.root.dispatchEvent(new MockEvent("click", { target: elements.advance }));
+      await Promise.resolve();
+
+      assert.deepEqual(calls, ["targetDisconnected", "advance"]);
+    });
+
+    test("ignores a retarget call once the driver is no longer frozen for that step", async () => {
+      const { driver } = installDriver();
+      const step = createStep();
+      step.target = createTarget() as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      const updates = countDriverPositionUpdates(driver);
+
+      const newTarget = createTarget();
+      step.target = newTarget as unknown as HTMLElement;
+      await driver.retarget(step, new AbortController().signal);
+
+      assert.equal(updates.overlay.count, 0);
+      assert.equal(updates.popover.count, 0);
+    });
   });
 });

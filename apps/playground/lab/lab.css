@@ -220,6 +220,55 @@
   font-size: 12px;
 }
 
+.lab-relocate-card {
+  grid-column: span 2;
+}
+
+.lab-relocate-slots {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lab-relocate-slot {
+  align-items: center;
+  display: flex;
+  min-height: 46px;
+}
+
+.lab-relocate-slot-away {
+  border: 1px dashed #cfc6ff;
+  border-radius: 9px;
+  color: #766e88;
+  font-size: 11px;
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.lab-relocate-slot-away > span {
+  pointer-events: none;
+}
+
+.lab-relocate-delay {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.lab-relocate-delay output {
+  color: #5b47d6;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+}
+
+.lab-relocate-hint {
+  color: #766e88;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .lab-final-card {
   background: #eeeaff;
   border-color: #cfc6ff;
