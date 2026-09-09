@@ -413,6 +413,8 @@ behavior: {
 }
 ```
 
+**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately — overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTargetStrategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, and `wait` keeps waiting — the grace period counts against `targetTimeout` rather than adding to it. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
+
 ### Lifecycle hook context
 
 The `onStart`, `onCancel`, and `onFinish` callbacks receive a `LifecycleHookContext` object:

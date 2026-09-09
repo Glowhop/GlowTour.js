@@ -52,6 +52,15 @@ export interface TourViewDriver<T> {
     onBeforePopoverAppear?: () => void | Promise<void>,
   ): Promise<void> | void;
   clear(signal: AbortSignal): Promise<void> | void;
+  /**
+   * Resumes a frozen presentation on `step.target` after its previous target
+   * reconnected or was replaced, without unmounting or replaying `appear()`.
+   * A no-op when the driver isn't frozen for this step — callers only invoke
+   * it in response to a `targetDisconnected` notification they are recovering
+   * from, so a stale or superseded call should be silently ignored rather
+   * than throw.
+   */
+  retarget(step: ActiveStep<T>, signal: AbortSignal): Promise<void> | void;
   dispose(): void;
   releaseMount?(): void;
   setCommands?(commands: TourViewCommands): void;
@@ -69,6 +78,8 @@ export class NoopTourViewDriver<T> implements TourViewDriver<T> {
 
   clear(_signal: AbortSignal): void {}
 
+  retarget(_step: ActiveStep<T>, _signal: AbortSignal): void {}
+
   dispose(): void {}
 
   releaseMount(): void {}
@@ -79,6 +90,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private readonly scrollLock = new ScrollLock();
   private readonly modalToken = {};
   private readonly stepCleanups: Array<() => void> = [];
+  private readonly targetCleanups: Array<() => void> = [];
   private commands: TourViewCommands | null;
   private direction: TourDirection = "advance";
   private currentStep: ActiveStep<T> | null = null;
@@ -86,6 +98,16 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private disposed = false;
   private generation = 0;
   private active = false;
+  /**
+   * True while the presentation is held in place on a lost target: the
+   * reposition loop is stopped and interaction is force-blocked, but overlay,
+   * popover and pointer stay mounted at their last known position instead of
+   * disappearing. Cleared by `retarget()` (target came back) or `clear()`
+   * (the caller gave up and is tearing the presentation down).
+   */
+  private frozen = false;
+  private activeTarget: HTMLElement | null = null;
+  private targetFocusedAtFreeze = false;
   private lastTargetRect: RectSnapshot | null = null;
   private lastViewport: ViewportSnapshot | null = null;
   private inertBranches: InertBranch[] = [];
@@ -164,6 +186,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.cleanupStepResources();
       this.throwIfStale(generation, signal);
       this.active = false;
+      this.frozen = false;
+      this.activeTarget = null;
+      this.targetFocusedAtFreeze = false;
       this.currentStep = step;
       this.currentSignal = signal;
       this.direction = direction;
@@ -181,6 +206,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       }
       const target = step.target;
       if (!target) return;
+      this.activeTarget = target;
 
       this.syncModality(step.behavior?.allowInteraction === true);
       await this.scrollTargetIntoView(step, target, signal);
@@ -219,6 +245,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.scrollLock.deactivate();
       this.throwIfStale(generation, signal);
       this.active = false;
+      this.frozen = false;
+      this.activeTarget = null;
+      this.targetFocusedAtFreeze = false;
       this.currentStep = null;
       this.currentSignal = null;
       this.lastTargetRect = null;
@@ -243,6 +272,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.focusGuard.deactivate();
     this.scrollLock.deactivate();
     this.active = false;
+    this.frozen = false;
+    this.activeTarget = null;
+    this.targetFocusedAtFreeze = false;
     this.currentStep = null;
     this.currentSignal = null;
     this.overlay?.release();
@@ -262,7 +294,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private refreshRegisteredElements() {
-    if (!this.active || !this.currentStep || !this.lastTargetRect) return;
+    // A frozen presentation has no live target to read a rect from — leave it
+    // parked as-is until `retarget()` resumes it, rather than calling
+    // `appear()` against the disconnected node.
+    if (!this.active || this.frozen || !this.currentStep || !this.lastTargetRect) return;
     const generation = this.beginGeneration();
     this.cleanupStepResources();
     void this.activateRegisteredElements(generation).catch((error) => {
@@ -277,6 +312,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const target = step?.target;
     const signal = this.currentSignal;
     if (this.disposed || !step || !target || !targetRect || !signal) return;
+    this.activeTarget = target;
     this.initializeElements(step);
     await this.appear(targetRect as DOMRect, step);
     this.throwIfStale(generation);
@@ -413,6 +449,40 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         if (active) this.flushPendingKeyboardCommand(step, generation);
       }) ?? (() => {}),
     );
+    this.attachTargetResources(step, target, generation, signal);
+    const currentWindow = this.getWindow(target);
+    if (typeof currentWindow?.addEventListener === "function") {
+      this.listen(currentWindow, "keydown", (event) => {
+        if (this.isCurrentGeneration(generation)) this.handleKeydown(event as KeyboardEvent);
+      });
+      this.listen(currentWindow, "click", (event) => {
+        // Reads `this.activeTarget` rather than closing over `target`: after a
+        // `retarget()` this same long-lived listener must judge overlay clicks
+        // against the new element, not the one it was first attached for.
+        if (this.isCurrentGeneration(generation) && this.activeTarget) {
+          this.handleOverlayClick(event as MouseEvent, step, this.activeTarget);
+        }
+      });
+    }
+    this.attachButtonHandlers(step);
+    this.observeControls(step, generation);
+    this.syncControlState(step);
+    this.syncShortcutLabels(step);
+    this.schedulePosition(generation);
+  }
+
+  /**
+   * Binds the step's custom event handlers to its target element. Split out
+   * from `attachStepResources` so a lost-then-recovered target can be
+   * rebound on its own by `retarget()`, without re-subscribing the
+   * step-level resources (props, capabilities, controls) that never left.
+   */
+  private attachTargetResources(
+    step: ActiveStep<T>,
+    target: HTMLElement,
+    generation: number,
+    signal: AbortSignal,
+  ) {
     for (const handler of step.definition.eventHandlers) {
       const listener = (event: Event) => {
         if (!this.isCurrentGeneration(generation)) return;
@@ -431,24 +501,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
             return this.commands?.reportError(error);
           });
       };
-      this.listen(target, handler.event, listener);
+      this.listen(target, handler.event, listener, undefined, this.targetCleanups);
     }
-    const currentWindow = this.getWindow(target);
-    if (typeof currentWindow?.addEventListener === "function") {
-      this.listen(currentWindow, "keydown", (event) => {
-        if (this.isCurrentGeneration(generation)) this.handleKeydown(event as KeyboardEvent);
-      });
-      this.listen(currentWindow, "click", (event) => {
-        if (this.isCurrentGeneration(generation)) {
-          this.handleOverlayClick(event as MouseEvent, step, target);
-        }
-      });
-    }
-    this.attachButtonHandlers(step);
-    this.observeControls(step, generation);
-    this.syncControlState(step);
-    this.syncShortcutLabels(step);
-    this.schedulePosition(generation);
   }
 
   private listen(
@@ -456,13 +510,20 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     type: string,
     listener: EventListener,
     options?: AddEventListenerOptions,
+    bucket: Array<() => void> = this.stepCleanups,
   ) {
     target.addEventListener(type, listener, options);
-    this.stepCleanups.push(() => target.removeEventListener(type, listener, options));
+    bucket.push(() => target.removeEventListener(type, listener, options));
   }
 
   private schedulePosition(generation = this.generation) {
-    if (!this.isCurrentGeneration(generation) || !this.currentStep || this.rafId !== null) return;
+    if (
+      !this.isCurrentGeneration(generation) ||
+      !this.currentStep ||
+      this.rafId !== null ||
+      this.frozen
+    )
+      return;
     const owner = this.currentStep.target?.ownerDocument?.defaultView;
     const ownerRequest = owner?.requestAnimationFrame;
     const ownerCancel = owner?.cancelAnimationFrame;
@@ -487,7 +548,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const target = step?.target;
     if (!this.isCurrentGeneration(generation) || !step || !target) return;
     if (!this.isCurrentTargetAvailable(target)) {
-      this.stopForDisconnectedTarget(target, generation);
+      this.freezeForDisconnectedTarget(step, target, generation);
       return;
     }
     const targetRect = target.getBoundingClientRect();
@@ -901,7 +962,12 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (this.rafId !== null) this.rafCancel?.(this.rafId);
     this.rafId = null;
     this.rafCancel = null;
+    this.cleanupTargetResources();
     for (const cleanup of this.stepCleanups.splice(0)) cleanup();
+  }
+
+  private cleanupTargetResources() {
+    for (const cleanup of this.targetCleanups.splice(0)) cleanup();
   }
 
   private isCurrentTargetAvailable(target: HTMLElement) {
@@ -909,21 +975,96 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     return target.isConnected && (!rootDocument || target.ownerDocument === rootDocument);
   }
 
-  private stopForDisconnectedTarget(target: HTMLElement, generation: number) {
-    if (!this.isCurrentGeneration(generation)) return;
-    this.beginGeneration();
-    this.cleanupStepResources();
-    this.releaseModality();
-    this.focusGuard.deactivate();
-    this.scrollLock.deactivate();
-    this.active = false;
-    this.currentSignal = null;
-    this.currentStep = null;
-    this.lastTargetRect = null;
-    this.lastViewport = null;
+  /**
+   * Holds the presentation exactly where it is when its target disappears,
+   * instead of tearing it down: overlay, popover and pointer stay mounted at
+   * their last known rect, focus guard and scroll lock stay engaged, and only
+   * the target's own listeners (now pointing at a dead node) are removed.
+   * The generation is deliberately left untouched — popover buttons, the
+   * keyboard shortcuts and any pending capability/focus bookkeeping must
+   * keep working while frozen, since the popover is the user's escape hatch
+   * out of a tour whose target never comes back. `commands.targetDisconnected`
+   * drives the actual recovery (grace period, then the configured strategy)
+   * and eventually calls back into `retarget()` or `clear()`.
+   */
+  private freezeForDisconnectedTarget(
+    step: ActiveStep<T>,
+    target: HTMLElement,
+    generation: number,
+  ) {
+    if (!this.isCurrentGeneration(generation) || this.frozen) return;
+    this.frozen = true;
+    if (this.rafId !== null) this.rafCancel?.(this.rafId);
+    this.rafId = null;
+    this.rafCancel = null;
+    this.targetFocusedAtFreeze = this.isFocusInsideTarget(target);
+    this.cleanupTargetResources();
+    this.applyInteractionLock(step, true);
     void Promise.resolve(this.commands?.targetDisconnected(target)).catch((error) => {
       void this.commands?.reportError(error).catch(() => {});
     });
+  }
+
+  /**
+   * Blocks (or restores) interaction with the underlying page independently
+   * of `step.behavior.allowInteraction`. Used to force interaction off while
+   * frozen — the cutout no longer corresponds to anything after a reflow, so
+   * it must not let clicks through even on a step that normally allows them —
+   * and to restore the step's own setting once retargeted.
+   */
+  private applyInteractionLock(step: ActiveStep<T>, locked: boolean) {
+    const allowed = !locked && step.behavior?.allowInteraction === true;
+    this.overlay?.setInteractionAllowed(allowed);
+    this.syncModality(allowed);
+    const popover = this.popover?.getElement();
+    if (isHTMLElement(popover, this.root ?? popover)) {
+      if (allowed) popover.removeAttribute("aria-modal");
+      else popover.setAttribute("aria-modal", "true");
+    }
+  }
+
+  private isFocusInsideTarget(target: HTMLElement) {
+    const activeElement = target.ownerDocument?.activeElement;
+    if (!activeElement) return false;
+    return activeElement === target || target.contains(activeElement);
+  }
+
+  /**
+   * Resumes a presentation frozen by `freezeForDisconnectedTarget` on its new
+   * target: reattaches the target-bound listeners, restores the step's own
+   * interaction setting, and lets the existing reposition loop tween overlay
+   * and popover to the new rect on the next frame. Deliberately skips
+   * `appear()` (no re-entrance animation) and `activateFocus()` (focus stays
+   * where the user left it), only reclaiming it if it was on the target that
+   * just disappeared.
+   */
+  async retarget(step: ActiveStep<T>, signal: AbortSignal): Promise<void> {
+    this.throwIfAborted(signal);
+    if (this.disposed || !this.frozen || this.currentStep !== step) return;
+    const target = step.target;
+    if (!target) return;
+    this.frozen = false;
+    this.currentSignal = signal;
+    this.activeTarget = target;
+    this.applyInteractionLock(step, false);
+    this.attachTargetResources(step, target, this.generation, signal);
+    const popover = this.popover?.getElement();
+    if (isHTMLElement(popover, this.root ?? popover)) {
+      this.focusGuard.update({
+        allowedTarget: target,
+        allowTargetInteraction: step.behavior?.allowInteraction === true,
+        direction: this.direction,
+        fallback: this.root ?? popover.parentElement,
+        popover,
+      });
+    }
+    if (this.targetFocusedAtFreeze) {
+      this.targetFocusedAtFreeze = false;
+      if (step.behavior?.allowInteraction === true) target.focus();
+    }
+    this.syncControlState(step);
+    this.syncShortcutLabels(step);
+    this.schedulePosition(this.generation);
   }
 
   private beginGeneration() {
