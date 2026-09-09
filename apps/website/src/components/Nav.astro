@@ -7,15 +7,15 @@ import Wordmark from "./Wordmark.astro";
 <header
   class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur sticky top-0 z-50"
 >
-  <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:gap-6 sm:px-6">
     <a href="/" class="flex items-center gap-2 text-[var(--color-text)]">
-      <LogoMark variant="square" class="h-9 w-11" />
-      <Wordmark />
+      <LogoMark variant="square" class="h-7 w-8 sm:h-9 sm:w-11" />
+      <Wordmark class="[--wordmark-size:0.875rem] sm:[--wordmark-size:1.25rem]" />
     </a>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 sm:gap-3">
       <a
         href="/examples"
-        class="text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+        class="hidden text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] sm:inline"
       >
         Examples
       </a>
@@ -28,7 +28,7 @@ import Wordmark from "./Wordmark.astro";
       </a>
       <a
         href="/docs/getting-started"
-        class="rounded-[var(--radius-glow)] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
+        class="whitespace-nowrap rounded-[var(--radius-glow)] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
       >
         Get started
       </a>

@@ -69,13 +69,17 @@ step(params: StepParameters): WorkflowStepBuilder
 })
 ```
 
-### `.do(fn)`
+### `.do(callback)`
 
-Executes a function between steps. Can be async.
+Executes a function between steps. Can be async. Returning `false` stops the rest of the step's action sequence; any other value continues it.
 
 **Signature**:
 ```typescript
-do(fn: () => void | Promise<void>): WorkflowStepBuilder
+do(callback: StepAction<T>): WorkflowStepBuilder
+
+type StepAction<T> = (
+  context: StepContext<T>,
+) => Promise<boolean | void> | boolean | void
 ```
 
 **Usage**:
@@ -165,16 +169,34 @@ waitUntilElement(
 })
 ```
 
-### `.onTargetEvent(eventName, handler)`
+### `.onTargetEvent(event, callback)`
 
 Listens for a DOM event on the current target during this step.
 
 **Signature**:
 ```typescript
-onTargetEvent(
-  eventName: string,
-  handler: (event: Event, context: StepContext) => void
+// A known DOM event name, narrowed to its concrete event type.
+onTargetEvent<TEventName extends EventName>(
+  event: TEventName,
+  callback: Callback<EventForName<TEventName>>
 ): WorkflowStepBuilder
+
+// Several event names at once, sharing one callback.
+onTargetEvent<TEventNames extends readonly EventName[]>(
+  events: TEventNames,
+  callback: Callback<EventForName<TEventNames[number]>>
+): WorkflowStepBuilder
+
+// A custom event name, with the event type supplied by you.
+onTargetEvent<TEvent extends Event>(
+  event: string,
+  callback: Callback<TEvent>
+): WorkflowStepBuilder
+
+type Callback<TEvent> = (
+  event: TEvent,
+  context: StepEventContext<T>,
+) => void | Promise<void>
 ```
 
 **Usage**:
@@ -221,7 +243,7 @@ Step-level callback, passed as part of `.step()`'s `params`. Called before advan
 
 **Signature**:
 ```typescript
-beforeAdvance?(context: StepContext): void | Promise<void>
+beforeAdvance?(context: BeforeActionStepContext<T>): void | Promise<void>
 ```
 
 **Usage**:
@@ -244,7 +266,7 @@ Step-level callback, passed as part of `.step()`'s `params`. Called before cance
 
 **Signature**:
 ```typescript
-beforeCancel?(context: StepContext): void | Promise<void>
+beforeCancel?(context: BeforeActionStepContext<T>): void | Promise<void>
 ```
 
 ### `beforePrevious(context)`
@@ -253,7 +275,7 @@ Step-level callback, passed as part of `.step()`'s `params`. Called before going
 
 **Signature**:
 ```typescript
-beforePrevious?(context: StepContext): void | Promise<void>
+beforePrevious?(context: BeforeActionStepContext<T>): void | Promise<void>
 ```
 
 ## Option reference
@@ -344,9 +366,9 @@ Customize the arrow that points from the popover to the target element.
 |--------|------|---------|-------------|
 | `disabled` | boolean | `false` | Hide the arrow |
 | `color` | string | — | Arrow color (uses theme's surface color if not set) |
-| `size` | number or string | `12px` | Arrow dimensions |
-| `borderWidth` | number or string | `1px` | Arrow border width |
-| `borderRadius` | number or string | `0px` | Arrow border radius |
+| `size` | number | `12` | Arrow dimensions (in pixels) |
+| `borderWidth` | number | `1` | Arrow border width (in pixels) |
+| `borderRadius` | number | `0` | Arrow border radius (in pixels) |
 | `edgePadding` | number | `16` | Spacing from popover edges (in pixels) |
 | `styleNonce` | string | — | CSP nonce for injected arrow styles |
 | `disableAutoStyles` | boolean | `false` | Skip injecting built-in arrow styles (provide your own CSS) |
@@ -357,11 +379,15 @@ popover: {
   arrow: {
     size: 16,
     color: "#ffffff",
-    borderWidth: "2px",
+    borderWidth: 2,
     edgePadding: 20
   }
 }
 ```
+
+These options are written as inline custom properties on the popover, so they take
+precedence over the same `--glow-tour-arrow-*` variables set in your stylesheet. Pick one
+channel per property — see the [Theming guide](/docs/guides/theming#arrow).
 
 ### Indicator options
 
@@ -371,7 +397,7 @@ Control the decorative indicator/pointer that highlights the target element.
 |--------|------|---------|-------------|
 | `disabled` | boolean | `false` | Hide the indicator |
 | `gap` | number | `16` | Spacing between indicator and target (in pixels) |
-| `placementTryOrder` | Array | `["bottom", "top", "right", "left"]` | Preferred placements in order of preference |
+| `placementTryOrder` | Array | `["left", "right", "top", "bottom"]` | Preferred placements in order of preference |
 | `animated` | boolean | `true` | Enable/disable animation |
 | `animation` | AnimationOptions | — | Custom animation (duration and easing) |
 
@@ -393,7 +419,7 @@ Control step interaction and scrolling behavior.
 | `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element |
 | `disableAutoFocus` | boolean | `false` | Skip auto-focusing the target element |
 | `disableAutoScroll` | boolean | `false` | Skip auto-scrolling to the target |
-| `missingTargetStrategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found |
+| `missingTargetStrategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found — see [Handling errors](/docs/guides/handling-errors) |
 | `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
 | `targetTimeout` | number | `3000` | Time to wait for target (in milliseconds) |
 | `scroll` | ScrollOptions | — | Scroll behavior (see [Scroll options](#scroll-options)) |

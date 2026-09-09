@@ -33,7 +33,7 @@ that instance runs — including workflows built from a [JSON config](/docs/guid
 | `step:leave` | When a step is left — moving on, going back, finishing, or cancelling |
 | `tour:complete` | The tour ran past its last step |
 | `tour:cancel` | The tour was cancelled |
-| `tour:error` | The tour failed, for example on a target that never appeared |
+| `tour:error` | The tour failed — see [Handling errors](/docs/guides/handling-errors) for response strategies |
 
 A completed two-step tour emits, in order: `tour:start`, `step:enter`, `step:leave`,
 `step:enter`, `step:leave`, `tour:complete`.

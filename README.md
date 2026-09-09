@@ -1,28 +1,3 @@
-<!--
-  ────────────────────────────────────────────────────────────────────────────
-  ASSETS TO ADD — every placeholder below is an HTML comment, so the README
-  renders clean until you drop the file in and uncomment the line above it.
-
-  Put them in `assets/`:
-
-  [x] assets/social-preview.png           1280×640  — GitHub "Social preview"
-                                          (Settings → General → Social preview).
-                                          Not referenced here; upload only.
-  [x] assets/hero.png                     1280×640  — logo + tagline banner,
-                                          shown at the very top.
-  [ ] assets/demo.gif                     ≤1200px wide, ≤10 MB, 8–12 s loop —
-                                          a 3-step tour running in a real app.
-                                          This is the single most important
-                                          asset: it is what people judge the
-                                          library on before reading a word.
-  [ ] assets/theming.gif                  ≤1000px wide, ~6 s — the default theme
-                                          morphing into a custom-token skin.
-  [ ] assets/placement.png                ≤1000px wide — one screenshot showing
-                                          top/bottom/left/right placement.
-
-  Record the GIFs from the live gallery at https://glowtour.dev/examples.
-  ────────────────────────────────────────────────────────────────────────────
--->
 
 <p align="center"><img src="assets/hero.png" alt="GlowTour.js — Show people around, without writing a guide." width="820"></p>
 
@@ -53,9 +28,7 @@
   <a href="https://github.com/Glowhop/GlowTour.js/issues"><b>Issues</b></a>
 </p>
 
-<!-- <p align="center"><img src="assets/demo.gif" alt="A three-step GlowTour.js walkthrough highlighting fields in a settings form" width="820"></p> -->
-
-> **Status:** `dev`. The API is in use and documented, but breaking changes are still possible before 1.0.
+<p align="center"><img src="assets/demo.gif" alt="A GlowTour.js walkthrough highlighting controls in an analytics dashboard" width="820"></p>
 
 ---
 
@@ -141,15 +114,13 @@ The default theme declares every token at zero specificity, so a plain class on 
 }
 ```
 
-<!-- <p align="center"><img src="assets/theming.gif" alt="The same GlowTour.js popover re-skinned from CSS custom properties" width="720"></p> -->
+<p align="center"><img src="assets/theming.gif" alt="The same GlowTour.js popover re-skinned from CSS custom properties" width="720"></p>
 
 Light and dark ship together; `data-glow-tour-theme="dark"` on a wrapper pins one. See the [Custom theme example](https://glowtour.dev/examples).
 
 ## Placement
 
 `popover.placementTryOrder` walks top / bottom / left / right until one fits, then falls back to centering — the same collision logic drives the pointer.
-
-<!-- <p align="center"><img src="assets/placement.png" alt="GlowTour.js popover placement on all four sides of a target" width="720"></p> -->
 
 ## Packages
 
