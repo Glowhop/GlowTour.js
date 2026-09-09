@@ -431,6 +431,7 @@ function createToggleableCommands() {
 function createStep(
   options: {
     allowInteraction?: boolean;
+    allowScroll?: boolean;
     animated?: boolean;
     cancellable?: boolean;
     advanceShortcuts?: readonly string[];
@@ -438,6 +439,7 @@ function createStep(
   } = {},
 ) {
   const workflow = new WorkflowBuilder<string>("dom-driver", {
+    allowScroll: options.allowScroll,
     animated: options.animated,
     cancellable: options.cancellable,
     behavior: {
@@ -2813,7 +2815,10 @@ describe("DomTourViewDriver", () => {
   describe("frozen presentation recovery", () => {
     test("freezes on a lost target without disappearing, and keeps focus guard and scroll lock engaged", async () => {
       const { calls, driver, elements } = installDriver();
-      const step = createStep();
+      // `allowScroll` defaults to true, so the lock only engages on a step
+      // that opts out — the point here is that freezing keeps whatever the
+      // step asked for, not that a lock is engaged by default.
+      const step = createStep({ allowScroll: false });
       const target = createTarget();
       step.target = target as unknown as HTMLElement;
       await driver.show(step, "advance", new AbortController().signal);
