@@ -1,5 +1,11 @@
 # @glowhop/core-tour
 
+## 1.1.0
+
+### Minor Changes
+
+- 165797b: `allowScroll` now defaults to `true`: the page stays scrollable while a tour runs. Pass `allowScroll: false` to keep the previous scroll-lock behaviour.
+
 ## 1.0.2
 
 ### Patch Changes

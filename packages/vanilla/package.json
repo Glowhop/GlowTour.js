@@ -1,6 +1,6 @@
 {
   "name": "@glowhop/vanilla-tour",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Native custom-element adapter for GlowTour.js.",
   "license": "MIT",
   "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
