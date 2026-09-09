@@ -7,7 +7,11 @@ import {
 } from "../dom/tour-view-driver";
 import type { BeforeActionStepContext, StepContext, TourCurrentStep, TourEvent } from "../types";
 import type { ActiveStep } from "./active-step";
-import { createGlowTour as createPublicGlowTour, TourController } from "./tour-controller";
+import {
+  createGlowTour as createPublicGlowTour,
+  TARGET_LOSS_GRACE_MS,
+  TourController,
+} from "./tour-controller";
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -92,6 +96,9 @@ class RecordingDriver implements TourViewDriver<string> {
   disposeCalls = 0;
   showCalls = 0;
   showError: Error | null = null;
+  retargetCalls = 0;
+  retargetError: Error | null = null;
+  retargetedTargets: (HTMLElement | null)[] = [];
 
   clear() {
     this.clearCalls += 1;
@@ -107,6 +114,12 @@ class RecordingDriver implements TourViewDriver<string> {
     if (this.showError) throw this.showError;
   }
 
+  retarget(step: ActiveStep<string>) {
+    this.retargetCalls += 1;
+    this.retargetedTargets.push(step.target);
+    if (this.retargetError) throw this.retargetError;
+  }
+
   setCommands(commands: TourViewCommands) {
     this.commands = commands;
   }
@@ -118,6 +131,8 @@ class StagedTransitionDriver implements TourViewDriver<string> {
   private pause = false;
 
   clear() {}
+
+  retarget() {}
 
   dispose() {}
 
@@ -154,6 +169,10 @@ class StagedTransitionDriver implements TourViewDriver<string> {
 
 async function flushMicrotasks() {
   for (let index = 0; index < 5; index += 1) await Promise.resolve();
+}
+
+async function delay(durationMs: number) {
+  await new Promise((resolve) => setTimeout(resolve, durationMs));
 }
 
 describe("instance-first TourController", () => {
@@ -1459,7 +1478,7 @@ describe("instance-first TourController", () => {
     assert.equal(driver.clearCalls, 1);
   });
 
-  test("recovers a disconnected target by waiting for its replacement without resetting props or replaying actions", async () => {
+  test("recovers a target reconnected within the grace period without clearing, replaying actions, or leaving 'active'", async () => {
     const driver = new RecordingDriver();
     const tour = new TourController<string>(driver);
     const initialTarget = {} as HTMLElement;
@@ -1470,7 +1489,7 @@ describe("instance-first TourController", () => {
       .create("recover-wait")
       .step({
         id: "step-65",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
         content: "one",
         target: () => resolvedTarget,
         title: "initial",
@@ -1486,10 +1505,13 @@ describe("instance-first TourController", () => {
     resolvedTarget = null;
     const recovery = driver.commands.targetDisconnected(initialTarget);
     await flushMicrotasks();
-    assert.equal(tour.state.get().status, "transitioning");
-    assert.equal(driver.clearCalls, 1);
+    // A same-frame disconnection must not bounce the public status through
+    // "transitioning" — that would be the exact flicker the grace period
+    // exists to hide from consumers.
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(driver.clearCalls, 0);
     await driver.commands.targetDisconnected(initialTarget);
-    assert.equal(driver.clearCalls, 1);
+    assert.equal(driver.clearCalls, 0);
 
     resolvedTarget = replacementTarget;
     await recovery;
@@ -1498,10 +1520,12 @@ describe("instance-first TourController", () => {
     assert.equal(tour.state.get().currentStep?.target, replacementTarget);
     assert.equal(tour.state.get().currentStep?.currentProps.title, "dynamic");
     assert.equal(actions, 1);
-    assert.equal(driver.showCalls, 2);
+    assert.equal(driver.showCalls, 1);
+    assert.equal(driver.clearCalls, 0);
+    assert.equal(driver.retargetCalls, 1);
   });
 
-  test("recovers a direct element after it reconnects", async () => {
+  test("recovers a direct element after it reconnects within the grace period", async () => {
     const driver = new RecordingDriver();
     const realm = createRealmDocument();
     const directTarget = realm.element();
@@ -1510,7 +1534,7 @@ describe("instance-first TourController", () => {
       .create("recover-direct")
       .step({
         id: "step-66",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
         content: "one",
         target: directTarget,
         title: "one",
@@ -1527,7 +1551,9 @@ describe("instance-first TourController", () => {
 
     assert.equal(tour.state.get().status, "active");
     assert.equal(tour.state.get().currentStep?.target, directTarget);
-    assert.equal(driver.showCalls, 2);
+    assert.equal(driver.showCalls, 1);
+    assert.equal(driver.clearCalls, 0);
+    assert.equal(driver.retargetCalls, 1);
   });
 
   test("skips a disconnected target in the current direction", async () => {
@@ -1620,7 +1646,9 @@ describe("instance-first TourController", () => {
     assert.match(tour.state.get().error?.message ?? "", /Missing target at steps\[0\]/);
     assert.equal(tour.state.get().canAdvance, false);
     assert.equal(tour.state.get().canCancel, false);
-    assert.equal(driver.clearCalls, 2);
+    // A single clear: the grace period never mounted/unmounted a presentation
+    // of its own, so only the final teardown driven by `handleFailure` runs.
+    assert.equal(driver.clearCalls, 1);
   });
 
   test("reports an indexed error when active target recovery uses the error strategy", async () => {
@@ -1640,7 +1668,7 @@ describe("instance-first TourController", () => {
 
     assert.equal(tour.state.get().status, "error");
     assert.match(tour.state.get().error?.message ?? "", /Missing target at steps\[0\]/);
-    assert.equal(driver.clearCalls, 2);
+    assert.equal(driver.clearCalls, 1);
   });
 
   test("reports an indexed error when active target recovery wait times out", async () => {
@@ -1666,6 +1694,120 @@ describe("instance-first TourController", () => {
 
     assert.equal(tour.state.get().status, "error");
     assert.match(tour.state.get().error?.message ?? "", /Missing target at steps\[0\]/);
+  });
+
+  test("counts the grace period against the wait strategy's own budget instead of adding it on top", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const initialTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = initialTarget;
+    let resolveCalls = 0;
+    const targetTimeout = TARGET_LOSS_GRACE_MS + 150;
+    const workflow = tour
+      .create("recover-budget")
+      .step({
+        id: "step-budget",
+        behavior: { missingTargetStrategy: "wait", targetTimeout },
+        content: "one",
+        target: () => {
+          resolveCalls += 1;
+          return resolvedTarget;
+        },
+        title: "one",
+      })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+    resolveCalls = 0;
+
+    resolvedTarget = null;
+    const startedAt = Date.now();
+    await driver.commands.targetDisconnected(initialTarget);
+    const elapsedMs = Date.now() - startedAt;
+
+    assert.equal(tour.state.get().status, "error");
+    // If the grace period were added on top of `targetTimeout` instead of
+    // being deducted from it, the total wait (and so the attempt count and
+    // elapsed time) would run for roughly `targetTimeout + grace` instead of
+    // `targetTimeout` — comfortably outside this bound.
+    const nonDoubledCeiling = targetTimeout + TARGET_LOSS_GRACE_MS / 2;
+    assert.ok(
+      elapsedMs < nonDoubledCeiling,
+      `expected the recovery to finish within ~${targetTimeout}ms, took ${elapsedMs}ms`,
+    );
+    assert.ok(resolveCalls > 1, "expected more than the single immediate resolve attempt");
+  });
+
+  test("honors a command received while frozen and cancels the pending recovery", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const firstTarget = {} as HTMLElement;
+    const secondTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = firstTarget;
+    const workflow = tour
+      .create("recover-command-wins")
+      .step({
+        id: "step-cmd-1",
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "one",
+      })
+      .step({ id: "step-cmd-2", content: "two", target: () => secondTarget, title: "two" })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    const recovery = driver.commands.targetDisconnected(firstTarget);
+    await flushMicrotasks();
+    // Still frozen, still "active": the advance button reads as usable.
+    assert.equal(tour.state.get().status, "active");
+
+    await tour.advance();
+    await recovery;
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().currentStep?.target, secondTarget);
+  });
+
+  test("keeps the popover usable during a wait freeze that outlives the grace period", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const firstTarget = {} as HTMLElement;
+    const secondTarget = {} as HTMLElement;
+    let resolvedTarget: HTMLElement | null = firstTarget;
+    const workflow = tour
+      .create("recover-wait-command")
+      .step({
+        id: "step-wait-cmd-1",
+        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+        content: "one",
+        target: () => resolvedTarget,
+        title: "one",
+      })
+      .step({ id: "step-wait-cmd-2", content: "two", target: () => secondTarget, title: "two" })
+      .build();
+    await tour.run(workflow);
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    const recovery = driver.commands.targetDisconnected(firstTarget);
+    await delay(TARGET_LOSS_GRACE_MS * 2);
+
+    // Past the grace period the step is deep into its "wait" budget, yet the
+    // presentation is still frozen on screen. A frozen popover whose buttons
+    // have gone dead is the trap this guards against.
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(driver.clearCalls, 0);
+
+    await tour.advance();
+    await recovery;
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().currentStep?.target, secondTarget);
   });
 
   test("ignores stale and repeated target-disconnected notifications", async () => {

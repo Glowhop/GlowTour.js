@@ -36,6 +36,7 @@ export function mountLab<TContent>({
   const logs: LogEntry[] = [];
   let conditionReady = false;
   let conditionTimer: ReturnType<typeof setTimeout> | null = null;
+  let relocateTimer: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
   let logSequence = 0;
 
@@ -61,8 +62,45 @@ export function mountLab<TContent>({
     conditionTimer = null;
   };
 
+  const clearRelocateTimer = () => {
+    if (relocateTimer === null) return;
+    clearTimeout(relocateTimer);
+    relocateTimer = null;
+  };
+
+  const relocateDelay = () => {
+    const parsed = Number.parseInt(view.relocateDelayInput.value, 10);
+    return Number.isFinite(parsed) ? parsed : LAB_CONFIG.timing.relocateDelay;
+  };
+
+  /**
+   * Takes the nomad target out of the DOM and puts it back somewhere else. The
+   * step resolves it by selector, so the core recovers on the reinserted node:
+   * under the freeze grace the move is invisible, beyond it the presentation
+   * stays parked until the element returns or `targetTimeout` runs out.
+   */
+  const relocateTarget = () => {
+    clearRelocateTimer();
+    const delay = relocateDelay();
+    const nomad = view.nomadTarget;
+    const returnsHome = nomad.parentElement === view.relocateAway;
+    nomad.remove();
+    log(`Cible retirée du DOM — réapparition dans ${delay} ms`);
+    relocateTimer = setTimeout(() => {
+      relocateTimer = null;
+      (returnsHome ? view.relocateHome : view.relocateAway).append(nomad);
+      log(
+        returnsHome
+          ? "Cible réinsérée à son emplacement"
+          : "Cible réinsérée dans la zone d’accueil",
+      );
+    }, delay);
+  };
+
   const resetLab = () => {
     clearConditionTimer();
+    clearRelocateTimer();
+    view.relocateHome.append(view.nomadTarget);
     session.reset();
     conditionReady = false;
     view.conditionState.textContent = "En attente";
@@ -78,9 +116,13 @@ export function mountLab<TContent>({
       tour,
       { focusInput: view.focusInput },
       {
-        cancelPending: clearConditionTimer,
+        cancelPending: () => {
+          clearConditionTimer();
+          clearRelocateTimer();
+        },
         isConditionReady: () => conditionReady,
         log,
+        relocateTarget,
         scheduleCondition: () => {
           clearConditionTimer();
           conditionTimer = setTimeout(() => {
@@ -101,10 +143,19 @@ export function mountLab<TContent>({
 
   listen(view.startButton, "click", startTour, cleanups);
   listen(
+    view.relocateDelayInput,
+    "input",
+    () => {
+      view.relocateDelayValue.textContent = `${relocateDelay()} ms`;
+    },
+    cleanups,
+  );
+  listen(
     view.cancelButton,
     "click",
     () => {
       clearConditionTimer();
+      clearRelocateTimer();
       void tour.cancel().catch((error: unknown) => {
         log(`Erreur cancel() — ${error instanceof Error ? error.message : String(error)}`);
       });
@@ -173,6 +224,7 @@ export function mountLab<TContent>({
       if (disposed) return;
       disposed = true;
       clearConditionTimer();
+      clearRelocateTimer();
       for (const cleanup of cleanups.splice(0).reverse()) cleanup();
       tour.dispose();
       root.replaceChildren();
