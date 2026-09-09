@@ -2846,13 +2846,15 @@ describe("DomTourViewDriver", () => {
       assert.equal(internals.scrollLock.active, true);
     });
 
-    test("resumes a frozen presentation on the new target by tweening, not replaying appear()", async () => {
-      const { driver } = installDriver();
+    test("animates the cutout to the new target instead of snapping or replaying appear()", async () => {
+      const { driver, elements } = installDriver();
       const step = createStep();
       const target = createTarget();
       step.target = target as unknown as HTMLElement;
       await driver.show(step, "advance", new AbortController().signal);
       flushFrame();
+      const overlayPath = elements.overlay.querySelector("path");
+      assert.ok(overlayPath);
       const updates = countDriverPositionUpdates(driver);
 
       target.isConnected = false;
@@ -2860,18 +2862,55 @@ describe("DomTourViewDriver", () => {
       await flushMicrotasks();
       assert.equal(animationFrames.length, 0);
 
+      createdAnimations.length = 0;
       const newTarget = createTarget();
       newTarget.setRect({ height: 40, left: 200, top: 200, width: 40 });
       step.target = newTarget as unknown as HTMLElement;
       await driver.retarget(step, new AbortController().signal);
 
-      // The reposition loop is resumed rather than a fresh appear-in: exactly
-      // one frame is armed, and the next tick tweens geometry as usual.
-      assert.equal(animationFrames.length, 1);
-      flushFrame();
-
-      assert.equal(updates.overlay.count, 1);
+      // A target that reappears elsewhere is a pure geometry jump, which the
+      // per-frame loop would snap through: the cutout has to be walked over.
+      const move = createdAnimations.filter((animation) => animation.target === overlayPath);
+      assert.equal(move.length, 1);
+      // Not an appear-in: the popover repositions, it does not fade back from
+      // scratch, and the loop is resumed with exactly one frame armed.
       assert.equal(updates.popover.count, 1);
+      assert.equal(animationFrames.length, 1);
+
+      // The resumed frame must not re-apply the box the move is heading for.
+      flushFrame();
+      assert.equal(updates.overlay.count, 0);
+      assert.equal(
+        createdAnimations.filter((animation) => animation.target === overlayPath).length,
+        1,
+      );
+    });
+
+    test("moves the cutout without animating when the step is not animated", async () => {
+      const { driver, elements } = installDriver();
+      const step = createStep({ animated: false });
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      const overlayPath = elements.overlay.querySelector("path");
+      assert.ok(overlayPath);
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+
+      createdAnimations.length = 0;
+      const newTarget = createTarget();
+      newTarget.setRect({ height: 40, left: 200, top: 200, width: 40 });
+      step.target = newTarget as unknown as HTMLElement;
+      await driver.retarget(step, new AbortController().signal);
+
+      assert.equal(
+        createdAnimations.filter((animation) => animation.target === overlayPath).length,
+        0,
+      );
+      assert.match(overlayPath.style.getPropertyValue("d"), /^path\(/);
     });
 
     test("forces interaction off while frozen even when the step allows it, and restores it once retargeted", async () => {

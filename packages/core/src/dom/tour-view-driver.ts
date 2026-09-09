@@ -1064,7 +1064,36 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
     this.syncControlState(step);
     this.syncShortcutLabels(step);
+    this.moveToRetargetedRect(step, target);
     this.schedulePosition(this.generation);
+  }
+
+  /**
+   * Walks the presentation from where it froze to the new target's box. The
+   * per-frame loop can't do this on its own: it only tweens the cutout when
+   * the step's own visuals changed, and a target that reappears elsewhere is
+   * a pure geometry jump, which would snap. `animateTo` and the popover's
+   * reposition both fall back to an instant move when the step isn't
+   * animated, so this respects `animated: false` and reduced motion without
+   * asking about them.
+   */
+  private moveToRetargetedRect(step: ActiveStep<T>, target: HTMLElement) {
+    const generation = this.generation;
+    const targetRect = target.getBoundingClientRect();
+    this.observeDynamicOperation(this.overlay?.animateTo(targetRect, step), generation);
+    const placement = this.popover?.updatePosition(targetRect, step, (reposition) =>
+      this.observeDynamicOperation(reposition, generation),
+    );
+    if (this.isPointerEnabled(step)) {
+      this.observeDynamicOperation(
+        this.pointer?.moveToTarget(targetRect, step, true, placement),
+        generation,
+      );
+    }
+    // Prime the loop with the box we are moving to, so the next frame doesn't
+    // read it as a fresh change and snap over the animation just started.
+    this.lastTargetRect = snapshotRect(targetRect);
+    this.lastViewport = snapshotViewport(target);
   }
 
   private beginGeneration() {
