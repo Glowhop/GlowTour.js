@@ -23,6 +23,16 @@ import { ActiveStep } from "./active-step";
 import { attachRootBridge } from "./root-bridge";
 
 const DEFAULT_TARGET_TIMEOUT = 3000;
+/**
+ * How long a step stays frozen on its last known position after its target
+ * disappears from the DOM, before the configured `missingTargetStrategy`
+ * takes over. Covers the dominant case — a framework remounting the target
+ * within a frame or two — without a visible unmount/remount flicker. Not
+ * configurable: it is a presentation detail of the recovery, not a policy
+ * choice; `missingTargetStrategy` and `targetTimeout` remain the only knobs.
+ * Exported for the test suite's timing assertions only.
+ */
+export const TARGET_LOSS_GRACE_MS = 150;
 const DISPOSED_ERROR_MESSAGE = "Tour controller is disposed";
 
 /**
@@ -75,6 +85,14 @@ export class TourController<T> {
   private direction: TourDirection = "advance";
   private status: TourStatus = "idle";
   private error: Error | null = null;
+  /**
+   * The target currently being recovered from a disconnect, if any. The
+   * public status stays "active" through the grace period (see
+   * TARGET_LOSS_GRACE_MS), so it can no longer serve as the re-entrancy guard
+   * a repeated or overlapping `targetDisconnected` notification for the same
+   * target relies on — this field takes over that job instead.
+   */
+  private recoveringTarget: HTMLElement | null = null;
   private operationToken = 0;
   private publicationRevision = 0;
   private operation: AbortController | null = null;
@@ -382,26 +400,83 @@ export class TourController<T> {
     }
   }
 
+  /**
+   * Repeatedly re-resolves `step.target` until it succeeds or `budgetMs`
+   * elapses, polling every 16ms like `resolveTarget`. Unlike `resolveTarget`
+   * it never applies `missingTargetStrategy` itself — callers decide what a
+   * timed-out budget means (grace period vs. a "wait" strategy's own
+   * timeout), so the same polling loop serves both.
+   */
+  private async pollForTarget(step: ActiveStep<T>, operation: number, budgetMs: number) {
+    const startedAt = Date.now();
+    while (true) {
+      const target = await step.resolveTarget(this.signalFor(operation));
+      this.assertCurrent(operation);
+      if (target) return target;
+      if (Date.now() - startedAt >= budgetMs) return null;
+      await abortableDelay(16, this.signalFor(operation));
+      this.assertCurrent(operation);
+    }
+  }
+
+  /**
+   * Recovers from a target disconnecting while its step is on screen. The
+   * driver has already frozen the presentation in place (overlay, popover,
+   * pointer held at their last position; focus guard and scroll lock still
+   * engaged) and stopped polling geometry — this only decides how long to
+   * keep it frozen and what to do once that budget runs out.
+   *
+   * The public status stays "active" for the grace period: a same-frame or
+   * next-frame remount, the dominant case, must not flicker into
+   * "transitioning" and back. Only a "wait" strategy that outlives the grace
+   * period flips to "transitioning", since that is a genuine wait rather
+   * than a frozen instant — see TARGET_LOSS_GRACE_MS for why the grace
+   * period itself doesn't count as one.
+   */
   private async recoverDisconnectedTarget(target: HTMLElement) {
-    if (this.disposed || this.status !== "active") return;
+    if (this.disposed || this.status !== "active" || this.recoveringTarget === target) return;
     const step = this.currentStep();
     if (!step || step.target !== target) return;
+    this.recoveringTarget = target;
     const index = this.index;
     const direction = this.direction;
     const operation = this.beginOperation();
     try {
-      this.setStatus("transitioning");
       this.assertCurrent(operation);
-      await this.driver.clear(this.signalFor(operation));
+      const recoveredDuringGrace = await this.pollForTarget(step, operation, TARGET_LOSS_GRACE_MS);
       this.assertCurrent(operation);
-      const recoveredTarget = await this.resolveTarget(step, operation);
-      this.assertCurrent(operation);
-      if (!recoveredTarget) {
+      if (recoveredDuringGrace) {
+        step.target = recoveredDuringGrace;
+        await this.driver.retarget(step, this.signalFor(operation));
+        this.assertCurrent(operation);
+        // The status doesn't change (still "active"), but the step's target
+        // did — publish so consumers reading `currentStep.target` see it.
+        this.publish();
+        return;
+      }
+
+      const strategy = step.behavior?.missingTargetStrategy ?? "error";
+      if (strategy === "skip") {
         await this.advancePastRecoveryMissingTarget(step, index, direction, operation);
         return;
       }
-      step.target = recoveredTarget;
-      await this.driver.show(step, direction, this.signalFor(operation));
+      if (strategy !== "wait") throw this.missingTargetError(step);
+
+      // The grace period counts against the "wait" budget rather than
+      // extending it — a longer configured timeout is the only way to wait
+      // longer overall, `targetTimeout` is never silently doubled.
+      this.setStatus("transitioning");
+      this.assertCurrent(operation);
+      const timeout = step.behavior?.targetTimeout ?? DEFAULT_TARGET_TIMEOUT;
+      const recoveredAfterWait = await this.pollForTarget(
+        step,
+        operation,
+        Math.max(0, timeout - TARGET_LOSS_GRACE_MS),
+      );
+      this.assertCurrent(operation);
+      if (!recoveredAfterWait) throw this.missingTargetError(step);
+      step.target = recoveredAfterWait;
+      await this.driver.retarget(step, this.signalFor(operation));
       this.assertCurrent(operation);
       this.setStatus("active");
     } catch (error) {
@@ -410,6 +485,8 @@ export class TourController<T> {
       } catch {
         // The failure is exposed through the public state.
       }
+    } finally {
+      if (this.recoveringTarget === target) this.recoveringTarget = null;
     }
   }
 
