@@ -116,7 +116,7 @@ const workflow = tour
 ## Transition callbacks
 
 React to step transitions. These are builder *methods* chained after a `.step()` call, not options
-inside it — they attach to the step that precedes them:
+inside it - they attach to the step that precedes them:
 
 ```typescript
 const workflow = tour

@@ -10,7 +10,7 @@ import { examples } from "./examples";
  * So the contract is one-directional: a snippet may leave things out, but everything it *does*
  * show has to be real. Titles are the anchor a reader uses to line the snippet up with the demo in
  * front of them, which makes a stale title the drift that actually misleads. Contents are excluded
- * on purpose — they are abridged by hand, so no textual rule holds over them without being noise.
+ * on purpose - they are abridged by hand, so no textual rule holds over them without being noise.
  */
 
 /** Option names the snippets cite by name; each must exist in the workflow it describes. */

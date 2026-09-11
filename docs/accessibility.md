@@ -1,7 +1,7 @@
 # Accessibility: implementation contract
 
 > **Scope.** This is the internal contract and audit record, written against the source. The
-> user-facing guide is a separate document — published at <https://glowtour.dev/docs/guides/accessibility>,
+> user-facing guide is a separate document - published at <https://glowtour.dev/docs/guides/accessibility>,
 > source in [`apps/website/src/content/docs/docs/guides/accessibility.md`](../apps/website/src/content/docs/docs/guides/accessibility.md).
 > Keep behavioural claims here (they cite the files that implement them); put anything a consumer
 > needs to read in the guide, not in both.
@@ -35,7 +35,7 @@ disallows outside interaction, and clears that state when the tour becomes non-m
 
 Keyboard handling lives entirely in `packages/core/src/dom/tour-view-driver.ts`
 (`handleKeydown`), attached once per active step as a single `keydown` listener on the step's
-owner `window`. No adapter attaches its own keyboard handling — this is what keeps the contract
+owner `window`. No adapter attaches its own keyboard handling - this is what keeps the contract
 identical across React, Vue, Angular, Solid, and Vanilla; there is a single implementation to
 diverge from, and none of the adapter `tour-components.ts(x)` files add one.
 
@@ -67,17 +67,17 @@ keyboard actually does.
    popover (or outside the currently-allowed target, if the step permits target interaction) to
    the step's Advance or Previous trigger, or a neutral fallback element.
 2. **On deactivation**: restores focus to whatever element had focus immediately before the guard
-   was first activated (the tour's trigger element) — but only if that element is still connected
+   was first activated (the tour's trigger element) - but only if that element is still connected
    to the document.
 
 The guard is activated once per tour (the first `show()` call marks `initialFocus`) and stays
-active across step transitions; it is only deactivated — restoring focus — when the tour view is
+active across step transitions; it is only deactivated - restoring focus - when the tour view is
 cleared. `driver.clear()` is invoked by every exit path in `tour-controller.ts`:
 
-- `finish()` — tour completed
-- `cancelCurrent()` — tour cancelled/dismissed (covers Escape, a Cancel trigger click, and
+- `finish()` - tour completed
+- `cancelCurrent()` - tour cancelled/dismissed (covers Escape, a Cancel trigger click, and
   programmatic `cancel()`)
-- `handleFailure()` — tour ended due to an unrecoverable error
+- `handleFailure()` - tour ended due to an unrecoverable error
 
 `releaseMount()` / `dispose()` also deactivate the guard when the tour root itself unmounts. This
 guarantees focus returns to the trigger element on every exit path, not just while the tour is
@@ -95,7 +95,7 @@ being trapped. Coverage: `packages/core/src/state/focus-guard.test.ts` includes
   project's Browser preview tooling. It covered the **light** palette only; the dark palette
   shipped later and has had no equivalent pass. It found and fixed three real WCAG AA color-contrast
   violations in `apps/playground/lab/lab.css` (`.lab-card-number`, `.lab-inspector-list dt`,
-  `.lab-empty-log` — all under 4.5:1 against their backgrounds). It also flagged the Advance
+  `.lab-empty-log` - all under 4.5:1 against their backgrounds). It also flagged the Advance
   trigger's own contrast; that flag was traced to the preview tab running backgrounded
   (`document.hidden`), which stalls the popover's `requestAnimationFrame`-driven fade-in and
   leaves `getComputedStyle` reporting a mid-transition, partially transparent background. The

@@ -3,7 +3,7 @@ title: Vanilla guide
 description: Build guided tours with @glowhop/vanilla-tour.
 ---
 
-The GlowTour.js Vanilla adapter uses native custom elements. Content is HTML and text. No framework required — works in any DOM-based application.
+The GlowTour.js Vanilla adapter uses native custom elements. Content is HTML and text. No framework required - works in any DOM-based application.
 
 ## Setup
 

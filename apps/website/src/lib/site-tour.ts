@@ -5,8 +5,8 @@ import type { Tour, WorkflowDefinition } from "@glowhop/vanilla-tour";
  * The tour of this site, running on this site.
  *
  * It crosses three pages (`/`, `/react`, `/examples`) through Astro's ClientRouter, so the page
- * change is a client-side swap rather than a reload. The presentation does not survive that swap —
- * the swap takes the elements the tour renders into, which returns the controller to idle — so a
+ * change is a client-side swap rather than a reload. The presentation does not survive that swap -
+ * the swap takes the elements the tour renders into, which returns the controller to idle - so a
  * boundary step notes where to pick up and hands the router the navigation, and the arriving page
  * re-enters the same workflow at that step. That is the `startAt` recipe from
  * docs/guides/resuming, with a module variable in place of sessionStorage: the document is never
@@ -82,7 +82,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       // while a step is open is the behavior being described.
       behavior: { allowInteraction: true },
       content:
-        "Switch tabs while this step is open — behavior.allowInteraction lets clicks through the overlay to the target. Each example runs for real, next to the code that produced it.",
+        "Switch tabs while this step is open - behavior.allowInteraction lets clicks through the overlay to the target. Each example runs for real, next to the code that produced it.",
       id: "examples",
       popover: { placementTryOrder: ["bottom", "top"] },
       target: '[data-tour="examples-tabs"]',
@@ -109,7 +109,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
     .beforePrevious(goTo("frameworks", "/"))
     .step({
       content:
-        "Build a workflow, render the tour, run it. This snippet comes straight from the examples directory of the repository — copy, paste, run.",
+        "Build a workflow, render the tour, run it. This snippet comes straight from the examples directory of the repository - copy, paste, run.",
       id: "adapter-quickstart",
       popover: { placementTryOrder: ["left", "top", "bottom"] },
       target: '[data-tour="framework-quickstart"]',
@@ -119,7 +119,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
     .step({
       behavior: acrossPageBoundary,
       content:
-        "Placement, waiting on async data, tours that cannot be skipped, custom themes — every one of them runs on this page, beside its source.",
+        "Placement, waiting on async data, tours that cannot be skipped, custom themes - every one of them runs on this page, beside its source.",
       id: "gallery",
       popover: { placementTryOrder: ["bottom", "top"] },
       target: '[data-tour="examples-tabs"]',

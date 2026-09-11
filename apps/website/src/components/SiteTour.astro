@@ -4,7 +4,7 @@
  *
  * Vanilla adapter rather than a React island on purpose: the marketing pages are static HTML, and
  * this component sits in MarketingLayout, so a React island here would pull React onto /react,
- * /vue, /solid, /angular and /vanilla — pages that ship no JavaScript at all today.
+ * /vue, /solid, /angular and /vanilla - pages that ship no JavaScript at all today.
  */
 ---
 
@@ -33,7 +33,7 @@ page. */}
   /*
    * Delegated, so the launcher keeps working after a swap replaces the button it points at, and
    * on the capture phase so it runs before the client router's own click handler: the trigger is
-   * a real link to the examples section — which is what it does without JavaScript — and left to
+   * a real link to the examples section - which is what it does without JavaScript - and left to
    * bubble, the router follows it and scrolls the page away before the tour has started.
    */
   document.addEventListener(

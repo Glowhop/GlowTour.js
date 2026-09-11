@@ -1,6 +1,6 @@
 ---
 title: Handling errors
-description: Respond to tour failures in three channels — onEvent, state, or promises — using strategies for missing targets.
+description: Respond to tour failures in three channels - onEvent, state, or promises - using strategies for missing targets.
 ---
 
 A tour fails when a step's target element is missing or missing for too long. What happens next depends on which channel you listen on, and what strategy the step declares upfront.
@@ -33,7 +33,7 @@ The default is `"error"` because missing targets are usually bugs: the app chang
 
 ## Three channels
 
-A tour error is reported through three separate channels. They are not equivalent — each one solves a different job.
+A tour error is reported through three separate channels. They are not equivalent - each one solves a different job.
 
 ### 1. onEvent monitoring
 
@@ -56,11 +56,11 @@ The callback receives a `tour:error` event with:
 - `error`: the `Error` object (`Missing target at steps[N]: <selector>`)
 - `stepId`, `stepIndex`, `stepCount`: where the tour was
 - `durationMs`: how long the tour was running before the failure
-- The event carries the same fields as other events — `workflowName`, `source`, `direction`, `timestamp`.
+- The event carries the same fields as other events - `workflowName`, `source`, `direction`, `timestamp`.
 
 `onEvent` is the right channel for analytics and observability.
 
-Note: `tour:error` is not preceded by `step:leave`. The step was not left — the tour died on it — and the event still names that step, so the pair reconciles in a funnel. See [Monitoring a tour](/docs/guides/monitoring) for the full event order.
+Note: `tour:error` is not preceded by `step:leave`. The step was not left - the tour died on it - and the event still names that step, so the pair reconciles in a funnel. See [Monitoring a tour](/docs/guides/monitoring) for the full event order.
 
 ### 2. Tour state
 
@@ -78,7 +78,7 @@ The state carries:
 - `status`: becomes `"error"` on failure
 - `error`: the `Error` object, or `null` if the tour is not in an error state
 
-This is the channel for UI — show a message, disable buttons, or log internally. Unlike `onEvent`, you can read the error synchronously:
+This is the channel for UI - show a message, disable buttons, or log internally. Unlike `onEvent`, you can read the error synchronously:
 
 ```typescript
 const state = tour.state.get();
@@ -112,7 +112,7 @@ await tour.run(workflow);
 // ← The first step is now visible. Any other step may still fail later.
 ```
 
-So a `try/catch` around `run()` only catches failures on that first step. A target missing on step 2, 3, or later is not caught there — it rejects the `advance()`, `previous()`, or `goToStep()` call that caused it:
+So a `try/catch` around `run()` only catches failures on that first step. A target missing on step 2, 3, or later is not caught there - it rejects the `advance()`, `previous()`, or `goToStep()` call that caused it:
 
 ```typescript
 try {
@@ -123,7 +123,7 @@ try {
 }
 ```
 
-A third case: if a target disappears *after* the step was shown — the overlay is already on screen and the target unmounts — the failure is routed through the driver's recovery path and reported via `onEvent` and state, but the promise is not rejected. There is nothing to catch, so you must listen on `onEvent` or `state` to handle it.
+A third case: if a target disappears *after* the step was shown - the overlay is already on screen and the target unmounts - the failure is routed through the driver's recovery path and reported via `onEvent` and state, but the promise is not rejected. There is nothing to catch, so you must listen on `onEvent` or `state` to handle it.
 
 **Conclusion**: Use `onEvent` and `state` for complete, reliable error handling. Promises are a convenience for synchronous paths, not a complete channel.
 
@@ -191,4 +191,4 @@ tour.state.subscribe((state) => {
 await tour.run(workflow);
 ```
 
-Here, the cart step waits up to 5 seconds for its element — useful if you navigate to it from another page. The checkout step is marked `skip`, so even if the element is gone when we reach it, the tour continues or finishes gracefully without noise.
+Here, the cart step waits up to 5 seconds for its element - useful if you navigate to it from another page. The checkout step is marked `skip`, so even if the element is gone when we reach it, the tour continues or finishes gracefully without noise.

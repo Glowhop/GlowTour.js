@@ -9,7 +9,7 @@ if (!logPanel) throw new Error("Missing #log");
 const log = createLogger(logPanel);
 
 const tour = createGlowTour({
-  onSubscriberError: (error) => log(`onSubscriberError — ${error.message}`),
+  onSubscriberError: (error) => log(`onSubscriberError - ${error.message}`),
 });
 document.body.append(createDefaultTourElement(tour));
 (window as unknown as { __tour: typeof tour }).__tour = tour;
@@ -24,7 +24,7 @@ document.body.append(createDefaultTourElement(tour));
 const workflow = tour
   .create("reload-multipage", {
     // animated: false,
-    onStart: ({ step }) => log(`onStart — resumed on "${step?.id}"`),
+    onStart: ({ step }) => log(`onStart - resumed on "${step?.id}"`),
     onFinish: () => log("onFinish"),
     onCancel: () => log("onCancel"),
   })
@@ -32,14 +32,14 @@ const workflow = tour
     id: "reload-dashboard",
     target: "#kpi-card",
     title: "Dashboard",
-    content: "Step 1 — target lives on page A only. Never entered when resuming.",
+    content: "Step 1 - target lives on page A only. Never entered when resuming.",
   })
-  .beforeAdvance(() => log("step 1 beforeAdvance — does NOT run on resume"))
+  .beforeAdvance(() => log("step 1 beforeAdvance - does NOT run on resume"))
   .step({
     id: "reload-settings",
     target: "#settings-panel",
     title: "Settings",
-    content: "Step 2 — this is where the tour resumes.",
+    content: "Step 2 - this is where the tour resumes.",
     behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
   })
   .build();
@@ -61,7 +61,7 @@ async function main(): Promise<void> {
   } catch (error) {
     // A stale id (the workflow changed since the snapshot was written) surfaces
     // here instead of silently restarting the tour from the beginning.
-    log(`resume failed — ${(error as Error).message}`);
+    log(`resume failed - ${(error as Error).message}`);
   }
 }
 

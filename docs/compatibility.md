@@ -1,7 +1,7 @@
 # Framework compatibility
 
-This page moved. The compatibility contract — peer-dependency ranges per adapter, the SSR and
-hydration status of each one, and how the packages are distributed — is maintained as a single
+This page moved. The compatibility contract - peer-dependency ranges per adapter, the SSR and
+hydration status of each one, and how the packages are distributed - is maintained as a single
 document on the documentation site:
 
 - Published: <https://glowtour.dev/docs/compatibility>
