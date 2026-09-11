@@ -24,6 +24,17 @@
         "4322"
       ],
       "port": 4322
+    },
+    {
+      "name": "playground",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": [
+        "run",
+        "--cwd",
+        "apps/playground",
+        "dev"
+      ],
+      "port": 5173
     }
   ]
 }

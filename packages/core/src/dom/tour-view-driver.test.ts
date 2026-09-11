@@ -255,6 +255,8 @@ class MockDocument extends MockEventTarget {
    * assertion in this file.
    */
   scrollingElement: { scrollLeft: number; scrollTop: number } | null = null;
+  /** Mirrors the real property; tests flip it to exercise the hidden-tab path. */
+  visibilityState: "visible" | "hidden" = "visible";
   createElement(tagName: string) {
     return new MockElement(tagName);
   }
@@ -2688,6 +2690,19 @@ describe("DomTourViewDriver", () => {
     await showing;
 
     assert.equal(scrolls, 1);
+  });
+  test("does not wait for a scroll while the document is hidden", async () => {
+    installScroller();
+    document.visibilityState = "hidden";
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createOffscreenTarget() as unknown as HTMLElement;
+
+    // No frames are flushed: a hidden document neither animates a smooth
+    // scroll nor runs frames often enough to watch one settle.
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(hasAnimationFor(elements.popover), true);
   });
   test("waits for nothing when the step opts out of scrolling", async () => {
     installScroller();
