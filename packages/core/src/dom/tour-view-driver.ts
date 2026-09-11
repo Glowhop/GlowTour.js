@@ -213,7 +213,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.throwIfStale(generation, signal);
       this.initializeElements(step);
       const targetRect = target.getBoundingClientRect();
-      await this.appear(targetRect, step, !replaceVisiblePopover, onBeforePopoverAppear);
+      await this.appear(
+        targetRect,
+        step,
+        generation,
+        !replaceVisiblePopover,
+        onBeforePopoverAppear,
+      );
       this.throwIfStale(generation, signal);
       this.lastTargetRect = snapshotRect(targetRect);
       this.lastViewport = snapshotViewport(target);
@@ -314,7 +320,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (this.disposed || !step || !target || !targetRect || !signal) return;
     this.activeTarget = target;
     this.initializeElements(step);
-    await this.appear(targetRect as DOMRect, step);
+    await this.appear(targetRect as DOMRect, step, generation);
     this.throwIfStale(generation);
     this.activateFocus(step, target, this.direction, generation);
     this.syncScrollLock(step);
@@ -396,21 +402,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private async appear(
     targetRect: DOMRect,
     step: ActiveStep<T>,
+    generation: number,
     appearPopover = true,
     onBeforePopoverAppear?: () => void | Promise<void>,
   ) {
     const pointerEnabled = this.isPointerEnabled(step);
     const popoverPlacement = this.popover?.resolvePosition(targetRect, step).placement;
-    const commitStep = onBeforePopoverAppear
-      ? async () => {
-          await onBeforePopoverAppear();
-          this.syncControlState(step);
-          this.syncShortcutLabels(step);
-        }
-      : undefined;
-    const popoverTransition = this.popover
-      ? this.popover.moveToTarget(targetRect, step, appearPopover, commitStep)
-      : Promise.resolve(commitStep?.());
+    const popoverTransition = this.transitionPopover(
+      targetRect,
+      step,
+      generation,
+      !appearPopover,
+      onBeforePopoverAppear,
+    );
     await Promise.all([
       this.overlay?.moveToTarget(targetRect, step) ?? Promise.resolve(),
       popoverTransition,
@@ -419,6 +423,41 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           Promise.resolve())
         : (this.pointer?.disappear() ?? Promise.resolve()),
     ]);
+  }
+
+  /**
+   * Swaps the popover from the outgoing step to the incoming one: fade the
+   * visible popover out, commit the incoming step's content and control state
+   * while nothing is on screen, then fade it back in at `targetRect`.
+   *
+   * The content commit runs even when no popover is mounted — it carries the
+   * controller's step-index commit and must not be skipped.
+   *
+   * Kept as one frame on purpose. With nothing to retire and nothing to
+   * commit, `present()` is reached synchronously, so the entrance animation
+   * exists in the same tick the transition was started in. Callers that abort
+   * mid-flight rely on that: `cancelAnimationsOnAbort` can only cancel
+   * animations that already exist.
+   *
+   * The generation and signal are still re-checked before the entrance, for
+   * the paths that do await first — a show aborted in that window would
+   * otherwise start an animation nothing can cancel, and hang the transition.
+   */
+  private async transitionPopover(
+    targetRect: DOMRect,
+    step: ActiveStep<T>,
+    generation: number,
+    hadVisiblePopover: boolean,
+    onBeforePopoverAppear?: () => void | Promise<void>,
+  ) {
+    if (hadVisiblePopover) await this.popover?.disappear();
+    if (onBeforePopoverAppear) {
+      await onBeforePopoverAppear();
+      this.syncControlState(step);
+      this.syncShortcutLabels(step);
+    }
+    if (!this.isCurrentGeneration(generation) || this.currentSignal?.aborted) return;
+    await this.popover?.present(targetRect, step);
   }
 
   private attachStepResources(
