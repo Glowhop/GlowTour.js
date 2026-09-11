@@ -33,15 +33,7 @@ export interface StepBehavior {
   allowInteraction?: boolean;
   /** Disable automatic focus on the target when the step is entered. @default false */
   disableAutoFocus?: boolean;
-  /**
-   * Disable automatic scroll to the target when the step is entered.
-   *
-   * Entering a step otherwise always brings the target to the alignment
-   * {@link ScrollOptions} asks for, even when it is already visible somewhere
-   * in the viewport. Set this on a step that must not move the page.
-   *
-   * @default false
-   */
+  /** Disable automatic scroll to the target when the step is entered. @default false */
   disableAutoScroll?: boolean;
   /** How to handle when the target is not found: `"wait"` waits and retries, `"skip"` advances to next step, `"error"` halts the tour. @default "error" */
   missingTargetStrategy?: "wait" | "skip" | "error";
@@ -167,9 +159,10 @@ export interface PopoverOptions extends BaseOptions {
 /**
  * Scroll behavior options passed to Element.scrollIntoView().
  *
- * The tour does not wait for the scroll before presenting the step: the
- * spotlight appears at once and tracks the target as the page travels, and the
- * popover and pointer enter when the page has come to rest.
+ * A step scrolls only when part of its target falls outside the viewport, and
+ * does not wait for the scroll before presenting: the spotlight appears at once
+ * and tracks the target as the page travels, and the popover and pointer enter
+ * when the page has come to rest.
  */
 export interface ScrollOptions {
   /** Scroll animation. Forced to `"instant"` when the user prefers reduced motion. @default "smooth" */
