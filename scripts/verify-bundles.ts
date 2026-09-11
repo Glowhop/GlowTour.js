@@ -39,8 +39,9 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // Raised from 20 KiB for the cutout tween that carries the overlay
     // animation on WebKit, where `d` cannot be animated by the engine, then
     // from 20.75 KiB for freezing a step on its last position while a lost
-    // target comes back instead of tearing the presentation down.
-    gzipBudget: 21 * KIB,
+    // target comes back instead of tearing the presentation down, then from
+    // 21 KiB for presenting a step while its scroll is still travelling.
+    gzipBudget: 21.5 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

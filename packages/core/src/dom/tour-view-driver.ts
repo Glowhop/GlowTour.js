@@ -16,13 +16,10 @@ import {
 } from "../utils/utils";
 
 /** Frames the scroller must hold still before the scroll counts as settled. */
-const SCROLL_SETTLE_STABLE_FRAMES = 2;
-/**
- * Frames to let pass before stillness counts at all. A smooth scroll does not
- * move on the frame it was asked for, so without this grace the very first
- * frames — still at the old offset — would read as "already arrived".
- */
-const SCROLL_SETTLE_MIN_FRAMES = 3;
+const SCROLL_SETTLE_STILL_FRAMES = 2;
+/** Frames of grace before stillness counts, since a smooth scroll does not
+ * move on the frame it was asked for. */
+const SCROLL_SETTLE_GRACE_FRAMES = 3;
 /** Offset change, in pixels, small enough to count as "not moving". */
 const SCROLL_SETTLE_EPSILON = 0.5;
 /** Safety valve for a scroller that never settles, or a tab with no frames. */
@@ -141,7 +138,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private rafId: number | null = null;
   private rafCancel: ((id: number) => void) | null = null;
   private root: HTMLElement | null = null;
-  private scrollAbort: AbortController | null = null;
+  private cancelScroll: (() => void) | null = null;
 
   constructor(commands?: TourViewCommands) {
     this.commands = commands ?? null;
@@ -703,12 +700,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // not be dragged along: the popover is pinned by a transform it only
     // rewrites on entrance, so following a moving rect would make it jump
     // through a fade every fifty pixels of travel.
-    if (this.awaitingStepUi) {
-      this.lastTargetRect = targetSnapshot;
-      this.lastViewport = viewportSnapshot;
-      if (presentationChanged) this.presentationDirty = false;
-      return;
-    }
+    if (!this.awaitingStepUi) this.trackStepUi(targetRect, step, generation, presentationChanged);
+    this.lastTargetRect = targetSnapshot;
+    this.lastViewport = viewportSnapshot;
+    if (presentationChanged) this.presentationDirty = false;
+  }
+
+  /** Per-frame follow-up for the popover and pointer, once they are on screen. */
+  private trackStepUi(
+    targetRect: DOMRect,
+    step: ActiveStep<T>,
+    generation: number,
+    presentationChanged: boolean,
+  ) {
     const popoverPlacement = this.popover?.updatePosition(targetRect, step, (reposition) =>
       this.observeDynamicOperation(reposition, generation),
     );
@@ -727,9 +731,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     } else if (this.pointer?.getElement()?.getAttribute("aria-hidden") !== "true") {
       this.observeDynamicOperation(this.pointer?.disappear(), generation);
     }
-    this.lastTargetRect = targetSnapshot;
-    this.lastViewport = viewportSnapshot;
-    if (presentationChanged) this.presentationDirty = false;
   }
 
   private observeDynamicOperation(operation: Promise<void> | undefined, generation: number) {
@@ -1088,18 +1089,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private cleanupStepResources() {
-    this.scrollAbort?.abort();
-    this.scrollAbort = null;
+    this.cancelScroll?.();
+    this.cancelScroll = null;
     this.presentationDirty = false;
-    this.cancelScheduledPosition();
-    this.cleanupTargetResources();
-    for (const cleanup of this.stepCleanups.splice(0)) cleanup();
-  }
-
-  private cancelScheduledPosition() {
     if (this.rafId !== null) this.rafCancel?.(this.rafId);
     this.rafId = null;
     this.rafCancel = null;
+    this.cleanupTargetResources();
+    for (const cleanup of this.stepCleanups.splice(0)) cleanup();
   }
 
   private cleanupTargetResources() {
@@ -1299,64 +1296,62 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    * as already finished rather than blocking on something unobservable.
    */
   private waitForScrollToSettle(target: HTMLElement, signal: AbortSignal) {
-    let previous = readScrollOffset(target);
-    if (!previous) return null;
+    const owner = ownerDocument(target);
+    const scroller = owner?.scrollingElement;
+    // Nothing to observe: a detached node, a server render, or a test double
+    // with no scroll metrics. Read as "the scroll, if any, is over".
+    if (typeof scroller?.scrollTop !== "number") return null;
     const frames = this.frameScheduler(target);
     if (!frames) return null;
-    const owner = ownerDocument(target);
     // A hidden document does not animate a smooth scroll, and throttles frames
-    // to a couple a second, so waiting for one to settle would stall the step
-    // until the safety cap. Mirrors how element animations are force-finished
-    // while the document is hidden.
+    // to a couple a second, so watching one settle would stall the step until
+    // the safety cap. Mirrors how element animations are force-finished while
+    // the document is hidden.
     if (owner?.visibilityState === "hidden") return null;
-    const controller = new AbortController();
-    this.scrollAbort = controller;
     return new Promise<void>((resolve, reject) => {
       let frame: number | null = null;
       let timeout: ReturnType<typeof setTimeout> | null = null;
-      let stableFrames = 0;
-      let elapsedFrames = 0;
-      const abort = () => finish(abortError());
-      const finishIfHidden = () => {
-        if (owner?.visibilityState === "hidden") finish();
-      };
+      let left = scroller.scrollLeft;
+      let top = scroller.scrollTop;
+      // Seeded below zero so the frames before the browser starts moving — the
+      // scroller still sitting at its old offset — cannot read as "arrived".
+      // Any real movement resets it to zero, where two still frames do mean it.
+      let stillFrames = -SCROLL_SETTLE_GRACE_FRAMES;
       const finish = (error?: Error) => {
         if (frame !== null) frames.cancel(frame);
         if (timeout !== null) clearTimeout(timeout);
         signal.removeEventListener("abort", abort);
-        controller.signal.removeEventListener("abort", abort);
-        owner?.removeEventListener("visibilitychange", finishIfHidden);
-        if (this.scrollAbort === controller) this.scrollAbort = null;
+        owner?.removeEventListener("visibilitychange", stopIfHidden);
+        if (this.cancelScroll === abort) this.cancelScroll = null;
         if (error) reject(error);
         else resolve();
       };
-      const step = () => {
-        frame = null;
-        elapsedFrames += 1;
-        const current = readScrollOffset(target);
-        if (!current) return finish();
-        const held =
-          Math.abs(current.left - (previous?.left ?? 0)) <= SCROLL_SETTLE_EPSILON &&
-          Math.abs(current.top - (previous?.top ?? 0)) <= SCROLL_SETTLE_EPSILON;
-        previous = current;
-        stableFrames = held ? stableFrames + 1 : 0;
-        if (
-          elapsedFrames >= SCROLL_SETTLE_MIN_FRAMES &&
-          stableFrames >= SCROLL_SETTLE_STABLE_FRAMES
-        ) {
-          return finish();
-        }
-        frame = frames.request(step);
+      const abort = () => finish(abortError());
+      const stopIfHidden = () => {
+        if (owner?.visibilityState === "hidden") finish();
       };
+      const watch = () => {
+        frame = null;
+        const nextLeft = scroller.scrollLeft;
+        const nextTop = scroller.scrollTop;
+        const still =
+          Math.abs(nextLeft - left) <= SCROLL_SETTLE_EPSILON &&
+          Math.abs(nextTop - top) <= SCROLL_SETTLE_EPSILON;
+        left = nextLeft;
+        top = nextTop;
+        stillFrames = still ? stillFrames + 1 : 0;
+        if (stillFrames >= SCROLL_SETTLE_STILL_FRAMES) return finish();
+        frame = frames.request(watch);
+      };
+      this.cancelScroll = abort;
       signal.addEventListener("abort", abort, { once: true });
-      controller.signal.addEventListener("abort", abort, { once: true });
       // A tab hidden mid-scroll stops animating it and throttles frames, so
-      // stop waiting rather than sit out the cap.
-      owner?.addEventListener("visibilitychange", finishIfHidden);
+      // stop watching rather than sit out the cap.
+      owner?.addEventListener("visibilitychange", stopIfHidden);
       // Last resort, for a scroller that never comes to rest at all — a page
       // animating its own scroll, say. Not the normal path.
-      timeout = setTimeout(() => finish(), SCROLL_SETTLE_TIMEOUT);
-      frame = frames.request(step);
+      timeout = setTimeout(finish, SCROLL_SETTLE_TIMEOUT);
+      frame = frames.request(watch);
     });
   }
 
@@ -1390,19 +1385,6 @@ function animationOptions(
     duration: options?.animation?.duration,
     easing: options?.animation?.easing,
   };
-}
-
-/**
- * The document scroller's current offset, or `null` when it cannot be read —
- * a detached node, a server render, or a test double with no scroll metrics.
- * Callers read `null` as "nothing observable here", never as "at the origin".
- */
-function readScrollOffset(element?: Node | null) {
-  const scroller = ownerDocument(element)?.scrollingElement;
-  if (!scroller) return null;
-  const { scrollLeft, scrollTop } = scroller;
-  if (typeof scrollLeft !== "number" || typeof scrollTop !== "number") return null;
-  return { left: scrollLeft, top: scrollTop };
 }
 
 function abortError() {
