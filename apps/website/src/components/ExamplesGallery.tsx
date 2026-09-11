@@ -5,7 +5,7 @@ interface ExamplesGalleryProps {
   codeHtml: readonly string[];
   /**
    * Labels of the examples to show, in order. Omit for the whole gallery. `codeHtml` must be
-   * pre-rendered in this same order — the page derives both from one list, so they cannot drift.
+   * pre-rendered in this same order - the page derives both from one list, so they cannot drift.
    */
   labels?: readonly string[];
 }

@@ -67,7 +67,7 @@ export interface Example {
 export const examples: readonly Example[] = [
   {
     Demo: NonInteractiveDemo,
-    description: "A plain, 3-step walkthrough — no special options, just steps.",
+    description: "A plain, 3-step walkthrough - no special options, just steps.",
     label: "Simple walkthrough",
     source: nonInteractiveSource,
     title: "Simple walkthrough",
@@ -84,7 +84,7 @@ export const examples: readonly Example[] = [
   {
     Demo: PlacementOrderDemo,
     description:
-      "Four steps, each pinning a single popover.placementTryOrder — top, bottom, left, right.",
+      "Four steps, each pinning a single popover.placementTryOrder - top, bottom, left, right.",
     label: "Popover placement",
     source: placementOrderSource,
     title: "Popover placement",
@@ -170,8 +170,8 @@ export const examples: readonly Example[] = [
 
 /**
  * Resolves example labels to entries, in the order given. The gallery island cannot receive
- * `Example` objects as props — they hold component references, and Astro serializes island props
- * to JSON — so a page picks a subset by label and the island looks it up on this side.
+ * `Example` objects as props - they hold component references, and Astro serializes island props
+ * to JSON - so a page picks a subset by label and the island looks it up on this side.
  */
 export function pickExamples(labels: readonly string[]): readonly Example[] {
   return labels.map((label) => {

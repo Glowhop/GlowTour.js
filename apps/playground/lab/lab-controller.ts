@@ -85,7 +85,7 @@ export function mountLab<TContent>({
     const nomad = view.nomadTarget;
     const returnsHome = nomad.parentElement === view.relocateAway;
     nomad.remove();
-    log(`Cible retirée du DOM — réapparition dans ${delay} ms`);
+    log(`Cible retirée du DOM - réapparition dans ${delay} ms`);
     relocateTimer = setTimeout(() => {
       relocateTimer = null;
       (returnsHome ? view.relocateHome : view.relocateAway).append(nomad);
@@ -128,7 +128,7 @@ export function mountLab<TContent>({
           conditionTimer = setTimeout(() => {
             conditionReady = true;
             view.conditionState.textContent = "Prête";
-            log("Condition applicative — prête");
+            log("Condition applicative - prête");
           }, LAB_CONFIG.timing.conditionDelay);
         },
       },
@@ -137,7 +137,7 @@ export function mountLab<TContent>({
     );
 
     void tour.run(workflow).catch((error: unknown) => {
-      log(`Erreur run() — ${error instanceof Error ? error.message : String(error)}`);
+      log(`Erreur run() - ${error instanceof Error ? error.message : String(error)}`);
     });
   };
 
@@ -157,7 +157,7 @@ export function mountLab<TContent>({
       clearConditionTimer();
       clearRelocateTimer();
       void tour.cancel().catch((error: unknown) => {
-        log(`Erreur cancel() — ${error instanceof Error ? error.message : String(error)}`);
+        log(`Erreur cancel() - ${error instanceof Error ? error.message : String(error)}`);
       });
     },
     cleanups,

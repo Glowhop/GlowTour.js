@@ -31,7 +31,7 @@ function resolveText(button: HTMLElement): string {
 }
 
 /**
- * The clipboard write can be refused outright — a browser setting, a permission prompt the visitor
+ * The clipboard write can be refused outright - a browser setting, a permission prompt the visitor
  * dismissed. Selecting the text is the honest fallback: it makes the keyboard shortcut the message
  * suggests actually do something, instead of telling someone to copy an empty selection.
  */
@@ -71,6 +71,6 @@ document.addEventListener("click", (event) => {
   if (!text) return;
   navigator.clipboard.writeText(text).then(
     () => flash(button, "Copied"),
-    () => flash(button, selectSource(button) ? "Selected — press Ctrl+C" : "Copy failed"),
+    () => flash(button, selectSource(button) ? "Selected - press Ctrl+C" : "Copy failed"),
   );
 });

@@ -2,7 +2,7 @@
 import Default from "@astrojs/starlight/components/Head.astro";
 
 // Starlight's own <Head> emits title/description/canonical/og:title/og:description, but no
-// og:image and no Twitter title/description/image — so docs pages unfurled as a bare text card
+// og:image and no Twitter title/description/image - so docs pages unfurled as a bare text card
 // while the marketing pages (MarketingLayout.astro) had full cards. This override renders
 // Starlight's head as-is and appends the social + structured-data tags it leaves out.
 const { entry } = Astro.locals.starlightRoute;

@@ -22,19 +22,19 @@ export function createLabWorkflow<TContent>(
       data: { api: "append", appended: true },
     })
     .onTargetEvent<CustomEvent<{ source: string }>>(event.completion, (targetEvent, context) => {
-      actions.log(`onTargetEvent<T> — source: ${targetEvent.detail.source}`);
+      actions.log(`onTargetEvent<T> - source: ${targetEvent.detail.source}`);
       void context.advance();
     })
-    .beforePrevious(() => actions.log("onBack — sortie de la section ajoutée"))
-    .beforeCancel(() => actions.log("onCancel — étape ajoutée"))
+    .beforePrevious(() => actions.log("onBack - sortie de la section ajoutée"))
+    .beforeCancel(() => actions.log("onCancel - étape ajoutée"))
     .build();
 
   return tour
     .create(workflow.name, {
       ...workflow.options,
-      onStart: () => actions.log("create.onStart — workflow démarré"),
-      onCancel: () => actions.log("create.onCancel — workflow annulé"),
-      onFinish: () => actions.log("create.onFinish — API Lab terminé"),
+      onStart: () => actions.log("create.onStart - workflow démarré"),
+      onCancel: () => actions.log("create.onCancel - workflow annulé"),
+      onFinish: () => actions.log("create.onFinish - API Lab terminé"),
     })
     .step({
       id: "step-2",
@@ -44,8 +44,8 @@ export function createLabWorkflow<TContent>(
       popover: { hidePreviousButton: true },
       data: { api: "create", targetType: "selector" },
     })
-    .beforeAdvance(({ data }) => actions.log(`onAdvance — ${String(data?.api)}`))
-    .beforeCancel(() => actions.log("onCancel — étape d’introduction"))
+    .beforeAdvance(({ data }) => actions.log(`onAdvance - ${String(data?.api)}`))
+    .beforeCancel(() => actions.log("onCancel - étape d’introduction"))
     .step({
       id: "step-3",
       target: elements.focusInput,
@@ -73,7 +73,7 @@ export function createLabWorkflow<TContent>(
     })
     .wait(timing.focusWait)
     .focusTarget()
-    .beforePrevious(() => actions.log("onBack — retour vers l’introduction"))
+    .beforePrevious(() => actions.log("onBack - retour vers l’introduction"))
     .step({
       id: "step-4",
       target: selectors.revealButton,
@@ -90,7 +90,7 @@ export function createLabWorkflow<TContent>(
       timeout: timing.targetTimeout,
     })
     .do((context) => {
-      actions.log("waitUntilElement — cible révélée détectée");
+      actions.log("waitUntilElement - cible révélée détectée");
       context.props.set((current) => ({
         ...current,
         popover: { ...current.popover, disableAdvanceButton: false },
@@ -132,7 +132,7 @@ export function createLabWorkflow<TContent>(
       data: { api: "wait", targetType: "resolver" },
     })
     .wait(timing.resolverWait)
-    .do(() => actions.log(`wait — pause de ${timing.resolverWait} ms terminée`))
+    .do(() => actions.log(`wait - pause de ${timing.resolverWait} ms terminée`))
     .step({
       id: "step-6",
       target: selectors.condition,
@@ -143,14 +143,14 @@ export function createLabWorkflow<TContent>(
       data: { api: "waitUntil" },
     })
     .do(() => {
-      actions.log("exec — programmation de la condition");
+      actions.log("exec - programmation de la condition");
       actions.scheduleCondition();
     })
     .waitUntil(() => actions.isConditionReady(), {
       interval: timing.pollingInterval,
       timeout: timing.targetTimeout,
     })
-    .do(() => actions.log("waitUntil — condition satisfaite"))
+    .do(() => actions.log("waitUntil - condition satisfaite"))
     .wait(timing.conditionAdvanceWait)
     .do(({ advance }) => advance())
     .beforeCancel(() => actions.cancelPending())
@@ -167,11 +167,11 @@ export function createLabWorkflow<TContent>(
         ...current,
         popover: { ...current.popover, disableAdvanceButton: false },
       }));
-      actions.log("action(true) — chaîne poursuivie");
+      actions.log("action(true) - chaîne poursuivie");
       return true;
     })
     .do(() => {
-      actions.log("action(false) — chaîne arrêtée comme prévu");
+      actions.log("action(false) - chaîne arrêtée comme prévu");
       return false;
     })
     .do(() => actions.log("Erreur: cette action sentinelle ne doit pas s’exécuter"))
@@ -184,7 +184,7 @@ export function createLabWorkflow<TContent>(
       data: { api: "onTargetEvent", overload: "array" },
     })
     .onTargetEvent(["pointerenter", "keydown"], (targetEvent) => {
-      actions.log(`onTargetEvent([...]) — ${targetEvent.type}`);
+      actions.log(`onTargetEvent([...]) - ${targetEvent.type}`);
     })
     .step({
       id: "step-9",
@@ -196,7 +196,7 @@ export function createLabWorkflow<TContent>(
       data: { api: "onTargetEvent", overload: "single" },
     })
     .onTargetEvent("click", (_targetEvent, context) => {
-      actions.log("onTargetEvent('click') — avance via le contexte");
+      actions.log("onTargetEvent('click') - avance via le contexte");
       void context.advance();
     })
     .step({
@@ -218,16 +218,16 @@ export function createLabWorkflow<TContent>(
     })
     .do(() => {
       if (!session.beginPreviousDemo()) {
-        actions.log("action(false) — boucle previous évitée");
+        actions.log("action(false) - boucle previous évitée");
         return false;
       }
       session.armAutomaticReturn();
-      actions.log(`previous — retour automatique dans ${timing.previousWait} ms`);
+      actions.log(`previous - retour automatique dans ${timing.previousWait} ms`);
       return true;
     })
     .wait(timing.previousWait)
     .do(({ previous }) => previous())
-    .beforeAdvance(() => actions.log("onAdvance — sortie de la démonstration previous"))
+    .beforeAdvance(() => actions.log("onAdvance - sortie de la démonstration previous"))
     .step({
       id: "step-12",
       target: selectors.autoAdvance,
@@ -236,7 +236,7 @@ export function createLabWorkflow<TContent>(
       popover: { hideFooter: true },
       data: { api: "advance", automatic: true },
     })
-    .do(() => actions.log("advance — transition automatique imminente"))
+    .do(() => actions.log("advance - transition automatique imminente"))
     .wait(timing.autoAdvanceWait)
     .do(({ advance }) => advance())
     .step({

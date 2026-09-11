@@ -4,7 +4,7 @@ import measurements from "../data/bundle-sizes.json";
  * Gzipped sizes of the published packages, as rendered on the site.
  *
  * The numbers come from `scripts/verify-bundles.ts`, which measures the packed tarballs installed
- * as a real consumer would install them — not the workspace source. The file it writes is
+ * as a real consumer would install them - not the workspace source. The file it writes is
  * committed, and CI refreshes it (`test:tarballs`) before it builds this site, so a stale number
  * shows up as an uncommitted change instead of shipping quietly.
  */

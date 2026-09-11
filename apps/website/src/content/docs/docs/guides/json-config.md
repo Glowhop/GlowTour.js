@@ -101,8 +101,8 @@ Keep this object declarative when it must be transported as JSON. `WorkflowConfi
 | --- | --- | --- |
 | `"wait"` | `ms: number` | `.wait(ms)` |
 | `"waitUntilElement"` | `selector: string`, `interval?: number`, `timeout?: number` | `.waitUntilElement(...)` |
-| `"clickTarget"` | — | `.clickTarget()` |
-| `"focusTarget"` | — | `.focusTarget()` |
+| `"clickTarget"` | - | `.clickTarget()` |
+| `"focusTarget"` | - | `.focusTarget()` |
 
 `.waitUntil(predicate)` has no JSON equivalent because an arbitrary predicate cannot be serialized. Use `waitUntilElement` or the JavaScript builder instead.
 
