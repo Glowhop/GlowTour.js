@@ -169,18 +169,15 @@ export default class PopoverElement extends GlowTourElement {
     }
   }
 
-  async moveToTarget(
-    nextPosition: DOMRect,
-    step: TourElementStep,
-    appear: boolean,
-    onChange?: () => void | Promise<void>,
-  ) {
-    if (!appear) {
-      await this._disappear();
-    }
-
-    if (onChange) await onChange();
-
+  /**
+   * Fades the popover in at `nextPosition` and commits that placement.
+   *
+   * The outgoing half of a step change is {@link disappear}, deliberately kept
+   * separate: between the two, the caller swaps the step's content while the
+   * popover is off screen, and — when the step scrolls — waits for the scroll
+   * to settle so this entrance reads a rect that will not move again.
+   */
+  async present(nextPosition: DOMRect, step: TourElementStep) {
     await this._appear(nextPosition, step);
   }
 
