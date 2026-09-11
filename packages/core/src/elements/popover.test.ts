@@ -385,10 +385,9 @@ describe("PopoverElement positioning", () => {
     const popover = new PopoverElement(element as unknown as HTMLElement);
 
     popover.initializeProps();
-    await popover.moveToTarget(
+    await popover.present(
       rect(20, 80, 20, 20),
       createStep(["bottom"], { arrow: { color: "#4c35fd" } }),
-      true,
     );
     popover.release();
 
@@ -404,10 +403,9 @@ describe("PopoverElement positioning", () => {
     const popover = new PopoverElement(element as unknown as HTMLElement);
 
     popover.initializeProps();
-    await popover.moveToTarget(
+    await popover.present(
       rect(20, 80, 20, 20),
       createStep(["bottom"], { arrow: { color: "#4c35fd" } }),
-      true,
     );
     element.setAttribute("aria-hidden", "consumer-hidden");
     element.style.setProperty("position", "relative", "important");
@@ -433,10 +431,9 @@ describe("PopoverElement positioning", () => {
     const popover = new PopoverElement(element as unknown as HTMLElement);
 
     popover.initializeProps();
-    await popover.moveToTarget(
+    await popover.present(
       rect(20, 80, 20, 20),
       createStep(["bottom"], { arrow: { color: "#4c35fd" } }),
-      true,
     );
     popover.release();
 
@@ -559,7 +556,7 @@ describe("PopoverElement animation fallbacks", () => {
     element.removeAttribute("animate");
     (element as { animate?: unknown }).animate = undefined;
 
-    await popover.moveToTarget(rect(20, 80, 20, 20), createStep(["bottom"]), true);
+    await popover.present(rect(20, 80, 20, 20), createStep(["bottom"]));
 
     assert.equal(element.styles.get("transform"), "translate(14px, 114px)");
     assert.equal(element.styles.get("opacity"), "1");

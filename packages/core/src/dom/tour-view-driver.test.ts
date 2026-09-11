@@ -245,6 +245,18 @@ class MockElement extends MockNode {
 class MockDocument extends MockEventTarget {
   activeElement: MockElement | null = null;
   readonly body = new MockElement("body");
+  /**
+   * Absent by default. With no scroller the driver cannot observe a scroll, so
+   * every test that does not opt in through `installScroller` stays on the
+   * path where nothing scrolls and nothing is waited for.
+   *
+   * Note there is still no `documentElement`: adding one would move
+   * `viewportDimensions` off the window's 1200x800 and shift every geometry
+   * assertion in this file.
+   */
+  scrollingElement: { scrollLeft: number; scrollTop: number } | null = null;
+  /** Mirrors the real property; tests flip it to exercise the hidden-tab path. */
+  visibilityState: "visible" | "hidden" = "visible";
   createElement(tagName: string) {
     return new MockElement(tagName);
   }
@@ -435,6 +447,7 @@ function createStep(
     animated?: boolean;
     cancellable?: boolean;
     advanceShortcuts?: readonly string[];
+    disableAutoScroll?: boolean;
     overlayClick?: "none" | "advance" | "cancel";
   } = {},
 ) {
@@ -444,6 +457,7 @@ function createStep(
     cancellable: options.cancellable,
     behavior: {
       allowInteraction: options.allowInteraction,
+      disableAutoScroll: options.disableAutoScroll,
     },
   })
     .step({
@@ -498,6 +512,36 @@ function createTarget() {
   document.body.append(target);
   target.setRect({ height: 20, left: 10, top: 10, width: 20 });
   return target;
+}
+/**
+ * Gives the document a scroller the driver can watch, so a scroll becomes
+ * observable. Move `scrollTop` between frames to play a scroll out; leave it
+ * alone and the sentinel settles on the second still frame.
+ */
+function installScroller(top = 0, left = 0) {
+  const scroller = { scrollLeft: left, scrollTop: top };
+  document.scrollingElement = scroller;
+  return scroller;
+}
+/** A target parked far below the fold, so entering its step has to scroll. */
+function createOffscreenTarget() {
+  const target = createTarget();
+  target.setRect({ height: 20, left: 10, top: 2000, width: 20 });
+  return target;
+}
+function hasAnimationFor(target: unknown, start = 0) {
+  return createdAnimations.slice(start).some((animation) => animation.target === target);
+}
+/** Runs queued frames, draining microtasks between them as a real tick would. */
+async function flushFrames(count: number) {
+  for (let index = 0; index < count; index += 1) {
+    flushFrame();
+    await Promise.resolve();
+  }
+}
+function translateY(transform: string | undefined) {
+  const match = /translate\([^,]+,\s*(-?[\d.]+)px\)/.exec(transform ?? "");
+  return match?.[1] === undefined ? null : Number(match[1]);
 }
 
 interface PositionUpdater {
@@ -1107,11 +1151,15 @@ describe("DomTourViewDriver", () => {
     });
     await flushMicrotasks();
     assert.equal(contentChanged, false);
-    assert.equal(createdAnimations.length, animationStart + 3);
+    // The outgoing popover's fade-out and the spotlight's entrance. The
+    // pointer is not among them: it arrives with the popover, not before it,
+    // because its placement is resolved against the popover's.
+    assert.equal(createdAnimations.length, animationStart + 2);
 
     createdAnimations[animationStart]?.resolve();
     await flushMicrotasks();
     assert.equal(contentChanged, true);
+    // Popover fade-in and pointer entrance, started together.
     assert.equal(createdAnimations.length, animationStart + 4);
 
     resolveAnimations(animationStart);
@@ -2524,7 +2572,6 @@ describe("DomTourViewDriver", () => {
     let scrollOptions: ScrollIntoViewOptions | undefined;
     target.scrollIntoView = (options?: ScrollIntoViewOptions) => {
       scrollOptions = options;
-      window.dispatchEvent(new MockEvent("scrollend"));
     };
     const workflow = new WorkflowBuilder<string>("reduced-motion-scroll", {
       animated: true,
@@ -2544,6 +2591,197 @@ describe("DomTourViewDriver", () => {
       block: "center",
       inline: "nearest",
     });
+  });
+  test("brings the spotlight in without waiting for the scroll to settle", async () => {
+    installScroller();
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createOffscreenTarget() as unknown as HTMLElement;
+    const path = elements.overlay.querySelector("path");
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    assert.equal(hasAnimationFor(path), true, "the spotlight enters immediately");
+    assert.equal(hasAnimationFor(elements.popover), false, "the popover waits for the scroll");
+    assert.equal(hasAnimationFor(elements.pointer), false, "the pointer waits with it");
+
+    await flushFrames(4);
+    await showing;
+
+    assert.equal(hasAnimationFor(elements.popover), true);
+    assert.equal(hasAnimationFor(elements.pointer), true);
+  });
+  test("holds the popover back until the page has stopped moving", async () => {
+    const scroller = installScroller();
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createOffscreenTarget() as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    // Two frames of travel: the sentinel must not call it settled.
+    scroller.scrollTop = 600;
+    await flushFrames(2);
+    scroller.scrollTop = 1200;
+    await flushFrames(2);
+    assert.equal(hasAnimationFor(elements.popover), false);
+
+    await flushFrames(4);
+    await showing;
+    assert.equal(hasAnimationFor(elements.popover), true);
+  });
+  test("places the popover on the rect the target settles at", async () => {
+    const scroller = installScroller();
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    const target = createOffscreenTarget();
+    step.target = target as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+    // The page travels, carrying the target up into view as a real scroll would.
+    scroller.scrollTop = 1600;
+    target.setRect({ height: 20, left: 10, top: 400, width: 20 });
+    await flushFrames(5);
+    await showing;
+
+    const settled = translateY(elements.popover.style.transform);
+    assert.ok(settled !== null, "the popover should have been placed");
+    assert.ok(
+      settled !== null && settled < 800,
+      `expected the popover inside the viewport, got ${settled}`,
+    );
+  });
+  test("does not freeze on a target lost while the step is still scrolling", async () => {
+    installScroller();
+    const { calls, driver } = installDriver();
+    const step = createStep();
+    const target = createOffscreenTarget();
+    step.target = target as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+    target.isConnected = false;
+    await flushFrames(2);
+
+    // A freeze here would never be undone: the controller only recovers a lost
+    // target once the tour is active, which it is not until `show()` resolves.
+    assert.deepEqual(calls, []);
+
+    await flushFrames(4);
+    await showing;
+  });
+  test("leaves a fully visible target where it is", async () => {
+    installScroller();
+    const { driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    let scrolls = 0;
+    target.scrollIntoView = () => {
+      scrolls += 1;
+    };
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(scrolls, 0);
+  });
+  test("scrolls a target whose bottom edge falls outside the viewport", async () => {
+    installScroller();
+    const { driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    // Viewport is 1200x800 here, so the last twenty pixels are cut off.
+    target.setRect({ height: 40, left: 10, top: 780, width: 20 });
+    let scrolls = 0;
+    target.scrollIntoView = () => {
+      scrolls += 1;
+    };
+    step.target = target as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushFrames(4);
+    await showing;
+
+    assert.equal(scrolls, 1);
+  });
+  test("moves the spotlight with the page instead of animating its geometry", async () => {
+    const scroller = installScroller();
+    const { driver, elements } = installDriver();
+    const first = createStep();
+    const target = createTarget();
+    first.target = target as unknown as HTMLElement;
+    await driver.show(first, "advance", new AbortController().signal);
+
+    const path = elements.overlay.querySelector("path");
+    const second = createStep();
+    target.setRect({ height: 20, left: 10, top: 2000, width: 20 });
+    second.target = target as unknown as HTMLElement;
+    const start = createdAnimations.length;
+
+    const showing = driver.show(second, "advance", new AbortController().signal, () => {});
+    await flushMicrotasks();
+
+    // An animation on the `d` property overrides the inline value for as long
+    // as it runs, so the cutout would land on the target's pre-scroll rect and
+    // jump. The tracking loop drives it instead.
+    assert.equal(hasAnimationFor(path, start), false);
+
+    scroller.scrollTop = 1600;
+    target.setRect({ height: 20, left: 10, top: 400, width: 20 });
+    await flushFrames(6);
+    await showing;
+  });
+  test("does not call a scroll settled before it has had a chance to start", async () => {
+    const scroller = installScroller();
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createOffscreenTarget() as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    // A smooth scroll does not move on the frame it was asked for. Two still
+    // frames at the start must not read as "already arrived".
+    await flushFrames(2);
+    scroller.scrollTop = 900;
+    await flushFrames(2);
+    assert.equal(hasAnimationFor(elements.popover), false);
+
+    await flushFrames(6);
+    await showing;
+    assert.equal(hasAnimationFor(elements.popover), true);
+  });
+  test("does not wait for a scroll while the document is hidden", async () => {
+    installScroller();
+    document.visibilityState = "hidden";
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createOffscreenTarget() as unknown as HTMLElement;
+
+    // No frames are flushed: a hidden document neither animates a smooth
+    // scroll nor runs frames often enough to watch one settle.
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(hasAnimationFor(elements.popover), true);
+  });
+  test("waits for nothing when the step opts out of scrolling", async () => {
+    installScroller();
+    const { driver, elements } = installDriver();
+    const step = createStep({ disableAutoScroll: true });
+    const target = createOffscreenTarget();
+    let scrolls = 0;
+    target.scrollIntoView = () => {
+      scrolls += 1;
+    };
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(scrolls, 0);
+    assert.equal(hasAnimationFor(elements.popover), true);
   });
   test("releases modal ownership when an active show is aborted", async () => {
     animationMode = "controlled";

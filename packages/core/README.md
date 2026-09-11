@@ -22,7 +22,7 @@ const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", 
 | --- | --- | --- |
 | Placement | `popover.placementTryOrder`, `indicator.placementTryOrder` | Try `top`, `bottom`, `left`, `right`; the resolved position may be `center`. |
 | Interaction | `behavior.allowInteraction` | Allows pointer interaction through the overlay. |
-| Scroll | step/start `scroll` | Uses `behavior`, `block`, and `inline` scroll options. |
+| Scroll | step/start `scroll` | Uses `behavior`, `block`, and `inline` scroll options. The step appears without waiting for the scroll. |
 | Callbacks | `onStart`, `onCancel`, `onFinish`; `beforeAdvance`, `beforePrevious`, `beforeCancel` | Start callbacks are workflow options; transition callbacks are step builder methods. |
 | Actions | `.do(fn)`, `.wait(ms)`, `.waitUntil(fn)`, `.waitUntilElement(selector)` | `waitUntil` defaults to a 16 ms interval and 3000 ms timeout. |
 | Target events | `.onTargetEvent("click", fn)` | Handlers receive the event and step context. |
