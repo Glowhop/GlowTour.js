@@ -1291,6 +1291,12 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (!previous) return null;
     const frames = this.frameScheduler(target);
     if (!frames) return null;
+    const owner = ownerDocument(target);
+    // A hidden document does not animate a smooth scroll, and throttles frames
+    // to a couple a second, so waiting for one to settle would stall the step
+    // until the safety cap. Mirrors how element animations are force-finished
+    // while the document is hidden.
+    if (owner?.visibilityState === "hidden") return null;
     const controller = new AbortController();
     this.scrollAbort = controller;
     return new Promise<void>((resolve, reject) => {
@@ -1298,11 +1304,15 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       let timeout: ReturnType<typeof setTimeout> | null = null;
       let stableFrames = 0;
       const abort = () => finish(abortError());
+      const finishIfHidden = () => {
+        if (owner?.visibilityState === "hidden") finish();
+      };
       const finish = (error?: Error) => {
         if (frame !== null) frames.cancel(frame);
         if (timeout !== null) clearTimeout(timeout);
         signal.removeEventListener("abort", abort);
         controller.signal.removeEventListener("abort", abort);
+        owner?.removeEventListener("visibilitychange", finishIfHidden);
         if (this.scrollAbort === controller) this.scrollAbort = null;
         if (error) reject(error);
         else resolve();
@@ -1321,8 +1331,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       };
       signal.addEventListener("abort", abort, { once: true });
       controller.signal.addEventListener("abort", abort, { once: true });
-      // Frames stop in a backgrounded tab, so the settle would never be
-      // observed there. The cap is a safety valve, not the normal path.
+      // A tab hidden mid-scroll stops animating it and throttles frames, so
+      // stop waiting rather than sit out the cap.
+      owner?.addEventListener("visibilitychange", finishIfHidden);
+      // Last resort, for a scroller that never comes to rest at all — a page
+      // animating its own scroll, say. Not the normal path.
       timeout = setTimeout(() => finish(), SCROLL_SETTLE_TIMEOUT);
       frame = frames.request(step);
     });
