@@ -30,7 +30,18 @@ export default class OverlayElement extends GlowTourElement {
     this.element.setAttribute("data-glow-tour-allow-interaction", String(allowed));
   }
 
-  async moveToTarget(nextPosition: DOMRect, step: TourElementStep) {
+  /**
+   * Brings the cutout onto `nextPosition`, morphing from wherever it was.
+   *
+   * Pass `tracked` when the caller will drive the geometry itself frame by
+   * frame, as it does while a step's scroll is in flight. An animation on the
+   * `d` property overrides the inline value for as long as it runs, so those
+   * per-frame writes would be invisible and the cutout would land on the rect
+   * captured here — the target's position before the page moved — then jump.
+   * Tracked, the geometry is committed once and left alone; only opacity is
+   * ever animated.
+   */
+  async moveToTarget(nextPosition: DOMRect, step: TourElementStep, tracked = false) {
     const nextVisualState = this._getVisualState(step);
 
     const path = this._getPathElement();
@@ -58,7 +69,16 @@ export default class OverlayElement extends GlowTourElement {
         path,
       );
 
-      if (!animation || (await this._waitForAnimation(animation))) this.applyStyles(path, keyframe);
+      if (!animation || (await this._waitForAnimation(animation))) {
+        // Committing the whole keyframe would drag the cutout back to where
+        // the target was when this fade started.
+        this.applyStyles(path, tracked ? { opacity } : keyframe);
+      }
+      return;
+    }
+
+    if (tracked) {
+      this.applyStyles(path, keyframe);
       return;
     }
 

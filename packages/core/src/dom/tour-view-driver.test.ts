@@ -2707,6 +2707,53 @@ describe("DomTourViewDriver", () => {
 
     assert.equal(scrolls, 1);
   });
+  test("moves the spotlight with the page instead of animating its geometry", async () => {
+    const scroller = installScroller();
+    const { driver, elements } = installDriver();
+    const first = createStep();
+    const target = createTarget();
+    first.target = target as unknown as HTMLElement;
+    await driver.show(first, "advance", new AbortController().signal);
+
+    const path = elements.overlay.querySelector("path");
+    const second = createStep();
+    target.setRect({ height: 20, left: 10, top: 2000, width: 20 });
+    second.target = target as unknown as HTMLElement;
+    const start = createdAnimations.length;
+
+    const showing = driver.show(second, "advance", new AbortController().signal, () => {});
+    await flushMicrotasks();
+
+    // An animation on the `d` property overrides the inline value for as long
+    // as it runs, so the cutout would land on the target's pre-scroll rect and
+    // jump. The tracking loop drives it instead.
+    assert.equal(hasAnimationFor(path, start), false);
+
+    scroller.scrollTop = 1600;
+    target.setRect({ height: 20, left: 10, top: 400, width: 20 });
+    await flushFrames(6);
+    await showing;
+  });
+  test("does not call a scroll settled before it has had a chance to start", async () => {
+    const scroller = installScroller();
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    step.target = createOffscreenTarget() as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    // A smooth scroll does not move on the frame it was asked for. Two still
+    // frames at the start must not read as "already arrived".
+    await flushFrames(2);
+    scroller.scrollTop = 900;
+    await flushFrames(2);
+    assert.equal(hasAnimationFor(elements.popover), false);
+
+    await flushFrames(6);
+    await showing;
+    assert.equal(hasAnimationFor(elements.popover), true);
+  });
   test("does not wait for a scroll while the document is hidden", async () => {
     installScroller();
     document.visibilityState = "hidden";

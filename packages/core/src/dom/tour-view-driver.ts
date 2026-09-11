@@ -17,6 +17,12 @@ import {
 
 /** Frames the scroller must hold still before the scroll counts as settled. */
 const SCROLL_SETTLE_STABLE_FRAMES = 2;
+/**
+ * Frames to let pass before stillness counts at all. A smooth scroll does not
+ * move on the frame it was asked for, so without this grace the very first
+ * frames — still at the old offset — would read as "already arrived".
+ */
+const SCROLL_SETTLE_MIN_FRAMES = 3;
 /** Offset change, in pixels, small enough to count as "not moving". */
 const SCROLL_SETTLE_EPSILON = 0.5;
 /** Safety valve for a scroller that never settles, or a tab with no frames. */
@@ -441,6 +447,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     hadVisiblePopover: boolean,
     onBeforePopoverAppear?: () => void | Promise<void>,
   ) {
+    // Read first: a geometry read that throws must not leave the step-UI
+    // promise orphaned and unawaited. Reading starts no animation, so the
+    // ordering below is unaffected.
+    const spotlightRect = resolveRect();
     // Started before the spotlight so the outgoing popover's fade-out is the
     // first animation of the transition, as it has always been.
     const stepUi = this.presentStepUi(
@@ -451,10 +461,16 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       hadVisiblePopover,
       onBeforePopoverAppear,
     );
-    await Promise.all([
-      this.overlay?.moveToTarget(resolveRect(), step) ?? Promise.resolve(),
-      stepUi,
-    ]);
+    // While the page is travelling the tracking loop owns the cutout, so the
+    // spotlight commits its geometry instead of animating towards a rect the
+    // scroll is about to invalidate.
+    const spotlight = this.overlay?.moveToTarget(spotlightRect, step, scrolling !== null);
+    // Started here rather than once the outgoing popover has faded: that fade
+    // lasts about as long as the scroll itself, so tracking would only begin
+    // as the page came to rest and the spotlight would sit at the target's
+    // pre-scroll position for the whole journey.
+    if (scrolling) this.schedulePosition(generation);
+    await Promise.all([spotlight ?? Promise.resolve(), stepUi]);
   }
 
   /**
@@ -483,13 +499,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.syncControlState(step);
       this.syncShortcutLabels(step);
     }
-    if (scrolling) {
-      // The tracking loop is left running afterwards: it is the same loop the
-      // step uses for the rest of its life, and `attachStepResources` would
-      // have started it a few statements later anyway.
-      this.schedulePosition(generation);
-      await scrolling;
-    }
+    // The tracking loop that `appear` started keeps running afterwards: it is
+    // the same loop the step uses for the rest of its life, and
+    // `attachStepResources` would have started it a few statements later.
+    if (scrolling) await scrolling;
     // A show aborted while retiring or scrolling must not start an entrance
     // animation here: nothing would ever cancel it, and the transition would
     // hang on an animation that never settles.
@@ -1302,6 +1315,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       let frame: number | null = null;
       let timeout: ReturnType<typeof setTimeout> | null = null;
       let stableFrames = 0;
+      let elapsedFrames = 0;
       const abort = () => finish(abortError());
       const finishIfHidden = () => {
         if (owner?.visibilityState === "hidden") finish();
@@ -1318,6 +1332,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       };
       const step = () => {
         frame = null;
+        elapsedFrames += 1;
         const current = readScrollOffset(target);
         if (!current) return finish();
         const held =
@@ -1325,7 +1340,12 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           Math.abs(current.top - (previous?.top ?? 0)) <= SCROLL_SETTLE_EPSILON;
         previous = current;
         stableFrames = held ? stableFrames + 1 : 0;
-        if (stableFrames >= SCROLL_SETTLE_STABLE_FRAMES) return finish();
+        if (
+          elapsedFrames >= SCROLL_SETTLE_MIN_FRAMES &&
+          stableFrames >= SCROLL_SETTLE_STABLE_FRAMES
+        ) {
+          return finish();
+        }
         frame = frames.request(step);
       };
       signal.addEventListener("abort", abort, { once: true });
