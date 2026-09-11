@@ -111,6 +111,5 @@ Priorité : flexibilité et DX, obtenues en **limitant** la surface d'API publiq
 - current project status : "prod"
 - ignore breaking changes until porject become otherthan "dev"
 - Build a cross ui framework package 
-- Tour package inspired by [Driver.js](https://driverjs.com/)
 - make it production ready 
 - npm release has to be push by a github actions
