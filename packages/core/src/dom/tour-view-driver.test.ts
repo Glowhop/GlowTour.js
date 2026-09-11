@@ -2671,6 +2671,24 @@ describe("DomTourViewDriver", () => {
     await flushFrames(4);
     await showing;
   });
+  test("realigns a target that is already fully visible", async () => {
+    installScroller();
+    const { driver } = installDriver();
+    const step = createStep();
+    // Sitting in the viewport, but not where `block: "center"` would put it.
+    const target = createTarget();
+    let scrolls = 0;
+    target.scrollIntoView = () => {
+      scrolls += 1;
+    };
+    step.target = target as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushFrames(4);
+    await showing;
+
+    assert.equal(scrolls, 1);
+  });
   test("waits for nothing when the step opts out of scrolling", async () => {
     installScroller();
     const { driver, elements } = installDriver();

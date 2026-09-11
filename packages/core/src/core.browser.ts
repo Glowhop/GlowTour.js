@@ -163,7 +163,11 @@ describe("core browser realm isolation", () => {
     binding.bindOverlay(overlay);
     binding.bindPopover(popover);
     const workflow = tour
-      .create("root realm", { animated: false })
+      // This realm's `requestAnimationFrame` is stubbed to record ids without
+      // ever running its callbacks — that is what the frame assertions below
+      // check. A scroll could therefore never be observed to settle here, so
+      // the steps opt out of scrolling; realm isolation is what is under test.
+      .create("root realm", { animated: false, behavior: { disableAutoScroll: true } })
       .step({ id: "step-1", content: "One", target: "#realm-target", title: "One" })
       .step({ id: "step-2", content: "Two", target: "#realm-target", title: "Two" })
       .build();
