@@ -10,11 +10,17 @@ import {
   isElement,
   isHTMLElement,
   isInViewport,
+  ownerDocument,
   ownerWindow,
   viewportDimensions,
 } from "../utils/utils";
 
-const DEFAULT_SCROLL_END_TIMEOUT = 1000;
+/** Frames the scroller must hold still before the scroll counts as settled. */
+const SCROLL_SETTLE_STABLE_FRAMES = 2;
+/** Offset change, in pixels, small enough to count as "not moving". */
+const SCROLL_SETTLE_EPSILON = 0.5;
+/** Safety valve for a scroller that never settles, or a tab with no frames. */
+const SCROLL_SETTLE_TIMEOUT = 2000;
 const ACTIVE_MODAL_BY_DOCUMENT = new WeakMap<Document, object>();
 const DEFAULT_SHORTCUTS = {
   previous: ["ArrowLeft", "Backspace"],
@@ -106,6 +112,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    * (the caller gave up and is tearing the presentation down).
    */
   private frozen = false;
+  /**
+   * True between the spotlight's entrance and the popover's, the window in
+   * which a step's scroll is still travelling. The tracking loop drives the
+   * spotlight alone while it is set, and a lost target stops the tracking
+   * instead of freezing the presentation.
+   */
+  private awaitingStepUi = false;
   private activeTarget: HTMLElement | null = null;
   private targetFocusedAtFreeze = false;
   private lastTargetRect: RectSnapshot | null = null;
@@ -195,6 +208,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.lastTargetRect = null;
       this.lastViewport = null;
       this.presentationDirty = false;
+      this.awaitingStepUi = true;
       if (replaceVisiblePopover) {
         const listener = (event: Event) =>
           this.queueTransitionKeydown(event as KeyboardEvent, step, generation);
@@ -209,18 +223,22 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.activeTarget = target;
 
       this.syncModality(step.behavior?.allowInteraction === true);
-      await this.scrollTargetIntoView(step, target, signal);
+      const scrolling = this.beginTargetScroll(step, target, signal);
       this.throwIfStale(generation, signal);
       this.initializeElements(step);
-      const targetRect = target.getBoundingClientRect();
+      // Read late, and again after the scroll: the rect the popover is placed
+      // against has to be one that will not move again.
+      const resolveRect = () => target.getBoundingClientRect();
       await this.appear(
-        targetRect,
+        resolveRect,
         step,
         generation,
-        !replaceVisiblePopover,
+        scrolling,
+        replaceVisiblePopover,
         onBeforePopoverAppear,
       );
       this.throwIfStale(generation, signal);
+      const targetRect = resolveRect();
       this.lastTargetRect = snapshotRect(targetRect);
       this.lastViewport = snapshotViewport(target);
       this.active = true;
@@ -252,6 +270,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.throwIfStale(generation, signal);
       this.active = false;
       this.frozen = false;
+      this.awaitingStepUi = false;
       this.activeTarget = null;
       this.targetFocusedAtFreeze = false;
       this.currentStep = null;
@@ -279,6 +298,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.scrollLock.deactivate();
     this.active = false;
     this.frozen = false;
+    this.awaitingStepUi = false;
     this.activeTarget = null;
     this.targetFocusedAtFreeze = false;
     this.currentStep = null;
@@ -320,7 +340,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (this.disposed || !step || !target || !targetRect || !signal) return;
     this.activeTarget = target;
     this.initializeElements(step);
-    await this.appear(targetRect as DOMRect, step, generation);
+    this.awaitingStepUi = true;
+    // Re-registration replays the entrance in place: no scroll, and the rect
+    // is the one the step was already parked on rather than a fresh reading.
+    await this.appear(() => targetRect as DOMRect, step, generation, null, false);
     this.throwIfStale(generation);
     this.activateFocus(step, target, this.direction, generation);
     this.syncScrollLock(step);
@@ -399,54 +422,58 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
+  /**
+   * Brings the spotlight onto the target, then hands the step's popover and
+   * pointer over, in that order but not in lockstep.
+   *
+   * The spotlight's entrance never gates the popover's: the two animate side
+   * by side, as they always have. What does gate the popover is the step's
+   * scroll. It is pinned by a transform it only rewrites on entrance, so a
+   * rect that is still travelling would make it jump through a fade every
+   * fifty pixels; it waits for the page to stop and enters on a rect that will
+   * not move again. Meanwhile the spotlight tracks the target down the page.
+   */
   private async appear(
-    targetRect: DOMRect,
+    resolveRect: () => DOMRect,
     step: ActiveStep<T>,
     generation: number,
-    appearPopover = true,
+    scrolling: Promise<void> | null,
+    hadVisiblePopover: boolean,
     onBeforePopoverAppear?: () => void | Promise<void>,
   ) {
-    const pointerEnabled = this.isPointerEnabled(step);
-    const popoverPlacement = this.popover?.resolvePosition(targetRect, step).placement;
-    const popoverTransition = this.transitionPopover(
-      targetRect,
+    // Started before the spotlight so the outgoing popover's fade-out is the
+    // first animation of the transition, as it has always been.
+    const stepUi = this.presentStepUi(
+      resolveRect,
       step,
       generation,
-      !appearPopover,
+      scrolling,
+      hadVisiblePopover,
       onBeforePopoverAppear,
     );
     await Promise.all([
-      this.overlay?.moveToTarget(targetRect, step) ?? Promise.resolve(),
-      popoverTransition,
-      pointerEnabled
-        ? (this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement) ??
-          Promise.resolve())
-        : (this.pointer?.disappear() ?? Promise.resolve()),
+      this.overlay?.moveToTarget(resolveRect(), step) ?? Promise.resolve(),
+      stepUi,
     ]);
   }
 
   /**
-   * Swaps the popover from the outgoing step to the incoming one: fade the
-   * visible popover out, commit the incoming step's content and control state
-   * while nothing is on screen, then fade it back in at `targetRect`.
+   * Retires the outgoing popover, commits the incoming step's content in its
+   * place, waits out the step's scroll, and brings the popover and pointer in.
    *
-   * The content commit runs even when no popover is mounted — it carries the
+   * Deliberately one async frame. With nothing to retire, nothing to commit
+   * and nothing to scroll, the entrance animations are created in the tick
+   * this was called in — which is what callers that abort mid-flight rely on,
+   * since `cancelAnimationsOnAbort` can only cancel animations that exist.
+   *
+   * The content commit runs even when no popover is mounted: it carries the
    * controller's step-index commit and must not be skipped.
-   *
-   * Kept as one frame on purpose. With nothing to retire and nothing to
-   * commit, `present()` is reached synchronously, so the entrance animation
-   * exists in the same tick the transition was started in. Callers that abort
-   * mid-flight rely on that: `cancelAnimationsOnAbort` can only cancel
-   * animations that already exist.
-   *
-   * The generation and signal are still re-checked before the entrance, for
-   * the paths that do await first — a show aborted in that window would
-   * otherwise start an animation nothing can cancel, and hang the transition.
    */
-  private async transitionPopover(
-    targetRect: DOMRect,
+  private async presentStepUi(
+    resolveRect: () => DOMRect,
     step: ActiveStep<T>,
     generation: number,
+    scrolling: Promise<void> | null,
     hadVisiblePopover: boolean,
     onBeforePopoverAppear?: () => void | Promise<void>,
   ) {
@@ -456,8 +483,31 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.syncControlState(step);
       this.syncShortcutLabels(step);
     }
+    if (scrolling) {
+      // The tracking loop is left running afterwards: it is the same loop the
+      // step uses for the rest of its life, and `attachStepResources` would
+      // have started it a few statements later anyway.
+      this.schedulePosition(generation);
+      await scrolling;
+    }
+    // A show aborted while retiring or scrolling must not start an entrance
+    // animation here: nothing would ever cancel it, and the transition would
+    // hang on an animation that never settles.
     if (!this.isCurrentGeneration(generation) || this.currentSignal?.aborted) return;
-    await this.popover?.present(targetRect, step);
+    this.awaitingStepUi = false;
+    await this.enterStepUi(resolveRect(), step);
+  }
+
+  /** The popover and pointer entrance itself, started synchronously. */
+  private enterStepUi(targetRect: DOMRect, step: ActiveStep<T>) {
+    const popoverPlacement = this.popover?.resolvePosition(targetRect, step).placement;
+    return Promise.all([
+      this.popover?.present(targetRect, step) ?? Promise.resolve(),
+      this.isPointerEnabled(step)
+        ? (this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement) ??
+          Promise.resolve())
+        : (this.pointer?.disappear() ?? Promise.resolve()),
+    ]);
   }
 
   private attachStepResources(
@@ -563,17 +613,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.frozen
     )
       return;
-    const owner = this.currentStep.target?.ownerDocument?.defaultView;
-    const ownerRequest = owner?.requestAnimationFrame;
-    const ownerCancel = owner?.cancelAnimationFrame;
-    const ownerHasFrameCapability =
-      typeof ownerRequest === "function" || typeof ownerCancel === "function";
-    const request = ownerHasFrameCapability ? ownerRequest : globalThis.requestAnimationFrame;
-    const cancel = ownerHasFrameCapability ? ownerCancel : globalThis.cancelAnimationFrame;
-    if (typeof request !== "function" || typeof cancel !== "function") return;
-    const frameWindow = ownerHasFrameCapability && owner ? owner : globalThis;
-    this.rafCancel = (id) => cancel.call(frameWindow, id);
-    this.rafId = request.call(frameWindow, () => {
+    const frames = this.frameScheduler(this.currentStep.target);
+    if (!frames) return;
+    this.rafCancel = frames.cancel;
+    this.rafId = frames.request(() => {
       this.rafId = null;
       this.rafCancel = null;
       if (!this.isCurrentGeneration(generation)) return;
@@ -582,12 +625,38 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     });
   }
 
+  /**
+   * Frame scheduling for the target's own realm, falling back to the ambient
+   * one when that realm exposes no frame callbacks. Shared by the tracking
+   * loop and the scroll sentinel so both read the same clock.
+   */
+  private frameScheduler(context?: Node | null) {
+    const owner = context?.ownerDocument?.defaultView;
+    const ownerRequest = owner?.requestAnimationFrame;
+    const ownerCancel = owner?.cancelAnimationFrame;
+    const ownerHasFrameCapability =
+      typeof ownerRequest === "function" || typeof ownerCancel === "function";
+    const request = ownerHasFrameCapability ? ownerRequest : globalThis.requestAnimationFrame;
+    const cancel = ownerHasFrameCapability ? ownerCancel : globalThis.cancelAnimationFrame;
+    if (typeof request !== "function" || typeof cancel !== "function") return null;
+    const frameWindow = ownerHasFrameCapability && owner ? owner : globalThis;
+    return {
+      request: (callback: FrameRequestCallback) => request.call(frameWindow, callback),
+      cancel: (id: number) => cancel.call(frameWindow, id),
+    };
+  }
+
   private updatePosition(generation: number) {
     const step = this.currentStep;
     const target = step?.target;
     if (!this.isCurrentGeneration(generation) || !step || !target) return;
     if (!this.isCurrentTargetAvailable(target)) {
-      this.freezeForDisconnectedTarget(step, target, generation);
+      // Freezing needs a controller that can recover, and the controller only
+      // recovers once the tour is active — which it is not until `show()`
+      // resolves. A target lost while the step is still scrolling therefore
+      // idles here instead: the scroll settles, the step finishes entering,
+      // and the next frame freezes it through the normal path.
+      if (!this.awaitingStepUi) this.freezeForDisconnectedTarget(step, target, generation);
       return;
     }
     const targetRect = target.getBoundingClientRect();
@@ -616,6 +685,17 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.overlay?.updatePosition(targetRect, step, presentationChanged, (transition) =>
       this.observeDynamicOperation(transition, generation),
     );
+    // While the step's scroll is still running the spotlight tracks the target
+    // on its own. The popover and the pointer have not entered yet and must
+    // not be dragged along: the popover is pinned by a transform it only
+    // rewrites on entrance, so following a moving rect would make it jump
+    // through a fade every fifty pixels of travel.
+    if (this.awaitingStepUi) {
+      this.lastTargetRect = targetSnapshot;
+      this.lastViewport = viewportSnapshot;
+      if (presentationChanged) this.presentationDirty = false;
+      return;
+    }
     const popoverPlacement = this.popover?.updatePosition(targetRect, step, (reposition) =>
       this.observeDynamicOperation(reposition, generation),
     );
@@ -998,11 +1078,15 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.scrollAbort?.abort();
     this.scrollAbort = null;
     this.presentationDirty = false;
+    this.cancelScheduledPosition();
+    this.cleanupTargetResources();
+    for (const cleanup of this.stepCleanups.splice(0)) cleanup();
+  }
+
+  private cancelScheduledPosition() {
     if (this.rafId !== null) this.rafCancel?.(this.rafId);
     this.rafId = null;
     this.rafCancel = null;
-    this.cleanupTargetResources();
-    for (const cleanup of this.stepCleanups.splice(0)) cleanup();
   }
 
   private cleanupTargetResources() {
@@ -1159,46 +1243,87 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     return !this.disposed && generation === this.generation;
   }
 
-  private async scrollTargetIntoView(
-    step: ActiveStep<T>,
-    target: HTMLElement,
-    signal: AbortSignal,
-  ) {
+  /**
+   * Starts the step's scroll and returns a promise that settles once the page
+   * has stopped moving, or `null` when there is nothing to wait for — the step
+   * opts out, the scroll was applied instantly, or no scroller can be measured.
+   *
+   * `scrollIntoView` is called synchronously so a throwing call still rejects
+   * the `show()` that asked for it. Only the wait is deferred, which is what
+   * lets the backdrop appear while the page is still travelling.
+   */
+  private beginTargetScroll(step: ActiveStep<T>, target: HTMLElement, signal: AbortSignal) {
     this.throwIfAborted(signal);
-    if (step.behavior?.disableAutoScroll || isInViewport(target.getBoundingClientRect(), target))
-      return;
+    if (step.behavior?.disableAutoScroll) return null;
+    if (isInViewport(target.getBoundingClientRect(), target)) return null;
     const currentWindow = this.getWindow(target);
-    if (!currentWindow) return;
+    if (!currentWindow) return null;
+    const behavior = prefersReducedMotion(target)
+      ? "instant"
+      : (step.behavior?.scroll?.behavior ?? "smooth");
+    target.scrollIntoView({
+      behavior,
+      block: step.behavior?.scroll?.block ?? "center",
+      inline: step.behavior?.scroll?.inline ?? "nearest",
+    });
+    // An instant scroll has already landed by the time the call returns.
+    if (behavior === "instant") return null;
+    return this.waitForScrollToSettle(target, signal);
+  }
+
+  /**
+   * Resolves once the scroller has held still for a couple of frames.
+   *
+   * Deliberately not the `scrollend` event: Safari only fires it from 18.2, so
+   * older versions would fall through to the safety timeout on every step, and
+   * the presentation would stay pinned to a stale position long after the page
+   * actually stopped. Watching the offset costs a frame loop the browser is
+   * already running during a smooth scroll, works everywhere, and settles just
+   * as quickly when the browser decides there was nothing to scroll at all.
+   *
+   * Returns `null` when the offset cannot be read or frames cannot be
+   * requested — there is then no way to observe the scroll, so callers treat it
+   * as already finished rather than blocking on something unobservable.
+   */
+  private waitForScrollToSettle(target: HTMLElement, signal: AbortSignal) {
+    let previous = readScrollOffset(target);
+    if (!previous) return null;
+    const frames = this.frameScheduler(target);
+    if (!frames) return null;
     const controller = new AbortController();
     this.scrollAbort = controller;
-    await new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
+      let frame: number | null = null;
       let timeout: ReturnType<typeof setTimeout> | null = null;
+      let stableFrames = 0;
       const abort = () => finish(abortError());
       const finish = (error?: Error) => {
-        currentWindow.removeEventListener("scrollend", complete);
+        if (frame !== null) frames.cancel(frame);
+        if (timeout !== null) clearTimeout(timeout);
         signal.removeEventListener("abort", abort);
         controller.signal.removeEventListener("abort", abort);
-        if (timeout !== null) clearTimeout(timeout);
         if (this.scrollAbort === controller) this.scrollAbort = null;
         if (error) reject(error);
         else resolve();
       };
-      const complete = () => finish();
-      currentWindow.addEventListener("scrollend", complete, { once: true });
+      const step = () => {
+        frame = null;
+        const current = readScrollOffset(target);
+        if (!current) return finish();
+        const held =
+          Math.abs(current.left - (previous?.left ?? 0)) <= SCROLL_SETTLE_EPSILON &&
+          Math.abs(current.top - (previous?.top ?? 0)) <= SCROLL_SETTLE_EPSILON;
+        previous = current;
+        stableFrames = held ? stableFrames + 1 : 0;
+        if (stableFrames >= SCROLL_SETTLE_STABLE_FRAMES) return finish();
+        frame = frames.request(step);
+      };
       signal.addEventListener("abort", abort, { once: true });
       controller.signal.addEventListener("abort", abort, { once: true });
-      timeout = setTimeout(complete, DEFAULT_SCROLL_END_TIMEOUT);
-      try {
-        target.scrollIntoView({
-          behavior: prefersReducedMotion(target)
-            ? "instant"
-            : (step.behavior?.scroll?.behavior ?? "smooth"),
-          block: step.behavior?.scroll?.block ?? "center",
-          inline: step.behavior?.scroll?.inline ?? "nearest",
-        });
-      } catch (error) {
-        finish(error instanceof Error ? error : new Error(String(error)));
-      }
+      // Frames stop in a backgrounded tab, so the settle would never be
+      // observed there. The cap is a safety valve, not the normal path.
+      timeout = setTimeout(() => finish(), SCROLL_SETTLE_TIMEOUT);
+      frame = frames.request(step);
     });
   }
 
@@ -1232,6 +1357,19 @@ function animationOptions(
     duration: options?.animation?.duration,
     easing: options?.animation?.easing,
   };
+}
+
+/**
+ * The document scroller's current offset, or `null` when it cannot be read —
+ * a detached node, a server render, or a test double with no scroll metrics.
+ * Callers read `null` as "nothing observable here", never as "at the origin".
+ */
+function readScrollOffset(element?: Node | null) {
+  const scroller = ownerDocument(element)?.scrollingElement;
+  if (!scroller) return null;
+  const { scrollLeft, scrollTop } = scroller;
+  if (typeof scrollLeft !== "number" || typeof scrollTop !== "number") return null;
+  return { left: scrollLeft, top: scrollTop };
 }
 
 function abortError() {
