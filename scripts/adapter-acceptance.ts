@@ -202,7 +202,18 @@ export async function runAdapterAcceptance<TContent>(
 export async function runDefaultTourAcceptance<TContent>(
   fixture: DefaultTourAcceptanceFixture<TContent>,
 ) {
-  const { content, idPrefix, name, root, settle, target, tour, unmount } = fixture;
+  const { content, idPrefix, name, root, target, tour, unmount } = fixture;
+  /**
+   * Waits for the tour to finish entering a step, not just for the next tick.
+   * Entering a step scrolls to its target and only hands the popover over once
+   * the page has stopped moving, which takes a few animation frames.
+   */
+  const settle = async () => {
+    await fixture.settle();
+    for (let tick = 0; tick < 40 && tour.state.get().status === "transitioning"; tick += 1) {
+      await fixture.settle();
+    }
+  };
   const workflow = () =>
     tour
       .create(`${name} workflow`)
