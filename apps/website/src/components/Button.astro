@@ -4,20 +4,22 @@ interface Props {
   variant?: "primary" | "secondary";
   class?: string;
   type?: "button" | "submit";
+  /** Passed through to the rendered element, so callers can hook behavior onto a button. */
+  [key: `data-${string}`]: string | boolean | undefined;
 }
 
-const { href, variant = "primary", class: className = "", type = "button" } = Astro.props;
+const { href, variant = "primary", class: className = "", type = "button", ...rest } = Astro.props;
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] px-5 py-2.5 text-sm font-semibold transition-[transform,background-color,box-shadow] duration-150";
+  "inline-flex items-center justify-center gap-2 rounded-glow px-5 py-2.5 text-sm font-semibold transition-[transform,background-color,box-shadow] duration-150";
 const variants = {
   // Tactile "sticker" look: a solid offset block sits behind the button face and the face
   // shifts to meet it on hover/active, instead of a generic blurred box-shadow.
   primary:
-    "bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-[3px_3px_0_0_var(--color-accent-active)] -translate-x-px -translate-y-px hover:bg-[var(--color-accent-hover)] hover:translate-x-0 hover:translate-y-0 hover:shadow-[1px_1px_0_0_var(--color-accent-active)] active:bg-[var(--color-accent-active)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none",
+    "bg-accent text-on-accent shadow-[3px_3px_0_0_var(--color-accent-active)] -translate-x-px -translate-y-px hover:bg-accent-hover hover:translate-x-0 hover:translate-y-0 hover:shadow-[1px_1px_0_0_var(--color-accent-active)] active:bg-accent-active active:translate-x-0.5 active:translate-y-0.5 active:shadow-none",
   // Dashed border echoes the step-path dot motif; solidifies on hover.
   secondary:
-    "border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-solid hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-muted)]",
+    "border border-dashed border-border bg-surface text-text hover:border-solid hover:border-accent hover:bg-surface-muted",
 };
 
 const classes = [base, variants[variant], className].join(" ");
@@ -25,11 +27,11 @@ const classes = [base, variants[variant], className].join(" ");
 
 {
   href ? (
-    <a href={href} class={classes}>
+    <a href={href} class={classes} {...rest}>
       <slot />
     </a>
   ) : (
-    <button type={type} class={classes}>
+    <button type={type} class={classes} {...rest}>
       <slot />
     </button>
   )

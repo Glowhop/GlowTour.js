@@ -1,0 +1,91 @@
+---
+/**
+ * Light / dark / auto switch for the marketing pages.
+ *
+ * Deliberately reuses Starlight's storage key and `data-theme` attribute rather than inventing a
+ * second mechanism: the docs already ship their own switch, and sharing the key is what makes a
+ * visitor's choice survive moving between /docs and these pages in either direction.
+ *
+ * The no-flash script that applies the stored value before first paint lives in MarketingLayout.
+ */
+---
+
+<button
+  type="button"
+  data-theme-toggle
+  class="flex h-9 w-9 items-center justify-center rounded-glow text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
+>
+  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.6"></circle>
+    <path
+      data-theme-rays
+      d="M10 1.5v2M10 16.5v2M18.5 10h-2M3.5 10h-2M16 4l-1.4 1.4M5.4 14.6 4 16M16 16l-1.4-1.4M5.4 5.4 4 4"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"></path>
+    <path data-theme-fill d="M10 6a4 4 0 0 0 0 8Z" fill="currentColor"></path>
+  </svg>
+</button>
+
+<script>
+  /*
+   * "auto" is the absence of a stored value, which is also how Starlight represents it. The
+   * mirrored `data-glow-tour-theme` follows the same rule: removing it hands the tour popovers
+   * back to their own prefers-color-scheme query instead of pinning them to a resolved value that
+   * would stop following the OS.
+   */
+  type Theme = "auto" | "dark" | "light";
+
+  const STORAGE_KEY = "starlight-theme";
+  const ORDER: readonly Theme[] = ["light", "dark", "auto"];
+  const LABELS: Record<Theme, string> = {
+    auto: "Theme: follow system. Switch to light",
+    dark: "Theme: dark. Switch to system",
+    light: "Theme: light. Switch to dark",
+  };
+
+  function read(): Theme {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored === "light" || stored === "dark" ? stored : "auto";
+    } catch {
+      return "auto";
+    }
+  }
+
+  function apply(theme: Theme): void {
+    const root = document.documentElement;
+    if (theme === "auto") {
+      delete root.dataset.theme;
+      delete root.dataset.glowTourTheme;
+    } else {
+      root.dataset.theme = theme;
+      root.dataset.glowTourTheme = theme;
+    }
+    try {
+      if (theme === "auto") localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      // A browser refusing storage still gets the switch for this page view.
+    }
+  }
+
+  function render(theme: Theme): void {
+    for (const button of document.querySelectorAll<HTMLElement>("[data-theme-toggle]")) {
+      button.setAttribute("aria-label", LABELS[theme]);
+      button.querySelector("[data-theme-rays]")?.setAttribute("opacity", theme === "dark" ? "0" : "1");
+      button.querySelector("[data-theme-fill]")?.setAttribute("opacity", theme === "light" ? "0" : "1");
+      button.style.opacity = theme === "auto" ? "0.6" : "1";
+    }
+  }
+
+  render(read());
+
+  document.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement | null)?.closest("[data-theme-toggle]");
+    if (!button) return;
+    const next = ORDER[(ORDER.indexOf(read()) + 1) % ORDER.length];
+    apply(next);
+    render(next);
+  });
+</script>

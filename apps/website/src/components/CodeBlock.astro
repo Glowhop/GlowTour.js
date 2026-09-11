@@ -1,5 +1,6 @@
 ---
 import { Code } from "astro:components";
+import CopyButton from "./CopyButton.astro";
 
 interface Props {
   code: string;
@@ -10,9 +11,21 @@ interface Props {
 const { code, lang = "tsx", class: className = "" } = Astro.props;
 ---
 
-<div
-  data-code-block
-  class={`overflow-x-auto rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[#101014] text-sm [&_pre]:p-4 ${className}`}
->
-  <Code code={code} lang={lang} theme="css-variables" />
+{/*
+  The copy button sits outside the scrolling container, otherwise it scrolls away with long lines.
+  It carries no value of its own: [data-copy-scope] tells it to copy the <pre> below, so the
+  snippet is not duplicated into an attribute.
+*/}
+<div data-copy-scope class={`relative ${className}`}>
+  <div
+    data-code-block
+    class="overflow-x-auto rounded-glow border border-border bg-[#101014] text-sm [&_pre]:p-4"
+  >
+    <Code code={code} lang={lang} theme="css-variables" />
+  </div>
+  <CopyButton
+    label="Copy code"
+    iconOnly
+    class="absolute top-2 right-2 border-white/15 bg-white/10 text-white/70 backdrop-blur hover:border-white/40 hover:text-white"
+  />
 </div>

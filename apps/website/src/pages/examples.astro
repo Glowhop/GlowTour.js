@@ -21,15 +21,15 @@ const exampleCodeHtml = await Promise.all(
 >
   <section class="mx-auto max-w-6xl px-6 pt-16 pb-20">
     <h1
-      class="font-heading text-center text-4xl font-semibold tracking-tight text-[var(--color-text)]"
+      class="font-heading text-center text-4xl font-semibold tracking-tight text-text"
     >
       Examples
     </h1>
-    <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
+    <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
       Every example runs for real, in this page — the code beside it is exactly what produced it.
     </p>
     <div class="mt-10">
-      <ExamplesGallery client:load codeHtml={exampleCodeHtml} />
+      <ExamplesGallery client:visible codeHtml={exampleCodeHtml} />
     </div>
   </section>
 </MarketingLayout>

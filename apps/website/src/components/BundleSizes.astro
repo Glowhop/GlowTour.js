@@ -1,0 +1,77 @@
+---
+import {
+  FRAMEWORK_LABELS,
+  type FrameworkKey,
+  formatKib,
+  frameworkBundle,
+} from "../lib/bundle-sizes";
+import FrameworkIcon from "./FrameworkIcon.astro";
+
+const frameworks: readonly FrameworkKey[] = ["react", "vue", "solid", "angular", "vanilla"];
+const rows = frameworks.map((framework) => ({
+  bundle: frameworkBundle(framework),
+  framework,
+  label: FRAMEWORK_LABELS[framework],
+}));
+// The core is one column rather than folded into each adapter because that is the claim: it is
+// shared, not paid five times over.
+const core = rows[0].bundle.core;
+const styles = rows[0].bundle.styles;
+---
+
+<section class="mx-auto max-w-4xl px-6 py-14">
+  <h2
+    class="font-heading text-center text-3xl font-semibold tracking-tight text-text"
+  >
+    What it costs you
+  </h2>
+  <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
+    Measured on the published packages, gzipped, at every release — not estimated. The engine is
+    the same {formatKib(core)} whichever adapter you pick.
+  </p>
+
+  <div class="mt-8 overflow-x-auto">
+    <table class="w-full min-w-lg border-collapse text-sm">
+      <thead>
+        <tr class="border-b border-border text-left text-text-muted">
+          <th scope="col" class="py-2 pr-4 font-medium">Framework</th>
+          <th scope="col" class="py-2 pr-4 text-right font-medium">Adapter</th>
+          <th scope="col" class="py-2 pr-4 text-right font-medium">Engine</th>
+          <th scope="col" class="py-2 pr-4 text-right font-medium">Theme</th>
+          <th scope="col" class="py-2 text-right font-medium">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((row) => (
+            <tr class="border-b border-border/60">
+              <th scope="row" class="py-2.5 pr-4 font-medium text-text">
+                <span class="flex items-center gap-2">
+                  <FrameworkIcon name={row.framework} class="h-4 w-4" />
+                  {row.label}
+                </span>
+              </th>
+              <td class="py-2.5 pr-4 text-right font-mono text-text-muted">
+                {formatKib(row.bundle.adapter)}
+              </td>
+              <td class="py-2.5 pr-4 text-right font-mono text-text-muted">
+                {formatKib(row.bundle.core)}
+              </td>
+              <td class="py-2.5 pr-4 text-right font-mono text-text-muted">
+                {formatKib(row.bundle.styles)}
+              </td>
+              <td class="py-2.5 text-right font-mono font-semibold text-text">
+                {formatKib(row.bundle.total)}
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mt-4 text-center text-xs text-text-muted">
+    Gzipped, with your framework treated as external. The theme ({formatKib(styles)}) is plain CSS
+    you can replace with your own.
+  </p>
+</section>
