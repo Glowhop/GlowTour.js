@@ -17,7 +17,7 @@ import { FEATURED_EXAMPLE_LABELS, pickExamples } from "../lib/examples";
 // integration (astro:components' <Code>) only works at build time inside .astro files, not inside
 // a React island. Pre-rendering CodeBlock.astro through the container API here produces the same
 // highlighted HTML markup as the rest of the site's code blocks, which is then passed into the
-// island as static strings — the island just swaps which one is visible.
+// island as static strings - the island just swaps which one is visible.
 //
 // The home page shows a taster, not the whole gallery: /examples is the page that lists every
 // one of them, and rendering all of them here too shipped a second copy of every demo and
@@ -108,7 +108,7 @@ const features = [
   {
     title: "Analytics-ready",
     description:
-      "One onEvent callback reports every start, step and exit — with the step id, how long it took, and whether the user used a button, the keyboard, or the overlay.",
+      "One onEvent callback reports every start, step and exit - with the step id, how long it took, and whether the user used a button, the keyboard, or the overlay.",
   },
   {
     title: "Accessible by default",
@@ -165,7 +165,7 @@ const jsonLd = {
 ---
 
 <MarketingLayout
-  title="GlowTour.js — a cross-framework guided-tour library"
+  title="GlowTour.js - a cross-framework guided-tour library"
   description="A guided-tour engine for React, Vue, Solid, Angular, and vanilla apps. One core, real accessibility, real SSR support."
 >
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
@@ -185,7 +185,7 @@ const jsonLd = {
         Show people around, without writing a guide.
       </h1>
       <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-pretty text-text-muted">
-        One workflow engine with native adapters for React, Vue, Solid, Angular, and vanilla DOM —
+        One workflow engine with native adapters for React, Vue, Solid, Angular, and vanilla DOM -
         accessible by default, verified under real SSR, shipped as ESM only.
       </p>
       {/*
@@ -222,7 +222,7 @@ const jsonLd = {
       Try it, then read it.
     </h2>
     <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
-      Every example below runs for real — the code beside it is exactly what produced it.
+      Every example below runs for real - the code beside it is exactly what produced it.
     </p>
     <div class="mt-10">
       <ExamplesGallery client:visible codeHtml={exampleCodeHtml} labels={FEATURED_EXAMPLE_LABELS} />
@@ -237,7 +237,7 @@ const jsonLd = {
       Pick your framework
     </h2>
     <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
-      Same workflow engine underneath — each adapter renders it the way that framework expects.
+      Same workflow engine underneath - each adapter renders it the way that framework expects.
     </p>
     <div data-tour="frameworks" class="mt-8 flex flex-wrap items-center justify-center gap-2">
       {

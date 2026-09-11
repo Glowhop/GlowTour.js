@@ -12,7 +12,7 @@
 
 /*
  * Marketing design tokens derived from the default GlowTour.js theme
- * (packages/styles/default.css) — same accent, surface, text, border, radius, and shadow scale
+ * (packages/styles/default.css) - same accent, surface, text, border, radius, and shadow scale
  * the tour popover itself uses, so the site and the product look like one thing.
  */
 @theme {
@@ -55,7 +55,7 @@
  *
  * The first block is the OS preference, which every visitor who never touches the toggle gets.
  * The second is the explicit choice, which has to win over a light OS preference. CSS has no way
- * to share one declaration list between two selectors, so the values are duplicated — change one
+ * to share one declaration list between two selectors, so the values are duplicated - change one
  * block and you must change the other.
  *
  * The attribute is Starlight's own `data-theme`, and the toggle writes Starlight's own
@@ -125,7 +125,7 @@ body {
 }
 
 /*
- * Fraunces is a display serif reserved for the home page's h1/h2 — a deliberate break from the
+ * Fraunces is a display serif reserved for the home page's h1/h2 - a deliberate break from the
  * system-sans body text, applied opt-in via this utility rather than globally on every heading
  * site-wide. SOFT/WONK are dialed up so the terminals stay a little unruly (the art direction
  * leans on stage magic), while the body copy stays a plain, sober sans.
@@ -170,7 +170,7 @@ button:not(:disabled),
 
 /*
  * <DefaultTour> renders <Pointer /> with no children (packages/react/src/components/default-tour.tsx),
- * so [data-glow-tour-pointer-content] is an empty div by default — nothing is visible. Give every
+ * so [data-glow-tour-pointer-content] is an empty div by default - nothing is visible. Give every
  * demo on this site a default pointing-finger glyph via :empty so DefaultTour's pointer isn't blank,
  * without changing the library's own default. Demos that pass real children to <Pointer> (the
  * "Custom indicator" example) render that content instead, since the div is no longer :empty.
@@ -182,7 +182,7 @@ button:not(:disabled),
 /*
  * The long-content example demonstrates that the popover caps its height and scrolls its content.
  * The library's own cap is the viewport, which on a tall screen leaves the text short of
- * overflowing — the demo would show a full-height popover and no scroll at all. Capping the
+ * overflowing - the demo would show a full-height popover and no scroll at all. Capping the
  * popover here keeps the demo honest on any window size; `:where()` in the default theme makes
  * this a zero-specificity override.
  */
@@ -191,7 +191,7 @@ button:not(:disabled),
 }
 
 /*
- * "Custom theme" example. Every visual choice below is CSS on an ancestor of the tour — the demo
+ * "Custom theme" example. Every visual choice below is CSS on an ancestor of the tour - the demo
  * renders the same <DefaultTour /> as the rest of the gallery. The `--glow-tour-*` tokens are
  * declared at zero specificity in the default theme, so a plain class wins by proximity, and the
  * popover's `font: inherit` is what lets the monospace face come from `font-family` here rather
@@ -222,7 +222,7 @@ button:not(:disabled),
 
 /*
  * The footer is a plain flex row, so stacking its buttons full-width is a flex-direction change
- * on the same wrapper — no popover subcomponent has to be re-composed to change the layout.
+ * on the same wrapper - no popover subcomponent has to be re-composed to change the layout.
  */
 .demo-custom-theme [data-glow-tour-footer] {
   align-items: stretch;

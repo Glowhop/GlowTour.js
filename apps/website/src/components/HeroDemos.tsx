@@ -35,7 +35,7 @@ export const nonInteractiveWorkflow = nonInteractiveTour
     id: "non-interactive-field-name",
     target: "#hero-non-interactive-field-name",
     title: "Start with the workspace name",
-    content: "A step can target any element — this one points at a plain field.",
+    content: "A step can target any element - this one points at a plain field.",
   })
   .step({
     id: "non-interactive-field-timezone",
@@ -47,7 +47,7 @@ export const nonInteractiveWorkflow = nonInteractiveTour
     id: "non-interactive-target",
     target: "#hero-non-interactive-target",
     title: "A plain, non-interactive walkthrough",
-    content: "No special options here — no allowInteraction, no custom behavior. Just steps.",
+    content: "No special options here - no allowInteraction, no custom behavior. Just steps.",
   })
   .build();
 
@@ -95,7 +95,7 @@ export const advanceOnClickWorkflow = advanceOnClickTour
     id: "advance-progress",
     target: "#hero-advance-progress",
     title: "Step 2 of a 3-step wizard",
-    content: "This wizard tracks its own progress — the tour just points it out.",
+    content: "This wizard tracks its own progress - the tour just points it out.",
   })
   .step({
     id: "advance-on-click-target",
@@ -111,7 +111,7 @@ export const advanceOnClickWorkflow = advanceOnClickTour
     target: "#hero-advance-on-click-target",
     title: "That advanced the tour",
     content:
-      "No popover button was involved — the click on the target itself moved the workflow forward.",
+      "No popover button was involved - the click on the target itself moved the workflow forward.",
   })
   .build();
 
@@ -224,7 +224,7 @@ export const waitForAsyncWorkflow = waitForAsyncTour
     id: "wait-for-async-target",
     target: "#hero-wait-for-async-target",
     title: "Load the data first",
-    content: 'Click "Load data" — the next step waits for an element that doesn\'t exist yet.',
+    content: 'Click "Load data" - the next step waits for an element that doesn\'t exist yet.',
     behavior: { allowInteraction: true },
   })
   .step({
@@ -238,7 +238,7 @@ export const waitForAsyncWorkflow = waitForAsyncTour
     id: "wait-for-async-row-1",
     target: "#hero-wait-for-async-row-1",
     title: "Real content, not a skeleton",
-    content: "By now the list has actually loaded — this row is the real thing.",
+    content: "By now the list has actually loaded - this row is the real thing.",
   })
   .build();
 
@@ -418,7 +418,7 @@ export const overlayClickWorkflow = overlayClickTour
     target: "#hero-overlay-click-target-1",
     title: "Click the overlay to advance",
     content:
-      "behavior.overlayClick: 'advance' — click anywhere on the dimmed backdrop (not this card) to move to the next step.",
+      "behavior.overlayClick: 'advance' - click anywhere on the dimmed backdrop (not this card) to move to the next step.",
     behavior: { overlayClick: "advance" },
   })
   .step({
@@ -426,7 +426,7 @@ export const overlayClickWorkflow = overlayClickTour
     target: "#hero-overlay-click-target-2",
     title: "Now it cancels instead",
     content:
-      "This step sets behavior.overlayClick: 'cancel' — clicking the backdrop now cancels the tour instead of advancing it.",
+      "This step sets behavior.overlayClick: 'cancel' - clicking the backdrop now cancels the tour instead of advancing it.",
     behavior: { overlayClick: "cancel" },
   })
   .build();
@@ -474,7 +474,7 @@ export const customStyledIndicatorWorkflow = customStyledIndicatorTour
     id: "custom-styled-member",
     target: "#hero-custom-styled-member",
     title: "This step looks normal",
-    content: "Default overlay, popover, and pointer — no overrides here.",
+    content: "Default overlay, popover, and pointer - no overrides here.",
   })
   .step({
     id: "custom-styled-target",
@@ -560,7 +560,7 @@ export const liveProgressWorkflow = liveProgressTour
     id: "live-progress-field-2",
     target: "#hero-live-progress-field-2",
     title: "Industry",
-    content: "Advance again — the counter updates because it reads useTour().currentStepIndex.",
+    content: "Advance again - the counter updates because it reads useTour().currentStepIndex.",
   })
   .step({
     id: "live-progress-field-3",
@@ -572,7 +572,7 @@ export const liveProgressWorkflow = liveProgressTour
     id: "live-progress-target",
     target: "#hero-live-progress-target",
     title: "Finish setup",
-    content: "Last step — the counter now reads the final index.",
+    content: "Last step - the counter now reads the final index.",
   })
   .build();
 
@@ -645,7 +645,7 @@ export const themeWorkflow = themeTour
     target: "#hero-theme-target",
     title: "Forced from an attribute",
     content:
-      "data-glow-tour-theme on any ancestor pins a theme — here it is on the wrapper around this demo, so only this tour changes.",
+      "data-glow-tour-theme on any ancestor pins a theme - here it is on the wrapper around this demo, so only this tour changes.",
   })
   .build();
 
@@ -681,7 +681,7 @@ export function ThemeDemo() {
       <DemoCard className="p-5">
         <h4 className="text-sm font-semibold text-text">Billing</h4>
         <div className="mt-4 space-y-3">
-          <FakeField id="hero-theme-field-plan" label="Plan" value="Team — 12 seats" />
+          <FakeField id="hero-theme-field-plan" label="Plan" value="Team - 12 seats" />
         </div>
         <div className="mt-4 flex justify-end border-t border-border pt-4">
           <button id="hero-theme-target" type="button" className={primaryButtonClass}>
@@ -774,7 +774,7 @@ export function CustomThemeDemo() {
   return (
     <div className="demo-custom-theme flex w-full flex-col items-center gap-4">
       <div className={customThemeCardClass}>
-        <p className="text-xs text-[#6fbb94]">acme-ci — deploy</p>
+        <p className="text-xs text-[#6fbb94]">acme-ci - deploy</p>
         <dl className="mt-3 space-y-2 text-xs">
           <div id="hero-custom-theme-branch" className="flex justify-between gap-4 py-1">
             <dt className="text-[#6fbb94]">branch</dt>

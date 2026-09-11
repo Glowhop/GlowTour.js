@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Card wrapper used by every hero demo mockup — a small, believable "app chrome" surface. */
+/** Card wrapper used by every hero demo mockup - a small, believable "app chrome" surface. */
 export function DemoCard({
   children,
   className = "",
@@ -17,7 +17,7 @@ export function DemoCard({
   );
 }
 
-/** A gray rounded bar standing in for a line of text — used to sell "skeleton content". */
+/** A gray rounded bar standing in for a line of text - used to sell "skeleton content". */
 export function SkeletonLine({
   width = "100%",
   className = "",
@@ -70,7 +70,7 @@ export function FakeField({ label, value, id }: { label: string; value: string; 
   );
 }
 
-/** A decorative, non-interactive icon button — chrome only, never a tour target. */
+/** A decorative, non-interactive icon button - chrome only, never a tour target. */
 export function DecorativeIconButton({ children }: { children: ReactNode }) {
   return (
     <span

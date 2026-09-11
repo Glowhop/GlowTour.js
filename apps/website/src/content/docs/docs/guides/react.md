@@ -3,7 +3,7 @@ title: React guide
 description: Build guided tours with @glowhop/react-tour.
 ---
 
-The GlowTour.js React adapter provides native React components and a Context-scoped tour instance. No portals to wire up yourself — `DefaultTour` renders the complete UI for you.
+The GlowTour.js React adapter provides native React components and a Context-scoped tour instance. No portals to wire up yourself - `DefaultTour` renders the complete UI for you.
 
 ## Setup
 

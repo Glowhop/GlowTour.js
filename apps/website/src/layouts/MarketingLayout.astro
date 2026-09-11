@@ -95,17 +95,17 @@ const ogImageURL = new URL(image, Astro.site);
 
       The router keeps one document alive for the whole visit, which is what lets the site tour walk
       from page to page without being torn down and rebuilt. Scripts are not re-evaluated on a swap,
-      so anything that binds to elements has to re-bind on astro:page-load — see SiteTour,
+      so anything that binds to elements has to re-bind on astro:page-load - see SiteTour,
       InstallLine and copy-buttons.
     */}
     {/*
       The router turns off the browser's own scroll restoration and re-applies the saved offset
-      itself, from a module script — that is, after the first paint. A reload therefore shows the
+      itself, from a module script - that is, after the first paint. A reload therefore shows the
       top of the page for a frame and then jumps back down. The router only needs manual
       restoration for its own client-side swaps, so for a browser-driven reload the native
       restoration is handed back here: it lands before the first paint, and the router's own
       scrollTo then targets the same coordinates and stays invisible. Inline and blocking on
-      purpose — it has to run before the router's script does. `moveToLocation` sets the mode back
+      purpose - it has to run before the router's script does. `moveToLocation` sets the mode back
       to "manual" on the next router navigation.
     */}
     <script is:inline>

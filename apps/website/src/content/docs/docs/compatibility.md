@@ -44,7 +44,7 @@ GlowTour.js is in `dev`. The versions listed are the current peer contracts and 
 
 **Hydration**: `react-dom/client`'s `hydrateRoot` hydrates the server-rendered markup with zero console errors and an interactive tour.
 
-**Real-world verified**: A production Next.js app serves the same markup, loads in the browser, and runs end-to-end with Playwright-driven tests — zero hydration errors.
+**Real-world verified**: A production Next.js app serves the same markup, loads in the browser, and runs end-to-end with Playwright-driven tests - zero hydration errors.
 
 ### Vue
 
@@ -80,7 +80,7 @@ GlowTour.js is in `dev`. The versions listed are the current peer contracts and 
 
 ## Single instance contract
 
-All adapters follow the same rule: one tour controller can be connected to one live root at a time. Separate instances and roots keep state, IDs, events, and DOM resources isolated. This is a safety mechanism, not a limitation — create multiple tour instances for multiple concurrent tours.
+All adapters follow the same rule: one tour controller can be connected to one live root at a time. Separate instances and roots keep state, IDs, events, and DOM resources isolated. This is a safety mechanism, not a limitation - create multiple tour instances for multiple concurrent tours.
 
 ## Package distribution
 
