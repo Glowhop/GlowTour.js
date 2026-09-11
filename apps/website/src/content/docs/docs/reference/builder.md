@@ -466,11 +466,9 @@ onCancel: (context) => {
 
 ### Scroll options
 
-Control how the browser scrolls to the target element.
-
-Entering a step always brings its target to the alignment set here, even when
-the target is already visible somewhere in the viewport. Use
-`disableAutoScroll` on a step that must not move the page.
+Control how the browser scrolls to the target element. A step scrolls only when
+part of its target falls outside the viewport; `disableAutoScroll` opts out
+entirely.
 
 The step does not wait for the scroll to finish before appearing. The spotlight
 shows up straight away and tracks the target as the page travels; the popover

@@ -2,7 +2,7 @@
 "@glowhop/core-tour": minor
 ---
 
-Present a step while its scroll is still in flight, and always realign the target.
+Present a step while its scroll is still in flight.
 
 Entering a step whose target was off screen used to stall: the tour waited for
 the smooth scroll to finish before initialising anything, so the previous step's
@@ -13,14 +13,17 @@ full second on every step.
 The scroll now runs alongside the presentation. The spotlight appears
 immediately and tracks the target as the page travels; the popover and the
 pointer enter once the page has come to rest, on a rect that will not move
-again. Scroll completion is detected by watching the scroller hold still rather
-than by listening for `scrollend`, so every engine behaves the same.
+again. When a step scrolls, the spotlight moves with the page rather than
+morphing from the previous step's cutout; steps that do not scroll keep the
+morph.
 
-Entering a step also always brings its target to the alignment its scroll
-options ask for. Previously a target that was visible anywhere in the viewport
-was left where it was, even pressed against an edge with no room for the popover
-or the spotlight's padding. `disableAutoScroll` remains the way to opt a step
-out of moving the page.
+Scroll completion is detected by watching the scroller hold still rather than by
+listening for `scrollend`, so every engine behaves the same. A hidden document,
+which neither animates a smooth scroll nor runs frames often enough to watch one
+settle, does not wait at all.
+
+When a step scrolls is unchanged: only when part of its target falls outside the
+viewport, and never when `disableAutoScroll` is set.
 
 Two smaller behaviour changes fall out of this. The pointer now arrives together
 with the popover rather than with the spotlight, since its placement is resolved

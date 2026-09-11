@@ -2673,12 +2673,28 @@ describe("DomTourViewDriver", () => {
     await flushFrames(4);
     await showing;
   });
-  test("realigns a target that is already fully visible", async () => {
+  test("leaves a fully visible target where it is", async () => {
     installScroller();
     const { driver } = installDriver();
     const step = createStep();
-    // Sitting in the viewport, but not where `block: "center"` would put it.
     const target = createTarget();
+    let scrolls = 0;
+    target.scrollIntoView = () => {
+      scrolls += 1;
+    };
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(scrolls, 0);
+  });
+  test("scrolls a target whose bottom edge falls outside the viewport", async () => {
+    installScroller();
+    const { driver } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    // Viewport is 1200x800 here, so the last twenty pixels are cut off.
+    target.setRect({ height: 40, left: 10, top: 780, width: 20 });
     let scrolls = 0;
     target.scrollIntoView = () => {
       scrolls += 1;

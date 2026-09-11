@@ -9,6 +9,7 @@ import type { TourDirection, TourEventSource } from "../types";
 import {
   isElement,
   isHTMLElement,
+  isInViewport,
   ownerDocument,
   ownerWindow,
   viewportDimensions,
@@ -440,9 +441,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     hadVisiblePopover: boolean,
     onBeforePopoverAppear?: () => void | Promise<void>,
   ) {
-    // Read before anything starts: a geometry read that throws must not leave
-    // the step-UI promise orphaned and unawaited.
-    const spotlightRect = resolveRect();
     // Started before the spotlight so the outgoing popover's fade-out is the
     // first animation of the transition, as it has always been.
     const stepUi = this.presentStepUi(
@@ -454,7 +452,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       onBeforePopoverAppear,
     );
     await Promise.all([
-      this.overlay?.moveToTarget(spotlightRect, step) ?? Promise.resolve(),
+      this.overlay?.moveToTarget(resolveRect(), step) ?? Promise.resolve(),
       stepUi,
     ]);
   }
@@ -1257,6 +1255,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private beginTargetScroll(step: ActiveStep<T>, target: HTMLElement, signal: AbortSignal) {
     this.throwIfAborted(signal);
     if (step.behavior?.disableAutoScroll) return null;
+    if (isInViewport(target.getBoundingClientRect(), target)) return null;
     const currentWindow = this.getWindow(target);
     if (!currentWindow) return null;
     const behavior = prefersReducedMotion(target)
