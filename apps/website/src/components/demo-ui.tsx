@@ -10,7 +10,7 @@ export function DemoCard({
 }) {
   return (
     <div
-      className={`w-full max-w-sm rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-glow)] ${className}`}
+      className={`w-full max-w-sm rounded-glow border border-border bg-surface shadow-glow ${className}`}
     >
       {children}
     </div>
@@ -30,7 +30,7 @@ export function SkeletonLine({
   return (
     <div
       id={id}
-      className={`h-2.5 rounded-full bg-[var(--color-border)] ${className}`}
+      className={`h-2.5 rounded-full bg-border ${className}`}
       style={{ width }}
       aria-hidden="true"
     />
@@ -50,7 +50,7 @@ export function Avatar({
   return (
     <div
       id={id}
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-xs font-semibold text-[var(--color-on-accent)] ${className}`}
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-on-accent ${className}`}
       aria-hidden="true"
     >
       {initials}
@@ -62,8 +62,8 @@ export function Avatar({
 export function FakeField({ label, value, id }: { label: string; value: string; id?: string }) {
   return (
     <div id={id}>
-      <span className="block text-xs font-medium text-[var(--color-text-muted)]">{label}</span>
-      <div className="mt-1 rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-sm text-[var(--color-text-muted)]">
+      <span className="block text-xs font-medium text-text-muted">{label}</span>
+      <div className="mt-1 rounded-glow border border-border bg-surface-muted px-3 py-2 text-sm text-text-muted">
         {value}
       </div>
     </div>
@@ -76,7 +76,7 @@ export function DecorativeIconButton({ children }: { children: ReactNode }) {
     <span
       aria-hidden="true"
       tabIndex={-1}
-      className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-glow)] border border-[var(--color-border)] text-[var(--color-text-muted)]"
+      className="flex h-8 w-8 items-center justify-center rounded-glow border border-border text-text-muted"
     >
       {children}
     </span>

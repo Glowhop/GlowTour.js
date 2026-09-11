@@ -1,0 +1,30 @@
+---
+interface Props {
+  /** Text to copy. Omit to copy the <pre> inside the enclosing [data-copy-scope]. */
+  value?: string;
+  /** Visible label. Set `iconOnly` to move it to aria-label instead. */
+  label?: string;
+  iconOnly?: boolean;
+  class?: string;
+}
+
+const { class: className = "", iconOnly = false, label = "Copy", value } = Astro.props;
+---
+
+<button
+  type="button"
+  data-copy-button
+  data-copy-value={value}
+  aria-label={iconOnly ? label : undefined}
+  class={`inline-flex shrink-0 items-center gap-1.5 rounded-[calc(var(--radius-glow)/1.5)] border border-border bg-surface px-2 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-accent hover:text-text ${className}`}
+>
+  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="7" y="7" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.6"></rect>
+    <path
+      d="M13 7V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"></path>
+  </svg>
+  {!iconOnly && <span data-copy-label>{label}</span>}
+</button>

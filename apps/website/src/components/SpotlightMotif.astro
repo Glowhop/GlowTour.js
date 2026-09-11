@@ -35,7 +35,7 @@ const sparkles = [
     sparkles.map((sparkle) => (
       <Sparkle
         class={`spotlight-motif__sparkle absolute ${sparkle.size} ${
-          sparkle.tone === "spark" ? "text-[var(--color-spark)]" : "text-[var(--color-accent)]"
+          sparkle.tone === "spark" ? "text-spark" : "text-accent"
         }`}
         style={`top:${sparkle.top};left:${sparkle.left};opacity:${sparkle.opacity}`}
       />

@@ -1,34 +1,40 @@
 ---
 import GithubIcon from "./GithubIcon.astro";
 import LogoMark from "./LogoMark.astro";
+import ThemeToggle from "./ThemeToggle.astro";
 import Wordmark from "./Wordmark.astro";
 ---
 
+{/* Persisted across swaps: the chrome is identical on every page, so swapping it only makes it
+flash, and keeping the node alive keeps the theme toggle's rendered state with it. */}
 <header
-  class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur sticky top-0 z-50"
+  transition:persist="site-nav"
+  class="border-b border-border bg-surface/90 backdrop-blur sticky top-0 z-50"
 >
   <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:gap-6 sm:px-6">
-    <a href="/" class="flex items-center gap-2 text-[var(--color-text)]">
+    <a href="/" class="flex items-center gap-2 text-text">
       <LogoMark variant="square" class="h-7 w-8 sm:h-9 sm:w-11" />
       <Wordmark class="[--wordmark-size:0.875rem] sm:[--wordmark-size:1.25rem]" />
     </a>
     <div class="flex items-center gap-2 sm:gap-3">
       <a
         href="/examples"
-        class="hidden text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] sm:inline"
+        class="hidden text-sm font-medium text-text-muted hover:text-text sm:inline"
       >
         Examples
       </a>
+      <ThemeToggle />
       <a
         href="https://github.com/Glowhop/GlowTour.js"
         aria-label="GitHub"
-        class="flex h-9 w-9 items-center justify-center rounded-[var(--radius-glow)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text)]"
+        class="flex h-9 w-9 items-center justify-center rounded-glow text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
       >
         <GithubIcon class="h-5 w-5" />
       </a>
       <a
         href="/docs/getting-started"
-        class="whitespace-nowrap rounded-[var(--radius-glow)] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:bg-[var(--color-accent-hover)]"
+        data-tour="docs-cta"
+        class="whitespace-nowrap rounded-glow bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover"
       >
         Get started
       </a>

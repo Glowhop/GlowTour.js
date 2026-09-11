@@ -1,0 +1,113 @@
+---
+import CopyButton from "./CopyButton.astro";
+import FrameworkIcon from "./FrameworkIcon.astro";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+
+// Icon-only, so each button carries the framework name as its accessible name. The name is also
+// visible in plain text in the command right below, which is what keeps this from being a row of
+// logos the visitor has to recognise.
+const frameworks = [
+  { icon: "react" as const, label: "React", package: "react" },
+  { icon: "vue" as const, label: "Vue", package: "vue" },
+  { icon: "solid" as const, label: "Solid", package: "solid" },
+  { icon: "angular" as const, label: "Angular", package: "angular" },
+  { icon: "vanilla" as const, label: "Vanilla", package: "vanilla" },
+];
+
+const command = (packageName: string) => `npm i @glowhop/${packageName}-tour @glowhop/styles-tour`;
+const defaultCommand = command("react");
+---
+
+<div data-tour="install" class={`mx-auto w-fit max-w-full ${className}`}>
+  <div
+    role="radiogroup"
+    aria-label="Framework"
+    data-framework-picker
+    class="flex items-center justify-center gap-1"
+  >
+    {
+      frameworks.map((framework, index) => (
+        <button
+          type="button"
+          role="radio"
+          aria-checked={index === 0 ? "true" : "false"}
+          aria-label={framework.label}
+          tabindex={index === 0 ? 0 : -1}
+          data-framework={framework.package}
+          class="rounded-[calc(var(--radius-glow)/1.5)] border p-2 opacity-45 grayscale transition-[opacity,filter,border-color] hover:opacity-100 hover:grayscale-0 border-transparent aria-checked:border-accent aria-checked:opacity-100 aria-checked:grayscale-0"
+        >
+          <FrameworkIcon name={framework.icon} class="h-5 w-5" />
+        </button>
+      ))
+    }
+  </div>
+
+  {/*
+    Only the command scrolls. Putting the button inside the scrolling box pushes it off-screen on a
+    narrow phone, where the command is exactly what does not fit.
+  */}
+  <div
+    class="mt-3 flex items-center gap-2 rounded-glow border border-border bg-surface-muted py-2 pr-2 pl-4"
+  >
+    <div class="min-w-0 flex-1 overflow-x-auto">
+      <code data-install-command class="font-mono text-sm whitespace-nowrap text-text"
+        >{defaultCommand}</code
+      >
+    </div>
+    <CopyButton value={defaultCommand} label="Copy install command" iconOnly />
+  </div>
+</div>
+
+<script>
+  /*
+   * Re-bound on every client-side navigation: scripts are evaluated once, but a swap replaces the
+   * elements they closed over, so coming back to this page would otherwise leave a dead picker.
+   * The bound flag keeps the initial call and the first astro:page-load from binding twice.
+   */
+  function setUpInstallLine(): void {
+    const root = document.querySelector<HTMLElement>('[data-tour="install"]');
+    if (!root || root.dataset.bound === "true") return;
+    root.dataset.bound = "true";
+
+    const picker = root.querySelector<HTMLElement>("[data-framework-picker]");
+    const command = root.querySelector<HTMLElement>("[data-install-command]");
+    const copy = root.querySelector<HTMLElement>("[data-copy-button]");
+    if (!picker || !command) return;
+
+    const options = [...picker.querySelectorAll<HTMLElement>("[data-framework]")];
+
+    function select(option: HTMLElement, moveFocus: boolean): void {
+      for (const candidate of options) {
+        const active = candidate === option;
+        candidate.setAttribute("aria-checked", String(active));
+        candidate.tabIndex = active ? 0 : -1;
+      }
+      const next = `npm i @glowhop/${option.dataset.framework}-tour @glowhop/styles-tour`;
+      command.textContent = next;
+      if (copy) copy.dataset.copyValue = next;
+      if (moveFocus) option.focus();
+    }
+
+    picker.addEventListener("click", (event) => {
+      const option = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-framework]");
+      if (option) select(option, false);
+    });
+
+    // Roving tabindex: the group is one tab stop, arrows move within it.
+    picker.addEventListener("keydown", (event) => {
+      const step = { ArrowDown: 1, ArrowLeft: -1, ArrowRight: 1, ArrowUp: -1 }[event.key];
+      if (step === undefined) return;
+      event.preventDefault();
+      const current = options.findIndex((option) => option.tabIndex === 0);
+      select(options[(current + step + options.length) % options.length], true);
+    });
+  }
+
+  setUpInstallLine();
+  document.addEventListener("astro:page-load", setUpInstallLine);
+</script>
