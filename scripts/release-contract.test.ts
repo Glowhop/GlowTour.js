@@ -212,17 +212,20 @@ test("CI validates pull requests and main with pinned actions and minimal permis
   for (const command of [
     "bun run check",
     "bun run typecheck",
+    "bun run build",
     "bun test",
     "bun run test:browser",
-    "bun run build",
     "bun run pack",
     "bun run test:tarballs",
     "bun run --cwd apps/playground build",
   ]) {
     expect(raw).toContain(command);
   }
+  // The build comes first: the website suite reaches through the workspace
+  // packages' published entry points, which do not exist until they are built.
+  expect(raw.indexOf("bun run build")).toBeLessThan(raw.indexOf("bun test"));
   expect(raw.indexOf("bun test")).toBeLessThan(raw.indexOf("bun run test:browser"));
-  expect(raw.indexOf("bun run test:browser")).toBeLessThan(raw.indexOf("bun run build"));
+  expect(raw.indexOf("bun run test:browser")).toBeLessThan(raw.indexOf("bun run pack"));
 });
 
 test("Changesets opens version pull requests from main without publishing", () => {
@@ -262,8 +265,11 @@ test("release workflow is GitHub-Release-only and delegates resumable publishing
   expect(raw).toMatch(/\^v\(\[0-9\]\+\)\\\.\(\[0-9\]\+\)\\\.\(\[0-9\]\+\)\$/);
   expect(raw).toContain("bun run release:prepare -- --expected-version");
   expect(raw).toContain("bun run test:browser");
+  // The build comes first: the website suite reaches through the workspace
+  // packages' published entry points, which do not exist until they are built.
+  expect(raw.indexOf("bun run build")).toBeLessThan(raw.indexOf("bun test"));
   expect(raw.indexOf("bun test")).toBeLessThan(raw.indexOf("bun run test:browser"));
-  expect(raw.indexOf("bun run test:browser")).toBeLessThan(raw.indexOf("bun run build"));
+  expect(raw.indexOf("bun run test:browser")).toBeLessThan(raw.indexOf("bun run pack"));
   expect(raw).toMatch(/node-version:\s*22\.14\.0/);
   expect(raw).toMatch(/npm --version/);
   expect(raw).toContain("npm install --global npm@11.5.1");

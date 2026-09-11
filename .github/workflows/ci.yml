@@ -30,9 +30,11 @@ jobs:
         run: |
           bun run check
           bun run typecheck
+          # Before the tests: the website suite reaches through the workspace
+          # packages' published entry points, which only exist once built.
+          bun run build
           bun test
           bun run test:browser
-          bun run build
           bun run pack
           bun run test:tarballs
           bun run --cwd apps/playground build
