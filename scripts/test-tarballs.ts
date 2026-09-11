@@ -23,6 +23,14 @@ type PackageName =
 const root = resolve(import.meta.dir, "..");
 const tarballDirectory = join(root, ".artifacts", "tarballs");
 const bundleVerifier = resolve(root, "scripts/verify-bundles.ts");
+/*
+ * The website renders these numbers. Measuring here rather than from the website's own build is
+ * what makes them describe the *published* packages: this is the only place the tarballs are
+ * installed as a consumer would install them. CI runs this step before it builds the website, so
+ * the committed file is refreshed before every build and a stale number shows up as an uncommitted
+ * change.
+ */
+const bundleMeasurements = resolve(root, "apps/website/src/data/bundle-sizes.json");
 const packageNames: readonly PackageName[] = [
   "@glowhop/core-tour",
   "@glowhop/styles-tour",
@@ -513,7 +521,7 @@ try {
   for (const id of ["vue-quick-start", "vue-advanced"]) writeFileSync(join(consumerDirectory, `${id}.vue`), installedSnippets[id]);
   writeFileSync(join(consumerDirectory, "angular-app/quick.ts"), installedSnippets["angular-quick-start"]);
   writeFileSync(join(consumerDirectory, "angular-app/advanced.ts"), installedSnippets["angular-advanced"]);
-  process.stdout.write(run("bun", [bundleVerifier, consumerDirectory], consumerDirectory));
+  process.stdout.write(run("bun", [bundleVerifier, consumerDirectory, bundleMeasurements], consumerDirectory));
   run("node", ["runtime-imports.mjs"], consumerDirectory);
   run("node", ["render-react-default-tour.mjs"], consumerDirectory);
   run(

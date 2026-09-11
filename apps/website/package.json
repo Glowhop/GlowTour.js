@@ -13,6 +13,7 @@
     "@astrojs/starlight": "^0.42.0",
     "@glowhop/react-tour": "workspace:*",
     "@glowhop/styles-tour": "workspace:*",
+    "@glowhop/vanilla-tour": "workspace:*",
     "@iconify-json/logos": "^1.2.4",
     "astro": "^7.3.1",
     "astro-icon": "^1.1.5",

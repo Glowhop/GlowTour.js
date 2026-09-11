@@ -1,7 +1,9 @@
 ---
 import MarketingLayout from "../layouts/MarketingLayout.astro";
+import { formatKib, frameworkBundle } from "../lib/bundle-sizes";
 import Button from "./Button.astro";
 import CodeBlock from "./CodeBlock.astro";
+import CopyButton from "./CopyButton.astro";
 import FrameworkIcon from "./FrameworkIcon.astro";
 
 interface Props {
@@ -30,6 +32,7 @@ const {
   description,
 } = Astro.props;
 
+const bundle = frameworkBundle(icon);
 const npmPackage = `@glowhop/${packageName}-tour`;
 const npmUrl = `https://www.npmjs.com/package/${npmPackage}`;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -67,13 +70,13 @@ const jsonLd = {
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
   <section class="mx-auto max-w-4xl px-6 py-16 sm:py-24">
     <div class="flex items-center gap-2">
-      <FrameworkIcon name={icon} class="h-5 w-5 text-[var(--color-accent)]" />
-      <p class="text-sm font-semibold text-[var(--color-accent)]">{name}</p>
+      <FrameworkIcon name={icon} class="h-5 w-5 text-accent" />
+      <p class="text-sm font-semibold text-accent">{name}</p>
     </div>
-    <h1 class="mt-2 text-4xl font-semibold tracking-tight text-[var(--color-text)]">
+    <h1 class="mt-2 text-4xl font-semibold tracking-tight text-text">
       GlowTour.js for {name}
     </h1>
-    <p class="mt-4 max-w-2xl text-lg text-[var(--color-text-muted)]">{intro}</p>
+    <p class="mt-4 max-w-2xl text-lg text-text-muted">{intro}</p>
 
     <div class="mt-8 flex flex-wrap gap-3">
       <Button href={guideHref}>Read the {name} guide</Button>
@@ -81,17 +84,28 @@ const jsonLd = {
     </div>
 
     <div class="mt-12">
-      <h2 class="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
+      <h2 class="text-sm font-semibold text-text-muted uppercase tracking-wide">
         Install
       </h2>
-      <div class="mt-3 overflow-x-auto rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 font-mono text-sm">
-        {installCommand}
+      <div
+        data-tour="framework-install"
+        class="mt-3 flex items-center gap-2 rounded-glow border border-border bg-surface-muted py-3 pr-3 pl-4"
+      >
+        <div class="min-w-0 flex-1 overflow-x-auto">
+          <code class="font-mono text-sm whitespace-nowrap">{installCommand}</code>
+        </div>
+        <CopyButton value={installCommand} label="Copy install command" iconOnly />
       </div>
-      <p class="mt-3 text-sm text-[var(--color-text-muted)]">
+      <p class="mt-3 text-sm text-text-muted">
+        {formatKib(bundle.total)} gzipped in total: {formatKib(bundle.adapter)} of adapter over the
+        shared {formatKib(bundle.core)} engine, plus {formatKib(bundle.styles)} of theme CSS you can
+        replace with your own.
+      </p>
+      <p class="mt-3 text-sm text-text-muted">
         <a
           href={npmUrl}
           rel="noopener"
-          class="underline underline-offset-4 transition-colors hover:text-[var(--color-text)]"
+          class="underline underline-offset-4 transition-colors hover:text-text"
         >
           {npmPackage} on npm
         </a>
@@ -99,7 +113,7 @@ const jsonLd = {
         <a
           href="https://www.npmjs.com/package/@glowhop/styles-tour"
           rel="noopener"
-          class="underline underline-offset-4 transition-colors hover:text-[var(--color-text)]"
+          class="underline underline-offset-4 transition-colors hover:text-text"
         >
           @glowhop/styles-tour on npm
         </a>
@@ -107,13 +121,15 @@ const jsonLd = {
     </div>
 
     <div class="mt-10">
-      <h2 class="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
+      <h2 class="text-sm font-semibold text-text-muted uppercase tracking-wide">
         Quick start
       </h2>
-      <p class="mt-2 text-sm text-[var(--color-text-muted)]">
+      <p class="mt-2 text-sm text-text-muted">
         From <code>examples/{packageName}</code> in the GlowTour.js repository — copy, paste, run.
       </p>
-      <CodeBlock code={code} lang={lang} class="mt-3" />
+      <div data-tour="framework-quickstart">
+        <CodeBlock code={code} lang={lang} class="mt-3" />
+      </div>
     </div>
   </section>
 </MarketingLayout>

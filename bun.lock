@@ -101,6 +101,7 @@
         "@astrojs/starlight": "^0.42.0",
         "@glowhop/react-tour": "workspace:*",
         "@glowhop/styles-tour": "workspace:*",
+        "@glowhop/vanilla-tour": "workspace:*",
         "@iconify-json/logos": "^1.2.4",
         "astro": "^7.3.1",
         "astro-icon": "^1.1.5",
@@ -117,7 +118,7 @@
     },
     "packages/angular": {
       "name": "@glowhop/angular-tour",
-      "version": "0.1.0",
+      "version": "1.2.0",
       "dependencies": {
         "@glowhop/core-tour": "workspace:*",
         "tslib": "^2.3.0",
@@ -137,14 +138,14 @@
     },
     "packages/core": {
       "name": "@glowhop/core-tour",
-      "version": "0.1.0",
+      "version": "1.2.0",
       "devDependencies": {
         "happy-dom": "^18.0.1",
       },
     },
     "packages/react": {
       "name": "@glowhop/react-tour",
-      "version": "0.1.0",
+      "version": "1.2.0",
       "dependencies": {
         "@glowhop/core-tour": "workspace:*",
       },
@@ -161,7 +162,7 @@
     },
     "packages/solid": {
       "name": "@glowhop/solid-tour",
-      "version": "0.1.0",
+      "version": "1.2.0",
       "dependencies": {
         "@glowhop/core-tour": "workspace:*",
       },
@@ -175,11 +176,11 @@
     },
     "packages/styles": {
       "name": "@glowhop/styles-tour",
-      "version": "0.1.0",
+      "version": "1.2.0",
     },
     "packages/vanilla": {
       "name": "@glowhop/vanilla-tour",
-      "version": "0.1.0",
+      "version": "1.2.0",
       "dependencies": {
         "@glowhop/core-tour": "workspace:*",
       },
@@ -189,7 +190,7 @@
     },
     "packages/vue": {
       "name": "@glowhop/vue-tour",
-      "version": "0.1.0",
+      "version": "1.2.0",
       "dependencies": {
         "@glowhop/core-tour": "workspace:*",
       },

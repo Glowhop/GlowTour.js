@@ -20,16 +20,16 @@ import { useState } from "react";
 import { Avatar, DemoCard, FakeField, SkeletonLine } from "./demo-ui";
 
 const targetButtonClass =
-  "rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-text)]";
+  "rounded-glow border border-border bg-surface px-4 py-2 text-sm font-medium text-text";
 const runButtonClass =
-  "rounded-[var(--radius-glow)] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]";
+  "rounded-glow bg-accent px-4 py-2 text-sm font-semibold text-on-accent hover:bg-accent-hover";
 const primaryButtonClass =
-  "rounded-[var(--radius-glow)] bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]";
+  "rounded-glow bg-accent px-3 py-1.5 text-sm font-semibold text-on-accent hover:bg-accent-hover";
 
 // 1. Non-interactive, 3 steps ------------------------------------------------
 
 const nonInteractiveTour = createGlowTour();
-const nonInteractiveWorkflow = nonInteractiveTour
+export const nonInteractiveWorkflow = nonInteractiveTour
   .create("hero-non-interactive")
   .step({
     id: "non-interactive-field-name",
@@ -55,7 +55,7 @@ export function NonInteractiveDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-5">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Workspace settings</h4>
+        <h4 className="text-sm font-semibold text-text">Workspace settings</h4>
         <div className="mt-4 space-y-3">
           <FakeField
             id="hero-non-interactive-field-name"
@@ -68,7 +68,7 @@ export function NonInteractiveDemo() {
             value="UTC-08:00 Pacific"
           />
         </div>
-        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+        <div className="mt-4 flex justify-end border-t border-border pt-4">
           <button id="hero-non-interactive-target" type="button" className={primaryButtonClass}>
             Save changes
           </button>
@@ -89,7 +89,7 @@ export function NonInteractiveDemo() {
 // 2. Interactive: click target to advance ------------------------------------
 
 const advanceOnClickTour = createGlowTour();
-const advanceOnClickWorkflow = advanceOnClickTour
+export const advanceOnClickWorkflow = advanceOnClickTour
   .create("hero-advance-on-click")
   .step({
     id: "advance-progress",
@@ -120,16 +120,12 @@ export function AdvanceOnClickDemo() {
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-5">
         <div id="hero-advance-progress" className="flex items-center justify-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-border)]" aria-hidden="true" />
-          <span className="h-1.5 w-5 rounded-full bg-[var(--color-accent)]" aria-hidden="true" />
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-border)]" aria-hidden="true" />
+          <span className="h-1.5 w-1.5 rounded-full bg-border" aria-hidden="true" />
+          <span className="h-1.5 w-5 rounded-full bg-accent" aria-hidden="true" />
+          <span className="h-1.5 w-1.5 rounded-full bg-border" aria-hidden="true" />
         </div>
-        <p className="mt-3 text-center text-xs font-medium text-[var(--color-text-muted)]">
-          Step 2 of 3
-        </p>
-        <p className="mt-2 text-center text-sm text-[var(--color-text)]">
-          Connect a data source to keep going.
-        </p>
+        <p className="mt-3 text-center text-xs font-medium text-text-muted">Step 2 of 3</p>
+        <p className="mt-2 text-center text-sm text-text">Connect a data source to keep going.</p>
         <div className="mt-4 flex justify-center">
           <button id="hero-advance-on-click-target" type="button" className={primaryButtonClass}>
             Continue
@@ -151,7 +147,7 @@ export function AdvanceOnClickDemo() {
 // 3. 4 steps, each a different popover.placementTryOrder --------------------
 
 const placementOrderTour = createGlowTour();
-const placementOrderWorkflow = placementOrderTour
+export const placementOrderWorkflow = placementOrderTour
   .create("hero-placement-order")
   .step({
     id: "placement-target-top",
@@ -187,7 +183,7 @@ export function PlacementOrderDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-6">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Dashboard</h4>
+        <h4 className="text-sm font-semibold text-text">Dashboard</h4>
         <div className="mt-6 flex h-36 flex-col justify-between">
           <div className="flex justify-between">
             <button id="hero-placement-target-top" type="button" className={targetButtonClass}>
@@ -222,7 +218,7 @@ export function PlacementOrderDemo() {
 // 4. Async element wait -------------------------------------------------------
 
 const waitForAsyncTour = createGlowTour();
-const waitForAsyncWorkflow = waitForAsyncTour
+export const waitForAsyncWorkflow = waitForAsyncTour
   .create("hero-wait-for-async")
   .step({
     id: "wait-for-async-target",
@@ -259,7 +255,7 @@ export function WaitForAsyncDemo() {
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-4">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-[var(--color-text)]">Recent activity</h4>
+          <h4 className="text-sm font-semibold text-text">Recent activity</h4>
           <button
             id="hero-wait-for-async-target"
             type="button"
@@ -279,12 +275,12 @@ export function WaitForAsyncDemo() {
                   className="flex items-center gap-3"
                 >
                   <Avatar initials={row.initials} />
-                  <span className="text-sm text-[var(--color-text)]">{row.label}</span>
+                  <span className="text-sm text-text">{row.label}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="flex h-24 items-center justify-center text-xs text-[var(--color-text-muted)]">
+            <p className="flex h-24 items-center justify-center text-xs text-text-muted">
               No activity loaded yet.
             </p>
           )}
@@ -305,7 +301,7 @@ export function WaitForAsyncDemo() {
 // 5. cancellable: false --------------------------------------------------------
 
 const cancellableTour = createGlowTour();
-const cancellableWorkflow = cancellableTour
+export const cancellableWorkflow = cancellableTour
   .create("hero-cancellable", {
     cancellable: false,
   })
@@ -327,18 +323,18 @@ export function CancellableDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-4">
-        <div className="rounded-[var(--radius-glow)] border border-red-600/30 bg-red-600/5 p-4">
+        <div className="rounded-glow border border-red-600/30 bg-red-600/5 p-4">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-red-600">
             <Trash2 className="h-4 w-4" aria-hidden="true" />
             Danger zone
           </h4>
-          <p id="hero-cancellable-warning" className="mt-1 text-xs text-[var(--color-text-muted)]">
+          <p id="hero-cancellable-warning" className="mt-1 text-xs text-text-muted">
             This permanently deletes your account and all of its data.
           </p>
           <button
             id="hero-cancellable-target"
             type="button"
-            className="mt-3 rounded-[var(--radius-glow)] border border-red-600 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-600/10"
+            className="mt-3 rounded-glow border border-red-600 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-600/10"
           >
             Delete account
           </button>
@@ -359,7 +355,7 @@ export function CancellableDemo() {
 // 6. Prevent cancel via onCancel + confirm() ----------------------------------
 
 const confirmCancelTour = createGlowTour();
-const confirmCancelWorkflow = confirmCancelTour
+export const confirmCancelWorkflow = confirmCancelTour
   .create("hero-confirm-cancel", {
     cancellable: true,
     onCancel: (context) => {
@@ -387,14 +383,14 @@ export function ConfirmCancelDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-5">
-        <h4 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+        <h4 className="flex items-center gap-2 text-sm font-semibold text-text">
           <Rocket className="h-4 w-4" aria-hidden="true" />
           New project
         </h4>
         <div className="mt-4 space-y-3">
           <FakeField id="hero-confirm-cancel-field" label="Project name" value="Untitled project" />
         </div>
-        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+        <div className="mt-4 flex justify-end border-t border-border pt-4">
           <button id="hero-confirm-cancel-target" type="button" className={primaryButtonClass}>
             Create project
           </button>
@@ -415,7 +411,7 @@ export function ConfirmCancelDemo() {
 // 7. overlayClick behaviour ----------------------------------------------------
 
 const overlayClickTour = createGlowTour();
-const overlayClickWorkflow = overlayClickTour
+export const overlayClickWorkflow = overlayClickTour
   .create("hero-overlay-click")
   .step({
     id: "overlay-click-target-1",
@@ -439,21 +435,21 @@ export function OverlayClickDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-5">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Notification preferences</h4>
+        <h4 className="text-sm font-semibold text-text">Notification preferences</h4>
         <div className="mt-4 space-y-3">
           <div
             id="hero-overlay-click-target-1"
-            className="flex items-center justify-between rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2"
+            className="flex items-center justify-between rounded-glow border border-border bg-surface-muted px-3 py-2"
           >
-            <span className="text-sm text-[var(--color-text)]">Email notifications</span>
-            <Bell className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden="true" />
+            <span className="text-sm text-text">Email notifications</span>
+            <Bell className="h-4 w-4 text-text-muted" aria-hidden="true" />
           </div>
           <div
             id="hero-overlay-click-target-2"
-            className="flex items-center justify-between rounded-[var(--radius-glow)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2"
+            className="flex items-center justify-between rounded-glow border border-border bg-surface-muted px-3 py-2"
           >
-            <span className="text-sm text-[var(--color-text)]">Push notifications</span>
-            <Bell className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden="true" />
+            <span className="text-sm text-text">Push notifications</span>
+            <Bell className="h-4 w-4 text-text-muted" aria-hidden="true" />
           </div>
         </div>
       </DemoCard>
@@ -472,7 +468,7 @@ export function OverlayClickDemo() {
 // 8. Custom popover CSS + custom indicator, with an allowInteraction step ----
 
 const customStyledIndicatorTour = createGlowTour();
-const customStyledIndicatorWorkflow = customStyledIndicatorTour
+export const customStyledIndicatorWorkflow = customStyledIndicatorTour
   .create("hero-custom-styled-indicator")
   .step({
     id: "custom-styled-member",
@@ -503,7 +499,7 @@ export function CustomStyledIndicatorDemo() {
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-4">
         <div className="flex items-center justify-between">
-          <h4 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-text">
             <UserPlus className="h-4 w-4" aria-hidden="true" />
             Team members
           </h4>
@@ -552,7 +548,7 @@ export function CustomStyledIndicatorDemo() {
 // 9. Custom popover component showing live progress --------------------------
 
 const liveProgressTour = createGlowTour();
-const liveProgressWorkflow = liveProgressTour
+export const liveProgressWorkflow = liveProgressTour
   .create("hero-live-progress")
   .step({
     id: "live-progress-field-1",
@@ -583,7 +579,7 @@ const liveProgressWorkflow = liveProgressTour
 function LiveProgress() {
   const state = useTour();
   return (
-    <p className="text-xs font-semibold text-[var(--color-accent)]">
+    <p className="text-xs font-semibold text-accent">
       Step {state.currentStepIndex + 1} of {state.totalSteps}
     </p>
   );
@@ -593,13 +589,13 @@ export function LiveProgressDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-5">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Account setup</h4>
+        <h4 className="text-sm font-semibold text-text">Account setup</h4>
         <div className="mt-4 space-y-3">
           <FakeField id="hero-live-progress-field-1" label="Company name" value="Acme Inc." />
           <FakeField id="hero-live-progress-field-2" label="Industry" value="Software" />
           <FakeField id="hero-live-progress-field-3" label="Team size" value="11–50 people" />
         </div>
-        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+        <div className="mt-4 flex justify-end border-t border-border pt-4">
           <button id="hero-live-progress-target" type="button" className={primaryButtonClass}>
             Finish setup
           </button>
@@ -635,7 +631,7 @@ export function LiveProgressDemo() {
 // 10. Light and dark theme ---------------------------------------------------
 
 const themeTour = createGlowTour();
-const themeWorkflow = themeTour
+export const themeWorkflow = themeTour
   .create("hero-theme")
   .step({
     id: "theme-field-plan",
@@ -674,8 +670,8 @@ export function ThemeDemo() {
             aria-pressed={theme === choice}
             className={
               theme === choice
-                ? "rounded-[var(--radius-glow)] border border-[var(--color-accent)] bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-[var(--color-on-accent)]"
-                : "rounded-[var(--radius-glow)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-muted)]"
+                ? "rounded-glow border border-accent bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
+                : "rounded-glow border border-border px-3 py-1.5 text-xs font-medium text-text-muted"
             }
           >
             {choice}
@@ -683,11 +679,11 @@ export function ThemeDemo() {
         ))}
       </fieldset>
       <DemoCard className="p-5">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Billing</h4>
+        <h4 className="text-sm font-semibold text-text">Billing</h4>
         <div className="mt-4 space-y-3">
           <FakeField id="hero-theme-field-plan" label="Plan" value="Team — 12 seats" />
         </div>
-        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+        <div className="mt-4 flex justify-end border-t border-border pt-4">
           <button id="hero-theme-target" type="button" className={primaryButtonClass}>
             Update plan
           </button>
@@ -708,7 +704,7 @@ export function ThemeDemo() {
 // 11. Long content in a narrow popover ---------------------------------------
 
 const longContentTour = createGlowTour();
-const longContentWorkflow = longContentTour
+export const longContentWorkflow = longContentTour
   .create("hero-long-content")
   .step({
     id: "long-content-target",
@@ -726,13 +722,13 @@ export function LongContentDemo() {
       style={{ "--glow-tour-popover-width": "260px" } as CSSProperties}
     >
       <DemoCard className="p-5">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Release notes</h4>
+        <h4 className="text-sm font-semibold text-text">Release notes</h4>
         <div className="mt-4 space-y-2">
           <SkeletonLine />
           <SkeletonLine width="80%" />
           <SkeletonLine width="60%" />
         </div>
-        <div className="mt-4 flex justify-end border-t border-[var(--color-border)] pt-4">
+        <div className="mt-4 flex justify-end border-t border-border pt-4">
           <button id="hero-long-content-target" type="button" className={primaryButtonClass}>
             Read the notes
           </button>
@@ -753,7 +749,7 @@ export function LongContentDemo() {
 // 12. A fully re-skinned tour, from CSS alone ---------------------------------
 
 const customThemeTour = createGlowTour();
-const customThemeWorkflow = customThemeTour
+export const customThemeWorkflow = customThemeTour
   .create("hero-custom-theme")
   .step({
     id: "custom-theme-branch",

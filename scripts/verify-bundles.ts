@@ -244,8 +244,9 @@ function verifyInstalledTarballs(consumerDirectory: string) {
   }
 }
 
-function verifyBundles(consumerDirectory: string) {
+function verifyBundles(consumerDirectory: string, measurementsPath?: string) {
   verifyInstalledTarballs(consumerDirectory);
+  const measurements: Record<string, number> = {};
   const esbuild = join(consumerDirectory, "node_modules", ".bin", "esbuild");
   assert.ok(existsSync(esbuild), "temporary consumer must provide esbuild through Vite");
   const outputDirectory = mkdtempSync(join(consumerDirectory, ".glow-tour-bundles-"));
@@ -266,6 +267,7 @@ function verifyBundles(consumerDirectory: string) {
         inputs: Record<string, unknown>;
       };
       const gzipBytes = gzipSync(bundle).byteLength;
+      measurements[scenario.name] = gzipBytes;
       console.log(formatBundleMeasurement(scenario, gzipBytes));
       assertBundleScenario(scenario, {
         gzipBytes,
@@ -276,7 +278,17 @@ function verifyBundles(consumerDirectory: string) {
   } finally {
     rmSync(outputDirectory, { force: true, recursive: true });
   }
+  // These numbers are measured against the packed tarballs, so they describe what a consumer
+  // actually downloads. The website renders them, which is why they are worth writing down rather
+  // than only printing: see apps/website/src/components/BundleSizes.astro.
+  if (measurementsPath) {
+    writeFileSync(measurementsPath, `${JSON.stringify(measurements, null, 2)}\n`);
+    console.log(`Wrote gzipped sizes to ${measurementsPath}`);
+  }
 }
 
 const consumerDirectory = process.argv[2];
-if (consumerDirectory) verifyBundles(resolve(consumerDirectory));
+const measurementsOutput = process.argv[3];
+if (consumerDirectory) {
+  verifyBundles(resolve(consumerDirectory), measurementsOutput && resolve(measurementsOutput));
+}

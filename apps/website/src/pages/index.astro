@@ -1,10 +1,12 @@
 ---
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { Icon } from "astro-icon/components";
+import BundleSizes from "../components/BundleSizes.astro";
 import Button from "../components/Button.astro";
 import CodeBlock from "../components/CodeBlock.astro";
 import { ExamplesGallery } from "../components/ExamplesGallery";
 import FrameworkIcon from "../components/FrameworkIcon.astro";
+import InstallLine from "../components/InstallLine.astro";
 import Marquee from "../components/Marquee.astro";
 import SpotlightMotif from "../components/SpotlightMotif.astro";
 import StepDivider from "../components/StepDivider.astro";
@@ -34,12 +36,6 @@ const frameworks = [
   { label: "Solid", href: "/solid", icon: "solid" as const },
   { label: "Angular", href: "/angular", icon: "angular" as const },
   { label: "Vanilla", href: "/vanilla", icon: "vanilla" as const },
-];
-
-const stats = [
-  { value: "5", label: "framework adapters" },
-  { value: "ESM-only", label: "every published package" },
-  { value: "ARIA", label: "dialog semantics, keyboard trap, focus restore" },
 ];
 
 const useCases = [
@@ -177,24 +173,31 @@ const jsonLd = {
     <SpotlightMotif class="-z-10" />
     <div class="mx-auto max-w-3xl text-center">
       <p
-        class="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-3 py-1 text-xs font-medium text-[var(--color-text-muted)] backdrop-blur"
+        class="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1 text-xs font-medium text-text-muted backdrop-blur"
       >
-        <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" aria-hidden="true"></span>
+        <span class="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></span>
         Guided tours, five frameworks, one engine
       </p>
       <h1
-        class="font-heading mt-6 text-[2.6rem] leading-[1.05] font-semibold tracking-[-0.02em] text-balance text-[var(--color-text)] sm:text-6xl"
+        data-tour="hero"
+        class="font-heading mt-6 text-[2.6rem] leading-[1.05] font-semibold tracking-[-0.02em] text-balance text-text sm:text-6xl"
       >
         Show people around, without writing a guide.
       </h1>
-      <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-pretty text-[var(--color-text-muted)]">
+      <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-pretty text-text-muted">
         One workflow engine with native adapters for React, Vue, Solid, Angular, and vanilla DOM —
         accessible by default, verified under real SSR, shipped as ESM only.
       </p>
+      {/*
+        The primary action is a real link to the examples section, so it still does something
+        without JavaScript; SiteTour intercepts the click and runs the tour instead. Keeping it a
+        link also means no layout shift while the tour script loads.
+      */}
       <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
-        <Button href="/docs/getting-started">Get started</Button>
-        <Button href="#frameworks" variant="secondary">Pick your framework</Button>
+        <Button href="#examples" data-site-tour-start>Take the tour</Button>
+        <Button href="/docs/getting-started" variant="secondary">Documentation</Button>
       </div>
+      <InstallLine class="mt-6" />
       {/*
         The mascot stands in the pool of light the SpotlightMotif casts, so the illustration and
         the backdrop read as one stage rather than two stacked decorations. Decorative: the
@@ -214,14 +217,29 @@ const jsonLd = {
 
   <Marquee items={marqueeClaims} />
 
-  <section id="frameworks" class="mx-auto max-w-6xl px-6 pt-16 pb-4 scroll-mt-20">
-    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+  <section id="examples" class="mx-auto max-w-6xl px-6 pt-16 pb-4 scroll-mt-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
+      Try it, then read it.
+    </h2>
+    <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
+      Every example below runs for real — the code beside it is exactly what produced it.
+    </p>
+    <div class="mt-10">
+      <ExamplesGallery client:visible codeHtml={exampleCodeHtml} labels={FEATURED_EXAMPLE_LABELS} />
+    </div>
+    <div class="mt-8 text-center">
+      <Button href="/examples" variant="secondary">See all examples</Button>
+    </div>
+  </section>
+
+  <section id="frameworks" class="mx-auto max-w-6xl px-6 pt-16 pb-20 scroll-mt-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
       Pick your framework
     </h2>
-    <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
+    <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
       Same workflow engine underneath — each adapter renders it the way that framework expects.
     </p>
-    <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
+    <div data-tour="frameworks" class="mt-8 flex flex-wrap items-center justify-center gap-2">
       {
         frameworks.map((fw) => (
           <Button href={fw.href} variant="secondary" class="gap-2">
@@ -233,33 +251,18 @@ const jsonLd = {
     </div>
   </section>
 
-  <section id="examples" class="mx-auto max-w-6xl px-6 pt-16 pb-20 scroll-mt-20">
-    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
-      Try it, then read it.
-    </h2>
-    <p class="mx-auto mt-3 max-w-2xl text-center text-[var(--color-text-muted)]">
-      Every example below runs for real — the code beside it is exactly what produced it.
-    </p>
-    <div class="mt-10">
-      <ExamplesGallery client:load codeHtml={exampleCodeHtml} labels={FEATURED_EXAMPLE_LABELS} />
-    </div>
-    <div class="mt-8 text-center">
-      <Button href="/examples" variant="secondary">See all examples</Button>
-    </div>
-  </section>
-
   <section class="mx-auto max-w-6xl px-6 pb-20">
-    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
       Where teams actually use it
     </h2>
     <div class="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
       {
         useCases.map((useCase) => (
           <div class="flex gap-4">
-            <span class="mt-1 h-px w-6 shrink-0 bg-[var(--color-accent)]" aria-hidden="true" />
+            <span class="mt-1 h-px w-6 shrink-0 bg-accent" aria-hidden="true" />
             <div>
-              <h3 class="font-semibold text-[var(--color-text)]">{useCase.title}</h3>
-              <p class="mt-1 text-sm text-[var(--color-text-muted)]">{useCase.description}</p>
+              <h3 class="font-semibold text-text">{useCase.title}</h3>
+              <p class="mt-1 text-sm text-text-muted">{useCase.description}</p>
             </div>
           </div>
         ))
@@ -269,22 +272,15 @@ const jsonLd = {
 
   <StepDivider class="py-2" />
 
-  <section class="mx-auto max-w-4xl px-6 py-14 text-center">
-    <p class="text-xl leading-relaxed text-[var(--color-text)] sm:text-2xl">
-      <span class="font-heading font-semibold text-[var(--color-accent)]">{stats[0].value}</span>{" "}
-      framework adapters share one <span class="font-semibold">{stats[1].value}</span> core, each rendering
-      full <span class="font-heading font-semibold text-[var(--color-accent)]">{stats[2].value}</span>{" "}
-      dialog semantics, keyboard trap, and focus restore.
-    </p>
-  </section>
+  <BundleSizes />
 
   <StepDivider class="py-2" />
 
   <section class="mx-auto max-w-3xl px-6 py-20 text-center">
-    <h2 class="font-heading text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+    <h2 class="font-heading text-3xl font-semibold tracking-tight text-text">
       MIT, plainly
     </h2>
-    <p class="mt-4 text-[var(--color-text-muted)]">No tiers, no feature gates, no fine print.</p>
+    <p class="mt-4 text-text-muted">No tiers, no feature gates, no fine print.</p>
     <ul class="mx-auto mt-8 grid max-w-md gap-3 text-left">
       {
         [
@@ -293,9 +289,9 @@ const jsonLd = {
           "Unlimited projects",
           "No attribution required",
         ].map((item) => (
-          <li class="flex items-center gap-3 text-[var(--color-text)]">
+          <li class="flex items-center gap-3 text-text">
             <svg
-              class="h-5 w-5 shrink-0 text-[var(--color-accent)]"
+              class="h-5 w-5 shrink-0 text-accent"
               viewBox="0 0 20 20"
               fill="none"
               aria-hidden="true"
@@ -316,7 +312,7 @@ const jsonLd = {
   </section>
 
   <section class="mx-auto max-w-5xl px-6 py-20">
-    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
       What's actually in the box
     </h2>
     <div class="mt-10 grid gap-x-10 gap-y-6 sm:grid-cols-2">
@@ -324,14 +320,14 @@ const jsonLd = {
         features.map((feature) => (
           <div class="flex gap-4">
             <span
-              class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[calc(var(--radius-glow)/2)] bg-[var(--color-accent)]/10"
+              class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[calc(var(--radius-glow)/2)] bg-accent/10"
               aria-hidden="true"
             >
-              <span class="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
+              <span class="h-2 w-2 rounded-full bg-accent" />
             </span>
             <div>
-              <h3 class="font-semibold text-[var(--color-text)]">{feature.title}</h3>
-              <p class="mt-1 text-sm text-[var(--color-text-muted)]">{feature.description}</p>
+              <h3 class="font-semibold text-text">{feature.title}</h3>
+              <p class="mt-1 text-sm text-text-muted">{feature.description}</p>
             </div>
           </div>
         ))
@@ -339,25 +335,25 @@ const jsonLd = {
     </div>
   </section>
 
-  <section class="bg-[var(--color-accent)]">
+  <section class="bg-accent">
     <div class="mx-auto max-w-3xl px-6 py-20 text-center">
-      <h2 class="font-heading text-3xl font-semibold tracking-tight text-[var(--color-on-accent)]">
+      <h2 class="font-heading text-3xl font-semibold tracking-tight text-on-accent">
         Your first tour, in one file
       </h2>
-      <p class="mt-4 text-[var(--color-on-accent)]/80">
+      <p class="mt-4 text-on-accent/80">
         Install the adapter for your framework, import the default theme, and build your first
         workflow.
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
         <a
           href="/docs/getting-started"
-          class="inline-flex -translate-x-px -translate-y-px items-center justify-center gap-2 rounded-[var(--radius-glow)] bg-[var(--color-on-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-accent)] shadow-[3px_3px_0_0_rgb(0_0_0_/_25%)] transition-[transform,box-shadow] duration-150 hover:translate-x-0 hover:translate-y-0 hover:shadow-[1px_1px_0_0_rgb(0_0_0_/_25%)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+          class="inline-flex -translate-x-px -translate-y-px items-center justify-center gap-2 rounded-glow bg-on-accent px-5 py-2.5 text-sm font-semibold text-accent shadow-[3px_3px_0_0_rgb(0_0_0_/_25%)] transition-[transform,box-shadow] duration-150 hover:translate-x-0 hover:translate-y-0 hover:shadow-[1px_1px_0_0_rgb(0_0_0_/_25%)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
         >
           Get started
         </a>
         <a
           href="https://github.com/Glowhop/GlowTour.js"
-          class="inline-flex items-center justify-center gap-2 rounded-[var(--radius-glow)] border border-dashed border-[var(--color-on-accent)]/40 px-5 py-2.5 text-sm font-semibold text-[var(--color-on-accent)] transition-colors hover:border-solid hover:bg-[var(--color-on-accent)]/10"
+          class="inline-flex items-center justify-center gap-2 rounded-glow border border-dashed border-on-accent/40 px-5 py-2.5 text-sm font-semibold text-on-accent transition-colors hover:border-solid hover:bg-on-accent/10"
         >
           <Icon name="logos:github-icon" class="h-4 w-4" />
           Star on GitHub

@@ -1,16 +1,29 @@
+import type { WorkflowDefinition } from "@glowhop/react-tour";
 import {
   AdvanceOnClickDemo,
+  advanceOnClickWorkflow,
   CancellableDemo,
   ConfirmCancelDemo,
   CustomStyledIndicatorDemo,
   CustomThemeDemo,
+  cancellableWorkflow,
+  confirmCancelWorkflow,
+  customStyledIndicatorWorkflow,
+  customThemeWorkflow,
   LiveProgressDemo,
   LongContentDemo,
+  liveProgressWorkflow,
+  longContentWorkflow,
   NonInteractiveDemo,
+  nonInteractiveWorkflow,
   OverlayClickDemo,
+  overlayClickWorkflow,
   PlacementOrderDemo,
+  placementOrderWorkflow,
   ThemeDemo,
+  themeWorkflow,
   WaitForAsyncDemo,
+  waitForAsyncWorkflow,
 } from "../components/HeroDemos";
 import {
   advanceOnClickSource,
@@ -43,6 +56,12 @@ export interface Example {
   readonly Demo: () => JSX.Element;
   /** The snippet shown next to it, highlighted at build time. */
   readonly source: string;
+  /**
+   * The workflow the demo actually runs. Pairing it here is what lets a test assert that the
+   * snippet above still describes it: the two used to be able to drift silently, which meant
+   * showing a visitor code that no longer matched what they were watching.
+   */
+  readonly workflow: WorkflowDefinition;
 }
 
 export const examples: readonly Example[] = [
@@ -52,6 +71,7 @@ export const examples: readonly Example[] = [
     label: "Simple walkthrough",
     source: nonInteractiveSource,
     title: "Simple walkthrough",
+    workflow: nonInteractiveWorkflow,
   },
   {
     Demo: AdvanceOnClickDemo,
@@ -59,6 +79,7 @@ export const examples: readonly Example[] = [
     label: "Click to continue",
     source: advanceOnClickSource,
     title: "Click to continue",
+    workflow: advanceOnClickWorkflow,
   },
   {
     Demo: PlacementOrderDemo,
@@ -67,6 +88,7 @@ export const examples: readonly Example[] = [
     label: "Popover placement",
     source: placementOrderSource,
     title: "Popover placement",
+    workflow: placementOrderWorkflow,
   },
   {
     Demo: ThemeDemo,
@@ -75,6 +97,7 @@ export const examples: readonly Example[] = [
     label: "Light and dark",
     source: themeSource,
     title: "Light and dark",
+    workflow: themeWorkflow,
   },
   {
     Demo: LongContentDemo,
@@ -83,6 +106,7 @@ export const examples: readonly Example[] = [
     label: "Long content",
     source: longContentSource,
     title: "Long content",
+    workflow: longContentWorkflow,
   },
   {
     Demo: WaitForAsyncDemo,
@@ -90,6 +114,7 @@ export const examples: readonly Example[] = [
     label: "Wait for data",
     source: waitForAsyncSource,
     title: "Wait for data",
+    workflow: waitForAsyncWorkflow,
   },
   {
     Demo: CancellableDemo,
@@ -97,6 +122,7 @@ export const examples: readonly Example[] = [
     label: "Can't be skipped",
     source: cancellableSource,
     title: "Can't be skipped",
+    workflow: cancellableWorkflow,
   },
   {
     Demo: ConfirmCancelDemo,
@@ -104,6 +130,7 @@ export const examples: readonly Example[] = [
     label: "Confirm before leaving",
     source: confirmCancelSource,
     title: "Confirm before leaving",
+    workflow: confirmCancelWorkflow,
   },
   {
     Demo: OverlayClickDemo,
@@ -111,6 +138,7 @@ export const examples: readonly Example[] = [
     label: "Click outside to continue",
     source: overlayClickSource,
     title: "Click outside to continue",
+    workflow: overlayClickWorkflow,
   },
   {
     Demo: CustomStyledIndicatorDemo,
@@ -119,6 +147,7 @@ export const examples: readonly Example[] = [
     label: "Custom look",
     source: customStyledIndicatorSource,
     title: "Custom look",
+    workflow: customStyledIndicatorWorkflow,
   },
   {
     Demo: CustomThemeDemo,
@@ -127,6 +156,7 @@ export const examples: readonly Example[] = [
     label: "Custom theme",
     source: customThemeSource,
     title: "Custom theme",
+    workflow: customThemeWorkflow,
   },
   {
     Demo: LiveProgressDemo,
@@ -134,6 +164,7 @@ export const examples: readonly Example[] = [
     label: "Live step counter",
     source: liveProgressSource,
     title: "Live step counter",
+    workflow: liveProgressWorkflow,
   },
 ];
 
