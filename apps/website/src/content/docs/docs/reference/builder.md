@@ -466,7 +466,14 @@ onCancel: (context) => {
 
 ### Scroll options
 
-Control how the browser scrolls to the target element.
+Control how the browser scrolls to the target element. A step scrolls only when
+part of its target falls outside the viewport; `disableAutoScroll` opts out
+entirely.
+
+The step does not wait for the scroll to finish before appearing. The spotlight
+shows up straight away and tracks the target as the page travels; the popover
+and the pointer enter once the page has come to rest, so they are never placed
+against a rect that is still moving.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|

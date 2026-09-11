@@ -156,7 +156,14 @@ export interface PopoverOptions extends BaseOptions {
   };
 }
 
-/** Scroll behavior options passed to Element.scrollIntoView(). */
+/**
+ * Scroll behavior options passed to Element.scrollIntoView().
+ *
+ * A step scrolls only when part of its target falls outside the viewport, and
+ * does not wait for the scroll before presenting: the spotlight appears at once
+ * and tracks the target as the page travels, and the popover and pointer enter
+ * when the page has come to rest.
+ */
 export interface ScrollOptions {
   /** Scroll animation. Forced to `"instant"` when the user prefers reduced motion. @default "smooth" */
   behavior?: "auto" | "smooth";
