@@ -1,10 +1,10 @@
 
-<p align="center"><img src="assets/hero.png" alt="GlowTour.js — Show people around, without writing a guide." width="820"></p>
+<p align="center"><img src="assets/hero.png" alt="GlowTour.js - Show people around, without writing a guide." width="820"></p>
 
 <h1 align="center">GlowTour.js</h1>
 
 <p align="center">
-  <strong>Guided product tours, onboarding walkthroughs and feature spotlights — one engine, five frameworks.</strong>
+  <strong>Guided product tours, onboarding walkthroughs and feature spotlights - one engine, five frameworks.</strong>
 </p>
 
 <p align="center">
@@ -34,16 +34,16 @@
 
 ## Why GlowTour.js
 
-Most tour libraries are a single DOM script with framework wrappers bolted on, or a framework component you cannot reuse anywhere else. GlowTour.js splits the two: a framework-agnostic engine that owns workflow state, positioning and DOM behavior, and **native adapters** — real React components, real Vue components, real Angular standalone components — that render it.
+Most tour libraries are a single DOM script with framework wrappers bolted on, or a framework component you cannot reuse anywhere else. GlowTour.js splits the two: a framework-agnostic engine that owns workflow state, positioning and DOM behavior, and **native adapters** - real React components, real Vue components, real Angular standalone components - that render it.
 
 |                              |                                                                                                                        |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **Five native adapters**     | React, Vue 3, Solid, Angular 18, and native custom elements — not one wrapper reskinned five times.                      |
+| **Five native adapters**     | React, Vue 3, Solid, Angular 18, and native custom elements - not one wrapper reskinned five times.                      |
 | **Accessible by default**    | `role="dialog"`, `aria-live` step description, focus trap, focus restoration, Escape and arrow-key shortcuts, everywhere. |
 | **SSR-verified**             | `renderToString` + hydration coverage, plus real Next.js, Nuxt and SolidStart apps driven end to end with Playwright.    |
 | **Zero runtime dependencies**| The core ships no dependencies and touches no browser global you did not hand it, which is what keeps SSR safe.          |
 | **Themeable from CSS alone** | Every color, radius, spacing, size and transition is a `--glow-tour-*` token; the popover inherits your font.            |
-| **Analytics-ready**          | One `onEvent` callback reports every start, step and exit — with the step id, its duration, and how the user left.       |
+| **Analytics-ready**          | One `onEvent` callback reports every start, step and exit - with the step id, its duration, and how the user left.       |
 | **Steps that wait**          | `.do()`, `.wait()`, `.waitUntil()`, `.waitUntilElement()` and `.onTargetEvent()` sequence real work between steps.       |
 
 Looking for an alternative to Driver.js, Intro.js, Shepherd.js or React Joyride that keeps first-class TypeScript types, server rendering and accessibility across more than one framework? That is the gap this fills.
@@ -94,13 +94,13 @@ export function App() {
 }
 ```
 
-Import the stylesheet once. Nothing renders until an adapter connects a root and a popover — the core owns workflow state, navigation and DOM behavior, but no presentation.
+Import the stylesheet once. Nothing renders until an adapter connects a root and a popover - the core owns workflow state, navigation and DOM behavior, but no presentation.
 
 The same workflow in [Vue](https://glowtour.dev/docs/getting-started#vue), [Solid](https://glowtour.dev/docs/getting-started#solid), [Angular](https://glowtour.dev/docs/getting-started#angular) and [vanilla JS](https://glowtour.dev/docs/getting-started#vanilla).
 
 ## Theming
 
-The default theme declares every token at zero specificity, so a plain class on **any ancestor** of the tour re-skins it — no component has to be re-composed:
+The default theme declares every token at zero specificity, so a plain class on **any ancestor** of the tour re-skins it - no component has to be re-composed:
 
 ```css
 .terminal-tour {
@@ -120,7 +120,7 @@ Light and dark ship together; `data-glow-tour-theme="dark"` on a wrapper pins on
 
 ## Placement
 
-`popover.placementTryOrder` walks top / bottom / left / right until one fits, then falls back to centering — the same collision logic drives the pointer.
+`popover.placementTryOrder` walks top / bottom / left / right until one fits, then falls back to centering - the same collision logic drives the pointer.
 
 ## Packages
 
@@ -139,7 +139,7 @@ Writing an adapter for another framework? [`@glowhop/core-tour/adapter`](https:/
 ## Documentation
 
 - [Getting started](https://glowtour.dev/docs/getting-started)
-- [Examples gallery](https://glowtour.dev/examples) — every demo runs live, with its source
+- [Examples gallery](https://glowtour.dev/examples) - every demo runs live, with its source
 - [Accessibility](https://github.com/Glowhop/GlowTour.js/blob/main/docs/accessibility.md)
 - [Framework versions and verified SSR facts](https://github.com/Glowhop/GlowTour.js/blob/main/docs/compatibility.md)
 - [JSON configuration](https://github.com/Glowhop/GlowTour.js/blob/main/docs/json-config.md)
@@ -153,7 +153,7 @@ bun run check && bun run typecheck && bun test && bun run build && bun run pack
 
 `bun run docs` serves the website, `bun run playground` the scratch app. Changesets versions the public packages together; a published GitHub Release triggers the OIDC npm workflow ([release notes](https://github.com/Glowhop/GlowTour.js/blob/main/docs/release.md)).
 
-Issues and pull requests are welcome — bug reports are most useful with the framework, adapter version, and a minimal reproduction.
+Issues and pull requests are welcome - bug reports are most useful with the framework, adapter version, and a minimal reproduction.
 
 ## License
 

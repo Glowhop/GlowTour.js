@@ -10,7 +10,7 @@ GlowTour.js provides a complete default theme via `@glowhop/styles-tour/default.
 The following properties control the tour's appearance. Override them in your stylesheet or inline style.
 
 :::note
-All the properties below are only *read* inside `@glowhop/styles-tour/default.css` itself — they have no effect unless you actually import that stylesheet (or redefine the same selectors yourself). The [arrow properties](#arrow) are the exception: `@glowhop/core-tour` injects their rules itself, so they work regardless of which theme, or no theme, you use.
+All the properties below are only *read* inside `@glowhop/styles-tour/default.css` itself - they have no effect unless you actually import that stylesheet (or redefine the same selectors yourself). The [arrow properties](#arrow) are the exception: `@glowhop/core-tour` injects their rules itself, so they work regardless of which theme, or no theme, you use.
 :::
 
 ### Colors
@@ -26,7 +26,7 @@ All the properties below are only *read* inside `@glowhop/styles-tour/default.cs
 | `--glow-tour-color-text` | `#1f1f23` | `#f2f2f4` | Primary text color |
 | `--glow-tour-color-text-muted` | `#5f5f66` | `#a8a8b3` | Secondary text and muted content |
 | `--glow-tour-color-border` | `#dedee3` | `#3a3a44` | Popover border and dividers |
-| `--glow-tour-overlay-color` | `#000000` | `#000000` | Backdrop fill — see the note under [Dark mode](#dark-mode) |
+| `--glow-tour-overlay-color` | `#000000` | `#000000` | Backdrop fill - see the note under [Dark mode](#dark-mode) |
 
 ### Spacing and sizing
 
@@ -43,7 +43,7 @@ All the properties below are only *read* inside `@glowhop/styles-tour/default.cs
 | --- | --- | --- |
 | `--glow-tour-radius` | `8px` | Border radius for popover and buttons |
 | `--glow-tour-shadow` | `0 4px 12px rgb(0 0 0 / 8%)` in light, `0 8px 24px rgb(0 0 0 / 56%)` in dark | Popover box shadow |
-| `--glow-tour-transition-duration` | `120ms` | Hover/state color-transition duration for the Cancel/Previous/Advance buttons — not the popover's fade/slide, which is a separate JS-driven animation (see the `animation` option, default 180ms, in the [Builder reference](/docs/reference/builder#animation-options)) |
+| `--glow-tour-transition-duration` | `120ms` | Hover/state color-transition duration for the Cancel/Previous/Advance buttons - not the popover's fade/slide, which is a separate JS-driven animation (see the `animation` option, default 180ms, in the [Builder reference](/docs/reference/builder#animation-options)) |
 | `--glow-tour-transition-easing` | `ease-out` | Easing function for that same button color transition |
 
 ### Arrow
@@ -112,7 +112,7 @@ Or in a regular CSS file:
 The default theme ships both palettes. With nothing to configure, the tour follows
 the operating system preference through `prefers-color-scheme`.
 
-To force one theme regardless of the OS — because your app has its own theme switch —
+To force one theme regardless of the OS - because your app has its own theme switch -
 set `data-glow-tour-theme` to `light` or `dark`:
 
 ```html
@@ -121,7 +121,7 @@ set `data-glow-tour-theme` to `light` or `dark`:
 
 The attribute works on **any** element, not just `:root`. Tokens inherit, so putting it
 on `<html>` themes every tour on the page, while putting it on a wrapper themes only the
-tour inside it — which is what lets a single dark example sit on an otherwise light page:
+tour inside it - which is what lets a single dark example sit on an otherwise light page:
 
 ```tsx
 <div data-glow-tour-theme="dark">
@@ -145,7 +145,7 @@ Elevation moves from the shadow to the border. A drop shadow over a dark ground 
 close to invisible whatever its opacity, so in dark the border does the work of
 separating the popover from the page.
 
-The backdrop keeps the same black fill in both themes — it dims the page, it does not
+The backdrop keeps the same black fill in both themes - it dims the page, it does not
 tint it. Its **opacity** is written inline by the core on every frame and is therefore
 not reachable from CSS; if 70% black is too heavy over your dark UI, set it per step:
 
@@ -156,12 +156,12 @@ not reachable from CSS; if 70% black is too heavy over your dark UI, set it per 
 ### Why not `light-dark()`
 
 `light-dark()` resolves against the `color-scheme` property, which belongs to the host
-page: when `color-scheme` is unset — which is the case in most apps — it returns the
+page: when `color-scheme` is unset - which is the case in most apps - it returns the
 light value even on a dark OS. Keying off a media query and an attribute of our own
 keeps the default correct without depending on a property your app uses for its own
 theme, and without raising the library's browser floor.
 
-Nothing stops you from using it in *your* tokens, though — you control your own
+Nothing stops you from using it in *your* tokens, though - you control your own
 `:root`, so the constraint does not apply:
 
 ```css

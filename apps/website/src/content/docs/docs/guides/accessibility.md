@@ -68,7 +68,7 @@ GlowTour.js automatically manages focus for an accessible experience:
 
 ### Focus trap
 
-While a step is active, focus is trapped inside the popover. Pressing `Tab` cycles through the popover's interactive elements and back to the first one — it does not escape to the rest of the page. If the step allows target interaction, the target is included in the focus cycle.
+While a step is active, focus is trapped inside the popover. Pressing `Tab` cycles through the popover's interactive elements and back to the first one - it does not escape to the rest of the page. If the step allows target interaction, the target is included in the focus cycle.
 
 ### Focus restoration
 
@@ -78,7 +78,7 @@ When the tour ends (whether it completes, is cancelled, or errors), focus automa
 
 All adapters (React, Vue, Solid, Angular, Vanilla) render identical ARIA markup because they all delegate to the same Core state machine. This means:
 
-- No custom keyboard handling in adapters — there is a single source of truth in Core
+- No custom keyboard handling in adapters - there is a single source of truth in Core
 - All tours behave identically across frameworks
 - Assistive technology sees consistent semantics everywhere
 
@@ -95,11 +95,11 @@ To verify your tour's accessibility:
 
 GlowTour.js follows the WCAG 2.1 AA standard for the dialog and its keyboard navigation.
 
-Colour contrast is a different matter. The default palettes — light and dark — are a sensible
+Colour contrast is a different matter. The default palettes - light and dark - are a sensible
 default, not a certified one: contrast depends on the surface you place the tour over and on any
 tokens you override, so it is yours to verify. See the [theming guide](/docs/guides/theming#contrast)
 for which tokens to check.
 
-The implementation-level contract behind this page — the exact source of each ARIA attribute, the
-keyboard handler, and the focus-guard exit paths — is recorded in `docs/accessibility.md` in the
+The implementation-level contract behind this page - the exact source of each ARIA attribute, the
+keyboard handler, and the focus-guard exit paths - is recorded in `docs/accessibility.md` in the
 repository.

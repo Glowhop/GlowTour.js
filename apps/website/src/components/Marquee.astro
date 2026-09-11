@@ -7,7 +7,7 @@ const { items } = Astro.props;
 
 /*
  * The track is two identical groups translated by -50%, which only loops seamlessly while a
- * single group is wider than the viewport — with five short claims it isn't, so wide screens saw
+ * single group is wider than the viewport - with five short claims it isn't, so wide screens saw
  * the gap between groups. Repeating the claims inside each group makes a group comfortably wider
  * than any realistic viewport, so the seam never enters view: five passes measure ~4200px, which
  * clears a full-width 4K window. Below that width the extra passes simply scroll past unseen.

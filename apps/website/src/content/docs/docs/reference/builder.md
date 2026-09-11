@@ -288,15 +288,15 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 |--------|------|---------|-------------|
 | `cancellable` | boolean | `true` | Whether the tour can be cancelled by the user |
 | `animated` | boolean | `true`* | Enable animations (auto-disabled if OS prefers reduced motion) |
-| `overlay` | OverlayOptions | — | Overlay appearance (see [Overlay options](#overlay-options)) |
-| `popover` | PopoverOptions | — | Popover appearance (see [Popover options](#popover-options)) |
-| `indicator` | IndicatorOptions | — | Indicator appearance (see [Indicator options](#indicator-options)) |
-| `behavior` | StepBehavior | — | Step behavior (see [Behavior options](#behavior-options)) |
+| `overlay` | OverlayOptions | - | Overlay appearance (see [Overlay options](#overlay-options)) |
+| `popover` | PopoverOptions | - | Popover appearance (see [Popover options](#popover-options)) |
+| `indicator` | IndicatorOptions | - | Indicator appearance (see [Indicator options](#indicator-options)) |
+| `behavior` | StepBehavior | - | Step behavior (see [Behavior options](#behavior-options)) |
 | `allowScroll` | boolean | `true` | The page stays scrollable during the tour; set `false` to lock page scroll while the tour is active (restored on finish/cancel/error/dispose) |
-| `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour starts |
-| `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour is cancelled |
-| `onFinish` | `(context: LifecycleHookContext) => void \| Promise<void>` | — | Called when the tour completes |
-| `onEvent` | `(event: TourEvent) => void` | — | Monitoring callback for this workflow. Cannot abort a transition; see the [Monitoring guide](/docs/guides/monitoring) |
+| `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour starts |
+| `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour is cancelled |
+| `onFinish` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour completes |
+| `onEvent` | `(event: TourEvent) => void` | - | Monitoring callback for this workflow. Cannot abort a transition; see the [Monitoring guide](/docs/guides/monitoring) |
 
 *Animations automatically disable when the browser detects `prefers-reduced-motion`.
 
@@ -306,12 +306,12 @@ Control the semi-transparent overlay that darkens non-target areas.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `color` | string | — | Overlay color (uses theme's overlay fill if not set) |
+| `color` | string | - | Overlay color (uses theme's overlay fill if not set) |
 | `opacity` | number | `0.7` | Overlay opacity (0 = transparent, 1 = opaque) |
 | `padding` | number | `8` | Padding around the target element (in pixels) |
 | `radius` | number | `8` | Border radius of the overlay cutout (in pixels) |
 | `animated` | boolean | `true` | Enable/disable animation |
-| `animation` | AnimationOptions | — | Custom animation (duration and easing) |
+| `animation` | AnimationOptions | - | Custom animation (duration and easing) |
 
 **Usage**:
 ```typescript
@@ -338,11 +338,11 @@ Control the information box that displays step title and content.
 | `hidePreviousButton` | boolean | `false` | Hide the "Previous" button (keyboard still works) |
 | `disablePreviousButton` | boolean | `false` | Disable going back (keyboard and button blocked) |
 | `animated` | boolean | `true` | Enable/disable animation |
-| `animation` | AnimationOptions | — | Custom animation (duration and easing) |
+| `animation` | AnimationOptions | - | Custom animation (duration and easing) |
 | `keyboardShortcuts.advance` | Array | `["Enter", "ArrowRight"]` | Keys to advance to next step |
 | `keyboardShortcuts.previous` | Array | `["ArrowLeft", "Backspace"]` | Keys to go to previous step |
 | `keyboardShortcuts.cancel` | Array | `["Escape"]` | Keys to cancel the tour |
-| `arrow` | PopoverArrowOptions | — | Arrow/pointer styling (see [Arrow options](#arrow-options)) |
+| `arrow` | PopoverArrowOptions | - | Arrow/pointer styling (see [Arrow options](#arrow-options)) |
 
 **Usage**:
 ```typescript
@@ -365,12 +365,12 @@ Customize the arrow that points from the popover to the target element.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `disabled` | boolean | `false` | Hide the arrow |
-| `color` | string | — | Arrow color (uses theme's surface color if not set) |
+| `color` | string | - | Arrow color (uses theme's surface color if not set) |
 | `size` | number | `12` | Arrow dimensions (in pixels) |
 | `borderWidth` | number | `1` | Arrow border width (in pixels) |
 | `borderRadius` | number | `0` | Arrow border radius (in pixels) |
 | `edgePadding` | number | `16` | Spacing from popover edges (in pixels) |
-| `styleNonce` | string | — | CSP nonce for injected arrow styles |
+| `styleNonce` | string | - | CSP nonce for injected arrow styles |
 | `disableAutoStyles` | boolean | `false` | Skip injecting built-in arrow styles (provide your own CSS) |
 
 **Usage**:
@@ -387,7 +387,7 @@ popover: {
 
 These options are written as inline custom properties on the popover, so they take
 precedence over the same `--glow-tour-arrow-*` variables set in your stylesheet. Pick one
-channel per property — see the [Theming guide](/docs/guides/theming#arrow).
+channel per property - see the [Theming guide](/docs/guides/theming#arrow).
 
 ### Indicator options
 
@@ -399,7 +399,7 @@ Control the decorative indicator/pointer that highlights the target element.
 | `gap` | number | `16` | Spacing between indicator and target (in pixels) |
 | `placementTryOrder` | Array | `["left", "right", "top", "bottom"]` | Preferred placements in order of preference |
 | `animated` | boolean | `true` | Enable/disable animation |
-| `animation` | AnimationOptions | — | Custom animation (duration and easing) |
+| `animation` | AnimationOptions | - | Custom animation (duration and easing) |
 
 **Usage**:
 ```typescript
@@ -419,10 +419,10 @@ Control step interaction and scrolling behavior.
 | `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element |
 | `disableAutoFocus` | boolean | `false` | Skip auto-focusing the target element |
 | `disableAutoScroll` | boolean | `false` | Skip auto-scrolling to the target |
-| `missingTargetStrategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found — see [Handling errors](/docs/guides/handling-errors) |
+| `missingTargetStrategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found - see [Handling errors](/docs/guides/handling-errors) |
 | `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
 | `targetTimeout` | number | `3000` | Time to wait for target (in milliseconds) |
-| `scroll` | ScrollOptions | — | Scroll behavior (see [Scroll options](#scroll-options)) |
+| `scroll` | ScrollOptions | - | Scroll behavior (see [Scroll options](#scroll-options)) |
 
 **Usage**:
 ```typescript
@@ -439,7 +439,7 @@ behavior: {
 }
 ```
 
-**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately — overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTargetStrategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, and `wait` keeps the presentation frozen for the rest of its budget — the grace period counts against `targetTimeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
+**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTargetStrategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `targetTimeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
 
 ### Lifecycle hook context
 

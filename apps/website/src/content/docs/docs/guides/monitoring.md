@@ -22,7 +22,7 @@ const tour = createGlowTour({
 ```
 
 That is the whole integration. Registered on the instance, it covers every workflow
-that instance runs — including workflows built from a [JSON config](/docs/guides/json-config).
+that instance runs - including workflows built from a [JSON config](/docs/guides/json-config).
 
 ## The events
 
@@ -30,10 +30,10 @@ that instance runs — including workflows built from a [JSON config](/docs/guid
 | --- | --- |
 | `tour:start` | Once `run()` has passed `onStart` without an abort, before the first step is shown |
 | `step:enter` | Once a step is on screen and interactive |
-| `step:leave` | When a step is left — moving on, going back, finishing, or cancelling |
+| `step:leave` | When a step is left - moving on, going back, finishing, or cancelling |
 | `tour:complete` | The tour ran past its last step |
 | `tour:cancel` | The tour was cancelled |
-| `tour:error` | The tour failed — see [Handling errors](/docs/guides/handling-errors) for response strategies |
+| `tour:error` | The tour failed - see [Handling errors](/docs/guides/handling-errors) for response strategies |
 
 A completed two-step tour emits, in order: `tour:start`, `step:enter`, `step:leave`,
 `step:enter`, `step:leave`, `tour:complete`.
@@ -53,15 +53,15 @@ Every event carries the same shape:
 | `stepIndex` | Its 0-based position, or `-1` alongside a `null` `stepId` |
 | `stepCount` | Total steps in the workflow |
 | `direction` | `"advance"` or `"previous"` |
-| `source` | What triggered the transition — see below |
+| `source` | What triggered the transition - see below |
 | `timestamp` | `Date.now()` at emission |
 | `durationMs` | How long the thing this event *names* had been running |
 | `error` | The failure, on `tour:error` only |
 
 `durationMs` follows one rule: it times whatever the event is named after. On
 `step:leave`, that is the time spent on the step. On `tour:complete`, `tour:cancel`
-and `tour:error`, the time since `run()`. On `tour:start` and `step:enter` — the
-beginnings — it is always `0`.
+and `tour:error`, the time since `run()`. On `tour:start` and `step:enter` - the
+beginnings - it is always `0`.
 
 ### `source`
 
@@ -70,7 +70,7 @@ beginnings — it is always `0`.
 | `"trigger"` | Clicked a Next / Back / Cancel button |
 | `"keyboard"` | Used a keyboard shortcut |
 | `"overlay"` | Clicked the dimmed backdrop |
-| `"api"` | Nothing — your own code called `advance()`, `previous()`, `goToStep()` or `cancel()`, including from inside a step action |
+| `"api"` | Nothing - your own code called `advance()`, `previous()`, `goToStep()` or `cancel()`, including from inside a step action |
 
 This is usually the field worth grouping on. A drop-off where `source` is `"overlay"`
 is people trying to get out; the same drop-off on `"trigger"` is people reading the
@@ -98,7 +98,7 @@ everywhere, and the workflow one for something specific to that tour.
 
 - It cannot abort or delay a transition. Use `onStart` / `onCancel` / `onFinish` and
   their `abort()` for that.
-- It is called synchronously and its return value is ignored — returning a promise
+- It is called synchronously and its return value is ignored - returning a promise
   will not make the tour wait.
 - If it throws, the error goes to `onSubscriberError` (or the unhandled reporter) and
   the tour carries on. It never becomes the tour's own `error`.
@@ -112,7 +112,7 @@ There is no separate React prop, Vue emit, or Angular output for this. Every ada
 idiomatic form in all five:
 
 ```tsx
-// React, Solid, Vue, Angular, Vanilla — the same call.
+// React, Solid, Vue, Angular, Vanilla - the same call.
 const tour = createGlowTour({ onEvent: sendToAnalytics });
 ```
 

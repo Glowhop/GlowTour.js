@@ -1,6 +1,6 @@
 ---
 title: Tour API reference
-description: Complete reference for the GlowTour.js controller — the instance returned by createGlowTour.
+description: Complete reference for the GlowTour.js controller - the instance returned by createGlowTour.
 ---
 
 `createGlowTour()` returns a tour controller: the long-lived instance that creates workflows (via `tour.create()`, see the [Builder reference](/docs/reference/builder)), runs them, drives navigation, and exposes reactive state. One controller can be connected to one live root at a time.
@@ -65,7 +65,7 @@ await tour.run(workflow);
 
 ### `tour.advance()`
 
-Moves to the next step. Only available if `canAdvance` is true — check `tour.state.get().canAdvance` or the state a `subscribe` listener receives before calling it, or wire it to a button's `disabled` prop.
+Moves to the next step. Only available if `canAdvance` is true - check `tour.state.get().canAdvance` or the state a `subscribe` listener receives before calling it, or wire it to a button's `disabled` prop.
 
 **Signature**:
 ```typescript
@@ -126,7 +126,7 @@ cancel(): Promise<void>
 
 ### `tour.dispose()`
 
-Cancels pending work and releases the connected root. The controller becomes unusable after this — create a new one with `createGlowTour()` if you need another tour.
+Cancels pending work and releases the connected root. The controller becomes unusable after this - create a new one with `createGlowTour()` if you need another tour.
 
 **Signature**:
 ```typescript
@@ -143,7 +143,7 @@ tour.dispose();
 
 ### `tour.state.get()`
 
-Returns the current tour state as a plain snapshot (not reactive by itself — use `subscribe` below to react to changes).
+Returns the current tour state as a plain snapshot (not reactive by itself - use `subscribe` below to react to changes).
 
 **Signature**:
 ```typescript

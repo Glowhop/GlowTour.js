@@ -1,5 +1,5 @@
 // Static source snippets shown next to the hero demos. Kept in sync by hand with
-// src/components/HeroDemos.tsx — these are display copies, not imports, so the code shown to
+// src/components/HeroDemos.tsx - these are display copies, not imports, so the code shown to
 // visitors reads as a clean, standalone example rather than the wired-up demo internals.
 
 export const nonInteractiveSource = `const tour = createGlowTour();
@@ -10,7 +10,7 @@ const workflow = tour
     id: "workspace-name",
     target: "#workspace-name",
     title: "Start with the workspace name",
-    content: "A step can target any element — this one points at a plain field.",
+    content: "A step can target any element - this one points at a plain field.",
   })
   .step({
     id: "timezone",
@@ -22,7 +22,7 @@ const workflow = tour
     id: "save-button",
     target: "#save-button",
     title: "A plain, non-interactive walkthrough",
-    content: "No special options here — no allowInteraction, no custom behavior.",
+    content: "No special options here - no allowInteraction, no custom behavior.",
   })
   .build();
 
@@ -36,7 +36,7 @@ const workflow = tour
     id: "progress",
     target: "#progress",
     title: "Step 2 of a 3-step wizard",
-    content: "This wizard tracks its own progress — the tour just points it out.",
+    content: "This wizard tracks its own progress - the tour just points it out.",
   })
   .step({
     id: "continue",
@@ -115,7 +115,7 @@ const workflow = tour
     id: "activity-row-1",
     target: "#activity-row-1",
     title: "Real content, not a skeleton",
-    content: "By now the list has actually loaded — this row is the real thing.",
+    content: "By now the list has actually loaded - this row is the real thing.",
   })
   .build();
 
@@ -150,7 +150,7 @@ const workflow = tour
     cancellable: true,
     onCancel: (context) => {
       if (!window.confirm("Cancel this tour?")) {
-        // Prevents the cancellation — the tour stays open on its current step.
+        // Prevents the cancellation - the tour stays open on its current step.
         context.abort();
       }
     },
@@ -179,14 +179,14 @@ const workflow = tour
     id: "email-notifications",
     target: "#email-notifications",
     title: "Click the overlay to advance",
-    content: "behavior.overlayClick: 'advance' — clicking the dimmed backdrop moves forward.",
+    content: "behavior.overlayClick: 'advance' - clicking the dimmed backdrop moves forward.",
     behavior: { overlayClick: "advance" },
   })
   .step({
     id: "push-notifications",
     target: "#push-notifications",
     title: "Now it cancels instead",
-    content: "behavior.overlayClick: 'cancel' — clicking the backdrop now cancels the tour.",
+    content: "behavior.overlayClick: 'cancel' - clicking the backdrop now cancels the tour.",
     behavior: { overlayClick: "cancel" },
   })
   .build();
@@ -203,7 +203,7 @@ const workflow = tour
     id: "first-member",
     target: "#first-member",
     title: "This step looks normal",
-    content: "Default overlay, popover, and pointer — no overrides here.",
+    content: "Default overlay, popover, and pointer - no overrides here.",
   })
   .step({
     id: "invite",
@@ -338,7 +338,7 @@ const workflow = tour
   <GlowTour.Default tour={tour} />
 </div>;
 
-/* The whole skin is CSS on an ancestor — the tokens are declared at zero
+/* The whole skin is CSS on an ancestor - the tokens are declared at zero
    specificity, so a plain class wins by proximity: */
 .terminal-tour {
   /* not a token: the popover is \`font: inherit\` */

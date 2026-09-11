@@ -9,6 +9,6 @@ plain, JSON-serializable object is maintained as a single document on the docume
 Edit the source file above. This file is a pointer kept so existing links to `docs/json-config.md`
 keep resolving; do not restate the format here, or the two copies will drift apart again.
 
-The design rationale behind the format — why `WorkflowConfig` is generic over the content type,
-which slots accept a `BuiltinAction` versus a plain function, and the entry-point wiring — stays in
+The design rationale behind the format - why `WorkflowConfig` is generic over the content type,
+which slots accept a `BuiltinAction` versus a plain function, and the entry-point wiring - stays in
 [`json-config-design.md`](json-config-design.md).

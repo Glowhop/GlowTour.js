@@ -11,14 +11,14 @@ if (!logPanel) throw new Error("Missing #log");
 const log = createLogger(logPanel);
 
 const tour = createGlowTour({
-  onSubscriberError: (error) => log(`onSubscriberError — ${error.message}`),
+  onSubscriberError: (error) => log(`onSubscriberError - ${error.message}`),
 });
 document.body.append(createDefaultTourElement(tour));
 
 // Debug handle so the lab can be driven from the console.
 (window as unknown as { __tour: typeof tour }).__tour = tour;
 tour.state.subscribe((state) => {
-  log(`state — status=${state.status} step=${state.currentStepIndex}`);
+  log(`state - status=${state.status} step=${state.currentStepIndex}`);
 });
 
 /* ------------------------------------------------------------------ router */
@@ -65,7 +65,7 @@ const spaWorkflow = tour
     content: "Step 1 lives on the dashboard view. Advancing triggers a SPA route change.",
   })
   .beforeAdvance(() => {
-    log("beforeAdvance — pushState to ?view=profile");
+    log("beforeAdvance - pushState to ?view=profile");
     navigate("profile");
   })
   .step({
@@ -76,7 +76,7 @@ const spaWorkflow = tour
     behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
   })
   .beforePrevious(() => {
-    log("beforePrevious — pushState back to the dashboard");
+    log("beforePrevious - pushState back to the dashboard");
     navigate("dashboard");
   })
 
@@ -105,7 +105,7 @@ const reloadWorkflow = tour
     content: "Advancing persists the tour position, then hard-navigates to page B.",
   })
   .beforeAdvance(() => {
-    log("beforeAdvance — persisting the next step id and calling location.assign('page-b.html')");
+    log("beforeAdvance - persisting the next step id and calling location.assign('page-b.html')");
     persistTour({ workflow: "reload-multipage", stepId: "reload-settings" });
     location.assign("page-b.html");
   })
@@ -135,6 +135,6 @@ document.querySelector("#clear-log")?.addEventListener("click", () => {
 });
 
 if (readPersistedTour()) {
-  log("Found a persisted tour left over from a previous run — clearing it.");
+  log("Found a persisted tour left over from a previous run - clearing it.");
   clearPersistedTour();
 }
