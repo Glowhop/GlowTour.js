@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
 /*
+ * The tour's own theme, imported here rather than only from the script that mounts the tour.
+ *
+ * A script-side import is injected at runtime by the dev server, so it is not part of any page's
+ * declared styles; the client router swaps the head and drops it, leaving an unstyled popover on
+ * every page reached by a client-side navigation. Declaring it in the stylesheet the layout
+ * imports puts it in every page's head instead, in dev and in the build alike.
+ */
+@import "@glowhop/styles-tour/default.css";
+
+/*
  * Marketing design tokens derived from the default GlowTour.js theme
  * (packages/styles/default.css) — same accent, surface, text, border, radius, and shadow scale
  * the tour popover itself uses, so the site and the product look like one thing.
@@ -33,14 +43,27 @@
 }
 
 /*
+ * Dark tokens.
+ *
  * Tailwind v4's @theme directive is only meant to be used at the top level: nesting it inside
  * @media (as an earlier version of this file did) gets flattened away during Tailwind's build, so
  * the dark values silently won and light mode never rendered. Overriding the same custom
- * properties on :root in a plain (non-@theme) media query works correctly, since Tailwind's
- * generated utilities just reference var(--color-*) and pick up whatever value is cascading.
+ * properties on :root in a plain (non-@theme) rule works correctly, since Tailwind's generated
+ * utilities just reference var(--color-*) and pick up whatever value is cascading.
+ *
+ * They are declared twice on purpose.
+ *
+ * The first block is the OS preference, which every visitor who never touches the toggle gets.
+ * The second is the explicit choice, which has to win over a light OS preference. CSS has no way
+ * to share one declaration list between two selectors, so the values are duplicated — change one
+ * block and you must change the other.
+ *
+ * The attribute is Starlight's own `data-theme`, and the toggle writes Starlight's own
+ * `starlight-theme` storage key, so a visitor's choice survives moving between the docs and these
+ * marketing pages in either direction.
  */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-accent: #7c6bff;
     --color-accent-hover: #9384ff;
     --color-accent-active: #ac9fff;
@@ -62,8 +85,37 @@
   }
 }
 
+:root[data-theme="dark"] {
+  --color-accent: #7c6bff;
+  --color-accent-hover: #9384ff;
+  --color-accent-active: #ac9fff;
+  --color-on-accent: #10101a;
+
+  --color-spark: #f5c451;
+
+  /*
+   * Night-indigo rather than a neutral near-black: the dark theme is meant to read as a stage
+   * at night, which is what the spotlight/sparkle motifs are lit against.
+   */
+  --color-surface: #12102a;
+  --color-surface-muted: #1a1636;
+  --color-text: #f3f1ff;
+  --color-text-muted: #a9a3cc;
+  --color-border: #2e2952;
+
+  --shadow-glow: 0 4px 16px rgb(0 0 0 / 40%);
+}
+
 html {
   color-scheme: light dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {

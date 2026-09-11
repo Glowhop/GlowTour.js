@@ -1,6 +1,8 @@
 ---
+import { ClientRouter } from "astro:transitions";
 import Footer from "../components/Footer.astro";
 import Nav from "../components/Nav.astro";
+import SiteTour from "../components/SiteTour.astro";
 import "../styles/global.css";
 
 interface Props {
@@ -27,6 +29,37 @@ const ogImageURL = new URL(image, Astro.site);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="generator" content={Astro.generator} />
+
+    {/*
+      Applies the stored theme before first paint, so a visitor who picked dark never sees a white
+      flash. Inline and blocking on purpose: deferring it is the flash. Reads Starlight's own key,
+      so the choice carries over from the docs; the absence of a value means "follow the system",
+      which is why the attributes are removed rather than resolved. `data-glow-tour-theme` is the
+      same switch for the tour popovers themselves (packages/styles/default.css).
+    */}
+    <script is:inline>
+      (() => {
+        const apply = () => {
+          let stored = null;
+          try {
+            stored = localStorage.getItem("starlight-theme");
+          } catch {}
+          const root = document.documentElement;
+          if (stored === "light" || stored === "dark") {
+            root.dataset.theme = stored;
+            root.dataset.glowTourTheme = stored;
+          } else {
+            delete root.dataset.theme;
+            delete root.dataset.glowTourTheme;
+          }
+        };
+        apply();
+        // A swap replaces the <html> attributes with the ones the server rendered, which do not
+        // carry the visitor's choice. Re-applying before the new page paints keeps the theme from
+        // flickering back to the system one on every navigation.
+        document.addEventListener("astro:after-swap", apply);
+      })();
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
@@ -54,12 +87,28 @@ const ogImageURL = new URL(image, Astro.site);
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,500..700,40,1&display=swap"
       rel="stylesheet"
     />
+
+    {/*
+      Client-side navigation between the marketing pages. Links into /docs still do a full
+      navigation, because Starlight is a different shell and cross-fading between the two reads as
+      a glitch rather than a transition.
+
+      The router keeps one document alive for the whole visit, which is what lets the site tour walk
+      from page to page without being torn down and rebuilt. Scripts are not re-evaluated on a swap,
+      so anything that binds to elements has to re-bind on astro:page-load — see SiteTour,
+      InstallLine and copy-buttons.
+    */}
+    <ClientRouter />
   </head>
-  <body class="min-h-screen bg-[var(--color-surface)] text-[var(--color-text)] antialiased">
+  <body class="min-h-screen bg-surface text-text antialiased">
     <Nav />
     <main>
       <slot />
     </main>
     <Footer />
+    <SiteTour />
+    <script>
+      import "../lib/copy-buttons";
+    </script>
   </body>
 </html>

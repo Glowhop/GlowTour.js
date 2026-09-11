@@ -2,27 +2,27 @@
 const year = new Date().getFullYear();
 ---
 
-<footer class="border-t border-[var(--color-border)]">
+<footer transition:persist="site-footer" class="border-t border-border">
   <div
-    class="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-[var(--color-text-muted)] sm:flex-row sm:items-center sm:justify-between"
+    class="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between"
   >
     <p>&copy; {year} GlowTour.js. MIT licensed.</p>
     <div class="flex flex-wrap items-center gap-5">
-      <a href="/docs/getting-started" class="transition-colors hover:text-[var(--color-text)]">
+      <a href="/docs/getting-started" class="transition-colors hover:text-text">
         Docs
       </a>
-      <a href="/examples" class="transition-colors hover:text-[var(--color-text)]">
+      <a href="/examples" class="transition-colors hover:text-text">
         Examples
       </a>
       <a
         href="https://github.com/Glowhop/GlowTour.js"
-        class="transition-colors hover:text-[var(--color-text)]"
+        class="transition-colors hover:text-text"
       >
         GitHub
       </a>
       <a
         href="https://github.com/Glowhop/GlowTour.js/issues"
-        class="transition-colors hover:text-[var(--color-text)]"
+        class="transition-colors hover:text-text"
       >
         Issues
       </a>

@@ -1,0 +1,70 @@
+---
+/**
+ * Mounts the site's own guided tour on every marketing page.
+ *
+ * Vanilla adapter rather than a React island on purpose: the marketing pages are static HTML, and
+ * this component sits in MarketingLayout, so a React island here would pull React onto /react,
+ * /vue, /solid, /angular and /vanilla — pages that ship no JavaScript at all today.
+ */
+---
+
+{/* The tour's elements are created at runtime and mounted here. A client-side navigation
+replaces this wrapper along with the rest of the body, so the script below mounts again on every
+page. */}
+<div data-site-tour-root></div>
+
+<script>
+  // The theme itself is imported from src/styles/global.css: see the note there.
+  import "@glowhop/vanilla-tour/auto";
+  import { createDefaultTourElement, createGlowTour } from "@glowhop/vanilla-tour";
+  import { buildSiteTourWorkflow, takePendingStep, TOUR_QUERY_PARAM } from "../lib/site-tour";
+
+  const tour = createGlowTour();
+  const workflow = buildSiteTourWorkflow(tour);
+
+  /** The controller lives for the whole visit; only its elements are per-page. */
+  function mount(): void {
+    const host = document.querySelector("[data-site-tour-root]");
+    if (host && !host.firstElementChild) host.append(createDefaultTourElement(tour));
+  }
+
+  mount();
+
+  /*
+   * Delegated, so the launcher keeps working after a swap replaces the button it points at, and
+   * on the capture phase so it runs before the client router's own click handler: the trigger is
+   * a real link to the examples section — which is what it does without JavaScript — and left to
+   * bubble, the router follows it and scrolls the page away before the tour has started.
+   */
+  document.addEventListener(
+    "click",
+    (event) => {
+      const trigger = (event.target as HTMLElement | null)?.closest("[data-site-tour-start]");
+      if (!trigger) return;
+      event.preventDefault();
+      event.stopPropagation();
+      void tour.run(workflow);
+    },
+    true,
+  );
+
+  // Re-entry after a client-side navigation the tour asked for. The swap takes the tour's elements
+  // with it, which releases the presentation and returns the controller to idle, so the arriving
+  // page mounts a fresh presentation and starts the same workflow again at the step the departing
+  // one was heading for.
+  document.addEventListener("astro:page-load", () => {
+    mount();
+    const stepId = takePendingStep();
+    if (!stepId) return;
+    void tour.run(workflow, { startAt: stepId });
+  });
+
+  if (new URLSearchParams(location.search).get(TOUR_QUERY_PARAM) === "1") {
+    // Drop the parameter before the tour navigates, so the pages it moves through don't each
+    // restart it from the beginning.
+    const url = new URL(location.href);
+    url.searchParams.delete(TOUR_QUERY_PARAM);
+    history.replaceState(history.state, "", url);
+    void tour.run(workflow);
+  }
+</script>
