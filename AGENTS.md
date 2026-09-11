@@ -1,77 +1,40 @@
 # AGENTS.md
 
-## Core Objective
-Agents must optimize for accurate execution, low ambiguity, and maintainable output.
-
-They must:
-- understand the request before acting
-- reduce guessing
-- prefer explicit decisions over hidden assumptions
-- preserve repository consistency
-- keep changes small, reviewable, and testable
-- communicate decisions, risks, and blockers clearly
+GlowTour.js is a cross-framework guided-tour library published as a Bun workspace monorepo: `packages/core` (no presentation) plus the `react`, `vue`, `angular`, `solid`, and `vanilla` adapters and `packages/styles`. Demo and docs apps live in `apps/` (`playground`, `website`, and the `ssr-*` smoke apps).
 
 ## Default Behavior
-- Be direct, concise, and factual.
-- Ask precise follow-up questions when a missing decision would materially affect implementation.
+- Be direct, concise, and factual. No padding, no motivational filler.
+- Ask a precise follow-up only when a missing decision would materially change the implementation.
 - Challenge incorrect assumptions when evidence contradicts them.
-- Do not create artificial process overhead for simple tasks.
-- Prefer execution over discussion once the task is clear.
-- Do not stop at partial work when the request can be completed end-to-end in the current turn.
+- Prefer execution over discussion once the task is clear, and finish the task end-to-end in the turn when it is doable.
 
 ## Planning And Execution
-- For simple tasks, execute directly after minimal context gathering.
-- For complex tasks, first produce a short implementation plan with sequencing, dependencies, and validation steps.
-- Treat a task as complex when it is multi-file, cross-layer, ambiguous, risky, or likely to benefit from decomposition.
-- If the repository defines specialized agents in `.codex/agents`, route work to the correct agent rather than forcing a generalist implementation.
-- The default manager agent is coordination-first: delegate when specialization materially improves the result.
-- If a specialized agent is used, its output must remain concrete: diagnosis, implementation, design guidance, or verification result.
+- Simple tasks: execute directly after minimal context gathering.
+- Complex tasks (multi-file, cross-layer, ambiguous, or risky): produce a short plan with sequencing, dependencies, and validation steps first.
+- Route work to the specialized agents defined in `.codex/agents` (Codex) or `.claude/agents` (Claude Code) rather than forcing a generalist implementation. Whatever the agent, its output must stay concrete: diagnosis, implementation, design guidance, or verification result.
 
 ## Subagent Orchestration
-- Use one agent for simple or tightly scoped tasks.
-- Prefer parallel agents for independent, read-heavy work such as exploration, review, testing, triage, and summarization.
-- Run write-heavy agents sequentially unless each agent owns an explicit, non-overlapping file scope.
-- Every delegation brief must include the goal, relevant context, constraints, ownership boundary, completion criteria, and expected summary.
-- Wait for all delegated agents before synthesizing their results into the final decision or response.
-- Agents running on Terra or Luna must escalate unresolved product, architecture, security, or release decisions to a Sol-tier agent instead of guessing.
+- One agent for simple or tightly scoped tasks.
+- Parallel agents for independent read-heavy work: exploration, review, testing, triage, summarization.
+- Write-heavy agents run sequentially unless each owns an explicit, non-overlapping file scope.
+- Every delegation brief states goal, context, constraints, ownership boundary, completion criteria, and expected summary.
+- Wait for all delegated agents before synthesizing the final answer.
 
 ## Clarification Rules
 Ask before proceeding when one of these is unresolved:
-- product behavior that changes user-visible outcomes
-- stack choice for a new project
-- data model or API contract decisions with multiple plausible interpretations
-- authentication, authorization, or security-sensitive behavior
+- public API surface or contract changes with several plausible interpretations
+- behavior visible to the library's users
 - destructive or irreversible actions
 
-Do not ask for confirmation when:
-- the request is already specific enough
-- the repository conventions clearly determine the correct choice
-- the remaining ambiguity is minor and low risk
-
-## Default Stack
-If the user does not specify a stack and the repository does not already establish one, use this default stack:
-
-- framework: `Next.js`
-- language: `TypeScript`
-- frontend: `React`
-- styling: `Tailwind CSS`
-- UI library: `HeroUI`
-- backend runtime: `Next.js server features`
-- API layer: `oRPC`
-- database: `PostgreSQL`
-- ORM: `Drizzle`
-- testing: `Vitest` for unit tests and `Playwright` for end-to-end tests
-
-If an existing project already uses another coherent stack, preserve the existing stack instead of forcing the default one.
+Do not ask when the request is already specific, when repository conventions settle the choice, or when the remaining ambiguity is minor and low risk.
 
 ## Implementation Rules
 - Read the relevant files before editing.
-- Match the repository's existing conventions before introducing new patterns.
-- Keep responsibilities separated. Do not mix UI, business logic, persistence, and utility code in one place without a clear reason.
-- Prefer explicit data contracts and typed boundaries.
-- Reuse existing helpers, tokens, components, and utilities when they are coherent.
-- Add short comments only where the code would otherwise be hard to parse quickly.
-- Avoid speculative refactors unless they are required to complete the task safely.
+- Match existing repository conventions before introducing new patterns.
+- Keep `packages/core` free of presentation and of hardcoded browser globals; adapters own the framework-specific layer.
+- Prefer explicit data contracts and typed boundaries. Reuse existing helpers, tokens, and utilities when coherent.
+- Comment only where the code would otherwise be hard to parse quickly.
+- No speculative refactors unless required to complete the task safely.
 
 ## API Design Rules — recette plutôt que feature
 Priorité : flexibilité et DX, obtenues en **limitant** la surface d'API publique, pas en l'étendant.
@@ -83,33 +46,22 @@ Priorité : flexibilité et DX, obtenues en **limitant** la surface d'API publiq
 - Préférer un champ requis à un champ optionnel qui crée deux modes (deux branches d'état, deux paragraphes de doc). La contrainte est moins chère que la complexité.
 - Asymétrie à garder en tête : ajouter une API plus tard est additif, la retirer est breaking. En cas de doute, ne pas l'ajouter — et n'absorber dans le core que ce qui est **prouvé** réécrit à l'identique par plusieurs apps.
 - Communication : annoncer ce que la lib fait réellement. « Reprise en deux lignes, avec ton stockage et ton routeur » est plus fort et plus vérifiable que « gère le multi-page ». Ne pas promettre dans le README ce que la doc ne peut pas démontrer.
-- Toute décision d'écarter une API doit être **écrite** (dans `todo.md` ou un ADR) avec sa raison, pour ne pas être reposée trois mois plus tard.
+- Toute décision d'écarter une API doit être **écrite** dans `docs/` avec sa raison (voir `docs/json-config-design.md`), pour ne pas être reposée trois mois plus tard.
 
 ## Verification Rules
-- Run the smallest useful verification step after changes.
-- Prefer targeted verification before broad test suites.
-- If you could not verify something important, say so explicitly.
-- For visible UI changes, verify behavior from the user perspective whenever tooling allows it.
+- Run the smallest useful verification step after changes: `bun run check`, `bunx tsc -p tsconfig.json --noEmit`, `bun test`, scoped to what was touched.
+- Targeted verification before broad suites.
+- For visible UI changes in an adapter, verify from the user's perspective in a real browser (`bun run playground`) rather than trusting types and unit tests alone.
 - For bugs, confirm root cause before applying a fix whenever feasible.
-
-## Communication Rules
-- Summarize what you are about to do before substantial work.
-- Give short progress updates during longer tasks.
-- In final responses, prioritize outcome, important tradeoffs, verification status, and any remaining risk.
-- Do not pad responses with motivational language or generic reassurance.
+- Say so explicitly when something important could not be verified.
 
 ## Safety And Scope
-- Do not invent requirements that were never stated or implied by the repository.
-- Do not silently broaden scope.
-- Do not overwrite or revert user changes unless explicitly requested.
-- Do not treat every bug as a security issue.
-- Do not treat every design question as a code problem.
+- Do not invent requirements the repository never stated, and do not silently broaden scope.
+- Do not overwrite or revert user changes unless asked.
+- Do not add tests for `apps/playground` or `packages/styles`.
 - Escalate uncertainty instead of hiding it behind confident prose.
-- Do not add tests for playground and styles packages
 
 ## Project goal
-- current project status : "prod"
-- ignore breaking changes until porject become otherthan "dev"
-- Build a cross ui framework package 
-- make it production ready 
-- npm release has to be push by a github actions
+- The library is in production: public API changes are breaking changes and need a changeset.
+- Keep the package production-ready across all supported UI frameworks.
+- npm publishing happens through GitHub Actions, never by hand; see [docs/release.md](docs/release.md) and [RELEASING.md](RELEASING.md).
