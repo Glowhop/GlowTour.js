@@ -4,6 +4,7 @@ import { Icon } from "astro-icon/components";
 import BundleSizes from "../components/BundleSizes.astro";
 import Button from "../components/Button.astro";
 import CodeBlock from "../components/CodeBlock.astro";
+import ComparisonTable from "../components/ComparisonTable.astro";
 import { ExamplesGallery } from "../components/ExamplesGallery";
 import FrameworkIcon from "../components/FrameworkIcon.astro";
 import InstallLine from "../components/InstallLine.astro";
@@ -11,6 +12,7 @@ import Marquee from "../components/Marquee.astro";
 import SpotlightMotif from "../components/SpotlightMotif.astro";
 import StepDivider from "../components/StepDivider.astro";
 import MarketingLayout from "../layouts/MarketingLayout.astro";
+import { COMPARISON_CHECKED_ON, FEATURED_COMPARISON_ROWS } from "../lib/comparison";
 import { FEATURED_EXAMPLE_LABELS, pickExamples } from "../lib/examples";
 
 // The Examples gallery pairs each live demo with its highlighted source code, but Astro's Shiki
@@ -273,6 +275,33 @@ const jsonLd = {
   <StepDivider class="py-2" />
 
   <BundleSizes />
+
+  {/*
+    A taster of /compare, limited to the rows where the four libraries actually differ. The full
+    table, the per-library write-ups and the sources live on that page.
+  */}
+  <section id="compare" class="mx-auto max-w-4xl px-6 py-14 scroll-mt-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
+      How it compares
+    </h2>
+    <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
+      GlowTour.js next to Driver.js, Shepherd.js and React Joyride, on the points where these
+      product tour libraries differ most.
+    </p>
+    <div class="mt-8">
+      <ComparisonTable
+        rows={FEATURED_COMPARISON_ROWS}
+        caption="GlowTour.js compared with Driver.js, Shepherd.js and React Joyride"
+        legendAlign="center"
+      />
+    </div>
+    <p class="mt-2 text-center text-xs text-text-muted">
+      From each project's official docs and source, checked in {COMPARISON_CHECKED_ON}.
+    </p>
+    <div class="mt-8 text-center">
+      <Button href="/compare" variant="secondary">See full comparison</Button>
+    </div>
+  </section>
 
   <StepDivider class="py-2" />
 

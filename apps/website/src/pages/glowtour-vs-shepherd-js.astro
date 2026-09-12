@@ -1,0 +1,82 @@
+---
+import ComparisonPage from "../components/ComparisonPage.astro";
+import ComparisonSection from "../components/ComparisonSection.astro";
+---
+
+{/*
+  Astro drops the whitespace of a line break that sits right next to an inline element, so the
+  prose below only ever wraps between two plain words, never before or after <code> or <strong>.
+*/}
+<ComparisonPage
+  competitor="shepherd"
+  title="GlowTour.js vs Shepherd.js - Product Tour Library Comparison"
+  description="GlowTour.js vs Shepherd.js: compare framework integrations, customization model, API ergonomics, accessibility and licensing (MIT vs AGPL-3.0)."
+  intro="Shepherd.js is a mature, framework-agnostic tour library; GlowTour.js is a newer one built around native framework adapters. They differ most in how they integrate with frameworks, how you customize the tour UI, how tours are defined, and how they are licensed."
+>
+  <ComparisonSection
+    id="framework-integrations"
+    heading="Framework integrations: official wrappers vs native adapters"
+  >
+    <p>
+      Shepherd.js supports React, Vue and Angular through official wrappers maintained by the
+      Shepherd team, which the project describes as wrappers around its core library. A community
+      wrapper exists for Ember.
+    </p>
+    <p>
+      GlowTour.js ships one adapter per framework that renders the tour with that framework's own
+      components: React, Vue, Angular, Solid, and vanilla custom elements.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection
+    id="customization-model"
+    heading="Customization model: step options vs composable components"
+  >
+    <p>
+      Shepherd steps are configured with options such as <code>title</code>, <code>text</code>, <code
+        >buttons</code
+      >, <code>classes</code> and <code>attachTo</code>, and render into
+      Shepherd's dialog structure (header, text, footer). Its default styles are minimal and meant
+      to be themed with your own CSS classes, per tour or per step.
+    </p>
+    <p>
+      GlowTour.js exposes those dialog pieces as components you can reorder, replace or wrap, and
+      themes them through <code>--glow-tour-*</code> CSS custom properties.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="api-ergonomics" heading="API ergonomics: addStep() vs a builder">
+    <p>
+      Shepherd builds a tour imperatively: create a <code>Tour</code>, call <code>addStep()</code> for
+      each step, then control it with methods such as <code>start()</code>, <code>next()</code> and <code
+        >back()</code
+      >.
+    </p>
+    <p>
+      GlowTour.js chains steps and step actions in a builder that returns an immutable workflow
+      definition any adapter can run, and accepts a JSON config for tours stored outside your code.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="accessibility-licensing" heading="Accessibility and licensing">
+    <p>
+      Both document keyboard navigation, focus trapping and ARIA attributes. Licensing is the sharper
+      difference: Shepherd.js is available under AGPL-3.0 for open source and non-commercial use,
+      with a commercial license required for commercial products and revenue-generating companies.
+      GlowTour.js is MIT licensed.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="which-to-choose" heading="Should you choose GlowTour.js or Shepherd.js?">
+    <ul>
+      <li>
+        <strong>Choose Shepherd.js</strong> if you want a mature framework-agnostic solution with
+        official framework wrappers, and AGPL-3.0 or a commercial license fits your project.
+      </li>
+      <li>
+        <strong>Choose GlowTour.js</strong> if you want native framework adapters, a popover you
+        compose from components, a builder-style API, and an MIT license.
+      </li>
+    </ul>
+  </ComparisonSection>
+</ComparisonPage>

@@ -1,0 +1,112 @@
+---
+import {
+  COMPARISON_ROWS,
+  type ComparisonRow,
+  getLibrary,
+  LIBRARY_KEYS,
+  type LibraryKey,
+  SUPPORT_LEGEND,
+} from "../lib/comparison";
+import LibraryMark from "./LibraryMark.astro";
+
+interface Props {
+  caption: string;
+  /** Columns, in order. Defaults to all four libraries. */
+  libraries?: readonly LibraryKey[];
+  rows?: readonly ComparisonRow[];
+  legendAlign?: "left" | "center";
+}
+
+const {
+  caption,
+  libraries: keys = LIBRARY_KEYS,
+  rows = COMPARISON_ROWS,
+  legendAlign = "left",
+} = Astro.props;
+const libraries = keys.map(getLibrary);
+const emojiFor = Object.fromEntries(SUPPORT_LEGEND.map((entry) => [entry.support, entry.emoji]));
+---
+
+{/*
+  Scrolls sideways on narrow screens instead of collapsing into cards: a comparison is read
+  across a row, and stacking the columns would break exactly that. GlowTour.js gets a faint
+  column tint and nothing louder, so the table still reads as a comparison rather than a pitch.
+
+  The emoji markers and library marks are aria-hidden: every cell also carries a text label, and
+  the legend below spells out what each marker means, so screen readers get the words rather than
+  "check mark".
+*/}
+<div class="overflow-x-auto">
+  <table
+    class:list={[
+      "w-full border-collapse text-sm",
+      libraries.length > 2 ? "min-w-3xl" : "min-w-md",
+    ]}
+  >
+    <caption class="sr-only">{caption}</caption>
+    <colgroup>
+      <col />
+      {
+        libraries.map((library) => (
+          <col class={library.key === "glowtour" ? "bg-accent/5" : undefined} />
+        ))
+      }
+    </colgroup>
+    <thead>
+      <tr class="border-b border-border text-left">
+        <th scope="col" class="py-2 pr-4 font-medium text-text-muted">
+          Feature
+        </th>
+        {
+          libraries.map((library) => (
+            <th scope="col" class="px-3 py-2 font-semibold text-text">
+              <span class="flex items-center gap-2 whitespace-nowrap">
+                <LibraryMark library={library} />
+                {library.name}
+              </span>
+            </th>
+          ))
+        }
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((row) => (
+          <tr class="border-b border-border/60">
+            <th scope="row" class="py-2.5 pr-4 text-left font-medium text-text">
+              {row.feature}
+            </th>
+            {libraries.map((library) => {
+              const cell = row.values[library.key];
+              return (
+                <td class="px-3 py-2.5 text-text-muted">
+                  <span class="flex items-start gap-2">
+                    <span aria-hidden="true" class="shrink-0 text-xs leading-5">
+                      {emojiFor[cell.support]}
+                    </span>
+                    <span>{cell.label}</span>
+                  </span>
+                </td>
+              );
+            })}
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+<ul
+  class:list={[
+    "mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-muted",
+    legendAlign === "center" && "justify-center",
+  ]}
+>
+  {
+    SUPPORT_LEGEND.map((entry) => (
+      <li class="flex items-center gap-1.5">
+        <span aria-hidden="true">{entry.emoji}</span>
+        {entry.label}
+      </li>
+    ))
+  }
+</ul>

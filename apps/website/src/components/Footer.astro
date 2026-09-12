@@ -1,5 +1,8 @@
 ---
+import { COMPETITOR_KEYS, getLibrary } from "../lib/comparison";
+
 const year = new Date().getFullYear();
+const comparisons = COMPETITOR_KEYS.map(getLibrary);
 ---
 
 <footer transition:persist="site-footer" class="border-t border-border">
@@ -42,4 +45,19 @@ const year = new Date().getFullYear();
       </a>
     </div>
   </div>
+  <nav
+    aria-label="Comparisons"
+    class="mx-auto -mt-4 flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-6 pb-10 text-sm text-text-muted"
+  >
+    <a href="/compare" class="transition-colors hover:text-text">
+      Compare
+    </a>
+    {
+      comparisons.map((library) => (
+        <a href={library.path} class="transition-colors hover:text-text">
+          GlowTour.js vs {library.name}
+        </a>
+      ))
+    }
+  </nav>
 </footer>

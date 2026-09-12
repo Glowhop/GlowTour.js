@@ -16,6 +16,13 @@ https://github.com/Glowhop/GlowTour.js
 - [Getting started](https://glowtour.dev/docs/getting-started): Install GlowTour.js and build your first guided tour.
 - [Compatibility](https://glowtour.dev/docs/compatibility): Framework versions and SSR support verified for each adapter.
 
+## Comparisons
+
+- [Compare](https://glowtour.dev/compare): GlowTour.js vs Driver.js, Shepherd.js and React Joyride in one table, on framework support, customization, accessibility, API design and licensing.
+- [GlowTour.js vs Driver.js](https://glowtour.dev/glowtour-vs-driver-js): Framework integrations, UI customization, builder API, accessibility and licensing.
+- [GlowTour.js vs Shepherd.js](https://glowtour.dev/glowtour-vs-shepherd-js): Framework integrations, customization model, API ergonomics and licensing (MIT vs AGPL-3.0).
+- [GlowTour.js vs React Joyride](https://glowtour.dev/glowtour-vs-react-joyride): React-only vs framework-agnostic, Vue and Angular support, UI customization.
+
 ## Framework guides
 
 - [React](https://glowtour.dev/docs/guides/react)

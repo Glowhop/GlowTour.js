@@ -1,0 +1,71 @@
+---
+import ComparisonPage from "../components/ComparisonPage.astro";
+import ComparisonSection from "../components/ComparisonSection.astro";
+---
+
+{/*
+  Astro drops the whitespace of a line break that sits right next to an inline element, so the
+  prose below only ever wraps between two plain words, never before or after <code> or <strong>.
+*/}
+<ComparisonPage
+  competitor="joyride"
+  title="GlowTour.js vs React Joyride - Product Tour Library Comparison"
+  description="GlowTour.js vs React Joyride: React-only vs framework-agnostic, Vue and Angular support, UI customization, accessibility and licensing compared."
+  intro="React Joyride is a React-focused product tour library; GlowTour.js is framework-agnostic, with native adapters for React, Vue, Angular, Solid and vanilla JavaScript. For a React-only product both are options; the differences are framework reach and how you customize the UI."
+>
+  <ComparisonSection id="react-only-vs-agnostic" heading="React-only vs framework-agnostic">
+    <p>
+      React Joyride supports React 16.8 through 19, with a <code>&lt;Joyride&gt;</code> component
+      and a <code>useJoyride</code> hook. It does not target Vue, Angular or plain JavaScript pages.
+    </p>
+    <p>
+      GlowTour.js keeps tour logic in a framework-agnostic core, so the same workflow definition runs
+      in React, Vue, Angular, Solid and vanilla JavaScript. Its React adapter supports React 18 and
+      19.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="vue-angular-support" heading="Vue and Angular support">
+    <p>
+      If your organization runs Vue or Angular apps alongside React, React Joyride cannot be reused
+      there. GlowTour.js provides native Vue components and Angular standalone components with the
+      same builder API, keyboard shortcuts and ARIA semantics as its React adapter.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="ui-customization" heading="UI customization approach">
+    <p>
+      React Joyride lets you replace its UI with your own React components through the <code
+        >tooltipComponent</code
+      >, <code>beaconComponent</code> and <code>arrowComponent</code> props, alongside styling
+      options.
+    </p>
+    <p>
+      GlowTour.js offers composition primitives (Root, Popover, Header, Content, Footer and trigger
+      components) in every supported framework, plus <code>--glow-tour-*</code> CSS custom properties
+      for theming.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="accessibility-ssr-licensing" heading="Accessibility, SSR and licensing">
+    <p>
+      Both document focus trapping, keyboard navigation and ARIA support, and both are MIT licensed.
+      React Joyride describes itself as SSR-safe with Next.js and Remix; GlowTour.js verifies server
+      rendering and hydration for its React, Vue and Solid adapters, including a production Next.js
+      app.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="which-to-choose" heading="Should you choose GlowTour.js or React Joyride?">
+    <ul>
+      <li>
+        <strong>Choose React Joyride</strong> if your application is React-only and you want a
+        React-focused library, including support for React versions before 18.
+      </li>
+      <li>
+        <strong>Choose GlowTour.js</strong> if you need the same tours across React, Vue or Angular,
+        or want to compose the popover UI from components with a builder-style API.
+      </li>
+    </ul>
+  </ComparisonSection>
+</ComparisonPage>

@@ -15,7 +15,7 @@ bun run docs                        # same as the dev script above
 
 ## Structure
 
-- `src/pages/` - marketing pages (`index.astro`, `react.astro`, `vue.astro`, `solid.astro`, `angular.astro`, `vanilla.astro`), using a custom `MarketingLayout`, not Starlight's layout.
+- `src/pages/` - marketing pages (`index.astro`, `react.astro`, `vue.astro`, `solid.astro`, `angular.astro`, `vanilla.astro`, `examples.astro`, `compare.astro`, and the `glowtour-vs-*.astro` pages; all comparison data lives in `src/lib/comparison.ts`), using a custom `MarketingLayout`, not Starlight's layout.
 - `src/content/docs/docs/` - Starlight documentation content. Nested one level under `docs/` so Starlight's routes resolve at `/docs/...` instead of the site root, leaving `/`, `/react`, etc. for the marketing pages above. See the comment in `astro.config.mjs` for why.
 - `src/components/` - shared Astro/React components (`Button.astro`, `CodeBlock.astro`, `FrameworkPage.astro`, `HeroDemos.tsx`).
 - `src/lib/` - static source snippets shown in code blocks, kept as plain strings so they render through Astro's `<Code>` (Shiki) without needing a bundler-level "raw file import".
