@@ -1,0 +1,186 @@
+---
+import Button from "../components/Button.astro";
+import ComparisonTable from "../components/ComparisonTable.astro";
+import LibraryMark from "../components/LibraryMark.astro";
+import MarketingLayout from "../layouts/MarketingLayout.astro";
+import {
+  COMPARISON_CHECKED_ON,
+  COMPETITOR_KEYS,
+  getLibrary,
+  LIBRARY_KEYS,
+} from "../lib/comparison";
+
+const TITLE = "GlowTour.js vs Driver.js, Shepherd.js & React Joyride";
+const DESCRIPTION =
+  "Compare GlowTour.js with Driver.js, Shepherd.js and React Joyride across framework support, customization, accessibility, API design and licensing.";
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const libraries = LIBRARY_KEYS.map(getLibrary);
+const checkedVersions = COMPETITOR_KEYS.map(getLibrary)
+  .map((library) => `${library.name} ${library.checkedVersion}`)
+  .join(", ");
+
+// Same shape as the framework pages: a WebPage node tied back to the site and the software it is
+// about, plus a breadcrumb so the page is not read as a stray duplicate of the home page.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      name: TITLE,
+      description: DESCRIPTION,
+      url: canonicalURL.href,
+      inLanguage: "en",
+      isPartOf: { "@id": "https://glowtour.dev/#website" },
+      about: { "@id": "https://glowtour.dev/#software" },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "GlowTour.js", item: Astro.site?.href },
+        { "@type": "ListItem", position: 2, name: "Compare", item: canonicalURL.href },
+      ],
+    },
+  ],
+};
+
+const prose = "mt-4 text-text-muted leading-relaxed";
+const h2 = "font-heading text-2xl font-semibold tracking-tight text-text sm:text-3xl";
+const link = "underline underline-offset-4 transition-colors hover:text-text";
+---
+
+{/*
+  Astro drops the whitespace of a line break that sits right next to an inline element, so the
+  prose below only ever wraps between two plain words, never before or after an <a>.
+*/}
+<MarketingLayout
+  title="GlowTour.js vs Driver.js, Shepherd.js & React Joyride"
+  description="Compare GlowTour.js with Driver.js, Shepherd.js and React Joyride across framework support, customization, accessibility, API design and licensing."
+>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+
+  <section class="mx-auto max-w-3xl px-6 pt-16 sm:pt-24">
+    <p class="text-sm font-semibold text-accent">Compare</p>
+    <h1
+      class="font-heading mt-2 text-4xl leading-[1.1] font-semibold tracking-tight text-balance text-text sm:text-5xl"
+    >
+      GlowTour.js compared to other product tour libraries
+    </h1>
+    <p class="mt-6 text-lg leading-relaxed text-pretty text-text-muted">
+      GlowTour.js is a framework-agnostic product tour library: one TypeScript engine with
+      first-party integrations for React, Vue and Angular, plus Solid and vanilla JavaScript. It
+      focuses on deep UI customization through composable components and CSS custom properties,
+      accessible defaults, and a builder-style API for describing tours. Below, it is compared with
+      Driver.js, Shepherd.js and React Joyride using each project's official documentation and
+      source code.
+    </p>
+  </section>
+
+  <section id="comparison-table" class="mx-auto max-w-5xl px-6 pt-12 scroll-mt-20">
+    <h2 class={h2}>Feature comparison</h2>
+    <div class="mt-6">
+      <ComparisonTable
+        caption="GlowTour.js, Driver.js, Shepherd.js and React Joyride compared feature by feature"
+      />
+    </div>
+    <p class="mt-3 text-xs leading-relaxed text-text-muted">
+      Checked in {COMPARISON_CHECKED_ON} against {checkedVersions}. "Native integration" means
+      components shipped by the project for that framework; "Official wrapper" means a
+      project-maintained package around the core library; "Generic JS API" means the library is
+      called from framework code directly. Projects change, so confirm details in the sources below.
+    </p>
+    <ul class="mt-6 flex flex-wrap gap-3" aria-label="Detailed comparisons">
+      {
+        COMPETITOR_KEYS.map(getLibrary).map((library) => (
+          <li>
+            <Button href={library.path} variant="secondary">
+              <LibraryMark library={library} />
+              GlowTour.js vs {library.name}
+            </Button>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <article class="mx-auto max-w-3xl px-6 pt-16">
+    <section id="which-to-choose" class="scroll-mt-20">
+      <h2 class={h2}>Which product tour library should you choose?</h2>
+      <p class={prose}>
+        All four are open source. The right choice depends on your stack, how far you need to take
+        the UI, and your licensing constraints.
+      </p>
+      <ul class="mt-6 grid gap-4">
+        {
+          [
+            {
+              name: "GlowTour.js",
+              reason:
+                "if you want first-party React, Vue and Angular integrations, deep UI composition and a builder-style API, under the MIT license.",
+            },
+            {
+              name: "Driver.js",
+              reason:
+                "if you want a lightweight, dependency-free library you can call from any stack and customize through CSS and DOM hooks.",
+            },
+            {
+              name: "Shepherd.js",
+              reason:
+                "if you want a mature framework-agnostic solution with official framework wrappers, and AGPL-3.0 or a commercial license fits your project.",
+            },
+            {
+              name: "React Joyride",
+              reason:
+                "if your application is React-only and you want a React-focused library, including support for React versions before 18.",
+            },
+          ].map((choice) => (
+            <li class="flex gap-4">
+              <span class="mt-2.5 h-px w-6 shrink-0 bg-accent" aria-hidden="true" />
+              <p class="text-text-muted">
+                <strong class="font-semibold text-text">Choose {choice.name}</strong> {choice.reason}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+      <p class={prose}>
+        GlowTour.js is newer than the other three and ships as ESM only. Server rendering is
+        verified for its React, Vue and Solid adapters but not yet for Angular; see the <a
+          href="/docs/compatibility"
+          class={link}>compatibility page</a
+        > before adopting it.
+      </p>
+    </section>
+
+    <section id="sources" class="mt-14 scroll-mt-20">
+      <h2 class={h2}>Sources</h2>
+      <dl class="mt-6 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[10rem_1fr]">
+        {
+          libraries.map((library) => (
+            <>
+              <dt class="font-medium text-text">{library.name}</dt>
+              <dd class="flex flex-wrap gap-x-4 gap-y-1 text-text-muted">
+                {library.sources.map((source) => (
+                  <a
+                    href={source.href}
+                    rel={source.href.startsWith("http") ? "noopener" : undefined}
+                    class={link}
+                  >
+                    {source.label}
+                  </a>
+                ))}
+              </dd>
+            </>
+          ))
+        }
+      </dl>
+    </section>
+  </article>
+
+  <section class="mx-auto max-w-3xl px-6 py-20">
+    <div class="flex flex-wrap gap-3">
+      <Button href="/docs/getting-started">Get started</Button>
+      <Button href="/examples" variant="secondary">See the examples</Button>
+    </div>
+  </section>
+</MarketingLayout>
