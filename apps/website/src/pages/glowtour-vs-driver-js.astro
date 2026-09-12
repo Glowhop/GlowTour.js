@@ -1,0 +1,86 @@
+---
+import ComparisonPage from "../components/ComparisonPage.astro";
+import ComparisonSection from "../components/ComparisonSection.astro";
+---
+
+{/*
+  Astro drops the whitespace of a line break that sits right next to an inline element, so the
+  prose below only ever wraps between two plain words, never before or after <code> or <strong>.
+*/}
+<ComparisonPage
+  competitor="driver"
+  title="GlowTour.js vs Driver.js - Product Tour Library Comparison"
+  description="GlowTour.js vs Driver.js: compare framework integrations, UI customization, builder API, accessibility and licensing for product tours and onboarding."
+  intro="Driver.js and GlowTour.js both have a framework-agnostic JavaScript core. Driver.js stops there, while GlowTour.js adds native React, Vue, Angular, Solid and vanilla adapters on top. The main differences are framework integration, how you customize the popover UI, and how tours are defined."
+>
+  <ComparisonSection
+    id="framework-integrations"
+    heading="Framework integration: no native adapters vs native adapters"
+  >
+    <p>
+      Driver.js has no dependency on React, Vue or Angular and can be used alongside any of them, but
+      it ships no native adapter for those frameworks. In a framework app you call <code>driver()</code> by
+      hand from effects or lifecycle hooks, and it manages its own popover DOM outside the framework's
+      rendering.
+    </p>
+    <p>
+      GlowTour.js ships a native integration for each: React components, Vue components and Angular
+      standalone components, plus Solid and vanilla custom elements, all driven by the same core
+      engine.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection
+    id="ui-customization"
+    heading="UI customization: CSS and DOM hooks vs composable components"
+  >
+    <p>
+      Driver.js is highly customizable. Its popover exposes stable CSS classes such as <code
+        >.driver-popover-title</code
+      > and <code>.driver-popover-footer</code>, the <code>popoverClass</code> option adds your own
+      classes globally or per step, and the <code>onPopoverRender</code> hook hands you the
+      popover's DOM (title, description, footer, buttons) to add custom buttons or markup.
+    </p>
+    <p>
+      GlowTour.js takes a composition approach: the popover is assembled from primitives such as
+      Root, Popover, Header, Content, Footer and trigger components, so a custom layout is ordinary
+      component code rather than DOM changes after render. Theming goes through the
+      CSS custom properties prefixed <code>--glow-tour-*</code>.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="defining-tours" heading="Defining tours: config object vs builder API">
+    <p>
+      Driver.js tours are a configuration object with a <code>steps</code> array, controlled with
+      methods such as <code>drive()</code>, <code>moveNext()</code> and <code>highlight()</code>.
+    </p>
+    <p>
+      GlowTour.js uses a chainable builder (<code>tour.create().step().do().wait().build()</code>)
+      that can also sequence work between steps, such as waiting for an element or a condition. The
+      same tour can come from a JSON config when it is stored outside your code.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="accessibility-licensing" heading="Accessibility and licensing">
+    <p>
+      Both render the popover as a dialog, trap focus inside it and support keyboard navigation.
+      Driver.js still has open accessibility issues, though, including reports of a duplicate banner
+      landmark, popover content without an ARIA label and ARIA attributes removed at runtime.
+      GlowTour.js documents the same ARIA semantics, keyboard shortcuts and focus restoration in
+      every adapter. Both are open source under the MIT license.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="which-to-choose" heading="Should you choose GlowTour.js or Driver.js?">
+    <ul>
+      <li>
+        <strong>Choose Driver.js</strong> if you want a lightweight, dependency-free library you can
+        call from any stack and customize through CSS and DOM hooks.
+      </li>
+      <li>
+        <strong>Choose GlowTour.js</strong> if you want first-party React, Vue and Angular
+        integrations, a popover you compose from components, and a builder-style API.
+      </li>
+    </ul>
+  </ComparisonSection>
+</ComparisonPage>

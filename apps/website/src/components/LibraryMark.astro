@@ -1,0 +1,42 @@
+---
+import type { ComparedLibrary } from "../lib/comparison";
+
+interface Props {
+  library: ComparedLibrary;
+  /**
+   * Size and padding classes; keep width and height equal so the chip stays square. For an emoji
+   * mark, include a text size so the glyph fills the box.
+   */
+  class?: string;
+}
+
+const { library, class: className = "h-5 w-5 p-0.5 text-sm" } = Astro.props;
+
+// Every mark sits on the same white chip: some are dark-outlined and would disappear against the
+// night-indigo dark theme, and giving all of them the chip keeps the row of marks uniform.
+const { mark } = library;
+---
+
+{
+  mark.type === "emoji" ? (
+    <span
+      aria-hidden="true"
+      class:list={[
+        "inline-flex shrink-0 items-center justify-center rounded-[calc(var(--radius-glow)/2)] bg-white leading-none",
+        className,
+      ]}
+    >
+      {mark.emoji}
+    </span>
+  ) : (
+    <img
+      src={mark.src}
+      alt=""
+      decoding="async"
+      class:list={[
+        "shrink-0 rounded-[calc(var(--radius-glow)/2)] bg-white object-contain",
+        className,
+      ]}
+    />
+  )
+}
