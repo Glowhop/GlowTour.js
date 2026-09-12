@@ -18,6 +18,7 @@
       "!!apps/**/dist",
       "!!apps/**/coverage",
       "!!apps/website/.astro",
+      "!!apps/website/public/compare",
       "!!apps/ssr-vue/.nuxt",
       "!!apps/ssr-vue/.output",
       "!!apps/ssr-vue/test-results",
