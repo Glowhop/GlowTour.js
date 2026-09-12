@@ -158,6 +158,10 @@
   justify-content: flex-end;
 }
 
+:where([data-glow-tour-root]) [data-glow-tour-footer] > glow-tour-cancel-trigger {
+  margin-inline-end: auto;
+}
+
 :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger],
 :where([data-glow-tour-root]) [data-glow-tour-previous-trigger],
 :where([data-glow-tour-root]) [data-glow-tour-advance-trigger] {
