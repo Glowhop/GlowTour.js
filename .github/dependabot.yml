@@ -21,6 +21,12 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/express"
         update-types: ["version-update:semver-major"]
+      # Angular 18 requires TypeScript >=5.4 <5.6, so TypeScript minors wait for the Angular migration.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # @vitejs/plugin-react 6 needs Vite 8 in the playground and TypeScript >=5.6 for its declarations.
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
     groups:
       angular:
         patterns: ["@angular/*", "@angular-devkit/*", "ng-packagr", "zone.js"]
