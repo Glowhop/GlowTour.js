@@ -109,9 +109,27 @@ export class TourComponent {
 }
 ```
 
-## Custom composition
+## Customize progressively
 
-Use named components to build a custom tour layout:
+`GlowTourDefault` is the shortest path to a complete tour. Keep it while you only need visual changes, then move to composition when you need to change the popover structure.
+
+### Style `GlowTourDefault` with CSS
+
+The default component reads the theme's CSS custom properties, so colors, spacing, and shape can change without replacing any components:
+
+```css
+:where([data-glow-tour-root]) {
+  --glow-tour-color-accent: #7c3aed;
+  --glow-tour-color-surface: #faf5ff;
+  --glow-tour-radius: 16px;
+}
+```
+
+Keep rendering `<glow-tour-default [tour]="tour" />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+
+### Compose the default layout
+
+When you need to add, remove, or rearrange content, expand `GlowTourDefault` into the components it assembles for you:
 
 ```typescript
 import { Component } from "@angular/core";
@@ -124,6 +142,7 @@ import {
   GlowTourContent,
   GlowTourFooter,
   GlowTourAdvanceTrigger,
+  GlowTourBackTrigger,
   GlowTourCancelTrigger,
   createGlowTour,
 } from "@glowhop/angular-tour";
@@ -139,6 +158,7 @@ import {
     GlowTourContent,
     GlowTourFooter,
     GlowTourAdvanceTrigger,
+    GlowTourBackTrigger,
     GlowTourCancelTrigger,
   ],
   template: `
@@ -150,6 +170,7 @@ import {
         <glow-tour-content />
         <glow-tour-footer>
           <glow-tour-cancel-trigger />
+          <glow-tour-back-trigger />
           <glow-tour-advance-trigger />
         </glow-tour-footer>
       </glow-tour-popover>
@@ -161,44 +182,73 @@ export class CustomTour {
 }
 ```
 
-## Reactive state with `injectGlowTour`
+### Add a custom step counter
 
-Use `injectGlowTour()` to access the tour state as a Signal within any component inside a `glow-tour-root`:
+Components rendered inside `GlowTourRoot` can read its reactive state with `injectGlowTour()`. Create the counter as a child component so the root's injector is available:
 
 ```typescript
-import { Component, inject } from "@angular/core";
-import {
-  GlowTourRoot,
-  GlowTourOverlay,
-  GlowTourPopover,
-  injectGlowTour,
-  createGlowTour,
-} from "@glowhop/angular-tour";
+import { Component } from "@angular/core";
+import { injectGlowTour } from "@glowhop/angular-tour";
 
 @Component({
+  selector: "app-step-counter",
   standalone: true,
-  imports: [GlowTourRoot, GlowTourOverlay, GlowTourPopover],
   template: `
-    <glow-tour-root [tour]="tour">
-      <glow-tour-overlay />
-      <glow-tour-popover>
-        @if (state(); as tourState) {
-          <p>Current step: {{ tourState.currentStepIndex }}</p>
-          <button [disabled]="!tourState.canAdvance" (click)="tour.advance()">
-            Next
-          </button>
-        }
-      </glow-tour-popover>
-    </glow-tour-root>
+    @if (state(); as tourState) {
+      @if (tourState.currentStepIndex >= 0 && tourState.totalSteps > 0) {
+        <p>Step {{ tourState.currentStepIndex + 1 }} of {{ tourState.totalSteps }}</p>
+      }
+    }
   `,
 })
-export class CustomTourWithState {
-  readonly tour = createGlowTour();
+export class StepCounter {
   protected readonly state = injectGlowTour();
 }
 ```
 
-Angular signals are used for reactive state management internally; no additional setup is needed for reactivity.
+Add `StepCounter` to the `imports` array of `CustomTour`, then place it inside the composed popover:
+
+```html
+<glow-tour-popover>
+  <glow-tour-header />
+  <app-step-counter />
+  <glow-tour-content />
+  <!-- Keep the same footer as above. -->
+</glow-tour-popover>
+```
+
+To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
+
+See the runnable [Live step counter example](/examples).
+
+### Subscribe outside the composition
+
+`injectGlowTour()` is intended for descendants of `GlowTourRoot`. Elsewhere in an Angular application, adapt the store to a signal and unsubscribe when the component is destroyed:
+
+```typescript
+import { Component, DestroyRef, inject, signal } from "@angular/core";
+import { TourService } from "./tour.service";
+
+@Component({
+  selector: "app-tour-status",
+  standalone: true,
+  template: `<p>Tour status: {{ state().status }}</p>`,
+})
+export class TourStatus {
+  private readonly tourService = inject(TourService);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly state = signal(this.tourService.tour.state.get());
+
+  constructor() {
+    const unsubscribe = this.tourService.tour.state.subscribe((nextState) => {
+      this.state.set(nextState);
+    });
+    this.destroyRef.onDestroy(unsubscribe);
+  }
+}
+```
+
+`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the cleanup function registered with `DestroyRef`. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
 
 ## Angular 18+
 

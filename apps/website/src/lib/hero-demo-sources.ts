@@ -234,7 +234,7 @@ const workflow = tour
 
 tour.run(workflow);`;
 
-export const liveProgressSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger, useTour } from "@glowhop/react-tour";
+export const liveProgressSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger, createGlowTour, useTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
@@ -247,8 +247,11 @@ const workflow = tour
   .build();
 
 // A custom popover subcomponent, wired to real tour state:
-function LiveProgress() {
+function StepCounter() {
   const state = useTour();
+
+  if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
+
   return (
     <p>
       Step {state.currentStepIndex + 1} of {state.totalSteps}
@@ -261,7 +264,7 @@ function LiveProgress() {
   <Pointer />
   <Popover>
     <Header />
-    <LiveProgress />
+    <StepCounter />
     <Content />
     <Footer>
       <CancelTrigger />

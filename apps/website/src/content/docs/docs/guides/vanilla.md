@@ -101,42 +101,125 @@ In your HTML:
 </html>
 ```
 
-## Custom composition
+## Customize progressively
 
-Build a custom layout by creating and composing custom elements directly:
+`createDefaultTourElement(tour)` is the shortest path to a complete tour. Keep it while you only need visual changes, then compose the custom elements directly when you need to change the popover structure.
+
+### Style the default tour with CSS
+
+The default element reads the theme's CSS custom properties, so colors, spacing, and shape can change without replacing any elements:
+
+```css
+:where([data-glow-tour-root]) {
+  --glow-tour-color-accent: #7c3aed;
+  --glow-tour-color-surface: #faf5ff;
+  --glow-tour-radius: 16px;
+}
+```
+
+Keep using `createDefaultTourElement(tour)`. See the [theming guide](/docs/guides/theming) for all available tokens.
+
+### Compose the default layout
+
+When you need to add, remove, or rearrange content, expand the default tour into the custom elements it creates for you:
 
 ```typescript
-import { registerGlowTourElements } from "@glowhop/vanilla-tour";
-import { createGlowTour } from "@glowhop/vanilla-tour";
-
-registerGlowTourElements();
-
-const tour = createGlowTour();
-
-// Create the root element
 const root = document.createElement("glow-tour-root");
 root.tour = tour;
 
-// Create overlay and popover
 const overlay = document.createElement("glow-tour-overlay");
+const pointer = document.createElement("glow-tour-pointer");
 const popover = document.createElement("glow-tour-popover");
-
-// Create header, content, and footer
 const header = document.createElement("glow-tour-header");
 const content = document.createElement("glow-tour-content");
 const footer = document.createElement("glow-tour-footer");
 
-// Create trigger buttons
-const advanceTrigger = document.createElement("glow-tour-advance-trigger");
 const cancelTrigger = document.createElement("glow-tour-cancel-trigger");
+const backTrigger = document.createElement("glow-tour-back-trigger");
+const advanceTrigger = document.createElement("glow-tour-advance-trigger");
 
-// Compose the tree
-footer.append(cancelTrigger, advanceTrigger);
+footer.append(cancelTrigger, backTrigger, advanceTrigger);
 popover.append(header, content, footer);
-root.append(overlay, popover);
-
+root.append(overlay, pointer, popover);
 document.body.append(root);
 ```
+
+### Add a custom step counter
+
+Vanilla custom elements do not have a framework context hook, so give the custom counter the tour instance and let it manage its own subscription:
+
+```typescript
+import type { TourState, VanillaGlowTour } from "@glowhop/vanilla-tour";
+
+class StepCounter extends HTMLElement {
+  #tour?: VanillaGlowTour;
+  #unsubscribe?: () => void;
+
+  set tour(tour: VanillaGlowTour) {
+    this.#tour = tour;
+    if (this.isConnected) this.#subscribe();
+  }
+
+  connectedCallback() {
+    this.#subscribe();
+  }
+
+  disconnectedCallback() {
+    this.#unsubscribe?.();
+    this.#unsubscribe = undefined;
+  }
+
+  #subscribe() {
+    this.#unsubscribe?.();
+    if (!this.#tour) return;
+
+    const render = (state: TourState) => {
+      const visible = state.currentStepIndex >= 0 && state.totalSteps > 0;
+      this.hidden = !visible;
+      this.textContent = visible
+        ? `Step ${state.currentStepIndex + 1} of ${state.totalSteps}`
+        : "";
+    };
+
+    render(this.#tour.state.get());
+    this.#unsubscribe = this.#tour.state.subscribe(render);
+  }
+}
+
+customElements.define("tour-step-counter", StepCounter);
+
+const stepCounter = new StepCounter();
+stepCounter.tour = tour;
+popover.insertBefore(stepCounter, content);
+```
+
+To have assistive technologies announce the complete counter when it changes, you can call `stepCounter.setAttribute("aria-live", "polite")` and `stepCounter.setAttribute("aria-atomic", "true")`. `glow-tour-content` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
+
+See the runnable [Live step counter example](/examples).
+
+### Subscribe outside the composition
+
+Any application code can read and subscribe to the same store without creating a tour component:
+
+```typescript
+const status = document.querySelector("#tour-status") as HTMLOutputElement;
+
+function bindTourStatus(status: HTMLOutputElement) {
+  const render = (state: TourState) => {
+    status.textContent = `Tour status: ${state.status}`;
+  };
+
+  render(tour.state.get());
+  return tour.state.subscribe(render);
+}
+
+const stopStatusUpdates = bindTourStatus(status);
+
+// Later, in your route or component teardown:
+// stopStatusUpdates();
+```
+
+`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the unsubscribe function; call `stopStatusUpdates()` from the lifecycle that removes this UI. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
 
 ## Custom element API
 

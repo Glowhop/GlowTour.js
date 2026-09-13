@@ -576,8 +576,11 @@ export const liveProgressWorkflow = liveProgressTour
   })
   .build();
 
-function LiveProgress() {
+function StepCounter() {
   const state = useTour();
+
+  if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
+
   return (
     <p className="text-xs font-semibold text-accent">
       Step {state.currentStepIndex + 1} of {state.totalSteps}
@@ -614,7 +617,7 @@ export function LiveProgressDemo() {
         <Popover>
           <div className="flex justify-between">
             <Header />
-            <LiveProgress />
+            <StepCounter />
           </div>
           <Content />
           <Footer>
