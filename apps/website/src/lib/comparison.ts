@@ -38,6 +38,7 @@ const LIBRARIES: Record<LibraryKey, ComparedLibrary> = {
       { label: "Compatibility", href: "/docs/compatibility" },
       { label: "Builder API", href: "/docs/reference/builder" },
       { label: "Accessibility guide", href: "/docs/guides/accessibility" },
+      { label: "SSR guide", href: "/docs/guides/ssr" },
       { label: "GitHub", href: "https://github.com/Glowhop/GlowTour.js" },
     ],
   },
@@ -166,6 +167,17 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     },
   },
   {
+    // Checked by importing each library with no DOM globals: none of them throws, but only
+    // GlowTour.js renders tour markup on the server (React Joyride's renderToString is empty).
+    feature: "SSR & hydration",
+    values: {
+      glowtour: yes("Verified in Next.js, Nuxt, SolidStart, Angular"),
+      driver: partial("Safe to import, client-side only"),
+      shepherd: partial("Safe to import, client-side only"),
+      joyride: partial("SSR-safe, renders client-side only"),
+    },
+  },
+  {
     feature: "TypeScript",
     values: { glowtour: yes(), driver: yes(), shepherd: yes(), joyride: yes() },
   },
@@ -228,6 +240,7 @@ const FEATURED_FEATURES = new Set([
   "Vue",
   "Angular",
   "Framework-agnostic core",
+  "SSR & hydration",
   "Custom/composable UI",
   "Chainable builder API",
   "License",
