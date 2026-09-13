@@ -1969,6 +1969,30 @@ describe("DomTourViewDriver", () => {
     await driver.show(allowed, "advance", new AbortController().signal);
     assert.equal(elements.popover.getAttribute("aria-modal"), null);
   });
+  test("restores focus to a trigger blurred when a modal step inerts its branch", async () => {
+    const shell = document.createElement("main"),
+      trigger = document.createElement("button"),
+      { driver, elements } = installDriver(),
+      target = createTarget(),
+      step = createStep();
+    shell.append(trigger);
+    document.body.append(shell);
+    const setAttribute = shell.setAttribute.bind(shell);
+    shell.setAttribute = (name: string, value: string) => {
+      setAttribute(name, value);
+      // Browsers blur a focused element whose ancestor becomes inert; the mock DOM does not.
+      if (name === "inert") document.activeElement = null;
+    };
+    trigger.focus();
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(shell.getAttribute("inert"), "");
+    assert.equal(document.activeElement, elements.advance);
+    await driver.clear(new AbortController().signal);
+    assert.equal(document.activeElement, trigger);
+  });
   test("inerts only sibling branches and restores their authored state", async () => {
     const shell = document.createElement("main"),
       authoredInert = document.createElement("aside"),

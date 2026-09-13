@@ -44,9 +44,7 @@ export class FocusGuard {
     if (this.active && this.document !== document) this.deactivate();
     if (!this.active) {
       this.document = document;
-      this.initialFocus = isHTMLElement(this.document.activeElement, scope.popover)
-        ? this.document.activeElement
-        : null;
+      this.captureInitialFocus(scope.popover);
       this.document.addEventListener("focusin", this.handleFocusIn, true);
       this.active = true;
     }
@@ -74,8 +72,21 @@ export class FocusGuard {
     if (this.active) this.focusFallback();
   }
 
+  /**
+   * Remembers the element focus returns to when the guard deactivates. The driver calls it before
+   * making the rest of the page inert, because inerting an ancestor blurs the focused element.
+   * Does nothing once a focus is remembered or the guard is active.
+   */
+  captureInitialFocus(reference: HTMLElement) {
+    if (this.active || this.initialFocus) return;
+    const activeElement = ownerDocument(reference)?.activeElement;
+    this.initialFocus = isHTMLElement(activeElement, reference) ? activeElement : null;
+  }
+
   deactivate() {
     if (!this.active) {
+      // A capture from a show that never activated must not leak into the next tour.
+      this.initialFocus = null;
       return;
     }
 
