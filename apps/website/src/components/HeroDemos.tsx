@@ -481,9 +481,9 @@ export const customStyledIndicatorWorkflow = customStyledIndicatorTour
     target: "#hero-custom-styled-target",
     title: "Same tour, fully customized",
     content:
-      "overlay.color/opacity, popover.arrow/hideFooter, a custom <Pointer> glyph, and behavior.allowInteraction, all at once.",
+      "overlay.color/opacity, popover.arrow, a custom <Pointer> glyph, and behavior.allowInteraction, all at once.",
     overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true }, hideFooter: true },
+    popover: { arrow: { disabled: true } },
     behavior: { allowInteraction: true },
   })
   .build();
