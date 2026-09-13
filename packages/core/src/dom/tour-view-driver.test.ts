@@ -2002,17 +2002,21 @@ describe("DomTourViewDriver", () => {
     first.target = target as unknown as HTMLElement;
     second.target = target as unknown as HTMLElement;
     await driver.show(first, "advance", new AbortController().signal);
-    let duringSwap: { hidden: string | null; inert: string | null } | null = null;
+    let duringSwap: { hidden: string | null; inert: string | null; pointerEvents: string } | null =
+      null;
 
     await driver.show(second, "advance", new AbortController().signal, () => {
       duringSwap = {
         hidden: elements.popover.getAttribute("aria-hidden"),
         inert: elements.popover.getAttribute("inert"),
+        pointerEvents: elements.popover.style.getPropertyValue("pointer-events"),
       };
     });
 
-    // The live region changes during the swap: hidden, it would never be announced.
-    assert.deepEqual(duringSwap, { hidden: null, inert: null });
+    // The live region changes during the swap: hidden, it would never be announced. Pointer input
+    // stays blocked, as inert used to block it, because the controller ignores it mid-transition.
+    assert.deepEqual(duringSwap, { hidden: null, inert: null, pointerEvents: "none" });
+    assert.equal(elements.popover.style.getPropertyValue("pointer-events"), "");
   });
   test("inerts only sibling branches and restores their authored state", async () => {
     const shell = document.createElement("main"),
