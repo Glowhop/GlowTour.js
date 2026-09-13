@@ -20,4 +20,4 @@ This code of conduct applies to repository issues, pull requests, reviews, discu
 
 Project maintainers may edit, remove, reject, or lock contributions and interactions that violate these expectations. Repeated or serious violations may result in temporary or permanent restrictions from project spaces.
 
-If you need to report conduct privately, avoid posting sensitive details publicly. Contact the maintainer through an available private GitHub channel, or open a minimal issue requesting a private contact method without including the sensitive details themselves.
+To report conduct privately, email the maintainer at dusartarmand@gmail.com. Do not post sensitive details in public issues or discussions.

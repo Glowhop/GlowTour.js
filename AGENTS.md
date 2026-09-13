@@ -76,9 +76,10 @@ Any behavioral modification under `packages/` must be exercised in a real browse
 
 ### SSR validation: all three apps
 
-If a change can affect SSR, hydration, browser-global access, package exports used during SSR, or adapter initialization, validate all three SSR reference apps, not only the adapter directly touched:
+If a change can affect SSR, hydration, browser-global access, package exports used during SSR, or adapter initialization, validate all three SSR reference apps, not only the adapter directly touched. The SSR apps consume the workspace packages' built entry points, so build the packages first:
 
 ```bash
+bun run build
 bun run --cwd apps/ssr-react test
 bun run --cwd apps/ssr-vue test
 bun run --cwd apps/ssr-solid test

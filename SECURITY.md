@@ -8,13 +8,13 @@ Security fixes are provided for the latest published version of GlowTour.js pack
 
 Please do not report security vulnerabilities in a public issue, discussion, or pull request.
 
-Use GitHub's private vulnerability reporting from the repository's **Security** tab when it is available. Include:
+Report it privately through GitHub's [private vulnerability reporting](https://github.com/Glowhop/GlowTour.js/security/advisories/new) (**Security** tab, **Report a vulnerability**). Include:
 
 - the affected package and version
 - a clear description of the issue and its impact
 - minimal reproduction steps or a proof of concept
 - any known mitigations
 
-If private vulnerability reporting is not available, open a public issue containing only a request for a private reporting channel. Do not include exploit details or sensitive information in that issue.
+If you cannot use GitHub's reporting form, email the maintainer at dusartarmand@gmail.com instead.
 
 Reports will be reviewed as soon as practical. Once the issue is understood, the maintainer will coordinate remediation and disclosure with the reporter where appropriate.
