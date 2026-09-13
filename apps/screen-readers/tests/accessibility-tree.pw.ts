@@ -21,6 +21,23 @@ async function startTour(page: Page) {
   return dialog;
 }
 
+/**
+ * Waits for the popover's step transition to end. A click during the fade is ignored by design
+ * (the controller is transitioning), while a real user acts on the settled popover.
+ */
+async function waitForSettledPopover(page: Page) {
+  await expect
+    .poll(() =>
+      page.locator("[data-glow-tour-popover]").evaluate(
+        // Finished animations stay listed because they fill forwards: look for running ones.
+        (popover) =>
+          popover.getAnimations().every((animation) => animation.playState !== "running") &&
+          getComputedStyle(popover).opacity === "1",
+      ),
+    )
+    .toBe(true);
+}
+
 function isExcludedFromAccessibilityTree(locator: Locator) {
   return locator.evaluate((element) => element.closest("[inert], [aria-hidden='true']") !== null);
 }
@@ -105,6 +122,21 @@ for (const adapter of ADAPTERS) {
       await expect(liveRegion).toHaveCount(1);
       await expect(liveRegion).toHaveText(STEP_TEXT.welcome.content);
       await liveRegion.evaluate((element) => element.setAttribute("data-probe", ""));
+      // Screen readers ignore a live region that changes inside a hidden subtree, and lose their
+      // place when focus leaves the dialog: record both during the transition.
+      await dialog.evaluate((popover) => {
+        const record = { changedWhileHidden: false, focusLeftDialog: false };
+        Object.assign(window, { __transition: record });
+        const content = popover.querySelector('[aria-live="polite"]');
+        if (!content) throw new Error("Live region is missing");
+        new MutationObserver(() => {
+          if (content.closest("[aria-hidden='true'], [inert]")) record.changedWhileHidden = true;
+        }).observe(content, { characterData: true, childList: true, subtree: true });
+        popover.addEventListener("focusout", (event) => {
+          const next = (event as FocusEvent).relatedTarget as Node | null;
+          if (!popover.contains(next)) record.focusLeftDialog = true;
+        });
+      });
 
       await page.keyboard.press("ArrowRight");
 
@@ -114,6 +146,10 @@ for (const adapter of ADAPTERS) {
         STEP_TEXT.field.content,
       );
       await expect(fieldDialog).toHaveAccessibleDescription(STEP_TEXT.field.content);
+      const transition = await page.evaluate(
+        () => (window as unknown as { __transition: Record<string, boolean> }).__transition,
+      );
+      expect(transition).toEqual({ changedWhileHidden: false, focusLeftDialog: false });
       expect(errors).toEqual([]);
     });
 
@@ -160,9 +196,11 @@ for (const adapter of ADAPTERS) {
       await startTour(page);
 
       for (const step of [STEP_TEXT.field, STEP_TEXT.finish]) {
+        await waitForSettledPopover(page);
         await page.locator("[data-glow-tour-advance-trigger]").click();
         await expect(page.getByRole("dialog", { name: step.title })).toBeVisible();
       }
+      await waitForSettledPopover(page);
       await page.locator("[data-glow-tour-advance-trigger]").click();
 
       await expect(page.getByRole("dialog")).toHaveCount(0);
