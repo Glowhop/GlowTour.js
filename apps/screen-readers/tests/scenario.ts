@@ -49,10 +49,14 @@ export async function runTourScenario(
     await driver.navigateToWebContent();
     // Reach the trigger through the screen reader, not Playwright: a DOM focus() moves neither
     // VoiceOver's nor NVDA's cursor, so their Enter would act on something else.
-    const focusedId = () => page.evaluate(() => document.activeElement?.id ?? "");
-    // navigateToWebContent() can already leave focus on the trigger without announcing it: step
-    // back first so the screen reader itself moves onto the trigger.
-    if ((await focusedId()) === "start-tour") await driver.press("Shift+Tab");
+    // A document keeps its active element while the browser chrome has focus, so only count the
+    // trigger as reached when the page itself is focused.
+    const focusedId = () =>
+      page.evaluate(() => (document.hasFocus() ? (document.activeElement?.id ?? "") : ""));
+    // navigateToWebContent() can leave focus on the trigger without announcing it. Start from the
+    // body so the next Tab lands on the trigger: Shift+Tab would leave the page for the browser
+    // toolbar, as NVDA with Firefox showed.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     for (let tab = 0; tab < 10 && (await focusedId()) !== "start-tour"; tab += 1) {
       await driver.press("Tab");
     }
