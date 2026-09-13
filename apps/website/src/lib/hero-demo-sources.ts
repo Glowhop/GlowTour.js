@@ -211,7 +211,7 @@ const workflow = tour
     title: "Same tour, fully customized",
     content: "overlay/popover overrides, a custom pointer glyph, and allowInteraction, all at once.",
     overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true }, hideFooter: true },
+    popover: { arrow: { disabled: true } },
     behavior: { allowInteraction: true },
   })
   .build();
