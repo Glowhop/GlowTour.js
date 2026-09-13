@@ -1,5 +1,0 @@
-{
-  "permissions": {
-    "ask": ["mcp__next-devtools__browser_eval"]
-  }
-}
