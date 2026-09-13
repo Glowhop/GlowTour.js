@@ -1,0 +1,82 @@
+name: Bug report
+description: Report a reproducible problem with GlowTour.js
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. For security vulnerabilities, use the process in SECURITY.md instead of this form.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package / adapter
+      options:
+        - Core
+        - React
+        - Vue
+        - Solid
+        - Angular
+        - Vanilla
+        - Styles
+        - Documentation / website
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: GlowTour.js version
+      placeholder: "e.g. @glowhop/react-tour 1.2.3"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Framework version, browser/runtime, and operating system when relevant.
+      placeholder: "e.g. React 19, Next.js 16, Chrome 140, macOS"
+    validations:
+      required: true
+
+  - type: input
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Link to a small repository, StackBlitz, CodeSandbox, or other reproduction if possible.
+      placeholder: "https://..."
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and include relevant errors or logs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest reliable sequence of steps that reproduces the issue.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This report does not contain a security vulnerability or sensitive information.
+          required: true
