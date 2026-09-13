@@ -7,7 +7,7 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "start": "node .output/server/index.mjs",
-    "test": "playwright test"
+    "test": "nuxt build && playwright test"
   },
   "dependencies": {
     "@glowhop/styles-tour": "workspace:*",
