@@ -16,6 +16,12 @@ coverage/
 .worktrees/
 .superpowers/
 
+# Local AI and agent tooling
+.agents/
+.claude/
+.codex/
+.mcp.json
+
 # Environment files
 .env
 .env.*
