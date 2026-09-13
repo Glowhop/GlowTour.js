@@ -40,6 +40,13 @@ const frameworks = [
   { label: "Vanilla", href: "/vanilla", icon: "vanilla" as const },
 ];
 
+// The server-rendering frameworks the SSR apps verify, named under the adapter buttons.
+const ssrFrameworks = [
+  { label: "Next.js", icon: "nextjs" as const },
+  { label: "Nuxt", icon: "nuxt" as const },
+  { label: "SolidStart", icon: "solidstart" as const },
+];
+
 const useCases = [
   {
     title: "First-day onboarding",
@@ -252,7 +259,17 @@ const jsonLd = {
       }
     </div>
     <p class="mt-5 text-center text-sm text-text-muted">
-      Works with Next.js, Nuxt and SolidStart - <a
+      Works with {
+        ssrFrameworks.map((fw, index) => (
+          <>
+            {index === 0 ? "" : index === ssrFrameworks.length - 1 ? " and " : ", "}
+            <span class="inline-flex items-center gap-1 whitespace-nowrap align-middle">
+              <FrameworkIcon name={fw.icon} class="h-3.5 w-3.5" />
+              {fw.label}
+            </span>
+          </>
+        ))
+      } - <a
         href="/docs/guides/ssr"
         class="underline underline-offset-4 transition-colors hover:text-text"
         >server rendering verified in production builds</a
