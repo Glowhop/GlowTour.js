@@ -222,19 +222,6 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     },
   },
   {
-    // GlowTour.js: .github/workflows/screen-readers.yml runs VoiceOver and NVDA through every
-    // adapter. The others were checked in their published test setup (driver.js
-    // packages/driver, shepherd.js, react-joyride package.json): Vitest, Cypress or Playwright,
-    // and no screen reader automation or accessibility testing tool.
-    feature: "Tested with real screen readers",
-    values: {
-      glowtour: yes("VoiceOver and NVDA, in CI"),
-      driver: no("Not in its test suite"),
-      shepherd: no("Not in its test suite"),
-      joyride: no("Not in its test suite"),
-    },
-  },
-  {
     feature: "License",
     values: {
       glowtour: yes("MIT"),
