@@ -212,6 +212,9 @@ export default class PopoverElement extends GlowTourElement {
     if (hideFromAssistiveTechnology) {
       this.mutationLease.setAttribute("aria-hidden", POPOVER_IDLE_ATTRIBUTES["aria-hidden"]);
       this.mutationLease.setAttribute("inert", POPOVER_IDLE_ATTRIBUTES.inert);
+    } else {
+      // Still exposed, but no longer clickable: the transition has started.
+      this.mutationLease.setStyle("pointer-events", "none");
     }
   }
 
@@ -386,12 +389,19 @@ export default class PopoverElement extends GlowTourElement {
 
   private _applyVisibleState() {
     this.mutationLease.setStyle("opacity", "1");
+    this.mutationLease.releaseStyle("pointer-events");
     this.mutationLease.setAttribute("aria-hidden", null);
     this.mutationLease.setAttribute("inert", null);
   }
 
+  /**
+   * Out of sight but still exposed to assistive technology. Pointer input is blocked the way
+   * `inert` blocks it: the controller ignores commands mid-transition, so a click must not look
+   * accepted.
+   */
   private _applyFadedState() {
     this.mutationLease.setStyle("opacity", "0");
+    this.mutationLease.setStyle("pointer-events", "none");
     this.mutationLease.setStyle("transform", null);
   }
 

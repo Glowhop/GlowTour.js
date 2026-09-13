@@ -591,7 +591,13 @@ describe("PopoverElement animation fallbacks", () => {
     await popover.fadeOutForStepChange();
 
     assert.equal(element.styles.get("opacity"), "0");
+    assert.equal(element.styles.get("pointer-events"), "none");
     assert.equal(element.attributes.has("aria-hidden"), false);
     assert.equal(element.attributes.has("inert"), false);
+
+    await popover.present(rect(20, 80, 20, 20), createStep(["bottom"]));
+
+    assert.equal(element.styles.get("opacity"), "1");
+    assert.equal(element.styles.has("pointer-events"), false);
   });
 });
