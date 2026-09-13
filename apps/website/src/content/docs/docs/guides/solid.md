@@ -94,22 +94,34 @@ function TourApp() {
 render(() => <TourApp />, document.getElementById("app")!);
 ```
 
-## Custom composition
+## Customize progressively
 
-Use `useTour()` hook and composition primitives to build a custom tour layout:
+`DefaultTour` is the shortest path to a complete tour. Keep it while you only need visual changes, then move to composition when you need to change the popover structure.
+
+### Style `DefaultTour` with CSS
+
+The default component reads the theme's CSS custom properties, so colors, spacing, and shape can change without replacing any components:
+
+```css
+:where([data-glow-tour-root]) {
+  --glow-tour-color-accent: #7c3aed;
+  --glow-tour-color-surface: #faf5ff;
+  --glow-tour-radius: 16px;
+}
+```
+
+Keep rendering `<DefaultTour tour={tour} />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+
+### Compose the default layout
+
+When you need to add, remove, or rearrange content, expand `DefaultTour` into the primitives it assembles for you:
 
 ```tsx
 import {
   GlowTour,
-  createGlowTour,
-  useTour,
 } from "@glowhop/solid-tour";
 
-const tour = createGlowTour();
-
 export function CustomTour() {
-  const tourState = useTour(tour);
-
   return (
     <GlowTour.Root tour={tour}>
       <GlowTour.Overlay />
@@ -119,6 +131,7 @@ export function CustomTour() {
         <GlowTour.Content />
         <GlowTour.Footer>
           <GlowTour.CancelTrigger />
+          <GlowTour.BackTrigger />
           <GlowTour.AdvanceTrigger />
         </GlowTour.Footer>
       </GlowTour.Popover>
@@ -127,7 +140,60 @@ export function CustomTour() {
 }
 ```
 
-The `useTour()` hook returns reactive signals for fine-grained reactivity.
+### Add a custom step counter
+
+Components rendered inside `GlowTour.Root` can read its reactive state with `useTour()`. Add this small component to the popover from the previous example:
+
+```tsx
+import { Show } from "solid-js";
+import { useTour } from "@glowhop/solid-tour";
+
+function StepCounter() {
+  const state = useTour();
+
+  return (
+    <Show when={state().currentStepIndex >= 0 && state().totalSteps > 0}>
+      <p>
+        Step {state().currentStepIndex + 1} of {state().totalSteps}
+      </p>
+    </Show>
+  );
+}
+```
+
+```tsx
+<GlowTour.Popover>
+  <GlowTour.Header />
+  <StepCounter />
+  <GlowTour.Content />
+  {/* Keep the same footer as above. */}
+</GlowTour.Popover>
+```
+
+To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTour.Content` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
+
+See the runnable [Live step counter example](/examples).
+
+### Subscribe outside the composition
+
+`useTour()` is intended for descendants of `GlowTour.Root`. Elsewhere in a Solid application, adapt the store to a signal and dispose the subscription with the component owner:
+
+```tsx
+import { createSignal, onCleanup } from "solid-js";
+
+function useTourState() {
+  const [state, setState] = createSignal(tour.state.get());
+  onCleanup(tour.state.subscribe(setState));
+  return state;
+}
+
+function TourStatus() {
+  const state = useTourState();
+  return <p>Tour status: {state().status}</p>;
+}
+```
+
+`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the cleanup function passed to `onCleanup`. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
 
 ## Solid 1.8+
 
