@@ -101,6 +101,48 @@ In your HTML:
 </html>
 ```
 
+## Rich content: images and video
+
+`title` and `content` accept either a string or a DOM `Node` (`VanillaTourContent = string | Node`). Strings are rendered as text, never parsed as HTML. Pass a node when a step needs an image, a video, or any other markup:
+
+```typescript
+function exportMedia() {
+  const figure = document.createElement("figure");
+
+  const video = document.createElement("video");
+  video.src = "/videos/export.mp4";
+  video.controls = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.width = 320;
+  video.height = 180;
+
+  const caption = document.createElement("figcaption");
+  caption.textContent = "Export your data as CSV in one click.";
+
+  figure.append(video, caption);
+  return figure;
+}
+
+const workflow = tour
+  .create("export-tour")
+  .step({
+    id: "export",
+    target: "#export",
+    title: "Export your data",
+    content: exportMedia(),
+  })
+  .build();
+```
+
+The node is inserted as-is in `glow-tour-content` (or `glow-tour-header`). Keep these rules in mind:
+
+- **Keep `title` textual.** The header labels the popover dialog (`aria-labelledby`), so screen readers announce its text. Put images and videos in `content`.
+- **Make media accessible.** Give images a meaningful `alt` (or `alt=""` when decorative). For video, show `controls`, avoid autoplay with sound, and add a `<track kind="captions">` when the video contains speech.
+- **Reserve the media size.** Set `width`/`height` or a CSS `aspect-ratio` so the popover does not jump while the media loads.
+- **Build HTML with DOM APIs, not `innerHTML`.** If content comes from a CMS or translations, sanitize it before turning it into nodes.
+- **A node lives in one place.** Leaving the step detaches the node (the browser pauses a detached video) and going back re-attaches the same node, so a video resumes where it stopped. If several `glow-tour-root` elements display the same step at once, create one node per root.
+
 ## Custom composition
 
 Build a custom layout by creating and composing custom elements directly:
