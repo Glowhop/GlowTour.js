@@ -27,6 +27,15 @@ updates:
       # @vitejs/plugin-react 6 needs Vite 8 in the playground and TypeScript >=5.6 for its declarations.
       - dependency-name: "@vitejs/plugin-react"
         update-types: ["version-update:semver-major"]
+      # @vitejs/plugin-vue 6 has the same TypeScript >=5.6 requirement, and Vite 8 is outside the
+      # peer range of both playground plugins, so all three move together with the migration.
+      - dependency-name: "@vitejs/plugin-vue"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      # happy-dom 20 breaks React adapter browser tests (advance navigation); needs investigation.
+      - dependency-name: "happy-dom"
+        update-types: ["version-update:semver-major"]
     groups:
       angular:
         patterns: ["@angular/*", "@angular-devkit/*", "ng-packagr", "zone.js"]
