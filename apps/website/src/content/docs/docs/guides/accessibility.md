@@ -18,7 +18,9 @@ Every adapter renders the same semantic structure for consistent assistive techn
 | Pointer | `aria-hidden="true"` | Hides the decorative indicator from screen readers |
 | Buttons | `aria-controls`, `aria-label`, `aria-disabled`, `aria-keyshortcuts` | Describes button purpose and available keyboard shortcuts |
 
-When a step disallows target interaction, the popover's `aria-modal` is set to `true` and sibling branches of the document are marked `aria-hidden` to prevent focus from escaping.
+When a step disallows target interaction, the popover's `aria-modal` is set to `true` and the rest of the document is made `inert` as focus moves into the popover, so neither focus nor a screen reader's reading cursor can leave the dialog.
+
+Between two steps the popover fades out and back in, but stays exposed to assistive technology the whole time: the description's live region announces the new step, and focus stays on the popover's button.
 
 ## Keyboard shortcuts
 
@@ -72,7 +74,7 @@ While a step is active, focus is trapped inside the popover. Pressing `Tab` cycl
 
 ### Focus restoration
 
-When the tour ends (whether it completes, is cancelled, or errors), focus automatically returns to the element that had focus before the tour started. This ensures users return to their original position on the page and don't lose context.
+When the tour ends (whether it completes, is cancelled, or errors), focus automatically returns to the element that had focus before the tour started, once the popover has faded out. This ensures users return to their original position on the page, and screen readers announce where they landed.
 
 ## Rendering semantics
 
@@ -81,6 +83,28 @@ All adapters (React, Vue, Solid, Angular, Vanilla) render identical ARIA markup 
 - No custom keyboard handling in adapters - there is a single source of truth in Core
 - All tours behave identically across frameworks
 - Assistive technology sees consistent semantics everywhere
+
+## Screen reader support
+
+GlowTour.js is tested with real screen readers, not only with accessibility-tree checks. [Guidepup](https://www.guidepup.dev/) drives VoiceOver and NVDA through the same three-step tour rendered by each adapter (React, Vue, Solid, Angular and Vanilla), and the tests assert what the screen reader actually says. They run on every pull request that changes a package, and weekly.
+
+| Screen reader | Browser engine | Status |
+| --- | --- | --- |
+| VoiceOver (macOS) | WebKit (Safari) | Tested |
+| VoiceOver (macOS) | Chromium (Chrome) | Tested |
+| NVDA (Windows) | Chromium (Chrome) | Tested |
+| NVDA (Windows) | Firefox | Tested |
+| JAWS, VoiceOver on iOS, TalkBack | - | Not tested automatically |
+
+For each adapter and each pairing, the tests check that:
+
+- the user can reach the button that starts the tour with `Tab` and open it with `Enter`
+- opening the tour moves focus into the dialog, and the screen reader announces its role and title
+- moving to the next step with `Enter` announces the new step's content
+- while a step is modal, the reading cursor stays inside the dialog
+- `Escape` closes the tour, focus returns to the button that started it, and the screen reader announces that button
+
+The browsers are the engines Playwright ships: WebKit stands in for Safari. The arrow-key shortcuts are covered by keyboard tests in every browser engine rather than through the screen readers, which can use arrow keys for their own navigation.
 
 ## Testing accessibility
 
