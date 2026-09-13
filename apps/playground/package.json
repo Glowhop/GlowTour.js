@@ -20,7 +20,7 @@
     "@glowhop/vanilla-tour": "workspace:*",
     "@glowhop/vue-tour": "workspace:*",
     "@vitejs/plugin-react": "^4.3.4",
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitejs/plugin-vue": "^6.0.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "solid-js": "^1.9.14",
