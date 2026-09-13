@@ -205,7 +205,8 @@ test("CI validates pull requests and main with pinned actions and minimal permis
   expect(concurrency["cancel-in-progress"]).toBe(true);
   expect(String(concurrency.group)).toContain("github.workflow");
   expect(String(concurrency.group)).toContain("github.ref");
-  expect(workflowUses(raw)).toEqual(actionPins.slice(0, 2));
+  // Every job repeats the same two pinned actions, so compare the distinct set.
+  expect([...new Set(workflowUses(raw))]).toEqual(actionPins.slice(0, 2));
   expect(raw).toMatch(/bun-version:\s*1\.3\.12/);
   expect(raw).toMatch(/bun install --frozen-lockfile/);
 
@@ -226,6 +227,17 @@ test("CI validates pull requests and main with pinned actions and minimal permis
   expect(raw.indexOf("bun run build")).toBeLessThan(raw.indexOf("bun test"));
   expect(raw.indexOf("bun test")).toBeLessThan(raw.indexOf("bun run test:browser"));
   expect(raw.indexOf("bun run test:browser")).toBeLessThan(raw.indexOf("bun run pack"));
+
+  // The SSR claims on the website rest on these apps: one production build per framework,
+  // driven end to end by Playwright.
+  const ssr = record(record(workflow.jobs).ssr);
+  expect(stringArray(record(record(ssr.strategy).matrix).app).sort()).toEqual([
+    "ssr-angular",
+    "ssr-react",
+    "ssr-solid",
+    "ssr-vue",
+  ]);
+  expect(raw).toMatch(/bun run --cwd apps\/\$\{\{ matrix\.app \}\} test/);
 });
 
 test("Changesets opens version pull requests from main without publishing", () => {

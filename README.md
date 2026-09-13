@@ -40,7 +40,7 @@ Most tour libraries are a single DOM script with framework wrappers bolted on, o
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | **Five native adapters**     | React, Vue 3, Solid, Angular 18, and native custom elements - not one wrapper reskinned five times.                      |
 | **Accessible by default**    | `role="dialog"`, `aria-live` step description, focus trap, focus restoration, Escape and arrow-key shortcuts, everywhere. |
-| **SSR-verified**             | `renderToString` + hydration coverage, plus real Next.js, Nuxt and SolidStart apps driven end to end with Playwright.    |
+| **SSR-verified**             | `renderToString` + hydration coverage, plus real Next.js, Nuxt, SolidStart and Angular apps tested with Playwright.      |
 | **Zero runtime dependencies**| The core ships no dependencies and touches no browser global you did not hand it, which is what keeps SSR safe.          |
 | **Themeable from CSS alone** | Every color, radius, spacing, size and transition is a `--glow-tour-*` token; the popover inherits your font.            |
 | **Analytics-ready**          | One `onEvent` callback reports every start, step and exit - with the step id, its duration, and how the user left.       |
