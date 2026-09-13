@@ -225,6 +225,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (!target) return;
       this.activeTarget = target;
 
+      // Before inerting the page: inert blurs the trigger that started the tour, and focus
+      // could no longer be restored to it.
+      this.focusGuard.captureInitialFocus(target);
       this.syncModality(step.behavior?.allowInteraction === true);
       const scrolling = this.beginTargetScroll(step, target, signal);
       this.throwIfStale(generation, signal);
