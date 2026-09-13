@@ -5,9 +5,33 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # Angular majors must move together in one planned migration (packages/angular peer range,
+    # apps/ssr-angular, ng-packagr). zone.js 0.x minors are breaking and track the Angular major.
+    ignore:
+      - dependency-name: "@angular/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@angular-devkit/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "ng-packagr"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zone.js"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Express is only used by the Angular SSR server and upgrades with it.
+      - dependency-name: "express"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/express"
+        update-types: ["version-update:semver-major"]
+    groups:
+      angular:
+        patterns: ["@angular/*", "@angular-devkit/*", "ng-packagr", "zone.js"]
+      minor-and-patch:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
