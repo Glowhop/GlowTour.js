@@ -1,0 +1,6 @@
+# Default owner for repository changes.
+* @Glowhop
+
+# Security and repository automation deserve explicit maintainer review.
+/.github/ @Glowhop
+/SECURITY.md @Glowhop

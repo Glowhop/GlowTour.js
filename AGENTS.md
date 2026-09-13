@@ -1,67 +1,121 @@
 # AGENTS.md
 
-GlowTour.js is a cross-framework guided-tour library published as a Bun workspace monorepo: `packages/core` (no presentation) plus the `react`, `vue`, `angular`, `solid`, and `vanilla` adapters and `packages/styles`. Demo and docs apps live in `apps/` (`playground`, `website`, and the `ssr-*` smoke apps).
+GlowTour.js is a production cross-framework guided-tour library managed as a Bun workspace monorepo. The public packages are `packages/core`, `packages/react`, `packages/vue`, `packages/angular`, `packages/solid`, `packages/vanilla`, and `packages/styles`. Reference applications live in `apps/`: `playground`, `website`, `ssr-react`, `ssr-vue`, and `ssr-solid`.
 
-## Default Behavior
-- Be direct, concise, and factual. No padding, no motivational filler.
-- Ask a precise follow-up only when a missing decision would materially change the implementation.
-- Challenge incorrect assumptions when evidence contradicts them.
-- Prefer execution over discussion once the task is clear, and finish the task end-to-end in the turn when it is doable.
+These instructions apply to any coding agent working in this repository.
 
-## Planning And Execution
-- Simple tasks: execute directly after minimal context gathering.
-- Complex tasks (multi-file, cross-layer, ambiguous, or risky): produce a short plan with sequencing, dependencies, and validation steps first.
-- Route work to the specialized agents defined in `.codex/agents` (Codex) or `.claude/agents` (Claude Code) rather than forcing a generalist implementation. Whatever the agent, its output must stay concrete: diagnosis, implementation, design guidance, or verification result.
+## Project boundaries
 
-## Subagent Orchestration
-- One agent for simple or tightly scoped tasks.
-- Parallel agents for independent read-heavy work: exploration, review, testing, triage, summarization.
-- Write-heavy agents run sequentially unless each owns an explicit, non-overlapping file scope.
-- Every delegation brief states goal, context, constraints, ownership boundary, completion criteria, and expected summary.
-- Wait for all delegated agents before synthesizing the final answer.
+- `packages/core` owns workflow state, positioning, DOM behavior, and framework-agnostic primitives. It must not own presentation or hardcode browser globals such as `window`, `document`, `location`, or storage APIs in code paths that would break SSR.
+- Framework-specific rendering and lifecycle integration belong in the corresponding adapter package.
+- `packages/styles` owns the default CSS theme and design tokens.
+- Keep behavior consistent across adapters unless a framework requires a documented exception.
+- Public API compatibility matters: GlowTour.js is already published and used as a library. Treat public API changes as potentially breaking.
+- npm publication happens through GitHub Actions. Never publish packages manually.
 
-## Clarification Rules
-Ask before proceeding when one of these is unresolved:
-- public API surface or contract changes with several plausible interpretations
-- behavior visible to the library's users
-- destructive or irreversible actions
+## Before changing code
 
-Do not ask when the request is already specific, when repository conventions settle the choice, or when the remaining ambiguity is minor and low risk.
+- Read the relevant package, its tests, and nearby conventions before editing.
+- Prefer the smallest change that solves the actual problem. Do not introduce speculative abstractions or unrelated refactors.
+- Reuse existing primitives and contracts before adding new public API.
+- If behavior, public API, SSR semantics, accessibility, or package exports could change, identify that impact explicitly before implementation.
 
-## Implementation Rules
-- Read the relevant files before editing.
-- Match existing repository conventions before introducing new patterns.
-- Keep `packages/core` free of presentation and of hardcoded browser globals; adapters own the framework-specific layer.
-- Prefer explicit data contracts and typed boundaries. Reuse existing helpers, tokens, and utilities when coherent.
-- Comment only where the code would otherwise be hard to parse quickly.
-- No speculative refactors unless required to complete the task safely.
+## API design: recipe before feature
 
-## API Design Rules — recette plutôt que feature
-Priorité : flexibilité et DX, obtenues en **limitant** la surface d'API publique, pas en l'étendant.
+The project favors flexibility and DX by keeping the public API small.
 
-- Avant d'ajouter une API publique, vérifier qu'elle est **impossible à écrire depuis l'extérieur**. Si l'app peut le faire en quelques lignes avec ce que le core expose déjà, c'est une recette à documenter dans `docs/`, pas une option à livrer.
-- Le core fournit des **primitives** (identité, points d'entrée, hooks) ; les **politiques** restent à l'app : stockage, routeur, analytics, i18n, TTL, gestion multi-onglets. Chaque app les veut différentes, et le core ne peut pas deviner mieux qu'elle.
-- Ne jamais coder en dur un global navigateur (`window`, `sessionStorage`, `location`) dans `packages/core`. Laisser l'app y toucher préserve le SSR par construction — c'est un argument de vente, pas un détail.
-- Refuser une seconde façon de faire une chose déjà faisable. Deux chemins pour le même besoin coûtent plus cher qu'une contrainte : ils créent une question à trancher à chaque usage.
-- Préférer un champ requis à un champ optionnel qui crée deux modes (deux branches d'état, deux paragraphes de doc). La contrainte est moins chère que la complexité.
-- Asymétrie à garder en tête : ajouter une API plus tard est additif, la retirer est breaking. En cas de doute, ne pas l'ajouter — et n'absorber dans le core que ce qui est **prouvé** réécrit à l'identique par plusieurs apps.
-- Communication : annoncer ce que la lib fait réellement. « Reprise en deux lignes, avec ton stockage et ton routeur » est plus fort et plus vérifiable que « gère le multi-page ». Ne pas promettre dans le README ce que la doc ne peut pas démontrer.
-- Toute décision d'écarter une API doit être **écrite** dans `docs/` avec sa raison (voir `docs/json-config-design.md`), pour ne pas être reposée trois mois plus tard.
+- Before adding public API, verify that consumers cannot already express the behavior from existing primitives in a few lines. If they can, document a recipe instead of adding another option.
+- Core should expose primitives; application policy stays in the application. Storage, routing, analytics, i18n, TTL, and multi-tab policy should not be absorbed into core without strong repeated evidence.
+- Do not provide two public ways to solve the same problem without a compelling reason.
+- Prefer a clear required contract over optional fields that create parallel behavior modes.
+- Adding API later is additive; removing API later is breaking. When uncertain, prefer not to expand the public surface.
+- Keep documentation claims strictly aligned with behavior that the library actually implements and tests.
+- Record important rejected API directions and their rationale in `docs/` so the same decision does not have to be rediscovered later.
 
-## Verification Rules
-- Run the smallest useful verification step after changes: `bun run check`, `bunx tsc -p tsconfig.json --noEmit`, `bun test`, scoped to what was touched.
-- Targeted verification before broad suites.
-- For visible UI changes in an adapter, verify from the user's perspective in a real browser (`bun run playground`) rather than trusting types and unit tests alone.
-- For bugs, confirm root cause before applying a fix whenever feasible.
-- Say so explicitly when something important could not be verified.
+## Implementation rules
 
-## Safety And Scope
-- Do not invent requirements the repository never stated, and do not silently broaden scope.
-- Do not overwrite or revert user changes unless asked.
-- Do not add tests for `apps/playground` or `packages/styles`.
-- Escalate uncertainty instead of hiding it behind confident prose.
+- Preserve TypeScript type safety and explicit boundaries.
+- Keep tree-shaking in mind when changing exports or package entry points.
+- Preserve accessibility behavior: focus management, keyboard handling, ARIA semantics, and restoration are product requirements, not optional polish.
+- Do not introduce runtime dependencies casually. The core is intentionally dependency-free at runtime.
+- Do not hide browser-only behavior behind types alone. Validate actual runtime behavior.
+- Changes that affect users or published packages need an appropriate Changeset unless the repository conventions clearly classify them as documentation/internal-only work.
 
-## Project goal
-- The library is in production: public API changes are breaking changes and need a changeset.
-- Keep the package production-ready across all supported UI frameworks.
-- npm publishing happens through GitHub Actions, never by hand; see [docs/release.md](docs/release.md) and [RELEASING.md](RELEASING.md).
+## Required validation
+
+Validation is part of the implementation. Do not report a package change as complete until the relevant checks have actually passed.
+
+### Automated checks
+
+For package changes, run the complete repository validation unless the task is explicitly limited to documentation or non-runtime repository metadata:
+
+```bash
+bun install --frozen-lockfile
+bun run check
+bun run typecheck
+bun run build
+bun test
+bun run test:browser
+bun run pack
+bun run test:tarballs
+bun run --cwd apps/playground build
+bun run --cwd apps/website build
+```
+
+Run targeted tests while iterating, but targeted tests do not replace the full relevant validation before completion. Never claim that tests pass from inspection alone; use fresh command output.
+
+### Browser validation: mandatory for package changes
+
+Any behavioral modification under `packages/` must be exercised in a real browser. `apps/playground` is the reference application for package behavior.
+
+- Start it with `bun run playground`.
+- Exercise the changed behavior through the relevant framework example in the browser.
+- Check the user-visible result, interactions, focus/keyboard behavior when relevant, and browser console errors.
+- Do not consider unit tests, type checking, or a successful build a substitute for this browser validation.
+- If browser validation cannot be performed in the current environment, state that explicitly and do not describe the change as fully verified.
+
+### SSR validation: all three apps
+
+If a change can affect SSR, hydration, browser-global access, package exports used during SSR, or adapter initialization, validate all three SSR reference apps, not only the adapter directly touched. The SSR apps consume the workspace packages' built entry points, so build the packages first:
+
+```bash
+bun run build
+bun run --cwd apps/ssr-react test
+bun run --cwd apps/ssr-vue test
+bun run --cwd apps/ssr-solid test
+```
+
+A change affecting SSR is not considered validated until React/Next.js, Vue/Nuxt, and SolidStart coverage all pass.
+
+### Bundle-size budgets
+
+Bundle-size limits are intentional constraints. They are defined by `gzipBudget` scenarios in `scripts/verify-bundles.ts` and validated by the repository tests/tarball checks.
+
+If a package exceeds its byte budget after a change:
+
+1. Treat the increase as a regression to investigate first, not as a signal to immediately raise the budget.
+2. Identify what added bytes and try to reduce them through simpler code, better factoring, tree-shaking, narrower imports/exports, or removal of duplicated/unnecessary logic.
+3. Re-run the bundle measurement after optimization attempts.
+4. Increase the relevant `gzipBudget` only when the added behavior is genuinely required and there is no reasonable code optimization left.
+5. When a budget must increase, keep the increase as small as possible and document why the additional bytes are justified.
+
+Never raise a bundle-size limit merely to make CI green.
+
+## Bug fixes
+
+- Establish the root cause before fixing when feasible.
+- Add or update a regression test that fails for the original bug and passes with the fix when the behavior is testable automatically.
+- Verify the actual user path in `apps/playground` for package behavior, even when the regression test passes.
+- If the bug concerns SSR, also run all three SSR app tests.
+
+## Scope and safety
+
+- Do not invent requirements or silently broaden the task.
+- Do not overwrite or revert unrelated user changes.
+- Do not commit local agent/tool configuration. `.agents/`, `.claude/`, `.codex/`, and `.mcp.json` are local-only and ignored.
+- Keep generated artifacts and local caches out of the repository.
+- State any validation that could not be performed.
+
+## Release context
+
+Changesets version the public packages together. Read `docs/release.md` and `RELEASING.md` before changing release behavior. A GitHub Release triggers the npm publishing workflow; publishing is never a local/manual step.

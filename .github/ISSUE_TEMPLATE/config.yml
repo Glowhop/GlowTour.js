@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://glowtour.dev/docs/getting-started
+    about: Check the documentation before opening an issue.
+  - name: Security vulnerability
+    url: https://github.com/Glowhop/GlowTour.js/security
+    about: Do not disclose security vulnerabilities in a public issue. Follow SECURITY.md.
