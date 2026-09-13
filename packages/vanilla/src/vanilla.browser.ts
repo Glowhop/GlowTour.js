@@ -389,6 +389,51 @@ describe("vanilla adapter browser behavior", () => {
     assert.doesNotThrow(() => element.remove());
   });
 
+  test("renders DOM node title and content, swaps them for strings, and restores them on previous", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    const element = root(tour, "node-content");
+    element.innerHTML =
+      "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content></glow-tour-popover>";
+    document.body.append(target, element);
+    await settle();
+    const title = document.createElement("strong");
+    title.textContent = "Media title";
+    const content = document.createElement("figure");
+    const image = document.createElement("img");
+    image.alt = "Export screen";
+    content.append(image, "Media description");
+    await tour.run(
+      tour
+        .create("node-content")
+        .step({ id: "media", content, target, title })
+        .step({ id: "text", content: "Plain content", target, title: "Plain title" })
+        .build(),
+    );
+    await settle();
+    const header = element.querySelector<HTMLElement>("[data-glow-tour-header]");
+    const body = element.querySelector<HTMLElement>("[data-glow-tour-content]");
+    assert.ok(header && body);
+    assert.equal(header.firstChild, title);
+    assert.equal(body.firstChild, content);
+    assert.equal(body.querySelector("img"), image);
+    assert.equal(document.getElementById(header.id)?.textContent, "Media title");
+
+    await tour.advance();
+    await settle();
+    assert.equal(header.textContent, "Plain title");
+    assert.equal(body.textContent, "Plain content");
+    assert.equal(title.isConnected, false);
+    assert.equal(content.isConnected, false);
+
+    await tour.previous();
+    await settle();
+    assert.equal(header.firstChild, title);
+    assert.equal(body.firstChild, content);
+    assert.equal(header.childNodes.length, 1);
+    assert.equal(body.childNodes.length, 1);
+  });
+
   test("preserves authored element IDs and ARIA relationships across release and remount", async () => {
     const tour = runtime.createGlowTour();
     const rootElement = root(tour, "authored");
