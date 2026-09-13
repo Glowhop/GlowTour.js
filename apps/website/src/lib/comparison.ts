@@ -171,7 +171,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     // GlowTour.js renders tour markup on the server (React Joyride's renderToString is empty).
     feature: "SSR & hydration",
     values: {
-      glowtour: yes("Verified in Next.js, Nuxt, SolidStart"),
+      glowtour: yes("Verified in Next.js, Nuxt, SolidStart, Angular"),
       driver: partial("Safe to import, client-side only"),
       shepherd: partial("Safe to import, client-side only"),
       joyride: partial("SSR-safe, renders client-side only"),
