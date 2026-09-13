@@ -94,42 +94,104 @@ export function TourApp() {
 createRoot(document.getElementById("app")!).render(<TourApp />);
 ```
 
-## Custom composition
+## Customize progressively
 
-Use `useTour()` hook and composition primitives to build a custom tour layout:
+`DefaultTour` is the shortest path to a complete tour. Keep it while you only need visual changes, then move to composition when you need to change the popover structure.
+
+### Style `DefaultTour` with CSS
+
+The default component reads the theme's CSS custom properties, so colors, spacing, and shape can change without replacing any components:
+
+```css
+:where([data-glow-tour-root]) {
+  --glow-tour-color-accent: #7c3aed;
+  --glow-tour-color-surface: #faf5ff;
+  --glow-tour-radius: 16px;
+}
+```
+
+Keep rendering `<DefaultTour tour={tour} />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+
+### Compose the default layout
+
+When you need to add, remove, or rearrange content, expand `DefaultTour` into the primitives it assembles for you:
 
 ```tsx
 import {
   GlowTour,
-  createGlowTour,
-  useTour,
 } from "@glowhop/react-tour";
 
-const tour = createGlowTour();
-
 export function CustomTour() {
-  const tourState = useTour(tour);
-
   return (
-    <>
-      <GlowTour.Root tour={tour}>
-        <GlowTour.Overlay />
-        <GlowTour.Pointer />
-        <GlowTour.Popover>
-          <GlowTour.Header />
-          <GlowTour.Content />
-          <GlowTour.Footer>
-            <GlowTour.CancelTrigger />
-            <GlowTour.AdvanceTrigger />
-          </GlowTour.Footer>
-        </GlowTour.Popover>
-      </GlowTour.Root>
-    </>
+    <GlowTour.Root tour={tour}>
+      <GlowTour.Overlay />
+      <GlowTour.Pointer />
+      <GlowTour.Popover>
+        <GlowTour.Header />
+        <GlowTour.Content />
+        <GlowTour.Footer>
+          <GlowTour.CancelTrigger />
+          <GlowTour.BackTrigger />
+          <GlowTour.AdvanceTrigger />
+        </GlowTour.Footer>
+      </GlowTour.Popover>
+    </GlowTour.Root>
   );
 }
 ```
 
-The `useTour()` hook returns the reactive tour state for custom styling or logic.
+### Add a custom step counter
+
+Components rendered inside `GlowTour.Root` can read its reactive state with `useTour()`. Add this small component to the popover from the previous example:
+
+```tsx
+import { useTour } from "@glowhop/react-tour";
+
+function StepCounter() {
+  const state = useTour();
+
+  if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
+
+  return (
+    <p>
+      Step {state.currentStepIndex + 1} of {state.totalSteps}
+    </p>
+  );
+}
+```
+
+```tsx
+<GlowTour.Popover>
+  <GlowTour.Header />
+  <StepCounter />
+  <GlowTour.Content />
+  {/* Keep the same footer as above. */}
+</GlowTour.Popover>
+```
+
+To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTour.Content` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
+
+See the runnable [Live step counter example](/examples).
+
+### Subscribe outside the composition
+
+`useTour()` is intended for descendants of `GlowTour.Root`. Elsewhere in a React application, connect directly to the tour's external store with `useSyncExternalStore`:
+
+```tsx
+import { useSyncExternalStore } from "react";
+
+function TourStatus() {
+  const state = useSyncExternalStore(
+    tour.state.subscribe,
+    tour.state.get,
+    tour.state.get,
+  );
+
+  return <p>Tour status: {state.status}</p>;
+}
+```
+
+`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns an unsubscribe function, which React manages for this hook. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
 
 ## React 18 vs 19
 
