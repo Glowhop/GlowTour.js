@@ -1348,7 +1348,8 @@ describe("DomTourViewDriver", () => {
     });
     await flushMicrotasks();
     assert.equal(elements.advance.disabled, false);
-    assert.equal(elements.popover.hasAttribute("inert"), true);
+    // Stays exposed while fading between steps, so the new step is announced.
+    assert.equal(elements.popover.hasAttribute("inert"), false);
     createdAnimations[animationStart]?.resolve();
     await flushMicrotasks();
     assert.equal(elements.advance.disabled, true);
@@ -1993,6 +1994,26 @@ describe("DomTourViewDriver", () => {
     await driver.clear(new AbortController().signal);
     assert.equal(document.activeElement, trigger);
   });
+  test("keeps the popover exposed to assistive technology while replacing a visible step", async () => {
+    const { driver, elements } = installDriver(),
+      target = createTarget(),
+      first = createStep(),
+      second = createStep();
+    first.target = target as unknown as HTMLElement;
+    second.target = target as unknown as HTMLElement;
+    await driver.show(first, "advance", new AbortController().signal);
+    let duringSwap: { hidden: string | null; inert: string | null } | null = null;
+
+    await driver.show(second, "advance", new AbortController().signal, () => {
+      duringSwap = {
+        hidden: elements.popover.getAttribute("aria-hidden"),
+        inert: elements.popover.getAttribute("inert"),
+      };
+    });
+
+    // The live region changes during the swap: hidden, it would never be announced.
+    assert.deepEqual(duringSwap, { hidden: null, inert: null });
+  });
   test("inerts only sibling branches and restores their authored state", async () => {
     const shell = document.createElement("main"),
       authoredInert = document.createElement("aside"),
@@ -2130,7 +2151,8 @@ describe("DomTourViewDriver", () => {
 
     createdAnimations[animationStart]?.resolve();
     await flushMicrotasks();
-    assert.equal(elements.popover.hasAttribute("inert"), true);
+    // Not inert between steps: the focus guard, not inert, keeps focus in the tour.
+    assert.equal(elements.popover.hasAttribute("inert"), false);
     external.focus();
     assert.notEqual(document.activeElement, external);
 
