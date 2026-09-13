@@ -56,6 +56,6 @@
     "typecheck": "bunx tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "happy-dom": "^18.0.1"
+    "happy-dom": "^20.14.3"
   }
 }
