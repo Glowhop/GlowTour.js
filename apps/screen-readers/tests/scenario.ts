@@ -47,8 +47,17 @@ export async function runTourScenario(
     await page.goto(`/?adapter=${adapter}`, { waitUntil: "load" });
     await page.locator(`html[data-adapter="${adapter}"]`).waitFor({ state: "attached" });
     await driver.navigateToWebContent();
-    await page.getByRole("button", { name: "Start tour" }).focus();
-    await checkpoint("page loaded, focus on Start tour");
+    // Reach the trigger through the screen reader, not Playwright: a DOM focus() moves neither
+    // VoiceOver's nor NVDA's cursor, so their Enter would act on something else.
+    const focusedId = () => page.evaluate(() => document.activeElement?.id ?? "");
+    for (let tab = 0; tab < 10 && (await focusedId()) !== "start-tour"; tab += 1) {
+      await driver.press("Tab");
+    }
+    expect(await focusedId(), "Tab through the screen reader never reached Start tour").toBe(
+      "start-tour",
+    );
+    await expectSpoken(driver, "Start tour");
+    await checkpoint("tabbed to Start tour");
 
     // Opening: focus enters the dialog, which is announced with its role and name.
     await driver.press("Enter");
@@ -82,6 +91,9 @@ export async function runTourScenario(
     await expectSpoken(driver, "Start tour");
     await checkpoint("tour cancelled with Escape");
   } finally {
+    // Keep what was spoken since the last checkpoint: on a failure it is the evidence.
+    const pending = await driver.spokenPhraseLog().catch(() => []);
+    if (pending.length > 0) transcript.push("## since last checkpoint", ...pending, "");
     const body = transcript.join("\n");
     await testInfo.attach("spoken-phrases.txt", { body, contentType: "text/plain" });
     const directory = join(testInfo.config.rootDir, "..", "transcripts");
