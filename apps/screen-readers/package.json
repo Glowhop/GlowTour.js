@@ -8,8 +8,8 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4174 --strictPort",
     "test": "vite build && playwright test",
-    "test:voiceover": "vite build && playwright test --config playwright.screen-reader.config.ts --grep @voiceover",
-    "test:nvda": "vite build && playwright test --config playwright.screen-reader.config.ts --grep @nvda"
+    "test:voiceover": "vite build && playwright test --config playwright.screen-reader.config.ts voiceover.pw.ts",
+    "test:nvda": "vite build && playwright test --config playwright.screen-reader.config.ts nvda.pw.ts"
   },
   "dependencies": {
     "@angular/common": "^18.2.14",
