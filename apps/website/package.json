@@ -15,7 +15,7 @@
     "@glowhop/styles-tour": "workspace:*",
     "@glowhop/vanilla-tour": "workspace:*",
     "@iconify-json/logos": "^1.2.4",
-    "astro": "^7.3.1",
+    "astro": "^7.3.2",
     "astro-icon": "^1.1.5",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
