@@ -231,7 +231,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.syncModality(step.behavior?.allowInteraction === true);
       const scrolling = this.beginTargetScroll(step, target, signal);
       this.throwIfStale(generation, signal);
-      this.initializeElements(step);
+      this.initializeElements(step, replaceVisiblePopover);
       // Read late, and again after the scroll: the rect the popover is placed
       // against has to be one that will not move again.
       const resolveRect = () => target.getBoundingClientRect();
@@ -345,7 +345,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const signal = this.currentSignal;
     if (this.disposed || !step || !target || !targetRect || !signal) return;
     this.activeTarget = target;
-    this.initializeElements(step);
+    this.initializeElements(step, false);
     this.awaitingStepUi = true;
     // Re-registration replays the entrance in place: no scroll, and the rect
     // is the one the step was already parked on rather than a fresh reading.
@@ -357,14 +357,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.attachStepResources(step, target, generation, signal);
   }
 
-  private initializeElements(step: ActiveStep<T>) {
+  private initializeElements(step: ActiveStep<T>, replaceVisiblePopover: boolean) {
     const interactionAllowed = step.behavior?.allowInteraction === true;
     this.overlay?.initializeProps();
     this.overlay?.setAnimationOptions(
       animationOptions(step, step.overlay, this.overlay.getElement()),
     );
     this.overlay?.setInteractionAllowed(interactionAllowed);
-    this.popover?.initializeProps();
+    this.popover?.initializeProps({ hideFromAssistiveTechnology: !replaceVisiblePopover });
     this.popover?.setAnimationOptions(
       animationOptions(step, step.popover, this.popover.getElement()),
     );
@@ -493,7 +493,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     hadVisiblePopover: boolean,
     onBeforePopoverAppear?: () => void | Promise<void>,
   ) {
-    if (hadVisiblePopover) await this.popover?.disappear();
+    if (hadVisiblePopover) await this.popover?.fadeOutForStepChange();
     if (onBeforePopoverAppear) {
       await onBeforePopoverAppear();
       this.syncControlState(step);
