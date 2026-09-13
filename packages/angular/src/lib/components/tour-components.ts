@@ -402,6 +402,15 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   protected setDisabled(value: boolean) {
     this.disabledValue.set(value);
   }
+
+  /**
+   * Tour state only disables a trigger while the tour is active, as in the vanilla adapter. During
+   * a step transition the controller reports every command as unavailable; natively disabling the
+   * focused trigger then would blur it, and screen readers lose their place in the dialog.
+   */
+  protected unavailableWhileActive(unavailable: boolean) {
+    return this.snapshot()?.status === "active" && unavailable;
+  }
 }
 
 @Component({
@@ -441,7 +450,7 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
-      !this.snapshot()?.canPrevious ||
+      this.unavailableWhileActive(!this.snapshot()?.canPrevious) ||
       this.step()?.popover?.disablePreviousButton === true,
   );
   readonly label = computed(() => this.backLabelValue() ?? "Back step");
@@ -489,7 +498,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
-      !this.snapshot()?.canAdvance ||
+      this.unavailableWhileActive(!this.snapshot()?.canAdvance) ||
       this.step()?.popover?.disableAdvanceButton === true,
   );
   readonly label = computed(() => {
@@ -527,6 +536,8 @@ export class GlowTourCancelTrigger extends GlowTourTrigger {
     this.setDisabled(value);
   }
 
-  readonly isDisabled = computed(() => this.consumerDisabled() || !this.snapshot()?.canCancel);
+  readonly isDisabled = computed(
+    () => this.consumerDisabled() || this.unavailableWhileActive(!this.snapshot()?.canCancel),
+  );
   readonly label = computed(() => "Skip");
 }
