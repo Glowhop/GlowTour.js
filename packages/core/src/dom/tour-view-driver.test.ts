@@ -931,16 +931,17 @@ describe("DomTourViewDriver", () => {
 
     assert.equal(createdAnimations.length, animationStart + 1);
     const animation = createdAnimations[animationStart];
-    assert.equal(animation?.target, overlayPath);
-    assert.deepEqual((animation?.keyframes as Keyframe[])[0], {
+    assert.ok(animation);
+    assert.equal(animation.target, overlayPath);
+    assert.deepEqual((animation.keyframes as Keyframe[])[0], {
       d: initialPath,
       fill: "black",
       opacity: "0.7",
     });
-    assert.equal((animation?.keyframes as Keyframe[])[1]?.fill, "rgb(12, 34, 56)");
-    assert.equal((animation?.keyframes as Keyframe[])[1]?.opacity, "0.4");
-    assert.notEqual((animation?.keyframes as Keyframe[])[1]?.d, initialPath);
-    assert.equal((animation?.options as KeyframeAnimationOptions).fill, "none");
+    assert.equal((animation.keyframes as Keyframe[])[1]?.fill, "rgb(12, 34, 56)");
+    assert.equal((animation.keyframes as Keyframe[])[1]?.opacity, "0.4");
+    assert.notEqual((animation.keyframes as Keyframe[])[1]?.d, initialPath);
+    assert.equal((animation.options as KeyframeAnimationOptions).fill, "none");
 
     animation?.resolve();
     await flushMicrotasks();
