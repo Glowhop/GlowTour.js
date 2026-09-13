@@ -31,5 +31,12 @@
     }
   },
   "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts"],
-  "exclude": ["services", "apps/ssr-react", "apps/ssr-vue", "apps/ssr-solid", "apps/website"]
+  "exclude": [
+    "services",
+    "apps/ssr-angular",
+    "apps/ssr-react",
+    "apps/ssr-vue",
+    "apps/ssr-solid",
+    "apps/website"
+  ]
 }
