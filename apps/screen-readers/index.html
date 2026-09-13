@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GlowTour.js screen reader fixture</title>
+  </head>
+  <body>
+    <!--
+      The same page and the same three-step tour for every adapter (?adapter=react|vue|solid|angular|vanilla),
+      so any difference in what a screen reader announces comes from the adapter, not the fixture.
+    -->
+    <main>
+      <h1 id="target-welcome">Screen reader fixture</h1>
+      <p>Outside paragraph that assistive technology must not reach during a modal step.</p>
+      <button id="start-tour" type="button">Start tour</button>
+      <p>
+        <label for="target-field">Your name</label>
+        <input id="target-field" type="text" />
+      </p>
+      <p id="target-finish">Finish area</p>
+    </main>
+    <div id="tour-host"></div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
