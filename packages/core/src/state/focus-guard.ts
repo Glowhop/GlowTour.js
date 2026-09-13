@@ -84,11 +84,22 @@ export class FocusGuard {
   }
 
   deactivate() {
-    if (!this.active) {
-      // A capture from a show that never activated must not leak into the next tour.
-      this.initialFocus = null;
-      return;
+    const focusToRestore = this.release();
+    if (focusToRestore?.isConnected) {
+      focusToRestore.focus();
     }
+  }
+
+  /**
+   * Stops guarding and returns the element focus should go back to, without moving focus. Lets
+   * the caller restore it once the page has left `inert`: screen readers ignore focus moved onto
+   * content their accessibility tree has not caught up with yet.
+   */
+  release(): HTMLElement | null {
+    const focusToRestore = this.initialFocus;
+    // A capture from a show that never activated must not leak into the next tour.
+    this.initialFocus = null;
+    if (!this.active) return null;
 
     this.document?.removeEventListener("focusin", this.handleFocusIn, true);
     this.document = null;
@@ -97,13 +108,7 @@ export class FocusGuard {
     this.allowedTarget = null;
     this.allowTargetInteraction = false;
     this.restoreFallback();
-
-    const focusToRestore = this.initialFocus;
-    this.initialFocus = null;
-
-    if (focusToRestore?.isConnected) {
-      focusToRestore.focus();
-    }
+    return focusToRestore;
   }
 
   private isAllowed(target: Node) {
