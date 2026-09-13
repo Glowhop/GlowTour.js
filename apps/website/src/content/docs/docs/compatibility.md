@@ -33,7 +33,7 @@ GlowTour.js is in `dev`. The versions listed are the current peer contracts and 
 | React | Yes | Yes | Package-level + Next.js production app |
 | Vue | Yes | Yes | Package-level + Nuxt production app |
 | Solid | Yes | Yes | Package-level + SolidStart production app |
-| Angular | Unverified | Unverified | DOM-free import only |
+| Angular | Yes | Yes | Angular SSR production app |
 | Vanilla | Not applicable | Not applicable | DOM-free import only |
 
 ## Detailed SSR status
@@ -66,11 +66,11 @@ GlowTour.js is in `dev`. The versions listed are the current peer contracts and 
 
 ### Angular
 
-**Server rendering**: DOM-free import; `@angular/platform-server` is not a workspace dependency.
+**Server rendering**: `GlowTourDefault` renders through `@angular/ssr`'s `CommonEngine` in a production build.
 
-**Hydration**: Not tested. Adding `@angular/platform-server` plus the required DOM shims is out of scope for a lightweight sanity test. No real-app Angular Universal test exists.
+**Hydration**: `provideClientHydration()` reuses the server markup non-destructively, with no NG05xx hydration errors and an interactive tour.
 
-**Recommendation**: If you use Angular SSR, the adapters should work (they're DOM-free), but we have no verified test coverage. If you encounter issues, file a report with your Angular and adapter versions.
+**Real-world verified**: A production Angular 18 SSR app runs end-to-end with Playwright-driven tests. Unlike React, Vue and Solid, there is no additional package-level render test.
 
 ### Vanilla
 
