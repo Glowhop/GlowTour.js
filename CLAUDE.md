@@ -33,9 +33,10 @@ For behavioral changes under `packages/`, validation is not complete with unit t
 2. Before finishing, run the complete applicable repository validation described in `AGENTS.md` and confirm it actually passes.
 3. Start `apps/playground` with `bun run playground` and test the changed package behavior in a real browser. The playground is the reference application for browser verification.
 4. Check interactions, visible output, focus/keyboard behavior when relevant, and browser console errors.
-5. If the change touches or could affect SSR/hydration/browser-global access, run all three SSR suites:
+5. If the change touches or could affect SSR/hydration/browser-global access, build the packages, then run all three SSR suites:
 
 ```bash
+bun run build
 bun run --cwd apps/ssr-react test
 bun run --cwd apps/ssr-vue test
 bun run --cwd apps/ssr-solid test
