@@ -4,9 +4,6 @@ name: Screen readers
 # Slower and noisier than the accessibility-tree job in ci.yml, so it runs on demand, weekly,
 # and on pull requests that touch rendering code. Spoken transcripts are uploaded as evidence.
 on:
-  # TEMPORARY: workflow_dispatch only works once this file is on main. Remove before merging.
-  push:
-    branches: [test/screen-readers]
   workflow_dispatch:
   schedule:
     - cron: "0 4 * * 1"
