@@ -88,9 +88,27 @@ function startTour() {
 </template>
 ```
 
-## Custom composition
+## Customize progressively
 
-Use `useTour()` hook and named components to build a custom tour layout:
+`GlowTourDefault` is the shortest path to a complete tour. Keep it while you only need visual changes, then move to composition when you need to change the popover structure.
+
+### Style `GlowTourDefault` with CSS
+
+The default component reads the theme's CSS custom properties, so colors, spacing, and shape can change without replacing any components:
+
+```css
+:where([data-glow-tour-root]) {
+  --glow-tour-color-accent: #7c3aed;
+  --glow-tour-color-surface: #faf5ff;
+  --glow-tour-radius: 16px;
+}
+```
+
+Keep rendering `<GlowTourDefault :tour="tour" />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+
+### Compose the default layout
+
+When you need to add, remove, or rearrange content, expand `GlowTourDefault` into the components it assembles for you:
 
 ```vue
 <script setup>
@@ -103,13 +121,9 @@ import {
   GlowTourContent,
   GlowTourFooter,
   GlowTourAdvanceTrigger,
+  GlowTourBackTrigger,
   GlowTourCancelTrigger,
-  createGlowTour,
-  useTour,
 } from "@glowhop/vue-tour";
-
-const tour = createGlowTour();
-const tourState = useTour(tour);
 </script>
 
 <template>
@@ -121,6 +135,7 @@ const tourState = useTour(tour);
       <GlowTourContent />
       <GlowTourFooter>
         <GlowTourCancelTrigger />
+        <GlowTourBackTrigger />
         <GlowTourAdvanceTrigger />
       </GlowTourFooter>
     </GlowTourPopover>
@@ -128,7 +143,61 @@ const tourState = useTour(tour);
 </template>
 ```
 
-The `useTour()` hook returns a ref to the reactive tour state.
+### Add a custom step counter
+
+Components rendered inside `GlowTourRoot` can read its reactive state with `useTour()`. Create the counter as a child component so the root context is available:
+
+```vue
+<!-- StepCounter.vue -->
+<script setup lang="ts">
+import { useTour } from "@glowhop/vue-tour";
+
+const state = useTour();
+</script>
+
+<template>
+  <p v-if="state.currentStepIndex >= 0 && state.totalSteps > 0">
+    Step {{ state.currentStepIndex + 1 }} of {{ state.totalSteps }}
+  </p>
+</template>
+```
+
+Then place it in the composed popover:
+
+```vue
+<GlowTourPopover>
+  <GlowTourHeader />
+  <StepCounter />
+  <GlowTourContent />
+  <!-- Keep the same footer as above. -->
+</GlowTourPopover>
+```
+
+To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
+
+See the runnable [Live step counter example](/examples).
+
+### Subscribe outside the composition
+
+`useTour()` is intended for descendants of `GlowTourRoot`. Elsewhere in a Vue application, adapt the store to a ref and dispose the listener with the current effect scope:
+
+```vue
+<script setup lang="ts">
+import { onScopeDispose, shallowRef } from "vue";
+
+const state = shallowRef(tour.state.get());
+const unsubscribe = tour.state.subscribe((nextState) => {
+  state.value = nextState;
+});
+onScopeDispose(unsubscribe);
+</script>
+
+<template>
+  <p>Tour status: {{ state.status }}</p>
+</template>
+```
+
+`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the cleanup function passed to `onScopeDispose`. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
 
 ## Vue 3.3+
 
