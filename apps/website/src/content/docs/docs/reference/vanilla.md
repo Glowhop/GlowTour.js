@@ -90,11 +90,11 @@ root.append(popover);
 
 ### `glow-tour-header`
 
-Title/header area inside the popover.
+Title/header area inside the popover. Renders the step `title`: a string as text, a `Node` as a child element.
 
 ### `glow-tour-content`
 
-Description content area inside the popover.
+Description content area inside the popover. Renders the step `content`: a string as text, a `Node` (image, video, any markup) as a child element. See [Rich content](/docs/guides/vanilla#rich-content-images-and-video).
 
 ### `glow-tour-footer`
 
@@ -250,7 +250,7 @@ await tour.run(workflow);
 ## Types
 
 - `VanillaGlowTour` - Tour controller
-- `VanillaTourContent` - Content type
+- `VanillaTourContent` - Content type for `title` and `content`: `string | Node`
 - `TourState` - Tour state
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
