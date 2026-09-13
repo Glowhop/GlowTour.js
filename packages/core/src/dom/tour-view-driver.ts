@@ -228,7 +228,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       // Before inerting the page: inert blurs the trigger that started the tour, and focus
       // could no longer be restored to it.
       this.focusGuard.captureInitialFocus(target);
-      this.syncModality(step.behavior?.allowInteraction === true);
       const scrolling = this.beginTargetScroll(step, target, signal);
       this.throwIfStale(generation, signal);
       this.initializeElements(step, replaceVisiblePopover);
@@ -248,6 +247,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.lastTargetRect = snapshotRect(targetRect);
       this.lastViewport = snapshotViewport(target);
       this.active = true;
+      // Only now, as focus moves into the presented popover, like a native modal dialog. Inerting
+      // the page while the popover is still hidden pulls the screen reader's cursor out of the
+      // tree with nowhere to go, and VoiceOver then stays silent.
+      this.syncModality(step.behavior?.allowInteraction === true);
       this.activateFocus(step, target, direction, generation);
       this.syncScrollLock(step);
       this.throwIfStale(generation, signal);
@@ -268,10 +271,18 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.throwIfAborted(signal);
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
+    // Focus goes back once the popover has faded out, not in the task that lifts `inert` from the
+    // page: screen readers ignore focus moved onto content that just rejoined their tree.
+    let focusToRestore: HTMLElement | null = null;
+    const restoreFocus = () => {
+      const element = focusToRestore;
+      focusToRestore = null;
+      if (element?.isConnected && this.isCurrentGeneration(generation)) element.focus();
+    };
     try {
       this.cleanupStepResources();
       this.releaseModality();
-      this.focusGuard.deactivate();
+      focusToRestore = this.focusGuard.release();
       this.scrollLock.deactivate();
       this.throwIfStale(generation, signal);
       this.active = false;
@@ -289,8 +300,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         this.popover?.disappear() ?? Promise.resolve(),
         this.pointer?.disappear() ?? Promise.resolve(),
       ]);
+      // Before the stale check: restoring focus may itself start the next tour.
+      restoreFocus();
       this.throwIfStale(generation, signal);
     } finally {
+      restoreFocus();
       removeAbort();
     }
   }
@@ -351,6 +365,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // is the one the step was already parked on rather than a fresh reading.
     await this.appear(() => targetRect as DOMRect, step, generation, null, false);
     this.throwIfStale(generation);
+    this.syncModality(step.behavior?.allowInteraction === true);
     this.activateFocus(step, target, this.direction, generation);
     this.syncScrollLock(step);
     this.throwIfStale(generation);
@@ -368,9 +383,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.popover?.setAnimationOptions(
       animationOptions(step, step.popover, this.popover.getElement()),
     );
-    const popover = this.popover?.getElement();
-    if (isHTMLElement(popover, this.root ?? popover) && !interactionAllowed)
-      popover.setAttribute("aria-modal", "true");
     this.pointer?.initializeProps();
     this.pointer?.setAnimationOptions(
       animationOptions(step, step.indicator, this.pointer.getElement()),
@@ -382,6 +394,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.releaseModality();
       return;
     }
+
+    const popover = this.popover?.getElement();
+    if (isHTMLElement(popover, this.root ?? popover)) popover.setAttribute("aria-modal", "true");
 
     const root = this.root;
     if (!root) return;

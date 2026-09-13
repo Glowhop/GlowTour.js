@@ -286,6 +286,21 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, trigger);
   });
 
+  test("releases without moving focus and returns the element to restore", () => {
+    const initialFocus = new MockElement("initial-focus");
+    mockDocument.activeElement = initialFocus;
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+    const focusedInPopover = mockDocument.activeElement;
+
+    const focusToRestore = guard.release();
+
+    assert.equal(focusToRestore, initialFocus);
+    assert.equal(mockDocument.activeElement, focusedInPopover);
+    assert.equal(guard.release(), null);
+  });
+
   test("forgets a captured focus when deactivated before activation", () => {
     const stale = new MockElement("stale");
     mockDocument.activeElement = stale;

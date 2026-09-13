@@ -1994,6 +1994,47 @@ describe("DomTourViewDriver", () => {
     await driver.clear(new AbortController().signal);
     assert.equal(document.activeElement, trigger);
   });
+  test("inerts the page and marks the dialog modal only once the popover is presented", async () => {
+    const { driver, elements } = installDriver(),
+      target = createTarget(),
+      step = createStep();
+    step.target = target as unknown as HTMLElement;
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    // Inerting the page before the popover can be read leaves VoiceOver with nothing to read.
+    assert.equal(target.getAttribute("inert"), null);
+    assert.equal(elements.popover.getAttribute("aria-modal"), null);
+    resolveAnimations(animationStart);
+    await showing;
+    assert.equal(target.getAttribute("inert"), "");
+    assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+    animationMode = "resolved";
+  });
+  test("restores focus only once the popover has faded out", async () => {
+    const initial = document.createElement("button");
+    document.body.append(initial);
+    initial.focus();
+    const { driver } = installDriver(),
+      step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    const clearing = driver.clear(new AbortController().signal);
+    await flushMicrotasks();
+
+    // Screen readers ignore focus moved onto content that left inert in the same task.
+    assert.notEqual(document.activeElement, initial);
+    resolveAnimations(animationStart);
+    await clearing;
+    assert.equal(document.activeElement, initial);
+    animationMode = "resolved";
+  });
   test("keeps the popover exposed to assistive technology while replacing a visible step", async () => {
     const { driver, elements } = installDriver(),
       target = createTarget(),
@@ -2843,7 +2884,9 @@ describe("DomTourViewDriver", () => {
     step.target = target as unknown as HTMLElement;
     const showing = first.driver.show(step, "advance", operation.signal);
     await Promise.resolve();
-    assert.equal(target.getAttribute("inert"), "");
+    // The page only becomes inert once the popover is presented, so an aborted entrance leaves
+    // nothing behind and never blocks the next modal tour.
+    assert.equal(target.getAttribute("inert"), null);
 
     operation.abort();
     await assert.rejects(() => showing, { name: "AbortError" });
