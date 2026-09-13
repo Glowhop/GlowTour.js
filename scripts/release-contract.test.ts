@@ -20,10 +20,10 @@ const repositoryUrl = "git+https://github.com/Glowhop/GlowTour.js.git";
 // resolves inside a published tarball; a link to anything else does not.
 const packagedRootDocuments = new Set(["README.md", "LICENSE", "CHANGELOG.md"]);
 const actionPins = [
-  "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", // v4.2.2
+  "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", // v7.0.1
   "oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6", // v2.2.0
-  "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020", // v4.4.0
-  "changesets/action@198f833dd7d863100ea6e28967bc9a9fdefadb0a", // v2.1.0
+  "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020", // v7.0.0
+  "changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51", // v2.1.2
 ] as const;
 
 function read(path: string) {
