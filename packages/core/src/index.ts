@@ -31,6 +31,7 @@ export type {
   StepHookAction,
   StepHookContext,
   StepParameters,
+  StepPropsPatch,
   StepPropsStore,
   StepPropsUpdate,
   TargetResolver,
