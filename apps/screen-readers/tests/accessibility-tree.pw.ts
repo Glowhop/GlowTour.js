@@ -169,6 +169,29 @@ for (const adapter of ADAPTERS) {
       expect(errors).toEqual([]);
     });
 
+    test("activates the focused Back and Skip buttons with Enter", async ({ page }) => {
+      const errors = await openFixture(page, adapter);
+      await startTour(page);
+      await page.keyboard.press("ArrowRight");
+      await expect(page.getByRole("dialog", { name: STEP_TEXT.field.title })).toBeVisible();
+      await waitForSettledPopover(page);
+
+      // Enter on a focused Back button goes back; it used to be read as "next".
+      await page.locator("button[data-glow-tour-previous-trigger]").focus();
+      await page.keyboard.press("Enter");
+      const welcome = page.getByRole("dialog", { name: STEP_TEXT.welcome.title });
+      await expect(welcome).toBeVisible();
+      await waitForSettledPopover(page);
+      // Back is unavailable on the first step, so focus lands on Advance rather than on it.
+      await expect(page.locator("button[data-glow-tour-advance-trigger]")).toBeFocused();
+
+      await page.locator("button[data-glow-tour-cancel-trigger]").focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Start tour" })).toBeFocused();
+      expect(errors).toEqual([]);
+    });
+
     test("leaves the page reachable on a step that allows target interaction", async ({ page }) => {
       const errors = await openFixture(page, adapter);
       await startTour(page);

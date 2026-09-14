@@ -46,8 +46,10 @@ async function expectSpoken(driver: ScreenReaderDriver, text: string) {
 }
 
 /**
- * A step change announces the new title, then its content. With a log that can be trusted for
- * repetitions, the content is read once and the previous step's content is not read again.
+ * A step change announces the new title and its content. They are two live regions updated
+ * together, and screen readers do not guarantee which one they read first, so the order is not
+ * asserted. With a log that can be trusted for repetitions, the content is read once and the
+ * previous step's content is not read again.
  */
 async function expectStepAnnounced(
   page: Page,
@@ -58,11 +60,6 @@ async function expectStepAnnounced(
 ) {
   await expectSpoken(driver, step.title);
   await expectSpoken(driver, step.content);
-  const spoken = await spokenText(driver);
-  expect(
-    spoken.indexOf(normalize(step.title)),
-    `"${step.title}" is announced before its content`,
-  ).toBeLessThan(spoken.lastIndexOf(normalize(step.content)));
   if (!options.strictRepetition) return;
   // Late duplicates arrive after the first announcement: give them time to show up.
   await page.waitForTimeout(1_500);
@@ -116,6 +113,15 @@ export async function runTourScenario(
     // announcing it, so start from the body; Shift+Tab would leave the page for the browser
     // toolbar, as NVDA with Firefox showed.
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    for (let tab = 0; tab < 10 && !(await focused("#start-tour")); tab += 1) {
+      await driver.press("Tab");
+    }
+    if (!(await focused("#start-tour"))) {
+      // NVDA with Firefox occasionally leaves focus in the browser chrome after the first
+      // navigation, where Tab never reaches the page: navigate into the web content once more.
+      await driver.navigateToWebContent();
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    }
     await pressUntilFocused(
       "Tab",
       "#start-tour",
