@@ -122,7 +122,7 @@ export default abstract class GlowTourElement {
 
   /**
    * Fades the element out. The popover stays exposed to assistive technology when passed `false`,
-   * for a step change: its live regions then announce the new step and focus stays in it.
+   * for a step change: its live region then announces the new step and focus stays in it.
    */
   disappear(hideFromAssistiveTechnology?: boolean) {
     return this._disappear(hideFromAssistiveTechnology);

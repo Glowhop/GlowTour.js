@@ -182,11 +182,7 @@ export const GlowTourHeader = /* @__PURE__ */ defineComponent({
     return () =>
       h(
         "header",
-        mergeProps(attrs, {
-          "aria-live": "polite",
-          "data-glow-tour-header": "",
-          id: context.binding.value?.ids.title,
-        }),
+        mergeProps(attrs, { "data-glow-tour-header": "", id: context.binding.value?.ids.title }),
         [step()?.title ?? null],
       );
   },

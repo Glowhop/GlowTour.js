@@ -185,7 +185,7 @@ export default class PopoverElement extends GlowTourElement {
   /**
    * Resets the popover to its idle presentation. A step change that replaces a
    * visible popover passes `false`: the popover stays exposed so its live
-   * regions announce the new step and focus stays in it.
+   * region announces the new step and focus stays in it.
    */
   initializeProps(hideFromAssistiveTechnology = true) {
     const el = this.getElement();

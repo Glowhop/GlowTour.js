@@ -191,7 +191,7 @@ export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <header aria-live="polite" data-glow-tour-header [id]="scope.binding()?.ids?.title">
+    <header data-glow-tour-header [id]="scope.binding()?.ids?.title">
       @if (titleTemplate()) {
         <ng-container [ngTemplateOutlet]="titleTemplate()" />
       } @else {
