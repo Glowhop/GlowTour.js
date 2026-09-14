@@ -281,6 +281,41 @@ export async function runDefaultTourAcceptance<TContent>(
   await settle();
   assert.equal(tour.state.get().status, "finished", `${name}: advance finishes`);
 
+  // beforeEnter runs before the step is shown, so the adapter never renders the declared props.
+  // The hook waits before setting props: a step shown too early would render in the meantime.
+  const renderedTexts: string[] = [];
+  const observer = new MutationObserver(() => renderedTexts.push(root.textContent ?? ""));
+  observer.observe(root, { characterData: true, childList: true, subtree: true });
+  await tour.run(
+    tour
+      .create(`${name} beforeEnter`)
+      .step({
+        id: "step-5",
+        content: content("Declared content"),
+        target,
+        title: content("Declared title"),
+      })
+      .beforeEnter(async ({ props }) => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        props.set((current) => ({
+          ...current,
+          content: content("Entered content"),
+          title: content("Entered title"),
+        }));
+      })
+      .build(),
+  );
+  await settle();
+  renderedTexts.push(root.textContent ?? "");
+  observer.disconnect();
+  assert.match(root.textContent ?? "", /Entered title/, `${name}: beforeEnter title renders`);
+  assert.match(root.textContent ?? "", /Entered content/, `${name}: beforeEnter content renders`);
+  assert.equal(
+    renderedTexts.some((text) => /Declared (title|content)/.test(text)),
+    false,
+    `${name}: props set in beforeEnter render first`,
+  );
+
   await tour.run(workflow());
   await settle();
   requiredOwnedElement(root, "[data-glow-tour-cancel-trigger]", name).dispatchEvent(
