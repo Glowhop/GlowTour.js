@@ -2060,6 +2060,44 @@ describe("DomTourViewDriver", () => {
     assert.equal(elements.popover.getAttribute("aria-modal"), "true");
     animationMode = "resolved";
   });
+  test("keeps keys off the page until a modal step is presented", async () => {
+    const outside = document.createElement("button"),
+      { driver, elements } = installDriver(),
+      target = createTarget(),
+      modal = createStep(),
+      interactive = createStep({ allowInteraction: true });
+    document.body.append(outside);
+    modal.target = target as unknown as HTMLElement;
+    interactive.target = target as unknown as HTMLElement;
+    const pressEnter = (on: MockElement) => {
+      const event = new MockKeyboardEvent("keydown", { key: "Enter", target: on });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    animationMode = "controlled";
+    let animationStart = createdAnimations.length;
+
+    const showing = driver.show(modal, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    // The page is not inert yet: a second Enter on the trigger would start the tour again.
+    assert.equal(pressEnter(outside), true);
+    assert.equal(pressEnter(elements.advance), false);
+    resolveAnimations(animationStart);
+    await showing;
+    assert.equal(pressEnter(outside), false);
+
+    animationMode = "resolved";
+    await driver.clear(new AbortController().signal);
+    animationMode = "controlled";
+    animationStart = createdAnimations.length;
+    const showingInteractive = driver.show(interactive, "advance", new AbortController().signal);
+    await flushMicrotasks();
+    assert.equal(pressEnter(outside), false);
+    resolveAnimations(animationStart);
+    await showingInteractive;
+    animationMode = "resolved";
+  });
   test("restores focus only once the popover has faded out", async () => {
     const initial = document.createElement("button");
     document.body.append(initial);
@@ -2156,6 +2194,8 @@ describe("DomTourViewDriver", () => {
       /only supports one active modal tour per document/,
     );
     assert.equal(second.elements.popover.getAttribute("aria-modal"), null);
+    // Rejected before its entrance: the second tour never shows its popover over the first.
+    assert.equal(second.elements.popover.getAttribute("aria-hidden"), "true");
 
     await second.driver.show(secondInteractive, "advance", new AbortController().signal);
     assert.equal(second.elements.popover.getAttribute("aria-modal"), null);
