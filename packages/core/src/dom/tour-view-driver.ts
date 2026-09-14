@@ -216,14 +216,22 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.lastViewport = null;
       this.presentationDirty = false;
       this.awaitingStepUi = true;
-      if (replaceVisiblePopover) {
-        const listener = (event: Event) =>
-          this.queueTransitionKeydown(event as KeyboardEvent, step, generation);
-        const currentWindow = this.getWindow();
-        if (typeof currentWindow?.addEventListener === "function") {
-          currentWindow.addEventListener("keydown", listener);
-          removeTransitionKeydown = () => currentWindow.removeEventListener("keydown", listener);
-        }
+      const modal = step.behavior?.allowInteraction !== true;
+      // Claimed before anything moves: a second modal tour fails without being presented.
+      if (modal) this.claimModal();
+      // Blocks the page until a modal step is presented, and queues shortcuts while a visible
+      // popover is replaced. On any other step it lets every key through.
+      const listener = (event: Event) =>
+        this.queueTransitionKeydown(
+          event as KeyboardEvent,
+          step,
+          generation,
+          replaceVisiblePopover,
+        );
+      const currentWindow = this.getWindow();
+      if (typeof currentWindow?.addEventListener === "function") {
+        currentWindow.addEventListener("keydown", listener);
+        removeTransitionKeydown = () => currentWindow.removeEventListener("keydown", listener);
       }
       const target = step.target;
       if (!target) return;
@@ -254,7 +262,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       // Only now, as focus moves into the presented popover, like a native modal dialog. Inerting
       // the page while the popover is still hidden pulls the screen reader's cursor out of the
       // tree with nowhere to go, and VoiceOver then stays silent.
-      this.syncModality(step.behavior?.allowInteraction === true);
+      this.syncModality(!modal);
       this.activateFocus(step, target, direction, generation);
       this.syncScrollLock(step);
       this.throwIfStale(generation, signal);
@@ -278,11 +286,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // Focus goes back once the popover has faded out, not in the task that lifts `inert` from the
     // page: screen readers ignore focus moved onto content that just rejoined their tree.
     let focusToRestore: HTMLElement | null = null;
-    const restoreFocus = () => {
-      const element = focusToRestore;
-      focusToRestore = null;
-      if (element?.isConnected && this.isCurrentGeneration(generation)) element.focus();
-    };
     try {
       this.cleanupStepResources();
       this.releaseModality();
@@ -298,19 +301,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.currentSignal = null;
       this.lastTargetRect = null;
       this.lastViewport = null;
-      this.popover?.getElement()?.removeAttribute("aria-modal");
       await Promise.allSettled([
         this.overlay?.disappear() ?? Promise.resolve(),
         this.popover?.disappear() ?? Promise.resolve(),
         this.pointer?.disappear() ?? Promise.resolve(),
       ]);
-      // Before the stale check: restoring focus may itself start the next tour.
-      restoreFocus();
-      this.throwIfStale(generation, signal);
     } finally {
-      restoreFocus();
+      if (focusToRestore?.isConnected && this.isCurrentGeneration(generation)) {
+        focusToRestore.focus();
+      }
       removeAbort();
     }
+    // After restoring focus: restoring it may itself start the next tour.
+    this.throwIfStale(generation, signal);
   }
 
   releaseMount(): void {
@@ -399,19 +402,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     }
 
+    this.claimModal();
     const popover = this.popover?.getElement();
     if (isHTMLElement(popover, this.root ?? popover)) popover.setAttribute("aria-modal", "true");
 
     const root = this.root;
-    if (!root) return;
+    if (!root || this.modalRoot === root) return;
     const document = root.ownerDocument;
-    const owner = ACTIVE_MODAL_BY_DOCUMENT.get(document);
-    if (owner && owner !== this.modalToken) {
-      throw new Error("GlowTour.js only supports one active modal tour per document");
-    }
-    ACTIVE_MODAL_BY_DOCUMENT.set(document, this.modalToken);
-    this.modalDocument = document;
-    if (this.modalRoot === root) return;
 
     this.restoreInertBranches();
     this.modalRoot = root;
@@ -426,6 +423,17 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       }
       branch = parent;
     }
+  }
+
+  private claimModal() {
+    const document = this.root?.ownerDocument;
+    if (!document) return;
+    const owner = ACTIVE_MODAL_BY_DOCUMENT.get(document);
+    if (owner && owner !== this.modalToken) {
+      throw new Error("GlowTour.js only supports one active modal tour per document");
+    }
+    ACTIVE_MODAL_BY_DOCUMENT.set(document, this.modalToken);
+    this.modalDocument = document;
   }
 
   private releaseModality() {
@@ -781,14 +789,29 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.loopFocus(event);
       return;
     }
+    const command = this.keyboardCommand(event, step, (command) => this.canCommand(command, step));
+    if (!command) return;
+    event.preventDefault();
+    void this.command(command, "keyboard");
+  }
+
+  /**
+   * The command a keydown asks for, if `available` allows it: the focused tour button's own on
+   * Enter, otherwise a keyboard shortcut. `null` leaves the key to the browser.
+   */
+  private keyboardCommand(
+    event: KeyboardEvent,
+    step: ActiveStep<T>,
+    available: (command: TourViewCommand) => boolean,
+  ): TourViewCommand | null {
+    const command = activationCommand(event, this.root);
+    if (command) return command !== "native" && available(command) ? command : null;
     const shortcuts = step.popover?.keyboardShortcuts;
     const shortcut = (command: TourViewCommand) =>
       (shortcuts?.[command] ?? DEFAULT_SHORTCUTS[command]).includes(event.key) &&
-      this.canCommand(command, step);
-    let command = activationCommand(event, this.root);
-    if (command === "native") return;
+      available(command);
     // Escape cancels even from an editable field; the navigation shortcuts do not.
-    command ??= shortcut("cancel")
+    return shortcut("cancel")
       ? "cancel"
       : isEditable(event.target, this.root)
         ? null
@@ -797,9 +820,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           : shortcut("previous")
             ? "previous"
             : null;
-    if (!command || !this.canCommand(command, step)) return;
-    event.preventDefault();
-    void this.command(command, "keyboard");
   }
 
   private handleOverlayClick(event: MouseEvent, step: ActiveStep<T>, target: HTMLElement) {
@@ -822,7 +842,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
-  private queueTransitionKeydown(event: KeyboardEvent, step: ActiveStep<T>, generation: number) {
+  private queueTransitionKeydown(
+    event: KeyboardEvent,
+    step: ActiveStep<T>,
+    generation: number,
+    queue: boolean,
+  ) {
+    const target = event.target;
+    const root = this.root;
     if (
       !this.isCurrentGeneration(generation) ||
       event.defaultPrevented ||
@@ -832,22 +859,28 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       event.altKey
     )
       return;
-    const shortcuts = step.popover?.keyboardShortcuts;
+    // A modal step inerts the page only once presented. Until then keys must not act on the page,
+    // as inert would have prevented: a second Enter on the trigger would start the tour again.
+    if (
+      step.behavior?.allowInteraction !== true &&
+      isHTMLElement(target, root) &&
+      target !== target.ownerDocument.body &&
+      !root?.contains(target)
+    ) {
+      event.preventDefault();
+      return;
+    }
+    if (!queue) return;
     const popover = step.props.get().popover;
-    const shortcut = (command: TourViewCommand) =>
-      (shortcuts?.[command] ?? DEFAULT_SHORTCUTS[command]).includes(event.key);
     // Enter on a tour button queues that button's own command.
-    let command = activationCommand(event, this.root);
-    if (command === "native") return;
-    command ??= shortcut("cancel")
-      ? "cancel"
-      : isEditable(event.target, this.root)
-        ? null
-        : shortcut("advance") && popover?.disableAdvanceButton !== true
-          ? "advance"
-          : shortcut("previous") && popover?.disablePreviousButton !== true
-            ? "previous"
-            : null;
+    const command = this.keyboardCommand(
+      event,
+      step,
+      (command) =>
+        (command === "advance"
+          ? popover?.disableAdvanceButton
+          : command === "previous" && popover?.disablePreviousButton) !== true,
+    );
     if (!command) return;
     event.preventDefault();
     this.pendingKeyboardCommand ??= { command, generation };
@@ -1168,11 +1201,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const allowed = !locked && step.behavior?.allowInteraction === true;
     this.overlay?.setInteractionAllowed(allowed);
     this.syncModality(allowed);
-    const popover = this.popover?.getElement();
-    if (isHTMLElement(popover, this.root ?? popover)) {
-      if (allowed) popover.removeAttribute("aria-modal");
-      else popover.setAttribute("aria-modal", "true");
-    }
   }
 
   private isFocusInsideTarget(target: HTMLElement) {
