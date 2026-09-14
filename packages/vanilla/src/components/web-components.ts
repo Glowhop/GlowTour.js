@@ -164,9 +164,9 @@ function subscribeToCurrentStep(
 }
 
 /**
- * Title and content are live regions, and screen readers announce one again whenever it is
- * rewritten, even with the text it already shows. Every state update renders, so leave unchanged
- * values alone.
+ * The content is a live region, and screen readers announce it again whenever it is rewritten,
+ * even with the text it already shows. Every state update renders, so leave unchanged values
+ * alone.
  */
 function renderValue(element: HTMLElement, value: VanillaTourContent) {
   const only = element.childNodes.length === 1 ? element.firstChild : null;
@@ -504,7 +504,6 @@ export function registerGlowTourElements() {
 
   class GlowTourHeader extends ReactiveElement {
     connectedCallback() {
-      applyIntrinsicAttributes(this, { "aria-live": "polite" });
       this.setAttribute("data-glow-tour-header", "");
       super.connectedCallback();
     }
