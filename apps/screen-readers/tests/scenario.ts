@@ -50,6 +50,11 @@ async function expectSpoken(driver: ScreenReaderDriver, text: string) {
  * together, and screen readers do not guarantee which one they read first, so the order is not
  * asserted. With a log that can be trusted for repetitions, the content is read once and the
  * previous step's content is not read again.
+ *
+ * `focusedControlChangesState` marks a step change that makes the focused button unavailable
+ * (Back, on the way to the first step): NVDA then re-announces the focus with its dialog context,
+ * description included, before focus moves on (nvaccess/nvda#6265), so the content can be read
+ * twice there.
  */
 async function expectStepAnnounced(
   page: Page,
@@ -57,6 +62,7 @@ async function expectStepAnnounced(
   step: StepText,
   previous: StepText,
   options: ScenarioOptions,
+  { focusedControlChangesState = false } = {},
 ) {
   await expectSpoken(driver, step.title);
   await expectSpoken(driver, step.content);
@@ -64,7 +70,9 @@ async function expectStepAnnounced(
   // Late duplicates arrive after the first announcement: give them time to show up.
   await page.waitForTimeout(1_500);
   const settled = await spokenText(driver);
-  expect(occurrences(settled, step.content), "the step content is read once").toBe(1);
+  if (!focusedControlChangesState) {
+    expect(occurrences(settled, step.content), "the step content is read once").toBe(1);
+  }
   expect(settled, "the previous step's content is not read again").not.toContain(
     normalize(previous.content),
   );
@@ -155,7 +163,9 @@ export async function runTourScenario(
     await checkpoint("moved to the Back button");
     await driver.press("Enter");
     await expect(dialog(STEP_TEXT.welcome)).toBeVisible();
-    await expectStepAnnounced(page, driver, STEP_TEXT.welcome, STEP_TEXT.field, options);
+    await expectStepAnnounced(page, driver, STEP_TEXT.welcome, STEP_TEXT.field, options, {
+      focusedControlChangesState: true,
+    });
     await checkpoint("went back to step 1");
 
     // Forward again to the last step.
