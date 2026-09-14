@@ -2411,7 +2411,10 @@ describe("DomTourViewDriver", () => {
       .onTargetEvent("click", (_event, context) => {
         assert.equal(context.target, target);
         assert.equal(context.signal, controller.signal);
-        assert.equal(context.props.get().title, "a");
+        assert.equal(context.props.get().title, "changed");
+        assert.equal(context.initialProps, step.initialProps);
+        assert.equal(context.initialProps.title, "a");
+        assert.equal(context.direction, "previous");
         throw new Error("event failed");
       })
       .build();
@@ -2419,8 +2422,10 @@ describe("DomTourViewDriver", () => {
     if (!definition) throw new Error("Expected a step definition");
     const step = new ActiveStep(definition, workflow.options);
     step.target = target as unknown as HTMLElement;
+    step.direction = "previous";
+    step.props.set((current) => ({ ...current, title: "changed" }));
 
-    await driver.show(step, "advance", controller.signal);
+    await driver.show(step, "previous", controller.signal);
     target.dispatchEvent(new MockEvent("click"));
     await flushMicrotasks();
 
