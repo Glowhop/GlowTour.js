@@ -124,10 +124,12 @@ class MockElement extends MockNode {
     return node === this || this.children.some((child) => child.contains(node));
   }
   closest(selector: string): MockElement | null {
-    const trigger = ["advance", "previous", "back", "cancel"].find((direction) =>
-      selector.includes(`data-glow-tour-${direction}-trigger`),
+    const trigger = ["advance", "previous", "back", "cancel"].some(
+      (direction) =>
+        selector.includes(`data-glow-tour-${direction}-trigger`) &&
+        this.hasAttribute(`data-glow-tour-${direction}-trigger`),
     );
-    if (trigger && this.hasAttribute(`data-glow-tour-${trigger}-trigger`)) return this;
+    if (trigger) return this;
     if (selector.includes("data-glow-tour-root") && this.hasAttribute("data-glow-tour-root"))
       return this;
     const match =
@@ -1348,7 +1350,8 @@ describe("DomTourViewDriver", () => {
     });
     await flushMicrotasks();
     assert.equal(elements.advance.disabled, false);
-    assert.equal(elements.popover.hasAttribute("inert"), true);
+    // Stays exposed while fading between steps, so the new step is announced.
+    assert.equal(elements.popover.hasAttribute("inert"), false);
     createdAnimations[animationStart]?.resolve();
     await flushMicrotasks();
     assert.equal(elements.advance.disabled, true);
@@ -1695,6 +1698,50 @@ describe("DomTourViewDriver", () => {
     await Promise.resolve();
     assert.deepEqual(calls, ["advance", "cancel"]);
   });
+  test("runs the focused tour button's own command on Enter", async () => {
+    for (const [marker, command] of [
+      ["data-glow-tour-previous-trigger", "previous"],
+      ["data-glow-tour-cancel-trigger", "cancel"],
+      ["data-glow-tour-advance-trigger", "advance"],
+    ] as const) {
+      const { calls, driver, elements } = installDriver(),
+        step = createStep();
+      const trigger =
+        marker === "data-glow-tour-previous-trigger"
+          ? elements.back
+          : marker === "data-glow-tour-advance-trigger"
+            ? elements.advance
+            : document.createElement("button");
+      if (marker === "data-glow-tour-cancel-trigger") {
+        trigger.setAttribute(marker, "");
+        elements.popover.append(trigger);
+      }
+      step.target = createTarget() as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+
+      // Enter activates the focused button: on Back it must not move forward.
+      window.dispatchEvent(new MockKeyboardEvent("keydown", { key: "Enter", target: trigger }));
+      await Promise.resolve();
+
+      assert.deepEqual(calls, [command]);
+      driver.dispose();
+    }
+  });
+  test("leaves Enter on other popover controls to the browser", async () => {
+    const { calls, driver, elements } = installDriver(),
+      control = document.createElement("button"),
+      step = createStep();
+    elements.popover.append(control);
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const event = new MockKeyboardEvent("keydown", { key: "Enter", target: control });
+
+    window.dispatchEvent(event);
+    await Promise.resolve();
+
+    assert.deepEqual(calls, []);
+    assert.equal(event.defaultPrevented, false);
+  });
   test("does not react to the removed back trigger marker", async () => {
     const { calls, driver, elements } = installDriver(),
       oldBackTrigger = document.createElement("button"),
@@ -1969,6 +2016,133 @@ describe("DomTourViewDriver", () => {
     await driver.show(allowed, "advance", new AbortController().signal);
     assert.equal(elements.popover.getAttribute("aria-modal"), null);
   });
+  test("restores focus to a trigger blurred when a modal step inerts its branch", async () => {
+    const shell = document.createElement("main"),
+      trigger = document.createElement("button"),
+      { driver, elements } = installDriver(),
+      target = createTarget(),
+      step = createStep();
+    shell.append(trigger);
+    document.body.append(shell);
+    const setAttribute = shell.setAttribute.bind(shell);
+    shell.setAttribute = (name: string, value: string) => {
+      setAttribute(name, value);
+      // Browsers blur a focused element whose ancestor becomes inert; the mock DOM does not.
+      if (name === "inert") document.activeElement = null;
+    };
+    trigger.focus();
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(shell.getAttribute("inert"), "");
+    assert.equal(document.activeElement, elements.advance);
+    await driver.clear(new AbortController().signal);
+    assert.equal(document.activeElement, trigger);
+  });
+  test("inerts the page and marks the dialog modal only once the popover is presented", async () => {
+    const { driver, elements } = installDriver(),
+      target = createTarget(),
+      step = createStep();
+    step.target = target as unknown as HTMLElement;
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    // Inerting the page before the popover can be read leaves VoiceOver with nothing to read.
+    assert.equal(target.getAttribute("inert"), null);
+    assert.equal(elements.popover.getAttribute("aria-modal"), null);
+    resolveAnimations(animationStart);
+    await showing;
+    assert.equal(target.getAttribute("inert"), "");
+    assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+    animationMode = "resolved";
+  });
+  test("keeps keys off the page until a modal step is presented", async () => {
+    const outside = document.createElement("button"),
+      { driver, elements } = installDriver(),
+      target = createTarget(),
+      modal = createStep(),
+      interactive = createStep({ allowInteraction: true });
+    document.body.append(outside);
+    modal.target = target as unknown as HTMLElement;
+    interactive.target = target as unknown as HTMLElement;
+    const pressEnter = (on: MockElement) => {
+      const event = new MockKeyboardEvent("keydown", { key: "Enter", target: on });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    animationMode = "controlled";
+    let animationStart = createdAnimations.length;
+
+    const showing = driver.show(modal, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    // The page is not inert yet: a second Enter on the trigger would start the tour again.
+    assert.equal(pressEnter(outside), true);
+    assert.equal(pressEnter(elements.advance), false);
+    resolveAnimations(animationStart);
+    await showing;
+    assert.equal(pressEnter(outside), false);
+
+    animationMode = "resolved";
+    await driver.clear(new AbortController().signal);
+    animationMode = "controlled";
+    animationStart = createdAnimations.length;
+    const showingInteractive = driver.show(interactive, "advance", new AbortController().signal);
+    await flushMicrotasks();
+    assert.equal(pressEnter(outside), false);
+    resolveAnimations(animationStart);
+    await showingInteractive;
+    animationMode = "resolved";
+  });
+  test("restores focus only once the popover has faded out", async () => {
+    const initial = document.createElement("button");
+    document.body.append(initial);
+    initial.focus();
+    const { driver } = installDriver(),
+      step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    const clearing = driver.clear(new AbortController().signal);
+    await flushMicrotasks();
+
+    // Screen readers ignore focus moved onto content that left inert in the same task.
+    assert.notEqual(document.activeElement, initial);
+    resolveAnimations(animationStart);
+    await clearing;
+    assert.equal(document.activeElement, initial);
+    animationMode = "resolved";
+  });
+  test("keeps the popover exposed to assistive technology while replacing a visible step", async () => {
+    const { driver, elements } = installDriver(),
+      target = createTarget(),
+      first = createStep(),
+      second = createStep();
+    first.target = target as unknown as HTMLElement;
+    second.target = target as unknown as HTMLElement;
+    await driver.show(first, "advance", new AbortController().signal);
+    let duringSwap: { hidden: string | null; inert: string | null; pointerEvents: string } | null =
+      null;
+
+    await driver.show(second, "advance", new AbortController().signal, () => {
+      duringSwap = {
+        hidden: elements.popover.getAttribute("aria-hidden"),
+        inert: elements.popover.getAttribute("inert"),
+        pointerEvents: elements.popover.style.getPropertyValue("pointer-events"),
+      };
+    });
+
+    // The live region changes during the swap: hidden, it would never be announced. Pointer input
+    // stays blocked, as inert used to block it, because the controller ignores it mid-transition.
+    assert.deepEqual(duringSwap, { hidden: null, inert: null, pointerEvents: "none" });
+    assert.equal(elements.popover.style.getPropertyValue("pointer-events"), "");
+  });
   test("inerts only sibling branches and restores their authored state", async () => {
     const shell = document.createElement("main"),
       authoredInert = document.createElement("aside"),
@@ -2020,6 +2194,8 @@ describe("DomTourViewDriver", () => {
       /only supports one active modal tour per document/,
     );
     assert.equal(second.elements.popover.getAttribute("aria-modal"), null);
+    // Rejected before its entrance: the second tour never shows its popover over the first.
+    assert.equal(second.elements.popover.getAttribute("aria-hidden"), "true");
 
     await second.driver.show(secondInteractive, "advance", new AbortController().signal);
     assert.equal(second.elements.popover.getAttribute("aria-modal"), null);
@@ -2070,7 +2246,8 @@ describe("DomTourViewDriver", () => {
     await tour.advance();
     assert.equal(document.activeElement, elements.advance);
     await tour.previous();
-    assert.equal(document.activeElement, elements.popover);
+    // Back is unavailable on the first step, so focus lands on Advance rather than the popover.
+    assert.equal(document.activeElement, elements.advance);
     await tour.advance();
     await tour.advance();
     assert.equal(tour.state.get().status, "finished");
@@ -2106,7 +2283,8 @@ describe("DomTourViewDriver", () => {
 
     createdAnimations[animationStart]?.resolve();
     await flushMicrotasks();
-    assert.equal(elements.popover.hasAttribute("inert"), true);
+    // Not inert between steps: the focus guard, not inert, keeps focus in the tour.
+    assert.equal(elements.popover.hasAttribute("inert"), false);
     external.focus();
     assert.notEqual(document.activeElement, external);
 
@@ -2793,7 +2971,9 @@ describe("DomTourViewDriver", () => {
     step.target = target as unknown as HTMLElement;
     const showing = first.driver.show(step, "advance", operation.signal);
     await Promise.resolve();
-    assert.equal(target.getAttribute("inert"), "");
+    // The page only becomes inert once the popover is presented, so an aborted entrance leaves
+    // nothing behind and never blocks the next modal tour.
+    assert.equal(target.getAttribute("inert"), null);
 
     operation.abort();
     await assert.rejects(() => showing, { name: "AbortError" });
