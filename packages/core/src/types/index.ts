@@ -272,8 +272,8 @@ export interface StepContext<T> {
   /** Navigate to the previous step. */
   previous(): Promise<void>;
   /**
-   * The navigation that brought the tour to this step. Captured when the context is created, so it
-   * does not change while the step's callbacks run.
+   * The direction of the navigation that entered this step. Captured when the context is created, so
+   * it does not change while the step's callbacks run.
    */
   readonly direction: TourDirection;
   /** The step properties as initially configured, before any `props.set()`. */
@@ -288,10 +288,8 @@ export interface StepContext<T> {
 
 /**
  * Context passed to the `beforeEnter` and `beforeLeave` step hooks. It has no navigation methods:
- * a transition is already in progress when these hooks run.
- *
- * - `beforeEnter`: `direction` is the navigation bringing the tour to the step.
- * - `beforeLeave`: `direction` is the navigation taking the tour away from the step.
+ * a transition is already in progress when these hooks run. `direction` is the direction of that
+ * navigation, so the step being left and the step being entered see the same value.
  */
 export type StepHookContext<T> = Omit<StepContext<T>, "advance" | "cancel" | "previous">;
 
