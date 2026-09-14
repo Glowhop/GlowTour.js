@@ -250,10 +250,21 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, popover);
   });
 
-  test("does not fall back from an unavailable previous trigger to advance", () => {
+  test("falls back to advance when the previous trigger is unavailable", () => {
     const guard = new FocusGuard();
-    const { backHost, popover } = createScope();
+    const { advance, backHost, popover } = createScope();
     backHost.attributes.set("hidden", "");
+
+    guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
+
+    assert.equal(mockDocument.activeElement, advance);
+  });
+
+  test("focuses the popover when neither directional trigger is available", () => {
+    const guard = new FocusGuard();
+    const { advanceHost, backHost, popover } = createScope();
+    backHost.attributes.set("hidden", "");
+    advanceHost.attributes.set("hidden", "");
 
     guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
 
@@ -267,6 +278,51 @@ describe("FocusGuard", () => {
     const { popover } = createScope();
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
 
+    guard.deactivate();
+
+    assert.equal(mockDocument.activeElement, initialFocus);
+  });
+
+  test("restores a focus captured before the element was blurred", () => {
+    const trigger = new MockElement("trigger");
+    mockDocument.activeElement = trigger;
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+
+    guard.captureInitialFocus(popover as unknown as HTMLElement);
+    mockDocument.activeElement = null;
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+    guard.deactivate();
+
+    assert.equal(mockDocument.activeElement, trigger);
+  });
+
+  test("releases without moving focus and returns the element to restore", () => {
+    const initialFocus = new MockElement("initial-focus");
+    mockDocument.activeElement = initialFocus;
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+    const focusedInPopover = mockDocument.activeElement;
+
+    const focusToRestore = guard.release();
+
+    assert.equal(focusToRestore, initialFocus);
+    assert.equal(mockDocument.activeElement, focusedInPopover);
+    assert.equal(guard.release(), null);
+  });
+
+  test("forgets a captured focus when deactivated before activation", () => {
+    const stale = new MockElement("stale");
+    mockDocument.activeElement = stale;
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+    guard.captureInitialFocus(popover as unknown as HTMLElement);
+    guard.deactivate();
+
+    const initialFocus = new MockElement("initial-focus");
+    mockDocument.activeElement = initialFocus;
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
     guard.deactivate();
 
     assert.equal(mockDocument.activeElement, initialFocus);

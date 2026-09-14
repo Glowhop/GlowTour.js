@@ -579,4 +579,25 @@ describe("PopoverElement animation fallbacks", () => {
     assert.equal(element.attributes.get("inert"), "true");
     assert.equal(element.styles.has("transform"), false);
   });
+
+  test("keeps the popover exposed to assistive technology when fading out for a step change", async () => {
+    const element = new MockElement(100, 60);
+    const popover = new PopoverElement(element as unknown as HTMLElement);
+    element.style.setProperty("transform", "translate(14px, 114px)");
+    element.animate = () => {
+      throw new Error("unsupported animation");
+    };
+
+    await popover.disappear(false);
+
+    assert.equal(element.styles.get("opacity"), "0");
+    assert.equal(element.styles.get("pointer-events"), "none");
+    assert.equal(element.attributes.has("aria-hidden"), false);
+    assert.equal(element.attributes.has("inert"), false);
+
+    await popover.present(rect(20, 80, 20, 20), createStep(["bottom"]));
+
+    assert.equal(element.styles.get("opacity"), "1");
+    assert.equal(element.styles.has("pointer-events"), false);
+  });
 });
