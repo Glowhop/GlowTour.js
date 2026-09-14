@@ -20,6 +20,8 @@ import {
   overlayClickWorkflow,
   PlacementOrderDemo,
   placementOrderWorkflow,
+  RelocateTargetDemo,
+  relocateTargetWorkflow,
   ThemeDemo,
   themeWorkflow,
   WaitForAsyncDemo,
@@ -36,6 +38,7 @@ import {
   nonInteractiveSource,
   overlayClickSource,
   placementOrderSource,
+  relocateTargetSource,
   themeSource,
   waitForAsyncSource,
 } from "./hero-demo-sources";
@@ -165,6 +168,15 @@ export const examples: readonly Example[] = [
     source: liveProgressSource,
     title: "Live step counter",
     workflow: liveProgressWorkflow,
+  },
+  {
+    Demo: RelocateTargetDemo,
+    description:
+      'missingTargetStrategy: "wait" keeps a step alive while its target leaves the page, then follows it to its new place.',
+    label: "Moving target",
+    source: relocateTargetSource,
+    title: "Moving target",
+    workflow: relocateTargetWorkflow,
   },
 ];
 
