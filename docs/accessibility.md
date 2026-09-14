@@ -117,8 +117,12 @@ being trapped. Coverage: `packages/core/src/state/focus-guard.test.ts` includes
   and NVDA (Windows runners, Chromium and Firefox) through it with Guidepup
   (`tests/voiceover.pw.ts`, `tests/nvda.pw.ts`, shared `tests/scenario.ts`) on pull requests that
   touch `packages/**`, weekly, and on demand. Spoken transcripts are uploaded as artifacts. The
-  first fully green run was on commit `5ecc980` (PR #87): 20 of 20 adapter and pairing
-  combinations passed, one of them (Angular, VoiceOver with Chromium) only on retry.
+  first fully green run was on commit `5ecc980` (PR #87). The scenario was then extended (Back,
+  reading cursor backwards, reopening and finishing with Enter, content read once with NVDA) and
+  passed on commit `9d617a4`: 20 of 20 adapter and pairing combinations, one of them (Vanilla,
+  VoiceOver with Chromium) only on retry, when VoiceOver did not announce the restored focus on
+  the first attempt. The limitations the transcripts show, and why the scenario tolerates them,
+  are in the user-facing guide ("Known limitations") and in the comments of `tests/scenario.ts`.
 - Harness pitfalls found while building it, so they are not rediscovered: Guidepup's default
   `capture: "initial"` drops phrases announced after the first page of output (dialog opening,
   live region, restored focus), so the suites capture everything; a Playwright `focus()` moves
