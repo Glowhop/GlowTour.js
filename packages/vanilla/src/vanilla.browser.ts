@@ -346,6 +346,45 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(sibling.state.get().currentStepIndex, 0);
   });
 
+  test("does not rewrite an unchanged title or content when the tour state updates", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    const element = root(tour, "unchanged-text");
+    element.innerHTML =
+      "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content></glow-tour-popover>";
+    document.body.append(target, element);
+    await settle();
+    let activeProps!: StepContext<VanillaTourContent>["props"];
+    await tour.run(
+      tour
+        .create("unchanged-text")
+        .step({ id: "step-unchanged", content: "Same content", target, title: "Same title" })
+        .do(({ props }) => {
+          activeProps = props;
+        })
+        .build(),
+    );
+    await settle();
+    const header = element.querySelector("[data-glow-tour-header]");
+    const content = element.querySelector("[data-glow-tour-content]");
+    assert.ok(header && content);
+    // Records are delivered to the callback while settling, so collect them there.
+    const rewrites: MutationRecord[] = [];
+    const observer = new MutationObserver((records) => rewrites.push(...records));
+    observer.observe(header, { characterData: true, childList: true, subtree: true });
+    observer.observe(content, { characterData: true, childList: true, subtree: true });
+
+    // A live region rewritten with the same text is announced again by screen readers.
+    activeProps.set((props) => ({ ...props, popover: { hideFooter: true } }));
+    await settle();
+
+    assert.equal(rewrites.length, 0);
+    assert.equal(header.textContent, "Same title");
+    assert.equal(content.textContent, "Same content");
+    observer.disconnect();
+    element.remove();
+  });
+
   test("renders dynamic content and binds popover, overlay, and pointer without stale bindings", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");
