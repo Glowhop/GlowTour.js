@@ -62,6 +62,11 @@ diverge from, and none of the adapter `tour-components.ts(x)` files add one.
 | `ArrowLeft`, `Backspace` | Previous | Only fires when going back is currently allowed for the step |
 | `Tab` | Focus loop | While the step disallows outside interaction, Tab is trapped within the popover instead of triggering a shortcut |
 
+`Enter` on a focused tour trigger runs that trigger's own command instead of the advance shortcut,
+and `Enter` on any other focusable control in the popover is left to the browser
+(`activationCommand()` in `tour-view-driver.ts`, used by both `handleKeydown` and the keydowns
+queued during a step transition). A disabled or `aria-disabled` trigger does nothing.
+
 Per-step overrides are supported via `step.popover?.keyboardShortcuts`; when a step doesn't
 override a command, the defaults above apply. Shortcuts are ignored while:
 - a modifier key (`ctrlKey`/`metaKey`/`altKey`) is held,
@@ -85,6 +90,11 @@ keyboard actually does.
 2. **On deactivation**: restores focus to whatever element had focus immediately before the guard
    was first activated (the tour's trigger element) - but only if that element is still connected
    to the document.
+
+Entering a step focuses its Advance trigger, or its Previous trigger when navigating back. When
+that Previous trigger is unavailable, the guard falls back to Advance (`findFocusable()` in
+`focus-guard.ts`): focus left on an unavailable control is a dead end, and NVDA re-reads the whole
+dialog when the focused control changes state.
 
 The guard is activated once per tour (the first `show()` call marks `initialFocus`) and stays
 active across step transitions; it is only deactivated - restoring focus - when the tour view is

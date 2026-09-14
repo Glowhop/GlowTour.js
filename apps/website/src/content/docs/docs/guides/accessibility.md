@@ -39,6 +39,8 @@ Shortcuts are disabled while:
 - Focus is in an editable field (for Advance/Previous only; Escape always works)
 - The event has already been handled
 
+When a tour button has focus, `Enter` activates that button rather than advancing: on Back it goes to the previous step, on Skip it closes the tour. `Enter` on any other control inside the popover content, such as a link or your own button, is left to that control.
+
 The `aria-keyshortcuts` attribute on each button is automatically kept in sync with the active shortcuts, so screen readers and visible labels always match the actual keyboard behavior.
 
 ## Per-step keyboard overrides
@@ -71,6 +73,10 @@ GlowTour.js automatically manages focus for an accessible experience:
 ### Focus trap
 
 While a step is active, focus is trapped inside the popover. Pressing `Tab` cycles through the popover's interactive elements and back to the first one - it does not escape to the rest of the page. If the step allows target interaction, the target is included in the focus cycle.
+
+### Focus between steps
+
+When a step opens, focus goes to its Advance button, or to its Back button when the user went back. If Back is unavailable on that step, as on the first one, focus goes to Advance instead of an unavailable button.
 
 ### Focus restoration
 
