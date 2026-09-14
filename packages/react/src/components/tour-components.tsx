@@ -203,7 +203,7 @@ export function Header(props: ContentProps) {
   const step = useStep(useTourSnapshot(tour));
 
   return (
-    <header {...props} data-glow-tour-header id={binding?.ids.title}>
+    <header {...props} aria-live="polite" data-glow-tour-header id={binding?.ids.title}>
       {step?.title ?? null}
     </header>
   );
