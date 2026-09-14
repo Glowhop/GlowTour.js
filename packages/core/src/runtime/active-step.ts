@@ -5,12 +5,7 @@ import {
   type WorkflowStepDefinition,
 } from "../definition";
 import type { StepPropsStore, TourDirection } from "../types";
-import {
-  mergeIndicatorOptions,
-  mergeOverlayOptions,
-  mergePopoverOptions,
-  mergeStepBehavior,
-} from "../utils/options";
+import { mergeStepBehavior, mergeStepProps } from "../utils/options";
 import { resolveTargetElement } from "../utils/utils";
 import { createStepPropsStore } from "./step-props-store";
 
@@ -31,14 +26,8 @@ export class ActiveStep<T> {
     readonly path = "steps[0]",
     private readonly rootDocument?: Document,
   ) {
-    this.initialProps = freezeStepProps({
-      title: definition.props.title,
-      content: definition.props.content,
-      data: definition.props.data,
-      overlay: mergeOverlayOptions(defaults.overlay, definition.props.overlay),
-      popover: mergePopoverOptions(defaults.popover, definition.props.popover),
-      indicator: mergeIndicatorOptions(defaults.indicator, definition.props.indicator),
-    });
+    // The workflow options go in whole: freezeStepProps keeps only the step prop keys.
+    this.initialProps = freezeStepProps(mergeStepProps(defaults, definition.props));
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;

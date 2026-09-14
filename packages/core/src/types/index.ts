@@ -254,12 +254,21 @@ export type StepPropsUpdate<T> =
   | ReadonlyStepProps<T>
   | ((current: ReadonlyStepProps<T>) => ReadonlyStepProps<T>);
 
+/**
+ * Partial change to step properties, for `StepPropsStore.update`. Fields it leaves out are kept.
+ * `data` is merged key by key; `overlay`, `popover` and `indicator` are merged the way step options
+ * merge over workflow defaults; arrays such as `placementTryOrder` are replaced.
+ */
+export type StepPropsPatch<T> = Partial<ReadonlyStepProps<T>>;
+
 /** Store for the current step's properties. */
 export interface StepPropsStore<T> {
   /** Get the current step properties. */
   get(): ReadonlyStepProps<T>;
-  /** Update the current step properties. */
+  /** Replace the current step properties. */
   set(update: StepPropsUpdate<T>): void;
+  /** Merge a partial change into the current step properties. See `StepPropsPatch`. */
+  update(patch: StepPropsPatch<T> | ((current: ReadonlyStepProps<T>) => StepPropsPatch<T>)): void;
   /** Subscribe to changes in step properties. Returns an unsubscribe function. */
   subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
 }

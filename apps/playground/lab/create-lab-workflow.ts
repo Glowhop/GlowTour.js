@@ -69,11 +69,7 @@ export function createLabWorkflow<TContent>(
     .focusTarget()
     .onTargetEvent("input", (ev, context) => {
       const value = ev.target instanceof HTMLInputElement ? ev.target.value : "";
-      context.props.set((current) => ({
-        ...current,
-        data: { ...current.data, event: ev.type },
-        content: content.paragraph(value),
-      }));
+      context.props.update({ data: { event: ev.type }, content: content.paragraph(value) });
     })
     .wait(timing.focusWait)
     .focusTarget()
@@ -103,29 +99,16 @@ export function createLabWorkflow<TContent>(
     })
     .do((context) => {
       actions.log("waitUntilElement - cible révélée détectée");
-      context.props.set((current) => ({
-        ...current,
-        popover: { ...current.popover, disableAdvanceButton: false },
-        overlay: {
-          ...current.overlay,
-          color: "red",
-          opacity: 0.68,
-        },
-      }));
+      context.props.update({
+        popover: { disableAdvanceButton: false },
+        overlay: { color: "red", opacity: 0.68 },
+      });
 
       setTimeout(() => {
-        context.props.set((current) => ({
-          ...current,
-          popover: {
-            ...current.popover,
-            placementTryOrder: ["top", "bottom", "left", "right"],
-          },
-          overlay: {
-            ...current.overlay,
-            color: "green",
-            opacity: 0.68,
-          },
-        }));
+        context.props.update({
+          popover: { placementTryOrder: ["top", "bottom", "left", "right"] },
+          overlay: { color: "green", opacity: 0.68 },
+        });
       }, 1000);
     })
     .step({
@@ -174,10 +157,7 @@ export function createLabWorkflow<TContent>(
       data: { api: "action", result: false },
     })
     .do(({ props }) => {
-      props.set((current) => ({
-        ...current,
-        popover: { ...current.popover, disableAdvanceButton: false },
-      }));
+      props.update({ popover: { disableAdvanceButton: false } });
       actions.log("action(true) - chaîne poursuivie");
       return true;
     })

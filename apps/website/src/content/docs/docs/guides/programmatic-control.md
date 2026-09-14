@@ -154,6 +154,32 @@ const workflow = tour
 Step props are not reset automatically: a value set with `context.props.set()` is still there when the
 tour comes back to the step, until the workflow runs again.
 
+## Updating step props
+
+`context.props` is a small store: `get()` reads the current props, `set()` replaces them, and
+`update()` merges a partial change into them:
+
+```typescript
+.do(({ props }) => {
+  // Only this option changes; the other popover options, the title and the content are kept.
+  props.update({ popover: { disableAdvanceButton: false } });
+})
+```
+
+- Fields left out of the change are kept.
+- `data` is merged key by key.
+- `overlay`, `popover`, and `indicator` are merged the way step options merge over the workflow
+  defaults.
+- Arrays such as `placementTryOrder` are replaced, never concatenated.
+
+Pass a function to compute the change from the current props:
+
+```typescript
+props.update((current) => ({ data: { clicks: Number(current.data?.clicks ?? 0) + 1 } }));
+```
+
+`update()` validates and publishes once, like `set()`. To remove a value, use `set()`.
+
 ## Step actions
 
 Sequence work between steps using `.do()`, `.wait()`, and other action methods:

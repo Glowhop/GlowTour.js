@@ -115,6 +115,57 @@ describe("step props store", () => {
     assert.deepEqual(secondListenerContents, ["nested", "outer"]);
   });
 
+  test("merges a partial update into the current props and publishes it once", () => {
+    const store = createStepPropsStore(initialProps, () => {});
+    const received: ReadonlyStepProps<string>[] = [];
+    store.subscribe((props) => received.push(props));
+    received.length = 0;
+
+    store.update({ data: { flag: true }, popover: { disableAdvanceButton: true } });
+
+    const props = store.get();
+    assert.equal(received.length, 1);
+    assert.equal(received[0], props);
+    assert.equal(props.title, "title");
+    assert.equal(props.content, "content");
+    assert.deepEqual(props.data, { count: 1, flag: true });
+    assert.equal(props.popover?.disableAdvanceButton, true);
+    assert.equal(props.popover?.arrow?.color, "purple");
+    assert.equal(Object.isFrozen(props.popover), true);
+  });
+
+  test("replaces top-level fields and arrays instead of merging them", () => {
+    const store = createStepPropsStore(initialProps, () => {});
+
+    store.update({ popover: { placementTryOrder: ["top", "left"] }, title: "next" });
+    store.update({ popover: { placementTryOrder: ["bottom"] } });
+
+    assert.equal(store.get().title, "next");
+    assert.deepEqual(store.get().popover?.placementTryOrder, ["bottom"]);
+    assert.equal(store.get().popover?.arrow?.color, "purple");
+  });
+
+  test("computes a partial update from the current props", () => {
+    const store = createStepPropsStore(initialProps, () => {});
+
+    store.update((props) => ({ data: { count: Number(props.data?.count) + 1 } }));
+    store.update((props) => ({ data: { count: Number(props.data?.count) + 1 } }));
+
+    assert.deepEqual(store.get().data, { count: 3 });
+  });
+
+  test("rejects an invalid partial update before replacing the current snapshot", () => {
+    const store = createStepPropsStore(initialProps, () => {}, "steps[1]");
+    const current = store.get();
+
+    assert.throws(() => store.update({ overlay: { opacity: 2 } }), {
+      message: "Invalid option: steps[1].overlay.opacity",
+      name: "TypeError",
+    });
+
+    assert.equal(store.get(), current);
+  });
+
   test("reports one listener failure and continues to later listeners", () => {
     const failures: unknown[] = [];
     const store = createStepPropsStore(initialProps, (error) => failures.push(error));
