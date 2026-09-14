@@ -6,7 +6,7 @@ import type {
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
-  TransitionActionRef as CoreTransitionActionRef,
+  StepHookActionRef as CoreStepHookActionRef,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -34,8 +34,8 @@ export type StepConfig = CoreStepConfig<AngularTourContent>;
 export type EventHandlerConfig = CoreEventHandlerConfig<AngularTourContent>;
 /** Angular step action reference: `StepActionRef` pre-bound to `AngularTourContent`. */
 export type StepActionRef = CoreStepActionRef<AngularTourContent>;
-/** Angular transition action reference: `TransitionActionRef` pre-bound to `AngularTourContent`. */
-export type TransitionActionRef = CoreTransitionActionRef<AngularTourContent>;
+/** Angular step hook reference: `StepHookActionRef` pre-bound to `AngularTourContent`. */
+export type StepHookActionRef = CoreStepHookActionRef<AngularTourContent>;
 /** Angular lifecycle action reference: `LifecycleActionRef` pre-bound to `AngularTourContent`. */
 export type LifecycleActionRef = CoreLifecycleActionRef<AngularTourContent>;
 /** Angular workflow definition produced from config, pre-bound to `AngularTourContent`. */

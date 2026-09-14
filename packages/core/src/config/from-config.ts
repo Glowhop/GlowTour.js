@@ -63,7 +63,7 @@ export function createWorkflowFromConfig<T = string>(
 
 /**
  * Applies a single `StepConfig` to a `WorkflowBuilder`: the `.step()` call itself, then actions,
- * event handlers, and transition hooks.
+ * event handlers, and step hooks.
  * @param builder The workflow builder to add the step to.
  * @param stepConfig The config-form step to apply.
  * @param path Error path for this step, e.g. `steps[2]`.
@@ -76,7 +76,6 @@ function applyStepConfig<T>(
   const step = builder.step({
     id: stepConfig.id,
     target: stepConfig.target,
-    resetPropsOnEnter: stepConfig.resetPropsOnEnter,
     overlay: stepConfig.overlay,
     popover: stepConfig.popover,
     indicator: stepConfig.indicator,
@@ -94,9 +93,8 @@ function applyStepConfig<T>(
     applyEventHandler(step, handler, `${path}.eventHandlers[${index}]`);
   }
 
-  if (stepConfig.advanceAction) step.beforeAdvance(stepConfig.advanceAction);
-  if (stepConfig.previousAction) step.beforePrevious(stepConfig.previousAction);
-  if (stepConfig.cancelAction) step.beforeCancel(stepConfig.cancelAction);
+  if (stepConfig.enterAction) step.beforeEnter(stepConfig.enterAction);
+  if (stepConfig.leaveAction) step.beforeLeave(stepConfig.leaveAction);
 }
 
 /**

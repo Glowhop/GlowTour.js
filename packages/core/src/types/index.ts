@@ -271,6 +271,13 @@ export interface StepContext<T> {
   cancel(): Promise<void>;
   /** Navigate to the previous step. */
   previous(): Promise<void>;
+  /**
+   * The navigation that brought the tour to this step. Captured when the context is created, so it
+   * does not change while the step's callbacks run.
+   */
+  readonly direction: TourDirection;
+  /** The step properties as initially configured, before any `props.set()`. */
+  readonly initialProps: ReadonlyStepProps<T>;
   /** The DOM element being highlighted for this step. */
   readonly target: HTMLElement;
   /** Store for reading and updating the current step's properties. */
@@ -279,12 +286,14 @@ export interface StepContext<T> {
   readonly signal: AbortSignal;
 }
 
-/** Context passed to transition hooks (beforeAdvance, beforePrevious, beforeCancel). */
-export type BeforeActionStepContext<T> = Readonly<
-  ReadonlyStepProps<T> & {
-    readonly target: HTMLElement;
-  }
->;
+/**
+ * Context passed to the `beforeEnter` and `beforeLeave` step hooks. It has no navigation methods:
+ * a transition is already in progress when these hooks run.
+ *
+ * - `beforeEnter`: `direction` is the navigation bringing the tour to the step.
+ * - `beforeLeave`: `direction` is the navigation taking the tour away from the step.
+ */
+export type StepHookContext<T> = Omit<StepContext<T>, "advance" | "cancel" | "previous">;
 
 /** Context passed to target event handlers. */
 export type StepEventContext<T> = StepContext<T>;
@@ -309,8 +318,8 @@ export type StepAction<T> = (
 /** A step action or a delay in milliseconds. */
 export type StepActionInstruction<T> = StepAction<T> | number;
 
-/** A callback that runs before transitioning to the next/previous step or cancelling. */
-export type StepTransitionAction<T> = (context: BeforeActionStepContext<T>) => void | Promise<void>;
+/** A callback that runs before a step is entered or left (`beforeEnter` / `beforeLeave`). */
+export type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>;
 
 /** Handler for an event fired on the target element during a step. */
 export interface EventHandler<TStepProps, TEvent extends Event = Event> {
@@ -513,11 +522,6 @@ export type StepParameters<T> = {
   id: string;
   /** The target element or selector for this step. */
   target: TargetResolver;
-  /**
-   * Reset step properties to initial values when entering this step.
-   * @default true
-   */
-  resetPropsOnEnter?: boolean;
   /** Overlay options for this step (overrides workflow defaults). */
   overlay?: OverlayOptions;
   /** Popover options for this step (overrides workflow defaults). */

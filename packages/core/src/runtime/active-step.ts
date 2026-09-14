@@ -4,7 +4,7 @@ import {
   type ReadonlyStepProps,
   type WorkflowStepDefinition,
 } from "../definition";
-import type { StepPropsStore } from "../types";
+import type { StepPropsStore, TourDirection } from "../types";
 import {
   mergeIndicatorOptions,
   mergeOverlayOptions,
@@ -21,6 +21,8 @@ export class ActiveStep<T> {
   readonly animated: boolean | undefined;
   readonly allowScroll: boolean;
   target: HTMLElement | null = null;
+  /** The navigation that last brought the tour to this step. */
+  direction: TourDirection = "advance";
 
   constructor(
     readonly definition: WorkflowStepDefinition<T>,
@@ -41,10 +43,6 @@ export class ActiveStep<T> {
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
     this.allowScroll = defaults.allowScroll !== false;
-  }
-
-  reset() {
-    this.props.set(this.initialProps);
   }
 
   get overlay() {

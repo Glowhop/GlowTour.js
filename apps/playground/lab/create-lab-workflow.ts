@@ -25,15 +25,19 @@ export function createLabWorkflow<TContent>(
       actions.log(`onTargetEvent<T> - source: ${targetEvent.detail.source}`);
       void context.advance();
     })
-    .beforePrevious(() => actions.log("onBack - sortie de la section ajoutée"))
-    .beforeCancel(() => actions.log("onCancel - étape ajoutée"))
+    .beforeLeave(({ direction }) =>
+      actions.log(`beforeLeave(${direction}) - sortie de la section ajoutée`),
+    )
     .build();
 
   return tour
     .create(workflow.name, {
       ...workflow.options,
       onStart: () => actions.log("create.onStart - workflow démarré"),
-      onCancel: () => actions.log("create.onCancel - workflow annulé"),
+      onCancel: ({ step }) => {
+        actions.cancelPending();
+        actions.log(`create.onCancel - workflow annulé sur ${step?.id}`);
+      },
       onFinish: () => actions.log("create.onFinish - API Lab terminé"),
     })
     .step({
@@ -44,8 +48,9 @@ export function createLabWorkflow<TContent>(
       popover: { hidePreviousButton: true },
       data: { api: "create", targetType: "selector" },
     })
-    .beforeAdvance(({ data }) => actions.log(`onAdvance - ${String(data?.api)}`))
-    .beforeCancel(() => actions.log("onCancel - étape d’introduction"))
+    .beforeLeave(({ direction, props }) =>
+      actions.log(`beforeLeave(${direction}) - ${String(props.get().data?.api)}`),
+    )
     .step({
       id: "step-3",
       target: elements.focusInput,
@@ -60,7 +65,6 @@ export function createLabWorkflow<TContent>(
         scroll: { behavior: "smooth", block: "center", inline: "center" },
       },
       data: { api: "focusTarget", targetType: "element" },
-      resetPropsOnEnter: false,
     })
     .focusTarget()
     .onTargetEvent("input", (ev, context) => {
@@ -73,7 +77,11 @@ export function createLabWorkflow<TContent>(
     })
     .wait(timing.focusWait)
     .focusTarget()
-    .beforePrevious(() => actions.log("onBack - retour vers l’introduction"))
+    .beforeLeave(({ direction }) => {
+      if (direction === "previous") {
+        actions.log("beforeLeave(previous) - retour vers l’introduction");
+      }
+    })
     .step({
       id: "step-4",
       target: selectors.revealButton,
@@ -83,6 +91,10 @@ export function createLabWorkflow<TContent>(
         disableAdvanceButton: true,
       },
       data: { api: "waitUntilElement" },
+    })
+    .beforeEnter(({ direction, props, initialProps }) => {
+      actions.log(`beforeEnter(${direction}) - props réinitialisées avant affichage`);
+      props.set(initialProps);
     })
     .clickTarget()
     .waitUntilElement(selectors.revealed, {
@@ -153,7 +165,6 @@ export function createLabWorkflow<TContent>(
     .do(() => actions.log("waitUntil - condition satisfaite"))
     .wait(timing.conditionAdvanceWait)
     .do(({ advance }) => advance())
-    .beforeCancel(() => actions.cancelPending())
     .step({
       id: "step-7",
       target: selectors.actions,
@@ -213,7 +224,6 @@ export function createLabWorkflow<TContent>(
       target: selectors.previous,
       title: content.title("previous()"),
       content: content.paragraph(copy.previous),
-      resetPropsOnEnter: false,
       data: { api: "previous", guarded: true },
     })
     .do(() => {
@@ -227,7 +237,11 @@ export function createLabWorkflow<TContent>(
     })
     .wait(timing.previousWait)
     .do(({ previous }) => previous())
-    .beforeAdvance(() => actions.log("onAdvance - sortie de la démonstration previous"))
+    .beforeLeave(({ direction }) => {
+      if (direction === "advance") {
+        actions.log("beforeLeave(advance) - sortie de la démonstration previous");
+      }
+    })
     .step({
       id: "step-12",
       target: selectors.autoAdvance,
@@ -251,7 +265,6 @@ export function createLabWorkflow<TContent>(
       data: { api: "missingTargetStrategy", strategy: "wait" },
     })
     .do(() => actions.relocateTarget())
-    .beforeCancel(() => actions.cancelPending())
     .append(appendedWorkflow)
     .build();
 }

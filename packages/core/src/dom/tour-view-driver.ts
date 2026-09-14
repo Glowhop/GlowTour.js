@@ -589,6 +589,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           advance: () => this.commandForStep("advance", step, signal),
           cancel: () => this.commandForStep("cancel", step, signal),
           previous: () => this.commandForStep("previous", step, signal),
+          direction: step.direction,
+          initialProps: step.initialProps,
           props: step.props,
           signal,
           target,

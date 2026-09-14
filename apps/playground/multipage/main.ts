@@ -64,8 +64,9 @@ const spaWorkflow = tour
     title: "Dashboard",
     content: "Step 1 lives on the dashboard view. Advancing triggers a SPA route change.",
   })
-  .beforeAdvance(() => {
-    log("beforeAdvance - pushState to ?view=profile");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "advance") return;
+    log("beforeLeave(advance) - pushState to ?view=profile");
     navigate("profile");
   })
   .step({
@@ -75,8 +76,9 @@ const spaWorkflow = tour
     content: "Step 2 targets an element that only exists after the route change.",
     behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
   })
-  .beforePrevious(() => {
-    log("beforePrevious - pushState back to the dashboard");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "previous") return;
+    log("beforeLeave(previous) - pushState back to the dashboard");
     navigate("dashboard");
   })
 
@@ -104,8 +106,11 @@ const reloadWorkflow = tour
     title: "Dashboard",
     content: "Advancing persists the tour position, then hard-navigates to page B.",
   })
-  .beforeAdvance(() => {
-    log("beforeAdvance - persisting the next step id and calling location.assign('page-b.html')");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "advance") return;
+    log(
+      "beforeLeave(advance) - persisting the next step id and calling location.assign('page-b.html')",
+    );
     persistTour({ workflow: "reload-multipage", stepId: "reload-settings" });
     location.assign("page-b.html");
   })

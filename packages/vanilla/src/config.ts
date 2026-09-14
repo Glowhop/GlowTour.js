@@ -5,7 +5,7 @@ import type {
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
-  TransitionActionRef as CoreTransitionActionRef,
+  StepHookActionRef as CoreStepHookActionRef,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -34,8 +34,8 @@ export type StepConfig = CoreStepConfig<VanillaTourContent>;
 export type EventHandlerConfig = CoreEventHandlerConfig<VanillaTourContent>;
 /** Vanilla step action reference: `StepActionRef` pre-bound to `VanillaTourContent`. */
 export type StepActionRef = CoreStepActionRef<VanillaTourContent>;
-/** Vanilla transition action reference: `TransitionActionRef` pre-bound to `VanillaTourContent`. */
-export type TransitionActionRef = CoreTransitionActionRef<VanillaTourContent>;
+/** Vanilla step hook reference: `StepHookActionRef` pre-bound to `VanillaTourContent`. */
+export type StepHookActionRef = CoreStepHookActionRef<VanillaTourContent>;
 /** Vanilla lifecycle action reference: `LifecycleActionRef` pre-bound to `VanillaTourContent`. */
 export type LifecycleActionRef = CoreLifecycleActionRef<VanillaTourContent>;
 /** Vanilla workflow definition produced from config, pre-bound to `VanillaTourContent`. */
