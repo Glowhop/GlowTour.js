@@ -103,17 +103,17 @@ const workflow = tour
     title: "Load the data first",
     content: "The next step waits for an element that doesn't exist yet.",
     behavior: { allowInteraction: true },
+    popover: { disableAdvanceButton: true },
   })
   .waitUntilElement("#loaded-content")
-  .do((context) => {
-    if (!context.props.get().data?.loaded) context.advance();
-    context.props.set((prev) => ({
-      ...prev,
-      popover: { ...prev.popover, disableAdvanceButton: false },
-      data: {
-        loaded: true,
-      },
-    }));
+  .do(async (context) => {
+    if (!context.props.get().data?.loaded) await context.advance();
+    context.props.update({ data: { loaded: true } });
+  })
+  .beforeEnter((context) => {
+    if (context.props.get().data?.loaded) {
+      context.props.update({ popover: { disableAdvanceButton: false } });
+    }
   })
   .step({
     id: "loaded-content",

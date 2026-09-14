@@ -229,15 +229,14 @@ export const waitForAsyncWorkflow = waitForAsyncTour
     popover: { disableAdvanceButton: true },
   })
   .waitUntilElement("#hero-wait-for-async-loaded")
-  .do((context) => {
-    if (!context.props.get().data?.loaded) context.advance();
-    context.props.set((prev) => ({
-      ...prev,
-      popover: { ...prev.popover, disableAdvanceButton: false },
-      data: {
-        loaded: true,
-      },
-    }));
+  .do(async (context) => {
+    if (!context.props.get().data?.loaded) await context.advance();
+    context.props.update({ data: { loaded: true } });
+  })
+  .beforeEnter((context) => {
+    if (context.props.get().data?.loaded) {
+      context.props.update({ popover: { disableAdvanceButton: false } });
+    }
   })
   .step({
     id: "wait-for-async-loaded",
