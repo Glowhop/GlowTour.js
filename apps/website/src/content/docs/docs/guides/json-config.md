@@ -155,7 +155,7 @@ const config: WorkflowConfig = {
 const workflow = createWorkflowFromConfig(config);
 ```
 
-`advanceAction`, `previousAction`, and `cancelAction`, plus `onStart`, `onCancel`, and `onFinish`, accept only functions. Built-in actions cannot run in those contexts.
+`enterAction` and `leaveAction` (the config form of `.beforeEnter()` and `.beforeLeave()`), plus `onStart`, `onCancel`, and `onFinish`, accept only functions. Built-in actions cannot run in those contexts.
 
 For CMS-driven behavior, keep an identifier in `data` and attach the implementation in application code:
 
@@ -164,8 +164,9 @@ const config = {
   ...parsed,
   steps: parsed.steps.map((step) => ({
     ...step,
-    advanceAction: (context: BeforeActionStepContext<string>) => {
-      analytics.track(String(context.data?.trackingId ?? "unknown-step"));
+    leaveAction: ({ direction, props }: StepHookContext<string>) => {
+      if (direction !== "advance") return;
+      analytics.track(String(props.get().data?.trackingId ?? "unknown-step"));
     },
   })),
 };

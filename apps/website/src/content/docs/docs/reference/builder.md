@@ -50,7 +50,6 @@ step(params: StepParameters): WorkflowStepBuilder
 - `target` - CSS selector, HTMLElement, or resolver function (required)
 - `title` - Step title displayed in popover (required)
 - `content` - Step description displayed in popover (required)
-- `resetPropsOnEnter` - Reset step props on enter (default `true`)
 - `data` - Optional record for custom step data
 - `overlay` - Overlay options (see [Overlay options](#overlay-options))
 - `popover` - Popover options (see [Popover options](#popover-options))
@@ -237,45 +236,50 @@ const workflow = tour
   .build();
 ```
 
-### `beforeAdvance(context)`
+### `.beforeEnter(callback)`
 
-Step-level callback, passed as part of `.step()`'s `params`. Called before advancing to the next step. Can be async.
+Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTargetStrategy: "skip"` never runs it.
+
+Step props are not reset automatically: a value set with `context.props.set()` is still there when the tour comes back to the step, until the workflow runs again. `beforeEnter` is where to reset them, because what it sets is what the step renders first.
 
 **Signature**:
 ```typescript
-beforeAdvance?(context: BeforeActionStepContext<T>): void | Promise<void>
+beforeEnter(callback: StepHookAction<T>): WorkflowStepBuilder
+
+type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>
 ```
+
+`StepHookContext<T>` carries `props`, `initialProps`, `target`, `signal`, and `direction`, the navigation bringing the tour to the step (`"advance"` or `"previous"`). It has no `advance`, `previous`, or `cancel`: a transition is already in progress.
 
 **Usage**:
 ```typescript
-.step({
-  id: "button",
-  target: "#button",
-  title: "Step 1",
-  content: "Description",
-  beforeAdvance: async (context) => {
-    // Perform cleanup or validation
-    await saveFormData();
-  }
+.step({ id: "checkout", target: "#checkout", title: "Checkout", content: "Fill in the form" })
+// Start from the declared props on every visit
+.beforeEnter(({ props, initialProps }) => props.set(initialProps))
+
+// Or reset only part of them
+.beforeEnter(({ props, initialProps }) =>
+  props.set((current) => ({ ...current, data: initialProps.data })),
+)
+```
+
+### `.beforeLeave(callback)`
+
+Runs before the tour navigates away from the step: `advance()`, `previous()`, `goToStep()`, or advancing past the last step to finish. Can be async: the navigation waits for it. It does not run on cancel; use the workflow's `onCancel` option, which receives the current step.
+
+**Signature**:
+```typescript
+beforeLeave(callback: StepHookAction<T>): WorkflowStepBuilder
+```
+
+It receives the same `StepHookContext<T>`, where `direction` is the navigation leaving the step. Branch on it to react to one direction only.
+
+**Usage**:
+```typescript
+.step({ id: "form", target: "#form", title: "Your details", content: "Fill in the form" })
+.beforeLeave(async ({ direction }) => {
+  if (direction === "advance") await saveFormData();
 })
-```
-
-### `beforeCancel(context)`
-
-Step-level callback, passed as part of `.step()`'s `params`. Called before cancelling the tour. Can be async.
-
-**Signature**:
-```typescript
-beforeCancel?(context: BeforeActionStepContext<T>): void | Promise<void>
-```
-
-### `beforePrevious(context)`
-
-Step-level callback, passed as part of `.step()`'s `params`. Called before going to the previous step. Can be async.
-
-**Signature**:
-```typescript
-beforePrevious?(context: BeforeActionStepContext<T>): void | Promise<void>
 ```
 
 ## Option reference
@@ -546,7 +550,9 @@ Builder-related type exports for TypeScript users:
 - `ScrollOptions` - Scroll options
 - `AnimationOptions` - Animation options
 - `WaitUntilOptions` - Wait options
-- `StepContext` - Context passed to step callbacks
+- `StepContext` - Context passed to step actions and target event handlers
+- `StepHookContext` - Context passed to `beforeEnter` and `beforeLeave` (no navigation methods)
+- `StepHookAction` - Callback type for `beforeEnter` and `beforeLeave`
 - `TargetResolver` - Target resolution function type
 
 See the [Tour reference](/docs/reference/tour) for the controller API that runs a built workflow.

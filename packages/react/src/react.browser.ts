@@ -566,7 +566,7 @@ describe("react adapter browser behavior", () => {
     const workflow = tour
       .create("nonpreventing")
       .step({ id: "step-17", content: "First", target, title: "First" })
-      .beforeAdvance(() => {
+      .beforeLeave(() => {
         advances += 1;
       })
       .step({ id: "step-18", content: "Second", target, title: "Second" })

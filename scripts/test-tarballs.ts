@@ -391,7 +391,7 @@ const workflow = createCoreGlowTour<string>()
   .step({ content: "Content", id: "step-1", target: "#target", title: "Title" })
   .wait(0)
   .do(() => true)
-  .beforeAdvance(() => {})
+  .beforeLeave(() => {})
   .build();
 void workflow;
 void reactTour;

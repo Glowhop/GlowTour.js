@@ -26,9 +26,9 @@ plain strings only - regardless of the type parameter. Pass `options.validateCon
 "Validating a generic `T`" below) to accept `T`'s actual shape.
 
 `actions` (per step) and `eventHandlers[].action` accept a `StepActionRef`: either a `BuiltinAction`
-object or an inline function (same-runtime JS only, not serializable). `advanceAction`/
-`previousAction`/`cancelAction` and the tour-level `onStart`/`onCancel`/`onFinish` hooks accept only
-a plain function - see "Mapping problems" below for why.
+object or an inline function (same-runtime JS only, not serializable). `enterAction`/`leaveAction`
+and the tour-level `onStart`/`onCancel`/`onFinish` hooks accept only a plain function - see
+"Mapping problems" below for why.
 
 ```jsonc
 {
@@ -65,8 +65,8 @@ a plain function - see "Mapping problems" below for why.
 
 A hand-authored config with no functions at all is 100% JSON - `BuiltinAction` alone covers
 delays, waiting for an element, and clicking/focusing the target, which is the bulk of real tours.
-`advanceAction`/`previousAction`/`cancelAction` and the lifecycle hooks require JS (see below), so a
-config using them is a same-runtime JS object, not a wire-transportable JSON document.
+`enterAction`/`leaveAction` and the lifecycle hooks require JS (see below), so a config using them is
+a same-runtime JS object, not a wire-transportable JSON document.
 
 ## Entry-point / bundle wiring
 
@@ -96,31 +96,33 @@ not deferred problems:
    `wait`/`waitUntilElement`/`clickTarget`/`focusTarget` all assume a `StepContext`-shaped context
    (`target: HTMLElement`, `signal`, navigation methods) - which is what `actions[]` and
    `eventHandlers[].action` get (`StepEventContext<T>` is literally `StepContext<T>`). But
-   `advanceAction`/`previousAction`/`cancelAction` receive a `BeforeActionStepContext` (`target`
-   only, no `signal`, no navigation) and `onStart`/`onCancel`/`onFinish` receive a
-   `LifecycleHookContext` (**no `target` at all** - only `step: TourCurrentStep<T> | null`).
+   `enterAction`/`leaveAction` receive a `StepHookContext` (`target` and `signal`, no navigation,
+   and they run while a transition is in progress, so a `wait` would stall it and `clickTarget`
+   would act on a step that is not shown yet or is being left) and `onStart`/`onCancel`/`onFinish`
+   receive a `LifecycleHookContext` (**no `target` at all** - only
+   `step: TourCurrentStep<T> | null`).
 
    Resolved by **splitting `ActionRef` per slot family** instead of keeping one generic union, each
    generic over the config's content type `T`:
    - `StepActionRef<T> = BuiltinAction | StepAction<T>` - for `actions[]` and
      `eventHandlers[].action`.
-   - `TransitionActionRef<T> = StepTransitionAction<T>` - for
-     `advanceAction`/`previousAction`/`cancelAction`. Plain function type, no builtin variant.
+   - `StepHookActionRef<T> = StepHookAction<T>` - for `enterAction`/`leaveAction`. Plain function
+     type, no builtin variant.
    - `LifecycleActionRef<T> = (context: LifecycleHookContext<T>) => void | Promise<void>`
      - for `onStart`/`onCancel`/`onFinish`. Plain function type, no builtin variant.
 
-   TypeScript now rejects a `BuiltinAction` in a transition or lifecycle slot at compile time; the
+   TypeScript now rejects a `BuiltinAction` in a step hook or lifecycle slot at compile time; the
    validator rejects it at runtime for raw (untyped) JSON input.
 
-2. **Transition and lifecycle hooks are not expressible in JSON at all.** With the registry gone,
-   `TransitionActionRef` and `LifecycleActionRef` collapse to plain function types - there is no
+2. **Step and lifecycle hooks are not expressible in JSON at all.** With the registry gone,
+   `StepHookActionRef` and `LifecycleActionRef` collapse to plain function types - there is no
    JSON-object form for either, and there never will be one without reintroducing a registry
    (which was removed for a different reason - see point 3). **This is an accepted limitation**: a
-   config that uses `advanceAction`/`previousAction`/`cancelAction`/`onStart`/`onCancel`/`onFinish`
-   is not wire-transportable JSON. The documented workaround (see `docs/json-config.md`) is to bind
+   config that uses `enterAction`/`leaveAction`/`onStart`/`onCancel`/`onFinish` is not
+   wire-transportable JSON. The documented workaround (see `docs/json-config.md`) is to bind
    app-side behavior through the `data` field's ids instead: an `eventHandlers[].action` (or
    `actions[]`) builtin/function can call `context.props.get().data` to look up state, but the
-   transition/lifecycle decision itself still has to live in the same-runtime JS object.
+   step hook/lifecycle decision itself still has to live in the same-runtime JS object.
 
 3. **No registry, therefore no `waitUntil`.** The builder's `.waitUntil(predicate, options)` takes
    an arbitrary function; there is no way to reference one from JSON without a registry. Since the
@@ -170,7 +172,7 @@ not deferred problems:
 ## Files
 
 - `packages/core/src/config/types.ts` - `WorkflowConfig`, `StepConfig`, `BuiltinAction`,
-  `StepActionRef`, `TransitionActionRef`, `LifecycleActionRef`, `EventHandlerConfig`,
+  `StepActionRef`, `StepHookActionRef`, `LifecycleActionRef`, `EventHandlerConfig`,
   `ConfigValidationIssue`, `ConfigValidationError`, `WorkflowDefinitionFromConfig`.
 - `packages/core/src/config/validate.ts` - `validateWorkflowConfig` plus private
   `validate*Shape`/`assertNoUnknownKeys` helpers.

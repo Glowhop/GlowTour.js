@@ -102,7 +102,7 @@ describe("ActiveStep presentation options", () => {
     });
   });
 
-  test("stores effective presentation props and resets nested mutations", () => {
+  test("stores effective presentation props and restores nested mutations from initial props", () => {
     const workflow = definition({ popover: { gap: 6, hideFooter: false } });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
@@ -117,17 +117,17 @@ describe("ActiveStep presentation options", () => {
     assert.equal(step.snapshot().currentProps.popover?.disableAdvanceButton, false);
     assert.equal(step.snapshot().currentProps.popover?.hideFooter, true);
 
-    step.reset();
+    step.props.set(step.initialProps);
     assert.equal(step.props.get().popover?.disableAdvanceButton, true);
     assert.equal(step.props.get().popover?.hideFooter, false);
   });
 
-  test("resets from its immutable initial definition", () => {
+  test("restores from its immutable initial definition", () => {
     const workflow = definition({});
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
     step.props.set((props) => ({ ...props, data: { version: 2 } }));
-    step.reset();
+    step.props.set(step.initialProps);
 
     assert.equal(Object.isFrozen(step.initialProps), true);
     assert.deepEqual(step.props.get().data, undefined);

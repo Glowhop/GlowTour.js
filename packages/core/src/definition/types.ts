@@ -7,8 +7,8 @@ import type {
   StartOptions,
   StepActionInstruction,
   StepBehavior,
+  StepHookAction,
   StepParameters,
-  StepTransitionAction,
   TargetResolver,
 } from "../types";
 
@@ -22,10 +22,7 @@ export type DeepReadonly<T> = T extends (...arguments_: infer _Arguments) => inf
       : T;
 
 /** Step properties (title, content, and optional display options) excluding target and behavior. */
-export type StepProps<T> = Omit<
-  StepParameters<T>,
-  "id" | "target" | "resetPropsOnEnter" | "behavior"
->;
+export type StepProps<T> = Omit<StepParameters<T>, "id" | "target" | "behavior">;
 
 /** Immutable step properties. */
 export type ReadonlyStepProps<T> = {
@@ -45,14 +42,12 @@ export interface WorkflowStepDefinition<T> {
   /** Stable identifier, unique within the workflow. */
   readonly id: string;
   readonly target: TargetResolver;
-  readonly resetPropsOnEnter?: boolean;
   readonly behavior?: DeepReadonly<StepBehavior>;
   readonly props: ReadonlyStepProps<T>;
   readonly actions: readonly StepActionInstruction<T>[];
   readonly eventHandlers: readonly EventHandler<T>[];
-  readonly advanceAction: StepTransitionAction<T> | null;
-  readonly previousAction: StepTransitionAction<T> | null;
-  readonly cancelAction: StepTransitionAction<T> | null;
+  readonly enterAction: StepHookAction<T> | null;
+  readonly leaveAction: StepHookAction<T> | null;
 }
 
 /** A complete tour workflow definition (immutable). */

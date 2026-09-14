@@ -3,8 +3,8 @@ import type {
   EventHandler,
   StartOptions,
   StepActionInstruction,
+  StepHookAction,
   StepParameters,
-  StepTransitionAction,
 } from "../types";
 import { cloneStepProps, freezeStepProps } from "./step-props";
 import type {
@@ -17,14 +17,12 @@ import type {
 export interface WorkflowStepDraft<T> {
   id: string;
   target: StepParameters<T>["target"];
-  resetPropsOnEnter?: boolean;
   props: StepProps<T>;
   behavior?: StepParameters<T>["behavior"];
   actions: StepActionInstruction<T>[];
   eventHandlers: EventHandler<T>[];
-  advanceAction: StepTransitionAction<T> | null;
-  previousAction: StepTransitionAction<T> | null;
-  cancelAction: StepTransitionAction<T> | null;
+  enterAction: StepHookAction<T> | null;
+  leaveAction: StepHookAction<T> | null;
 }
 
 function freezeRecord<T extends object>(value: T): Readonly<T> {
@@ -84,7 +82,6 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
   return freezeRecord({
     id: draft.id,
     target: draft.target,
-    resetPropsOnEnter: draft.resetPropsOnEnter,
     props: freezeStepProps(draft.props),
     behavior:
       draft.behavior &&
@@ -94,9 +91,8 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
       }),
     actions: freezeRecord(draft.actions.map((action) => action)),
     eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
-    advanceAction: draft.advanceAction,
-    previousAction: draft.previousAction,
-    cancelAction: draft.cancelAction,
+    enterAction: draft.enterAction,
+    leaveAction: draft.leaveAction,
   });
 }
 
