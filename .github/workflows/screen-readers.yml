@@ -28,7 +28,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [webkit, chromium]
+        # Pull requests run VoiceOver with WebKit (Safari), the pairing people use. Chromium is the
+        # slowest and least stable pairing, so it runs on the weekly schedule and on demand only.
+        browser: ${{ github.event_name == 'pull_request' && fromJSON('["webkit"]') || fromJSON('["webkit", "chromium"]') }}
     env:
       SCREEN_READER_BROWSER: ${{ matrix.browser }}
     steps:
