@@ -46,10 +46,10 @@ async function expectSpoken(driver: ScreenReaderDriver, text: string) {
 }
 
 /**
- * A step change announces the new title and its content. They are two live regions updated
- * together, and screen readers do not guarantee which one they read first, so the order is not
- * asserted. With a log that can be trusted for repetitions, the content is read once and the
- * previous step's content is not read again.
+ * A step change announces the new content through the popover's live region. The title is not a
+ * live region: two regions updated together are not both read by VoiceOver (w3c/aria#1689), and
+ * the title stays reachable with the reading cursor. With a log that can be trusted for
+ * repetitions, the content is read once and the previous step's content is not read again.
  *
  * `focusedControlChangesState` marks a step change that makes the focused button unavailable
  * (Back, on the way to the first step): NVDA then re-announces the focus with its dialog context,
@@ -64,7 +64,6 @@ async function expectStepAnnounced(
   options: ScenarioOptions,
   { focusedControlChangesState = false } = {},
 ) {
-  await expectSpoken(driver, step.title);
   await expectSpoken(driver, step.content);
   if (!options.strictRepetition) return;
   // Late duplicates arrive after the first announcement: give them time to show up.
@@ -177,7 +176,7 @@ export async function runTourScenario(
     await checkpoint("moved to the Advance button");
     await driver.press("Enter");
     await expect(dialog(STEP_TEXT.field)).toBeVisible();
-    await expectSpoken(driver, STEP_TEXT.field.title);
+    await expectSpoken(driver, STEP_TEXT.field.content);
     await checkpoint("advanced to step 2 again");
     await driver.press("Enter");
     await expect(dialog(STEP_TEXT.finish)).toBeVisible();
@@ -217,7 +216,7 @@ export async function runTourScenario(
     await expect(dialog(STEP_TEXT.field)).toBeVisible();
     await driver.press("Enter");
     await expect(dialog(STEP_TEXT.finish)).toBeVisible();
-    await expectSpoken(driver, STEP_TEXT.finish.title);
+    await expectSpoken(driver, STEP_TEXT.finish.content);
     await checkpoint("advanced to the last step");
     await driver.press("Enter");
     await expect(page.getByRole("dialog")).toHaveCount(0);
