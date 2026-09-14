@@ -250,10 +250,21 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, popover);
   });
 
-  test("does not fall back from an unavailable previous trigger to advance", () => {
+  test("falls back to advance when the previous trigger is unavailable", () => {
     const guard = new FocusGuard();
-    const { backHost, popover } = createScope();
+    const { advance, backHost, popover } = createScope();
     backHost.attributes.set("hidden", "");
+
+    guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
+
+    assert.equal(mockDocument.activeElement, advance);
+  });
+
+  test("focuses the popover when neither directional trigger is available", () => {
+    const guard = new FocusGuard();
+    const { advanceHost, backHost, popover } = createScope();
+    backHost.attributes.set("hidden", "");
+    advanceHost.attributes.set("hidden", "");
 
     guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
 

@@ -161,12 +161,11 @@ export class FocusGuard {
 
   private findFocusable(root: HTMLElement, direction: FocusDirection) {
     const candidates = focusableTourControls(root);
-    const selector =
-      direction === "advance"
-        ? "[data-glow-tour-advance-trigger]"
-        : "[data-glow-tour-previous-trigger]";
-
-    return candidates.find((candidate) => candidate.matches(selector)) ?? null;
+    const find = (trigger: FocusDirection) =>
+      candidates.find((candidate) => candidate.matches(`[data-glow-tour-${trigger}-trigger]`));
+    // Going back onto a step where Back is unavailable, typically the first one, lands on Advance:
+    // focus left on an unavailable control is a dead end, and NVDA re-reads the whole dialog.
+    return (direction === "previous" && find("previous")) || find("advance") || null;
   }
 }
 

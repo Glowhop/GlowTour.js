@@ -172,8 +172,8 @@ export default class PopoverElement extends GlowTourElement {
   /**
    * Fades the popover in at `nextPosition` and commits that placement.
    *
-   * The outgoing half of a step change is {@link fadeOutForStepChange},
-   * deliberately kept separate: between the two, the caller swaps the step's
+   * The outgoing half of a step change is `disappear(false)`, which keeps the
+   * popover exposed to assistive technology, deliberately kept separate: between the two, the caller swaps the step's
    * content while the popover is faded out, and — when the step scrolls — waits
    * for the scroll to settle so this entrance reads a rect that will not move
    * again.
@@ -183,21 +183,11 @@ export default class PopoverElement extends GlowTourElement {
   }
 
   /**
-   * Fades the popover out for a step change without hiding it from assistive
-   * technology. The content swap that follows then happens in an exposed live
-   * region, so screen readers announce it, and `inert` never blurs the focused
-   * trigger. {@link disappear} still hides it when the tour ends.
-   */
-  fadeOutForStepChange() {
-    return this._disappear(false);
-  }
-
-  /**
    * Resets the popover to its idle presentation. A step change that replaces a
-   * visible popover passes `hideFromAssistiveTechnology: false`: the popover
-   * stays exposed so its live region announces the new step and focus stays in it.
+   * visible popover passes `false`: the popover stays exposed so its live
+   * regions announce the new step and focus stays in it.
    */
-  initializeProps({ hideFromAssistiveTechnology = true } = {}) {
+  initializeProps(hideFromAssistiveTechnology = true) {
     const el = this.getElement();
     if (!el) {
       return;

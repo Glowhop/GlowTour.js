@@ -39,7 +39,7 @@ Timing is part of the contract, because real screen readers lose track otherwise
 - `clear()` releases the focus guard with `FocusGuard.release()` and restores focus only after the
   popover has faded out. Moving focus in the same task that lifts `inert` was not announced.
 - Between two steps the popover is not hidden from assistive technology:
-  `initializeProps({ hideFromAssistiveTechnology: false })` and `fadeOutForStepChange()` keep it
+  `initializeProps(false)` and `disappear(false)` on the popover keep it
   exposed so the live region announces the new content and `inert` never blurs the focused
   trigger. Pointer input is blocked with `pointer-events: none` during the fade instead, because
   the controller ignores commands while transitioning.

@@ -124,10 +124,12 @@ class MockElement extends MockNode {
     return node === this || this.children.some((child) => child.contains(node));
   }
   closest(selector: string): MockElement | null {
-    const trigger = ["advance", "previous", "back", "cancel"].find((direction) =>
-      selector.includes(`data-glow-tour-${direction}-trigger`),
+    const trigger = ["advance", "previous", "back", "cancel"].some(
+      (direction) =>
+        selector.includes(`data-glow-tour-${direction}-trigger`) &&
+        this.hasAttribute(`data-glow-tour-${direction}-trigger`),
     );
-    if (trigger && this.hasAttribute(`data-glow-tour-${trigger}-trigger`)) return this;
+    if (trigger) return this;
     if (selector.includes("data-glow-tour-root") && this.hasAttribute("data-glow-tour-root"))
       return this;
     const match =
@@ -1696,6 +1698,50 @@ describe("DomTourViewDriver", () => {
     await Promise.resolve();
     assert.deepEqual(calls, ["advance", "cancel"]);
   });
+  test("runs the focused tour button's own command on Enter", async () => {
+    for (const [marker, command] of [
+      ["data-glow-tour-previous-trigger", "previous"],
+      ["data-glow-tour-cancel-trigger", "cancel"],
+      ["data-glow-tour-advance-trigger", "advance"],
+    ] as const) {
+      const { calls, driver, elements } = installDriver(),
+        step = createStep();
+      const trigger =
+        marker === "data-glow-tour-previous-trigger"
+          ? elements.back
+          : marker === "data-glow-tour-advance-trigger"
+            ? elements.advance
+            : document.createElement("button");
+      if (marker === "data-glow-tour-cancel-trigger") {
+        trigger.setAttribute(marker, "");
+        elements.popover.append(trigger);
+      }
+      step.target = createTarget() as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+
+      // Enter activates the focused button: on Back it must not move forward.
+      window.dispatchEvent(new MockKeyboardEvent("keydown", { key: "Enter", target: trigger }));
+      await Promise.resolve();
+
+      assert.deepEqual(calls, [command]);
+      driver.dispose();
+    }
+  });
+  test("leaves Enter on other popover controls to the browser", async () => {
+    const { calls, driver, elements } = installDriver(),
+      control = document.createElement("button"),
+      step = createStep();
+    elements.popover.append(control);
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const event = new MockKeyboardEvent("keydown", { key: "Enter", target: control });
+
+    window.dispatchEvent(event);
+    await Promise.resolve();
+
+    assert.deepEqual(calls, []);
+    assert.equal(event.defaultPrevented, false);
+  });
   test("does not react to the removed back trigger marker", async () => {
     const { calls, driver, elements } = installDriver(),
       oldBackTrigger = document.createElement("button"),
@@ -2160,7 +2206,8 @@ describe("DomTourViewDriver", () => {
     await tour.advance();
     assert.equal(document.activeElement, elements.advance);
     await tour.previous();
-    assert.equal(document.activeElement, elements.popover);
+    // Back is unavailable on the first step, so focus lands on Advance rather than the popover.
+    assert.equal(document.activeElement, elements.advance);
     await tour.advance();
     await tour.advance();
     assert.equal(tour.state.get().status, "finished");
