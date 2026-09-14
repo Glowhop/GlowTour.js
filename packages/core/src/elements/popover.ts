@@ -172,16 +172,22 @@ export default class PopoverElement extends GlowTourElement {
   /**
    * Fades the popover in at `nextPosition` and commits that placement.
    *
-   * The outgoing half of a step change is {@link disappear}, deliberately kept
-   * separate: between the two, the caller swaps the step's content while the
-   * popover is off screen, and — when the step scrolls — waits for the scroll
-   * to settle so this entrance reads a rect that will not move again.
+   * The outgoing half of a step change is `disappear(false)`, which keeps the
+   * popover exposed to assistive technology, deliberately kept separate: between the two, the caller swaps the step's
+   * content while the popover is faded out, and — when the step scrolls — waits
+   * for the scroll to settle so this entrance reads a rect that will not move
+   * again.
    */
   async present(nextPosition: DOMRect, step: TourElementStep) {
     await this._appear(nextPosition, step);
   }
 
-  initializeProps() {
+  /**
+   * Resets the popover to its idle presentation. A step change that replaces a
+   * visible popover passes `false`: the popover stays exposed so its live
+   * region announces the new step and focus stays in it.
+   */
+  initializeProps(hideFromAssistiveTechnology = true) {
     const el = this.getElement();
     if (!el) {
       return;
@@ -193,8 +199,13 @@ export default class PopoverElement extends GlowTourElement {
     if (!el.hasAttribute("tabindex")) {
       this.mutationLease.setAttribute("tabindex", POPOVER_IDLE_ATTRIBUTES.tabindex);
     }
-    this.mutationLease.setAttribute("aria-hidden", POPOVER_IDLE_ATTRIBUTES["aria-hidden"]);
-    this.mutationLease.setAttribute("inert", POPOVER_IDLE_ATTRIBUTES.inert);
+    if (hideFromAssistiveTechnology) {
+      this.mutationLease.setAttribute("aria-hidden", POPOVER_IDLE_ATTRIBUTES["aria-hidden"]);
+      this.mutationLease.setAttribute("inert", POPOVER_IDLE_ATTRIBUTES.inert);
+    } else {
+      // Still exposed, but no longer clickable: the transition has started.
+      this.mutationLease.setStyle("pointer-events", "none");
+    }
   }
 
   updatePosition(
@@ -255,7 +266,8 @@ export default class PopoverElement extends GlowTourElement {
         let pending = this.pendingReposition;
         this.pendingReposition = null;
         this.repositionPhase = "fading-out";
-        await this._disappear();
+        // Same step, new place: stay exposed so focus and the reading position survive the move.
+        await this._disappear(false);
         if (generation !== this.repositionGeneration || !this.getElement()) return;
         pending = this.pendingReposition ?? pending;
         this.pendingReposition = null;
@@ -347,7 +359,7 @@ export default class PopoverElement extends GlowTourElement {
     this._applyVisibleState();
   }
 
-  async _disappear() {
+  async _disappear(hideFromAssistiveTechnology = true) {
     const animation = this._startAnimation(
       {
         opacity: 0,
@@ -357,7 +369,8 @@ export default class PopoverElement extends GlowTourElement {
 
     if (animation && !(await this._waitForAnimation(animation))) return;
 
-    this._applyHiddenState();
+    if (hideFromAssistiveTechnology) this._applyHiddenState();
+    else this._applyFadedState();
   }
 
   protected _release() {
@@ -366,15 +379,26 @@ export default class PopoverElement extends GlowTourElement {
 
   private _applyVisibleState() {
     this.mutationLease.setStyle("opacity", "1");
+    this.mutationLease.releaseStyle("pointer-events");
     this.mutationLease.setAttribute("aria-hidden", null);
     this.mutationLease.setAttribute("inert", null);
   }
 
-  private _applyHiddenState() {
+  /**
+   * Out of sight but still exposed to assistive technology. Pointer input is blocked the way
+   * `inert` blocks it: the controller ignores commands mid-transition, so a click must not look
+   * accepted.
+   */
+  private _applyFadedState() {
     this.mutationLease.setStyle("opacity", "0");
+    this.mutationLease.setStyle("pointer-events", "none");
+    this.mutationLease.setStyle("transform", null);
+  }
+
+  private _applyHiddenState() {
+    this._applyFadedState();
     this.mutationLease.setAttribute("aria-hidden", "true");
     this.mutationLease.setAttribute("inert", "true");
-    this.mutationLease.setStyle("transform", null);
   }
 }
 

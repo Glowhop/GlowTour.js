@@ -1,12 +1,18 @@
 import "@glowhop/styles-tour/default.css";
+// Registers the glow-tour-* custom elements used in the markup below; without it they stay inert.
+import "@glowhop/vanilla-tour/auto";
 import {
   createGlowTour,
   type GlowTourRootElement,
+  registerGlowTourElements,
   type VanillaTourContent,
 } from "@glowhop/vanilla-tour";
 import { type LabContentFactory, mountLab } from "../lab";
 import "../lab/lab.css";
 import "../src/styles.css";
+
+// The main entry is side-effect free: the <glow-tour-*> markup below needs its elements defined.
+registerGlowTourElements();
 
 const root = document.querySelector<HTMLElement>("#vanilla-root");
 if (!root) throw new Error("Missing #vanilla-root");
