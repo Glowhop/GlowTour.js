@@ -249,7 +249,7 @@ beforeEnter(callback: StepHookAction<T>): WorkflowStepBuilder
 type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>
 ```
 
-`StepHookContext<T>` carries `props`, `initialProps`, `target`, `signal`, and `direction`, the navigation bringing the tour to the step (`"advance"` or `"previous"`). It has no `advance`, `previous`, or `cancel`: a transition is already in progress.
+`StepHookContext<T>` carries `props`, `initialProps`, `target`, `signal`, and `direction`, the direction of the navigation in progress (`"advance"` or `"previous"`). It has no `advance`, `previous`, or `cancel`: a transition is already in progress.
 
 **Usage**:
 ```typescript
@@ -272,7 +272,7 @@ Runs before the tour navigates away from the step: `advance()`, `previous()`, `g
 beforeLeave(callback: StepHookAction<T>): WorkflowStepBuilder
 ```
 
-It receives the same `StepHookContext<T>`, where `direction` is the navigation leaving the step. Branch on it to react to one direction only.
+It receives the same `StepHookContext<T>`. `direction` is the direction of the navigation in progress, so the step being left and the step being entered see the same value. Branch on it to react to one direction only.
 
 **Usage**:
 ```typescript

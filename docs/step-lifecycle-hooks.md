@@ -16,9 +16,12 @@ Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetProps
 - Both receive `StepHookContext<T> = Omit<StepContext<T>, "advance" | "cancel" | "previous">`.
 - `StepContext` gains `initialProps` and `direction`. `direction` is captured when a context is
   created, not read live, so a long-running action never sees the direction of a later navigation.
-  In `beforeEnter` and actions it is the navigation that brought the tour to the step; in
-  `beforeLeave` it is the navigation leaving it (same convention as `TourEvent.direction` for
-  `step:enter` / `step:leave`).
+  It is the direction of the navigation in progress: when the tour goes back from B to A, B's
+  `beforeLeave` and A's `beforeEnter` both see `"previous"`, and A's actions keep that value. This
+  is the same value `TourEvent.direction` reports for `step:leave` / `step:enter`.
+- `direction` was kept as the name because `TourDirection`, `state.direction` and
+  `TourEvent.direction` already use it. It does not tell a `goToStep()` jump from a button press, or
+  a finish from a regular advance; that would be a separate field, as `TourEvent.source` is.
 - JSON config: `enterAction` / `leaveAction`, functions only.
 
 ## Why

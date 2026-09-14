@@ -20,7 +20,7 @@ Replace the step transition hooks with `beforeEnter` / `beforeLeave`, and stop r
 - `.beforeEnter(callback)` runs each time a step is entered, after its target is resolved and before the step is shown, so the props it sets are the first ones rendered. It does not run for a step skipped by `missingTargetStrategy: "skip"`.
 - `.beforeLeave(callback)` runs before `advance()`, `previous()`, `goToStep()`, or finishing the tour. It never runs on cancel.
 - Both hooks receive a `StepHookContext` (`props`, `initialProps`, `target`, `signal`, `direction`) without navigation methods. JSON config: `enterAction` / `leaveAction`.
-- `StepContext` (actions and target event handlers) now exposes `initialProps` and `direction`, the navigation that brought the tour to the step.
+- `StepContext` (actions and target event handlers) now exposes `initialProps` and `direction`, the direction of the navigation that entered the step.
 
 **Migration**
 
