@@ -92,7 +92,7 @@ All adapters (React, Vue, Solid, Angular, Vanilla) render identical ARIA markup 
 
 ## Screen reader support
 
-GlowTour.js is tested with real screen readers, not only with accessibility-tree checks. [Guidepup](https://www.guidepup.dev/) drives VoiceOver and NVDA through the same three-step tour rendered by each adapter (React, Vue, Solid, Angular and Vanilla), and the tests assert what the screen reader actually says. They run on every pull request that changes a package, and weekly.
+GlowTour.js is tested with real screen readers, not only with accessibility-tree checks. [Guidepup](https://www.guidepup.dev/) drives VoiceOver and NVDA through the same three-step tour rendered by each adapter (React, Vue, Solid, Angular and Vanilla), and the tests assert what the screen reader actually says. They run weekly and on every pull request that changes a package, except VoiceOver with Chromium, which runs weekly only.
 
 | Screen reader | Browser engine | Status |
 | --- | --- | --- |

@@ -116,7 +116,8 @@ being trapped. Coverage: `packages/core/src/state/focus-guard.test.ts` includes
   `.github/workflows/screen-readers.yml` drives VoiceOver (macOS runners, WebKit and Chromium)
   and NVDA (Windows runners, Chromium and Firefox) through it with Guidepup
   (`tests/voiceover.pw.ts`, `tests/nvda.pw.ts`, shared `tests/scenario.ts`) on pull requests that
-  touch `packages/**`, weekly, and on demand. Spoken transcripts are uploaded as artifacts. The
+  touch `packages/**`, weekly, and on demand. VoiceOver with Chromium is left out of pull requests
+  (weekly and on demand only): it is the slowest pairing, the least stable, and the least used. Spoken transcripts are uploaded as artifacts. The
   first fully green run was on commit `5ecc980` (PR #87). The scenario was then extended (Back,
   reading cursor backwards, reopening and finishing with Enter, content read once with NVDA) and
   passed on commit `9d617a4`: 20 of 20 adapter and pairing combinations, one of them (Vanilla,
