@@ -107,10 +107,21 @@ For each adapter and each pairing, the tests check that:
 - the user can reach the button that starts the tour with `Tab` and open it with `Enter`
 - opening the tour moves focus into the dialog, and the screen reader announces its role and title
 - moving to the next step with `Enter` announces the new step's content
-- while a step is modal, the reading cursor stays inside the dialog
+- the Back button, reached with `Shift+Tab`, goes back to the previous step with `Enter`
+- on a modal step, the reading cursor reaches the step's title and content and never leaves the dialog
 - `Escape` closes the tour, focus returns to the button that started it, and the screen reader announces that button
+- the tour can be opened again and finished with `Enter` on the last step, with the same focus return
 
 The browsers are the engines Playwright ships: WebKit stands in for Safari. The arrow-key shortcuts are covered by keyboard tests in every browser engine rather than through the screen readers, which can use arrow keys for their own navigation.
+
+### Known limitations
+
+These come from how screen readers handle live regions and focus, which the ARIA specification leaves partly undefined. They are what the tests observe, not bugs to work around in your tour:
+
+- **The step title is not announced when the step changes; the content is.** The title is the dialog's name: it is announced when the tour opens and stays reachable with the reading cursor. Announcing both as separate live regions does not work with VoiceOver, which reads only one of two regions updated together ([w3c/aria#1689](https://github.com/w3c/aria/issues/1689)). If a step's title matters on its own, repeat it in the content.
+- **VoiceOver does not read the step content when the tour opens.** It announces the dialog's title and the focused button; the content is next with the reading cursor.
+- **NVDA reads the dialog's title and content twice when the tour opens** ([nvaccess/nvda#10003](https://github.com/nvaccess/nvda/issues/10003)).
+- **Going back to the first step:** Back is unavailable there, so focus moves to Advance. NVDA can read the step content twice while the Back button changes state ([nvaccess/nvda#6265](https://github.com/nvaccess/nvda/issues/6265)), and VoiceOver can skip announcing the content while it describes the focus move; the content stays reachable with the reading cursor.
 
 ## Testing accessibility
 
