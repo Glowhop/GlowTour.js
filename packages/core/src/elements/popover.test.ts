@@ -588,7 +588,7 @@ describe("PopoverElement animation fallbacks", () => {
       throw new Error("unsupported animation");
     };
 
-    await popover.fadeOutForStepChange();
+    await popover.disappear(false);
 
     assert.equal(element.styles.get("opacity"), "0");
     assert.equal(element.styles.get("pointer-events"), "none");

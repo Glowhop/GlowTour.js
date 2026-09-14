@@ -108,7 +108,7 @@ export default abstract class GlowTourElement {
     }
   }
 
-  protected abstract _disappear(): Promise<void>;
+  protected abstract _disappear(hideFromAssistiveTechnology?: boolean): Promise<void>;
 
   protected abstract _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe;
 
@@ -120,8 +120,12 @@ export default abstract class GlowTourElement {
     return this.released ? null : this.element;
   }
 
-  disappear() {
-    return this._disappear();
+  /**
+   * Fades the element out. The popover stays exposed to assistive technology when passed `false`,
+   * for a step change: its live regions then announce the new step and focus stays in it.
+   */
+  disappear(hideFromAssistiveTechnology?: boolean) {
+    return this._disappear(hideFromAssistiveTechnology);
   }
 
   release() {

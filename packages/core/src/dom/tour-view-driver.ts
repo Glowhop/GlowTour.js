@@ -3,7 +3,11 @@ import PointerElement from "../elements/pointer";
 import PopoverElement from "../elements/popover";
 import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
-import { focusableElementsOwnedBy } from "../state/focusable";
+import {
+  FOCUSABLE_SELECTOR,
+  focusableElementsOwnedBy,
+  TOUR_TRIGGER_SELECTOR,
+} from "../state/focusable";
 import { ScrollLock } from "../state/scroll-lock";
 import type { TourDirection, TourEventSource } from "../types";
 import {
@@ -379,7 +383,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       animationOptions(step, step.overlay, this.overlay.getElement()),
     );
     this.overlay?.setInteractionAllowed(interactionAllowed);
-    this.popover?.initializeProps({ hideFromAssistiveTechnology: !replaceVisiblePopover });
+    this.popover?.initializeProps(!replaceVisiblePopover);
     this.popover?.setAnimationOptions(
       animationOptions(step, step.popover, this.popover.getElement()),
     );
@@ -508,7 +512,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     hadVisiblePopover: boolean,
     onBeforePopoverAppear?: () => void | Promise<void>,
   ) {
-    if (hadVisiblePopover) await this.popover?.fadeOutForStepChange();
+    if (hadVisiblePopover) await this.popover?.disappear(false);
     if (onBeforePopoverAppear) {
       await onBeforePopoverAppear();
       this.syncControlState(step);
@@ -778,28 +782,24 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     }
     const shortcuts = step.popover?.keyboardShortcuts;
-    if (
-      (shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key) &&
-      this.canCommand("cancel", step)
-    ) {
-      event.preventDefault();
-      void this.command("cancel", "keyboard");
-      return;
-    }
-    if (isEditable(event.target, this.root)) return;
-    if (
-      (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
-      this.canCommand("advance", step)
-    ) {
-      event.preventDefault();
-      void this.command("advance", "keyboard");
-    } else if (
-      (shortcuts?.previous ?? DEFAULT_SHORTCUTS.previous).includes(event.key) &&
-      this.canCommand("previous", step)
-    ) {
-      event.preventDefault();
-      void this.command("previous", "keyboard");
-    }
+    const shortcut = (command: TourViewCommand) =>
+      (shortcuts?.[command] ?? DEFAULT_SHORTCUTS[command]).includes(event.key) &&
+      this.canCommand(command, step);
+    let command = activationCommand(event, this.root);
+    if (command === "native") return;
+    // Escape cancels even from an editable field; the navigation shortcuts do not.
+    command ??= shortcut("cancel")
+      ? "cancel"
+      : isEditable(event.target, this.root)
+        ? null
+        : shortcut("advance")
+          ? "advance"
+          : shortcut("previous")
+            ? "previous"
+            : null;
+    if (!command || !this.canCommand(command, step)) return;
+    event.preventDefault();
+    void this.command(command, "keyboard");
   }
 
   private handleOverlayClick(event: MouseEvent, step: ActiveStep<T>, target: HTMLElement) {
@@ -833,20 +833,21 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     )
       return;
     const shortcuts = step.popover?.keyboardShortcuts;
-    let command: TourViewCommand | null = null;
-    if ((shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key)) command = "cancel";
-    else if (!isEditable(event.target, this.root)) {
-      if (
-        (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
-        step.props.get().popover?.disableAdvanceButton !== true
-      )
-        command = "advance";
-      else if (
-        (shortcuts?.previous ?? DEFAULT_SHORTCUTS.previous).includes(event.key) &&
-        step.props.get().popover?.disablePreviousButton !== true
-      )
-        command = "previous";
-    }
+    const popover = step.props.get().popover;
+    const shortcut = (command: TourViewCommand) =>
+      (shortcuts?.[command] ?? DEFAULT_SHORTCUTS[command]).includes(event.key);
+    // Enter on a tour button queues that button's own command.
+    let command = activationCommand(event, this.root);
+    if (command === "native") return;
+    command ??= shortcut("cancel")
+      ? "cancel"
+      : isEditable(event.target, this.root)
+        ? null
+        : shortcut("advance") && popover?.disableAdvanceButton !== true
+          ? "advance"
+          : shortcut("previous") && popover?.disablePreviousButton !== true
+            ? "previous"
+            : null;
     if (!command) return;
     event.preventDefault();
     this.pendingKeyboardCommand ??= { command, generation };
@@ -1470,6 +1471,28 @@ function sameViewport(left: ViewportSnapshot, right: ViewportSnapshot | null) {
 
 function finite(value: number, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
+}
+
+/**
+ * Enter activates the focused control, so it is not the advance shortcut there. On a tour button
+ * it runs that button's own command (Back goes back, Skip cancels) and on any other control it is
+ * left to the browser. `null` means the keyboard shortcuts apply.
+ */
+function activationCommand(
+  event: KeyboardEvent,
+  context?: Node | null,
+): TourViewCommand | "native" | null {
+  const target = event.target;
+  if (event.key !== "Enter" || !isHTMLElement(target, context)) return null;
+  const trigger = target.closest<HTMLElement>(TOUR_TRIGGER_SELECTOR);
+  if (!trigger) return target.matches(FOCUSABLE_SELECTOR) ? "native" : null;
+  if (trigger.hasAttribute("disabled") || trigger.getAttribute("aria-disabled") === "true")
+    return "native";
+  return trigger.hasAttribute("data-glow-tour-previous-trigger")
+    ? "previous"
+    : trigger.hasAttribute("data-glow-tour-cancel-trigger")
+      ? "cancel"
+      : "advance";
 }
 
 function isEditable(target: EventTarget | null, context?: Node | null) {
