@@ -11,7 +11,7 @@ test.describe("nvda", () => {
       page,
       nvda,
     }, testInfo) => {
-      await runTourScenario(page, nvda, adapter, testInfo);
+      await runTourScenario(page, nvda, adapter, testInfo, { strictRepetition: true });
     });
   }
 });

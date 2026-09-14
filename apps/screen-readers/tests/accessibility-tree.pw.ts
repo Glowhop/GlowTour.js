@@ -113,25 +113,35 @@ for (const adapter of ADAPTERS) {
       expect(errors).toEqual([]);
     });
 
-    test("updates the same live region when the step changes", async ({ page }) => {
+    test("announces the title and content through persistent live regions", async ({ page }) => {
       const errors = await openFixture(page, adapter);
       const dialog = await startTour(page);
 
-      // A live region is only announced if the node persists: mark it, then change step.
-      const liveRegion = dialog.locator('[aria-live="polite"]');
-      await expect(liveRegion).toHaveCount(1);
-      await expect(liveRegion).toHaveText(STEP_TEXT.welcome.content);
-      await liveRegion.evaluate((element) => element.setAttribute("data-probe", ""));
-      // Screen readers ignore a live region that changes inside a hidden subtree, and lose their
-      // place when focus leaves the dialog: record both during the transition.
+      // The title and the content are the dialog's name and description, and both are polite
+      // live regions, so a step change is read as "title, content".
+      const title = page.locator(`[id="${await dialog.getAttribute("aria-labelledby")}"]`);
+      const content = page.locator(`[id="${await dialog.getAttribute("aria-describedby")}"]`);
+      await expect(title).toHaveAttribute("aria-live", "polite");
+      await expect(content).toHaveAttribute("aria-live", "polite");
+      await expect(title).toHaveText(STEP_TEXT.welcome.title);
+      await expect(content).toHaveText(STEP_TEXT.welcome.content);
+      // A live region is only announced if the node persists: mark both, then change step.
+      await title.evaluate((element) => element.setAttribute("data-probe", ""));
+      await content.evaluate((element) => element.setAttribute("data-probe", ""));
+      // Screen readers ignore a live region that changes inside a hidden subtree, lose their place
+      // when focus leaves the dialog, and re-read a region rewritten with the same text: record
+      // all three during the transition.
       await dialog.evaluate((popover) => {
-        const record = { changedWhileHidden: false, focusLeftDialog: false };
+        const record = { changedWhileHidden: false, focusLeftDialog: false, rewrites: 0 };
         Object.assign(window, { __transition: record });
-        const content = popover.querySelector('[aria-live="polite"]');
-        if (!content) throw new Error("Live region is missing");
-        new MutationObserver(() => {
-          if (content.closest("[aria-hidden='true'], [inert]")) record.changedWhileHidden = true;
-        }).observe(content, { characterData: true, childList: true, subtree: true });
+        for (const region of Array.from(popover.querySelectorAll("[data-probe]"))) {
+          let text = region.textContent;
+          new MutationObserver(() => {
+            if (region.closest("[aria-hidden='true'], [inert]")) record.changedWhileHidden = true;
+            if (region.textContent === text) record.rewrites += 1;
+            text = region.textContent;
+          }).observe(region, { characterData: true, childList: true, subtree: true });
+        }
         popover.addEventListener("focusout", (event) => {
           const next = (event as FocusEvent).relatedTarget as Node | null;
           if (!popover.contains(next)) record.focusLeftDialog = true;
@@ -142,14 +152,20 @@ for (const adapter of ADAPTERS) {
 
       const fieldDialog = page.getByRole("dialog", { name: STEP_TEXT.field.title });
       await expect(fieldDialog).toBeVisible();
-      await expect(fieldDialog.locator('[aria-live="polite"][data-probe]')).toHaveText(
-        STEP_TEXT.field.content,
-      );
+      await expect(title).toHaveAttribute("data-probe", "");
+      await expect(content).toHaveAttribute("data-probe", "");
+      await expect(title).toHaveText(STEP_TEXT.field.title);
+      await expect(content).toHaveText(STEP_TEXT.field.content);
       await expect(fieldDialog).toHaveAccessibleDescription(STEP_TEXT.field.content);
+      await waitForSettledPopover(page);
       const transition = await page.evaluate(
-        () => (window as unknown as { __transition: Record<string, boolean> }).__transition,
+        () => (window as unknown as { __transition: Record<string, unknown> }).__transition,
       );
-      expect(transition).toEqual({ changedWhileHidden: false, focusLeftDialog: false });
+      expect(transition).toEqual({
+        changedWhileHidden: false,
+        focusLeftDialog: false,
+        rewrites: 0,
+      });
       expect(errors).toEqual([]);
     });
 

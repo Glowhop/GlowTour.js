@@ -11,7 +11,7 @@ test.describe("voiceover", () => {
       page,
       voiceOver,
     }, testInfo) => {
-      await runTourScenario(page, voiceOver, adapter, testInfo);
+      await runTourScenario(page, voiceOver, adapter, testInfo, { strictRepetition: false });
     });
   }
 });

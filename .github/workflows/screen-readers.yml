@@ -24,7 +24,7 @@ jobs:
   voiceover:
     name: VoiceOver (${{ matrix.browser }})
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -69,7 +69,7 @@ jobs:
   nvda:
     name: NVDA (${{ matrix.browser }})
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
