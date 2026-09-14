@@ -230,6 +230,7 @@ export function Header(props: ContentProps): JSX.Element {
   return createComponent(
     Dynamic,
     mergeProps(props, {
+      "aria-live": "polite",
       component: "header",
       "data-glow-tour-header": "",
       get id() {
