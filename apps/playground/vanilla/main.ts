@@ -2,11 +2,15 @@ import "@glowhop/styles-tour/default.css";
 import {
   createGlowTour,
   type GlowTourRootElement,
+  registerGlowTourElements,
   type VanillaTourContent,
 } from "@glowhop/vanilla-tour";
 import { type LabContentFactory, mountLab } from "../lab";
 import "../lab/lab.css";
 import "../src/styles.css";
+
+// The main entry is side-effect free: the <glow-tour-*> markup below needs its elements defined.
+registerGlowTourElements();
 
 const root = document.querySelector<HTMLElement>("#vanilla-root");
 if (!root) throw new Error("Missing #vanilla-root");
