@@ -117,11 +117,11 @@ for (const adapter of ADAPTERS) {
       const errors = await openFixture(page, adapter);
       const dialog = await startTour(page);
 
-      // The title and the content are the dialog's name and description, and both are polite
-      // live regions, so a step change is read as "title, content".
+      // The title and the content are the dialog's name and description. Only the content is a
+      // polite live region: VoiceOver reads a single one of two regions updated together.
       const title = page.locator(`[id="${await dialog.getAttribute("aria-labelledby")}"]`);
       const content = page.locator(`[id="${await dialog.getAttribute("aria-describedby")}"]`);
-      await expect(title).toHaveAttribute("aria-live", "polite");
+      await expect(title).not.toHaveAttribute("aria-live");
       await expect(content).toHaveAttribute("aria-live", "polite");
       await expect(title).toHaveText(STEP_TEXT.welcome.title);
       await expect(content).toHaveText(STEP_TEXT.welcome.content);
