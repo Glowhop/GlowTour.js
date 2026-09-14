@@ -24,7 +24,8 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  timeout: 5 * 60 * 1000,
+  // Two journeys per adapter, each command waiting for the screen reader to finish speaking.
+  timeout: 10 * 60 * 1000,
   reportSlowTests: null,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
