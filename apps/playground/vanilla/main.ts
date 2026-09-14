@@ -1,4 +1,6 @@
 import "@glowhop/styles-tour/default.css";
+// Registers the glow-tour-* custom elements used in the markup below; without it they stay inert.
+import "@glowhop/vanilla-tour/auto";
 import {
   createGlowTour,
   type GlowTourRootElement,
