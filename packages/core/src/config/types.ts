@@ -53,14 +53,14 @@ export type BuiltinAction =
  *   builder verb.
  * - anything else is a validation error.
  *
- * Used for `actions[]` and `eventHandlers[].action`, which both run against a full `StepContext`
+ * Used for `actions[]` and `targetEvents[].action`, which both run against a full `StepContext`
  * (`target`, `signal`, navigation methods) — the same context `BuiltinAction`'s verbs assume, so
  * builtins are valid here.
  */
 export type StepActionRef<T = string> = BuiltinAction | StepAction<T>;
 
 /**
- * A reference to a step hook (`enterAction`/`leaveAction`).
+ * A reference to a step hook (`beforeEnter`/`beforeLeave`).
  *
  * Step hooks run while a transition is in progress. The `BuiltinAction` verbs describe a step's
  * own action sequence (`wait` would stall the transition, `clickTarget` would act on a step that
@@ -71,7 +71,7 @@ export type StepActionRef<T = string> = BuiltinAction | StepAction<T>;
 export type StepHookActionRef<T = string> = StepHookAction<T>;
 
 /** JSON config form of a single `onTargetEvent` registration. */
-export interface EventHandlerConfig<T = string> {
+export interface TargetEventConfig<T = string> {
   /** Event name, or multiple event names sharing the same action. */
   readonly event: string | readonly string[];
   readonly action: StepActionRef<T>;
@@ -97,11 +97,11 @@ export interface StepConfig<T = string> {
   readonly content: T;
   readonly data?: Record<string, PrimitiveValue>;
   readonly actions?: readonly StepActionRef<T>[];
-  readonly eventHandlers?: readonly EventHandlerConfig<T>[];
+  readonly targetEvents?: readonly TargetEventConfig<T>[];
   /** Runs after the target is resolved and before the step is shown. Mirrors `beforeEnter`. */
-  readonly enterAction?: StepHookActionRef<T>;
+  readonly beforeEnter?: StepHookActionRef<T>;
   /** Runs before navigating away from the step, never on cancel. Mirrors `beforeLeave`. */
-  readonly leaveAction?: StepHookActionRef<T>;
+  readonly beforeLeave?: StepHookActionRef<T>;
 }
 
 /**
@@ -111,6 +111,8 @@ export interface StepConfig<T = string> {
  * and same-runtime configs carrying framework content (`ReactNode`, `VNode`, `JSX.Element`, ...).
  */
 export interface WorkflowConfig<T = string> {
+  /** Version of the config format, required. It does not follow the package version. */
+  readonly version: "1.1";
   readonly name: string;
   readonly cancellable?: boolean;
   readonly allowScroll?: boolean;
@@ -127,7 +129,7 @@ export interface WorkflowConfig<T = string> {
 
 /** A single validation failure, with a path pointing at the offending config field. */
 export interface ConfigValidationIssue {
-  /** Path into the config, e.g. `steps[2].eventHandlers[0].action`. */
+  /** Path into the config, e.g. `steps[2].targetEvents[0].action`. */
   readonly path: string;
   readonly message: string;
 }

@@ -31,7 +31,7 @@ Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetProps
 - `direction` was kept as the name because `TourDirection`, `state.direction` and
   `TourEvent.direction` already use it. It does not tell a `goTo()` jump from a button press, or
   a finish from a regular advance; that would be a separate field, as `TourEvent.source` is.
-- JSON config: `enterAction` / `leaveAction`, functions only.
+- JSON config: `beforeEnter` / `beforeLeave`, functions only.
 
 ## Why
 

@@ -2,6 +2,7 @@ import type { ConfigValidationIssue, WorkflowConfig } from "./types";
 import { ConfigValidationError } from "./types";
 
 const TOP_LEVEL_KEYS = [
+  "version",
   "name",
   "cancellable",
   "allowScroll",
@@ -27,9 +28,9 @@ const STEP_KEYS = [
   "content",
   "data",
   "actions",
-  "eventHandlers",
-  "enterAction",
-  "leaveAction",
+  "targetEvents",
+  "beforeEnter",
+  "beforeLeave",
 ] as const;
 
 const EVENT_HANDLER_KEYS = ["event", "action"] as const;
@@ -71,6 +72,9 @@ const BEHAVIOR_KEYS = [
   "overlayClick",
 ] as const;
 const SCROLL_KEYS = ["behavior", "block", "inline"] as const;
+
+/** The config format version this release reads. */
+const CONFIG_VERSION = "1.1";
 
 const BUILTIN_ACTION_KEYS: Record<string, readonly string[]> = {
   wait: ["type", "ms"],
@@ -153,6 +157,10 @@ function validateWorkflowConfigShape(
 
   assertNoUnknownKeys(value, TOP_LEVEL_KEYS, "", issues);
 
+  if (value.version !== CONFIG_VERSION) {
+    issues.push({ path: "version", message: `version must be "${CONFIG_VERSION}"` });
+  }
+
   if (typeof value.name !== "string" || value.name.length === 0) {
     issues.push({ path: "name", message: "name must be a non-empty string" });
   }
@@ -189,7 +197,7 @@ function validateWorkflowConfigShape(
 
 /**
  * Validates a single `StepConfig`: required `target`/`title`/`content`, no unknown/extra keys,
- * and recurses into `actions`, `eventHandlers`, and the transition action refs.
+ * and recurses into `actions`, `targetEvents`, and the transition action refs.
  * @param value The candidate step value.
  * @param path Error path prefix for this step, e.g. `steps[2]`.
  * @param issues Collector for every issue found.
@@ -239,34 +247,34 @@ function validateStepConfigShape(
     }
   }
 
-  if (value.eventHandlers !== undefined) {
-    if (!Array.isArray(value.eventHandlers)) {
-      issues.push({ path: `${path}.eventHandlers`, message: "eventHandlers must be an array" });
+  if (value.targetEvents !== undefined) {
+    if (!Array.isArray(value.targetEvents)) {
+      issues.push({ path: `${path}.targetEvents`, message: "targetEvents must be an array" });
     } else {
-      for (const [index, handler] of value.eventHandlers.entries()) {
-        validateEventHandlerConfigShape(handler, `${path}.eventHandlers[${index}]`, issues);
+      for (const [index, handler] of value.targetEvents.entries()) {
+        validateTargetEventConfigShape(handler, `${path}.targetEvents[${index}]`, issues);
       }
     }
   }
 
-  validateHookActionRefShape(`${path}.enterAction`, value.enterAction, issues);
-  validateHookActionRefShape(`${path}.leaveAction`, value.leaveAction, issues);
+  validateHookActionRefShape(`${path}.beforeEnter`, value.beforeEnter, issues);
+  validateHookActionRefShape(`${path}.beforeLeave`, value.beforeLeave, issues);
 }
 
 /**
- * Validates a single `EventHandlerConfig`: `event` (string or non-empty string array), no
+ * Validates a single `TargetEventConfig`: `event` (string or non-empty string array), no
  * unknown/extra keys, and its `action`.
  * @param value The candidate event handler value.
- * @param path Error path prefix, e.g. `steps[2].eventHandlers[0]`.
+ * @param path Error path prefix, e.g. `steps[2].targetEvents[0]`.
  * @param issues Collector for every issue found.
  */
-function validateEventHandlerConfigShape(
+function validateTargetEventConfigShape(
   value: unknown,
   path: string,
   issues: ConfigValidationIssue[],
 ): void {
   if (!isPlainObject(value)) {
-    issues.push({ path, message: "Event handler must be a plain object" });
+    issues.push({ path, message: "Target event must be a plain object" });
     return;
   }
 
@@ -289,7 +297,7 @@ function validateEventHandlerConfigShape(
 }
 
 /**
- * Validates a `StepActionRef` (`actions[]` / `eventHandlers[].action`): a function is always
+ * Validates a `StepActionRef` (`actions[]` / `targetEvents[].action`): a function is always
  * accepted as-is, and a plain object with a `type` field is validated as a `BuiltinAction`.
  * Anything else — including a string, since there is no registry — is a validation error.
  * @param value The candidate action ref value.
@@ -313,11 +321,11 @@ function validateStepActionRefShape(
 }
 
 /**
- * Validates a `StepHookActionRef` (`enterAction`/`leaveAction`) or a `LifecycleActionRef`
+ * Validates a `StepHookActionRef` (`beforeEnter`/`beforeLeave`) or a `LifecycleActionRef`
  * (`onStart`/`onCancel`/`onFinish`): only a function is valid. Built-in actions describe a step's
  * own action sequence, not hooks, and there is no registry, so any non-function value (including a
  * builtin action object) is rejected.
- * @param path Error path for this ref, e.g. `steps[2].leaveAction`.
+ * @param path Error path for this ref, e.g. `steps[2].beforeLeave`.
  * @param value The candidate ref value, or `undefined` if not set.
  * @param issues Collector for every issue found.
  */

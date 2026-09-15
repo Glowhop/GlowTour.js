@@ -348,7 +348,7 @@ export type StepActionInstruction<T> = StepAction<T> | number;
 export type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>;
 
 /** Handler for an event fired on the target element during a step. */
-export interface EventHandler<TStepProps, TEvent extends Event = Event> {
+export interface TargetEventHandler<TStepProps, TEvent extends Event = Event> {
   /** Event name(s) to listen for. */
   event: string;
   /** Callback invoked when the event fires. */

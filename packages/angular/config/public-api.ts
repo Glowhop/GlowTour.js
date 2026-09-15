@@ -2,11 +2,11 @@ import type { AngularTourContent } from "@glowhop/angular-tour";
 import type {
   BuiltinAction,
   ConfigValidationIssue,
-  EventHandlerConfig as CoreEventHandlerConfig,
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
   StepHookActionRef as CoreStepHookActionRef,
+  TargetEventConfig as CoreTargetEventConfig,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -30,8 +30,8 @@ export { ConfigValidationError };
 export type WorkflowConfig = CoreWorkflowConfig<AngularTourContent>;
 /** Angular step config: `StepConfig` pre-bound to `AngularTourContent`. */
 export type StepConfig = CoreStepConfig<AngularTourContent>;
-/** Angular event handler config: `EventHandlerConfig` pre-bound to `AngularTourContent`. */
-export type EventHandlerConfig = CoreEventHandlerConfig<AngularTourContent>;
+/** Angular target event config: `TargetEventConfig` pre-bound to `AngularTourContent`. */
+export type TargetEventConfig = CoreTargetEventConfig<AngularTourContent>;
 /** Angular step action reference: `StepActionRef` pre-bound to `AngularTourContent`. */
 export type StepActionRef = CoreStepActionRef<AngularTourContent>;
 /** Angular step hook reference: `StepHookActionRef` pre-bound to `AngularTourContent`. */

@@ -5,6 +5,7 @@ import { validateWorkflowConfig } from "./validate";
 
 function minimalConfig() {
   return {
+    version: "1.1",
     name: "onboarding",
     steps: [{ id: "s1", target: "#target", title: "Title", content: "Content" }],
   };
@@ -28,6 +29,7 @@ describe("validateWorkflowConfig", () => {
 
   test("accepts every builtin action shape and mixed inline functions", () => {
     const config = {
+      version: "1.1",
       name: "onboarding",
       onStart: () => {},
       steps: [
@@ -44,12 +46,12 @@ describe("validateWorkflowConfig", () => {
             { type: "focusTarget" },
             () => true,
           ],
-          eventHandlers: [
+          targetEvents: [
             { event: "click", action: { type: "focusTarget" } },
             { event: ["keydown", "keyup"], action: () => {} },
           ],
-          enterAction: () => {},
-          leaveAction: () => {},
+          beforeEnter: () => {},
+          beforeLeave: () => {},
         },
       ],
     };
@@ -64,9 +66,14 @@ describe("validateWorkflowConfig", () => {
     assert.ok(issues.some((issue) => issue.path === "steps[0].target"));
   });
 
-  test("rejects a config still carrying the removed schemaVersion field as an unknown key", () => {
-    const issues = issuesOf({ ...minimalConfig(), schemaVersion: 1 });
-    assert.ok(issues.some((issue) => issue.path === "schemaVersion"));
+  test("requires the config format version", () => {
+    const { version: _version, ...withoutVersion } = minimalConfig();
+    for (const config of [withoutVersion, { ...minimalConfig(), version: "1.0" }]) {
+      assert.deepEqual(
+        issuesOf(config).map((issue) => [issue.path, issue.message]),
+        [["version", 'version must be "1.1"']],
+      );
+    }
   });
 
   test("rejects an unknown top-level key", () => {
@@ -95,13 +102,13 @@ describe("validateWorkflowConfig", () => {
       steps: [
         {
           ...config.steps[0],
-          enterAction: { type: "focusTarget" },
-          leaveAction: { type: "clickTarget" },
+          beforeEnter: { type: "focusTarget" },
+          beforeLeave: { type: "clickTarget" },
         },
       ],
     });
-    assert.ok(issues.some((issue) => issue.path === "steps[0].enterAction"));
-    assert.ok(issues.some((issue) => issue.path === "steps[0].leaveAction"));
+    assert.ok(issues.some((issue) => issue.path === "steps[0].beforeEnter"));
+    assert.ok(issues.some((issue) => issue.path === "steps[0].beforeLeave"));
   });
 
   test("rejects the removed transition hook and reset keys as unknown step keys", () => {
@@ -241,7 +248,7 @@ describe("validateWorkflowConfig", () => {
           target: "#other",
           title: "Title",
           content: "Content",
-          leaveAction: { type: "wait", ms: 1 },
+          beforeLeave: { type: "wait", ms: 1 },
         },
       ],
     });
@@ -250,7 +257,7 @@ describe("validateWorkflowConfig", () => {
     assert.ok(paths.includes("bogus"));
     assert.ok(paths.includes("name"));
     assert.ok(paths.includes("steps[0].target"));
-    assert.ok(paths.includes("steps[1].leaveAction"));
+    assert.ok(paths.includes("steps[1].beforeLeave"));
     assert.ok(issues.length >= 4);
   });
 
@@ -266,6 +273,7 @@ describe("validateWorkflowConfig", () => {
   });
   test("reports a missing step id", () => {
     const issues = issuesOf({
+      version: "1.1",
       name: "onboarding",
       steps: [{ target: "#target", title: "T", content: "C" }],
     });
@@ -275,6 +283,7 @@ describe("validateWorkflowConfig", () => {
 
   test("reports a duplicate step id, naming the step that already uses it", () => {
     const issues = issuesOf({
+      version: "1.1",
       name: "onboarding",
       steps: [
         { id: "same", target: "#a", title: "T", content: "C" },

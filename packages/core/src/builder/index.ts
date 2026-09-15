@@ -7,12 +7,12 @@ import {
 } from "../definition";
 import { abortableDelay, abortError } from "../runtime/abort";
 import type {
-  EventHandler,
   StartOptions,
   StepAction,
   StepContext,
   StepHookAction,
   StepParameters,
+  TargetEventHandler,
   WaitUntilOptions,
 } from "../types";
 
@@ -125,9 +125,9 @@ export class WorkflowBuilder<T> {
       },
       behavior: options.behavior,
       actions: [],
-      eventHandlers: [],
-      enterAction: null,
-      leaveAction: null,
+      targetEvents: [],
+      beforeEnter: null,
+      beforeLeave: null,
     });
     return this.currentStep;
   }
@@ -318,7 +318,7 @@ export class WorkflowStepBuilder<T> {
    */
   beforeEnter(callback: StepHookAction<T>) {
     this.assertActive();
-    this.draft.enterAction = callback;
+    this.draft.beforeEnter = callback;
     return this;
   }
 
@@ -331,7 +331,7 @@ export class WorkflowStepBuilder<T> {
    */
   beforeLeave(callback: StepHookAction<T>) {
     this.assertActive();
-    this.draft.leaveAction = callback;
+    this.draft.beforeLeave = callback;
     return this;
   }
 
@@ -343,7 +343,7 @@ export class WorkflowStepBuilder<T> {
    */
   onTargetEvent<const TEventName extends EventName>(
     event: TEventName,
-    callback: EventHandler<T, EventForName<TEventName>>["callback"],
+    callback: TargetEventHandler<T, EventForName<TEventName>>["callback"],
   ): this;
   /**
    * Add an event listener to the target element for multiple event names.
@@ -353,7 +353,7 @@ export class WorkflowStepBuilder<T> {
    */
   onTargetEvent<const TEventNames extends readonly EventName[]>(
     events: TEventNames,
-    callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
+    callback: TargetEventHandler<T, EventForName<TEventNames[number]>>["callback"],
   ): this;
   /**
    * Add an event listener to the target element for a custom event.
@@ -363,20 +363,20 @@ export class WorkflowStepBuilder<T> {
    */
   onTargetEvent<TEvent extends Event>(
     event: string,
-    callback: EventHandler<T, TEvent>["callback"],
+    callback: TargetEventHandler<T, TEvent>["callback"],
   ): this;
   onTargetEvent(
     eventOrEvents: string | readonly string[],
-    callback: EventHandler<T, Event>["callback"],
+    callback: TargetEventHandler<T, Event>["callback"],
   ): this {
     this.assertActive();
     const events = typeof eventOrEvents === "string" ? [eventOrEvents] : eventOrEvents;
     if (events.length === 0) throw new TypeError("events must not be empty");
     for (const event of events) {
       if (event.length === 0) throw new TypeError("event name must not be empty");
-      this.draft.eventHandlers.push({
+      this.draft.targetEvents.push({
         event,
-        callback: callback as EventHandler<T>["callback"],
+        callback: callback as TargetEventHandler<T>["callback"],
       });
     }
     return this;
