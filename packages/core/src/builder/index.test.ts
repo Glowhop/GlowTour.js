@@ -43,8 +43,8 @@ const popoverOptions: PopoverOptions = {
   hidePreviousButton: true,
 };
 const behaviorOptions: StepBehavior = {
-  disableAutoFocus: true,
-  disableAutoScroll: true,
+  autoFocus: false,
+  autoScroll: false,
   scroll: { behavior: "smooth", block: "center", inline: "nearest" },
 };
 const removedStepScroll: StepParameters<string> = {

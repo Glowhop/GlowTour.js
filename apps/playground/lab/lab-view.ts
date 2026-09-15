@@ -97,7 +97,7 @@ export function createLabView(root: HTMLElement, framework: string): LabView {
             ${targetCard(selectorId(selectors.autoAdvance), "12", "auto advance")}
             <article class="lab-target-card lab-relocate-card" id="${selectorId(selectors.relocate)}">
               ${cardNumber("13")}
-              <span>missingTargetStrategy: wait</span>
+              <span>missingTarget.strategy: wait</span>
               <div class="lab-relocate-slots">
                 <div class="lab-relocate-slot" data-lab-relocate-home>
                   <button id="${selectorId(selectors.nomad)}" type="button">Cible nomade</button>

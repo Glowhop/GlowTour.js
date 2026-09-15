@@ -31,7 +31,7 @@ that instance runs - including workflows built from a [JSON config](/docs/guides
 | `tour:start` | Once `run()` has passed `onStart` and the first step's `beforeEnter` without an abort, before any other event |
 | `step:enter` | Once a step is on screen and interactive |
 | `step:leave` | When a step is left - moving on, going back, finishing, or cancelling |
-| `step:skip` | When a navigation passes over a step whose target is missing and whose `missingTargetStrategy` is `"skip"` |
+| `step:skip` | When a navigation passes over a step whose target is missing and whose `missingTarget.strategy` is `"skip"` |
 | `tour:complete` | The tour ran past its last step |
 | `tour:cancel` | The tour was cancelled |
 | `tour:error` | The tour failed - see [Handling errors](/docs/guides/handling-errors) for response strategies |

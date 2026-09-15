@@ -40,7 +40,7 @@ const workflow = tour
     target: "#settings-panel",
     title: "Settings",
     content: "Step 2 - this is where the tour resumes.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .build();
 

@@ -75,9 +75,9 @@ function validateIndicator(
 
 function validateBehavior(
   path: string,
-  behavior: { readonly targetTimeout?: number } | undefined,
+  behavior: { readonly missingTarget?: { readonly timeout?: number } } | undefined,
 ): void {
-  validateFiniteNonNegative(`${path}.targetTimeout`, behavior?.targetTimeout);
+  validateFiniteNonNegative(`${path}.missingTarget.timeout`, behavior?.missingTarget?.timeout);
 }
 
 export function validateStepProps<T>(path: string, props: ReadonlyStepProps<T>): void {

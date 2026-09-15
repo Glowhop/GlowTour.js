@@ -18,17 +18,6 @@ export function cloneStepProps<T>(props: ReadonlyStepProps<T>): StepProps<T> {
       ...props.popover,
       animation: props.popover.animation && { ...props.popover.animation },
       arrow: props.popover.arrow && { ...props.popover.arrow },
-      keyboardShortcuts: props.popover.keyboardShortcuts && {
-        previous: props.popover.keyboardShortcuts.previous && [
-          ...props.popover.keyboardShortcuts.previous,
-        ],
-        advance: props.popover.keyboardShortcuts.advance && [
-          ...props.popover.keyboardShortcuts.advance,
-        ],
-        cancel: props.popover.keyboardShortcuts.cancel && [
-          ...props.popover.keyboardShortcuts.cancel,
-        ],
-      },
       placementTryOrder: props.popover.placementTryOrder && [...props.popover.placementTryOrder],
     },
     indicator: props.indicator && {
@@ -40,6 +29,12 @@ export function cloneStepProps<T>(props: ReadonlyStepProps<T>): StepProps<T> {
     },
     behavior: props.behavior && {
       ...props.behavior,
+      keyboard: props.behavior.keyboard && {
+        previous: props.behavior.keyboard.previous && [...props.behavior.keyboard.previous],
+        advance: props.behavior.keyboard.advance && [...props.behavior.keyboard.advance],
+        cancel: props.behavior.keyboard.cancel && [...props.behavior.keyboard.cancel],
+      },
+      missingTarget: props.behavior.missingTarget && { ...props.behavior.missingTarget },
       scroll: props.behavior.scroll && { ...props.behavior.scroll },
     },
   };
@@ -57,18 +52,16 @@ export function freezeStepProps<T>(props: ReadonlyStepProps<T>): ReadonlyStepPro
   if (cloned.overlay) Object.freeze(cloned.overlay);
   if (cloned.popover?.animation) Object.freeze(cloned.popover.animation);
   if (cloned.popover?.arrow) Object.freeze(cloned.popover.arrow);
-  if (cloned.popover?.keyboardShortcuts?.previous)
-    Object.freeze(cloned.popover.keyboardShortcuts.previous);
-  if (cloned.popover?.keyboardShortcuts?.advance)
-    Object.freeze(cloned.popover.keyboardShortcuts.advance);
-  if (cloned.popover?.keyboardShortcuts?.cancel)
-    Object.freeze(cloned.popover.keyboardShortcuts.cancel);
-  if (cloned.popover?.keyboardShortcuts) Object.freeze(cloned.popover.keyboardShortcuts);
   if (cloned.popover?.placementTryOrder) Object.freeze(cloned.popover.placementTryOrder);
   if (cloned.popover) Object.freeze(cloned.popover);
   if (cloned.indicator?.animation) Object.freeze(cloned.indicator.animation);
   if (cloned.indicator?.placementTryOrder) Object.freeze(cloned.indicator.placementTryOrder);
   if (cloned.indicator) Object.freeze(cloned.indicator);
+  if (cloned.behavior?.keyboard?.previous) Object.freeze(cloned.behavior.keyboard.previous);
+  if (cloned.behavior?.keyboard?.advance) Object.freeze(cloned.behavior.keyboard.advance);
+  if (cloned.behavior?.keyboard?.cancel) Object.freeze(cloned.behavior.keyboard.cancel);
+  if (cloned.behavior?.keyboard) Object.freeze(cloned.behavior.keyboard);
+  if (cloned.behavior?.missingTarget) Object.freeze(cloned.behavior.missingTarget);
   if (cloned.behavior?.scroll) Object.freeze(cloned.behavior.scroll);
   if (cloned.behavior) Object.freeze(cloned.behavior);
   return Object.freeze(cloned);

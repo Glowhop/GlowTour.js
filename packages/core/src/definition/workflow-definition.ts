@@ -49,18 +49,6 @@ function freezePopover(options: StepParameters<unknown>["popover"]) {
       ...options,
       animation: freezeAnimation(options.animation),
       arrow: options.arrow && freezeRecord({ ...options.arrow }),
-      keyboardShortcuts:
-        options.keyboardShortcuts &&
-        freezeRecord({
-          previous:
-            options.keyboardShortcuts.previous &&
-            freezeRecord([...options.keyboardShortcuts.previous]),
-          advance:
-            options.keyboardShortcuts.advance &&
-            freezeRecord([...options.keyboardShortcuts.advance]),
-          cancel:
-            options.keyboardShortcuts.cancel && freezeRecord([...options.keyboardShortcuts.cancel]),
-        }),
       placementTryOrder: options.placementTryOrder && freezeRecord([...options.placementTryOrder]),
     })
   );
@@ -99,6 +87,21 @@ function freezeOptions<T>(options: StartOptions<T>): ReadonlyStartOptions<T> {
       options.behavior &&
       freezeRecord({
         ...options.behavior,
+        keyboard:
+          options.behavior.keyboard &&
+          freezeRecord({
+            previous:
+              options.behavior.keyboard.previous &&
+              freezeRecord([...options.behavior.keyboard.previous]),
+            advance:
+              options.behavior.keyboard.advance &&
+              freezeRecord([...options.behavior.keyboard.advance]),
+            cancel:
+              options.behavior.keyboard.cancel &&
+              freezeRecord([...options.behavior.keyboard.cancel]),
+          }),
+        missingTarget:
+          options.behavior.missingTarget && freezeRecord({ ...options.behavior.missingTarget }),
         scroll: options.behavior.scroll && freezeRecord({ ...options.behavior.scroll }),
       }),
   });

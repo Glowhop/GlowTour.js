@@ -45,7 +45,7 @@ The `aria-keyshortcuts` attribute on each button is automatically kept in sync w
 
 ## Per-step keyboard overrides
 
-Override the default keyboard shortcuts for a specific step by providing a `keyboardShortcuts` object in the popover options:
+Override the default keyboard shortcuts for a specific step with `behavior.keyboard`:
 
 ```typescript
 const workflow = tour
@@ -55,8 +55,8 @@ const workflow = tour
     target: "#field",
     title: "Custom shortcuts",
     content: "This step has different keyboard shortcuts.",
-    popover: {
-      keyboardShortcuts: {
+    behavior: {
+      keyboard: {
         advance: ["Enter"],  // Only Enter, no ArrowRight
         previous: [],        // No previous (disable BackSpace/ArrowLeft)
         cancel: ["Escape"],  // Keep Escape default

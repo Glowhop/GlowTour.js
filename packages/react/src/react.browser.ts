@@ -349,7 +349,7 @@ describe("react adapter browser behavior", () => {
       .step({
         id: "step-9",
         content: "First",
-        popover: { keyboardShortcuts: { advance: ["N"] } },
+        behavior: { keyboard: { advance: ["N"] } },
         target,
         title: "First",
       })

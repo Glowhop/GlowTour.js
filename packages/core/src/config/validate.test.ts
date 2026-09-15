@@ -173,15 +173,14 @@ describe("validateWorkflowConfig", () => {
       },
       popover: {
         placementTryOrder: ["top", "diagonal"],
-        arrow: { disabled: "no", size: -1 },
-        keyboardShortcuts: { advance: ["Enter", 42] },
+        arrow: { hidden: "no", size: -1 },
       },
-      indicator: { disabled: "no", gap: -1 },
+      indicator: { hidden: "no", gap: -1 },
       behavior: {
         allowInteraction: "yes",
-        missingTargetStrategy: "retry",
+        keyboard: { advance: ["Enter", 42] },
+        missingTarget: { strategy: "retry", timeout: -1 },
         scroll: { behavior: "instant" },
-        targetTimeout: -1,
       },
     });
 
@@ -193,15 +192,15 @@ describe("validateWorkflowConfig", () => {
       "overlay.animation.easing",
       "overlay.animation.extra",
       "popover.placementTryOrder[1]",
-      "popover.arrow.disabled",
+      "popover.arrow.hidden",
       "popover.arrow.size",
-      "popover.keyboardShortcuts.advance[1]",
-      "indicator.disabled",
+      "indicator.hidden",
       "indicator.gap",
       "behavior.allowInteraction",
-      "behavior.missingTargetStrategy",
+      "behavior.keyboard.advance[1]",
+      "behavior.missingTarget.strategy",
+      "behavior.missingTarget.timeout",
       "behavior.scroll.behavior",
-      "behavior.targetTimeout",
     ]) {
       assert.ok(paths.includes(path), `missing validation issue for ${path}`);
     }
