@@ -44,7 +44,7 @@ async function withGlobalHTMLElement<T>(
 function definition(options: {
   indicator?: { gap?: number };
   popover?: {
-    arrow?: { color?: string; disabled?: boolean; edgePadding?: number; size?: number };
+    arrow?: { color?: string; hidden?: boolean; edgePadding?: number; size?: number };
     hideFooter?: boolean;
     gap?: number;
   };
@@ -52,7 +52,7 @@ function definition(options: {
   return new WorkflowBuilder<string>("active-step", {
     indicator: { gap: 22 },
     popover: {
-      arrow: { color: "var(--workflow-arrow)", disabled: true, edgePadding: 18, size: 12 },
+      arrow: { color: "var(--workflow-arrow)", hidden: true, edgePadding: 18, size: 12 },
       disableAdvanceButton: true,
       hideFooter: true,
       gap: 18,
@@ -73,8 +73,8 @@ describe("ActiveStep presentation options", () => {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "var(--workflow-arrow)",
-      disableAutoStyles: undefined,
-      disabled: true,
+      autoStyles: undefined,
+      hidden: true,
       edgePadding: 18,
       size: 12,
       styleNonce: undefined,
@@ -84,7 +84,7 @@ describe("ActiveStep presentation options", () => {
   test("keeps step presentation overrides above workflow defaults", () => {
     const workflow = definition({
       indicator: { gap: 8 },
-      popover: { arrow: { color: "#4c35fd", disabled: false, size: 20 }, gap: 6 },
+      popover: { arrow: { color: "#4c35fd", hidden: false, size: 20 }, gap: 6 },
     });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
@@ -94,8 +94,8 @@ describe("ActiveStep presentation options", () => {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "#4c35fd",
-      disableAutoStyles: undefined,
-      disabled: false,
+      autoStyles: undefined,
+      hidden: false,
       edgePadding: 18,
       size: 20,
       styleNonce: undefined,

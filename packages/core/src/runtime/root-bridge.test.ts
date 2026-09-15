@@ -309,7 +309,7 @@ describe("private root bridge", () => {
       .create("with-popover")
       .step({
         id: "step-2",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "content",
         target: () => null,
         title: "title",
@@ -509,7 +509,7 @@ describe("private root bridge", () => {
           .create("replacement-popover")
           .step({
             id: "step-4",
-            behavior: { missingTargetStrategy: "skip" },
+            behavior: { missingTarget: { strategy: "skip" } },
             content: "content",
             target: () => null,
             title: "title",

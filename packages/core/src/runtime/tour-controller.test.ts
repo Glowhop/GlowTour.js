@@ -227,7 +227,7 @@ describe("instance-first TourController", () => {
       .create("invalid")
       .step({
         id: "step-3",
-        behavior: { targetTimeout: Number.NaN },
+        behavior: { missingTarget: { timeout: Number.NaN } },
         content: "one",
         target: targetResolver,
         title: "one",
@@ -235,7 +235,7 @@ describe("instance-first TourController", () => {
       .build();
 
     await assert.rejects(() => tour.run(workflow), {
-      message: "Invalid option: steps[0].behavior.targetTimeout",
+      message: "Invalid option: steps[0].behavior.missingTarget.timeout",
       name: "TypeError",
     });
   });
@@ -542,7 +542,8 @@ describe("instance-first TourController", () => {
     const workflow = tour
       .create("readonly", {
         cancellable: true,
-        popover: { arrow: { color: "#4c35fd" }, keyboardShortcuts: { advance: ["Enter"] } },
+        popover: { arrow: { color: "#4c35fd" } },
+        behavior: { keyboard: { advance: ["Enter"] } },
       })
       .step({
         id: "step-16",
@@ -562,7 +563,7 @@ describe("instance-first TourController", () => {
     assert.equal(Object.isFrozen(workflow.steps), true);
     assert.equal(Object.isFrozen(workflow.steps[0]), true);
     assert.equal(Object.isFrozen(workflow.steps[0].props.data), true);
-    assert.equal(Object.isFrozen(workflow.options.popover?.keyboardShortcuts?.advance), true);
+    assert.equal(Object.isFrozen(workflow.options.behavior?.keyboard?.advance), true);
     assert.equal(Object.isFrozen(workflow.options.popover?.arrow), true);
     assert.equal(Object.isFrozen(workflow.steps[0].props.overlay?.animation), true);
     assert.equal("clone" in workflow.steps[0], false);
@@ -1182,7 +1183,7 @@ describe("instance-first TourController", () => {
       .create("abort-wait", { cancellable: true })
       .step({
         id: "step-47",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 60_000 },
+        behavior: { missingTarget: { strategy: "wait", timeout: 60_000 } },
         content: "one",
         target: ({ signal }) => {
           attempts += 1;
@@ -1262,7 +1263,7 @@ describe("instance-first TourController", () => {
           .create("skip")
           .step({
             id: "step-52",
-            behavior: { missingTargetStrategy: "skip" },
+            behavior: { missingTarget: { strategy: "skip" } },
             content: "one",
             target: () => null,
             title: "one",
@@ -1279,7 +1280,7 @@ describe("instance-first TourController", () => {
           .create("wait")
           .step({
             id: "step-54",
-            behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+            behavior: { missingTarget: { strategy: "wait", timeout: 100 } },
             content: "one",
             target: () => (++attempts === 2 ? target : null),
             title: "one",
@@ -1391,8 +1392,8 @@ describe("instance-first TourController", () => {
     context.props.update({ behavior: { allowInteraction: false } });
     assert.equal(tour.state.get().currentStep?.currentProps.behavior?.allowInteraction, false);
     assert.throws(
-      () => context.props.update({ behavior: { targetTimeout: -1 } }),
-      /steps\[0\]\.behavior\.targetTimeout/,
+      () => context.props.update({ behavior: { missingTarget: { timeout: -1 } } }),
+      /steps\[0\]\.behavior\.missingTarget\.timeout/,
     );
     await tour.advance();
     await tour.previous();
@@ -1463,7 +1464,7 @@ describe("instance-first TourController", () => {
       .step({ id: "one", content: "one", target: targetResolver, title: "one" })
       .step({
         id: "two",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "two",
         target: () => null,
         title: "two",
@@ -1553,7 +1554,7 @@ describe("instance-first TourController", () => {
       .step({ id: "first", content: "1", target: targetResolver, title: "1" })
       .step({
         id: "gone",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "2",
         target: () => null,
         title: "2",
@@ -1605,7 +1606,7 @@ describe("instance-first TourController", () => {
       .create("back-past-start")
       .step({
         id: "first",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "1",
         target: () => (firstAvailable ? target : null),
         title: "1",
@@ -1812,7 +1813,7 @@ describe("instance-first TourController", () => {
       .create("recover-wait")
       .step({
         id: "step-65",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+        behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
         content: "one",
         target: () => resolvedTarget,
         title: "initial",
@@ -1857,7 +1858,7 @@ describe("instance-first TourController", () => {
       .create("recover-direct")
       .step({
         id: "step-66",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+        behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
         content: "one",
         target: directTarget,
         title: "one",
@@ -1889,7 +1890,7 @@ describe("instance-first TourController", () => {
       .create("recover-skip")
       .step({
         id: "step-67",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
@@ -1923,7 +1924,7 @@ describe("instance-first TourController", () => {
       })
       .step({
         id: "step-69",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
@@ -1952,7 +1953,7 @@ describe("instance-first TourController", () => {
       .create("recover-reverse-fixed", { cancellable: false })
       .step({
         id: "step-71",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
@@ -2005,7 +2006,7 @@ describe("instance-first TourController", () => {
       .create("recover-timeout")
       .step({
         id: "step-74",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 0 },
+        behavior: { missingTarget: { strategy: "wait", timeout: 0 } },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
@@ -2032,7 +2033,7 @@ describe("instance-first TourController", () => {
       .create("recover-budget")
       .step({
         id: "step-budget",
-        behavior: { missingTargetStrategy: "wait", targetTimeout },
+        behavior: { missingTarget: { strategy: "wait", timeout: targetTimeout } },
         content: "one",
         target: () => {
           resolveCalls += 1;
@@ -2073,7 +2074,7 @@ describe("instance-first TourController", () => {
       .create("recover-command-wins")
       .step({
         id: "step-cmd-1",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+        behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
@@ -2107,7 +2108,7 @@ describe("instance-first TourController", () => {
       .create("recover-wait-command")
       .step({
         id: "step-wait-cmd-1",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+        behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
@@ -2168,7 +2169,7 @@ describe("instance-first TourController", () => {
       .create("recover-old")
       .step({
         id: "step-77",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+        behavior: { missingTarget: { strategy: "wait", timeout: 100 } },
         content: "one",
         target: () => resolvedTarget,
         title: "one",
@@ -2443,7 +2444,7 @@ describe("instance-first TourController", () => {
       .step({ id: "step-86", content: "zero", target: targetResolver, title: "zero" })
       .step({
         id: "step-87",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "one",
         target: () => null,
         title: "one",
@@ -2651,7 +2652,7 @@ describe("instance-first TourController", () => {
       .create("retry-listener")
       .step({
         id: "step-98",
-        behavior: { missingTargetStrategy: "wait", targetTimeout: 100 },
+        behavior: { missingTarget: { strategy: "wait", timeout: 100 } },
         content: "one",
         target: ({ signal }) => {
           attempts += 1;
@@ -3304,7 +3305,7 @@ describe("monitoring events", () => {
   test("emits step:skip for each skipped step, then a single step:leave, in both directions", async () => {
     const { events, onEvent } = recorder();
     const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
-    const skip = { missingTargetStrategy: "skip" } as const;
+    const skip = { missingTarget: { strategy: "skip" } } as const;
     const workflow = tour
       .create("skips")
       .step({ id: "first", content: "1", target: targetResolver, title: "1" })

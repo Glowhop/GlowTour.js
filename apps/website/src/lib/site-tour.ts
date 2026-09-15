@@ -31,8 +31,7 @@ export const TOUR_QUERY_PARAM = "tour";
  * where the arriving page's own scripts have not finished putting it there.
  */
 const acrossPageBoundary = {
-  missingTargetStrategy: "wait",
-  targetTimeout: 10_000,
+  missingTarget: { strategy: "wait", timeout: 10_000 },
 } as const;
 
 /**

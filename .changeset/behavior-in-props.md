@@ -16,5 +16,5 @@ Make step behavior part of the dynamic step props.
 
 **Added**
 
-- `context.props.update({ behavior })` changes the step behavior while the tour runs, and the value appears in `state.currentStep.currentProps.behavior`. `allowInteraction` applies at once (modality, focus, indicator fade), `overlayClick` on the next click, `disableAutoFocus` / `disableAutoScroll` / `scroll` on the next entry, and `missingTargetStrategy` / `targetTimeout` on the next target resolution.
+- `context.props.update({ behavior })` changes the step behavior while the tour runs, and the value appears in `state.currentStep.currentProps.behavior`. `allowInteraction` applies at once (modality, focus, indicator fade), `overlayClick` on the next click, `autoFocus` / `autoScroll` / `scroll` on the next entry, `keyboard` on the next key press, and `missingTarget` on the next target resolution.
 - `props.set()` and `props.update()` validate `behavior`, like the other options.

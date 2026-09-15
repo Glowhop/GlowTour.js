@@ -63,7 +63,7 @@ export default class PopoverElement extends GlowTourElement {
     }
 
     const gap = Math.max(0, step.popover?.gap ?? DEFAULT_POPOVER_GAP);
-    const arrowDisabled = step.popover?.arrow?.disabled === true;
+    const arrowDisabled = step.popover?.arrow?.hidden === true;
     const arrowEdgePadding = step.popover?.arrow?.edgePadding ?? DEFAULT_ARROW_EDGE_PADDING;
 
     const popoverPosition = currentElement.getBoundingClientRect();
@@ -317,7 +317,7 @@ export default class PopoverElement extends GlowTourElement {
   private _applyArrowStyles(step: TourElementStep) {
     const arrow = step.popover?.arrow;
     ensurePopoverArrowStyles(this.element, {
-      disabled: arrow?.disableAutoStyles,
+      disabled: arrow?.autoStyles === false,
       nonce: arrow?.styleNonce,
     });
     this._applyArrowStyle(ARROW_STYLE_PROPERTIES.color, arrow?.color);

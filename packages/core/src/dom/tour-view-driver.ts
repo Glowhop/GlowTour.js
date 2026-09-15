@@ -839,7 +839,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   ): TourViewCommand | null {
     const command = activationCommand(event, this.root);
     if (command) return command !== "native" && available(command) ? command : null;
-    const shortcuts = step.popover?.keyboardShortcuts;
+    const shortcuts = step.behavior?.keyboard;
     const shortcut = (command: TourViewCommand) =>
       (shortcuts?.[command] ?? DEFAULT_SHORTCUTS[command]).includes(event.key) &&
       available(command);
@@ -962,7 +962,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   ) {
     const popover = this.popover?.getElement();
     if (!isHTMLElement(popover, this.root ?? popover)) return;
-    const autoFocus = step.behavior?.disableAutoFocus !== true;
+    const autoFocus = step.behavior?.autoFocus !== false;
     const deferFocus = autoFocus && this.commands?.subscribeCapabilities !== undefined;
     if (deferFocus) this.pendingFocusGeneration = generation;
     this.focusGuard.activate({
@@ -985,16 +985,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private syncShortcutLabels(step: ActiveStep<T>) {
     for (const advance of this.findTriggers("advance")) {
-      syncKeyShortcuts(
-        advance,
-        step.popover?.keyboardShortcuts?.advance ?? DEFAULT_SHORTCUTS.advance,
-      );
+      syncKeyShortcuts(advance, step.behavior?.keyboard?.advance ?? DEFAULT_SHORTCUTS.advance);
     }
     for (const previous of this.findTriggers("previous")) {
-      syncKeyShortcuts(
-        previous,
-        step.popover?.keyboardShortcuts?.previous ?? DEFAULT_SHORTCUTS.previous,
-      );
+      syncKeyShortcuts(previous, step.behavior?.keyboard?.previous ?? DEFAULT_SHORTCUTS.previous);
     }
   }
 
@@ -1170,7 +1164,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private isPointerEnabled(step: ActiveStep<T>) {
-    return step.allowInteraction && step.indicator?.disabled !== true;
+    return step.allowInteraction && step.indicator?.hidden !== true;
   }
 
   private cleanupStepResources() {
@@ -1382,7 +1376,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    */
   private beginTargetScroll(step: ActiveStep<T>, target: HTMLElement, signal: AbortSignal) {
     this.throwIfAborted(signal);
-    if (step.behavior?.disableAutoScroll) return null;
+    if (step.behavior?.autoScroll === false) return null;
     if (isInViewport(target.getBoundingClientRect(), target)) return null;
     const currentWindow = this.getWindow(target);
     if (!currentWindow) return null;

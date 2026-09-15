@@ -3,6 +3,8 @@ import type {
   AnimationOptions,
   BaseOptions,
   IndicatorOptions,
+  KeyboardShortcuts,
+  MissingTargetOptions,
   OverlayOptions,
   PopoverOptions,
   ScrollOptions,
@@ -58,7 +60,7 @@ export function mergeIndicatorOptions(
 
   return {
     ...mergeBaseOptions(defaults, overrides),
-    disabled: overrides?.disabled ?? defaults?.disabled,
+    hidden: overrides?.hidden ?? defaults?.hidden,
     gap: overrides?.gap ?? defaults?.gap,
     placementTryOrder: cloneArray(overrides?.placementTryOrder ?? defaults?.placementTryOrder),
   };
@@ -74,21 +76,19 @@ export function mergePopoverOptions(
 
   const placementTryOrder = overrides?.placementTryOrder ?? defaults?.placementTryOrder;
   const hasArrow = !!defaults?.arrow || !!overrides?.arrow;
-  const hasKeyboardShortcuts = !!defaults?.keyboardShortcuts || !!overrides?.keyboardShortcuts;
 
   return {
     ...mergeBaseOptions(defaults, overrides),
     arrow: hasArrow
       ? {
-          disabled: overrides?.arrow?.disabled ?? defaults?.arrow?.disabled,
+          hidden: overrides?.arrow?.hidden ?? defaults?.arrow?.hidden,
           color: overrides?.arrow?.color ?? defaults?.arrow?.color,
           size: overrides?.arrow?.size ?? defaults?.arrow?.size,
           borderWidth: overrides?.arrow?.borderWidth ?? defaults?.arrow?.borderWidth,
           borderRadius: overrides?.arrow?.borderRadius ?? defaults?.arrow?.borderRadius,
           edgePadding: overrides?.arrow?.edgePadding ?? defaults?.arrow?.edgePadding,
           styleNonce: overrides?.arrow?.styleNonce ?? defaults?.arrow?.styleNonce,
-          disableAutoStyles:
-            overrides?.arrow?.disableAutoStyles ?? defaults?.arrow?.disableAutoStyles,
+          autoStyles: overrides?.arrow?.autoStyles ?? defaults?.arrow?.autoStyles,
         }
       : undefined,
     disableAdvanceButton: overrides?.disableAdvanceButton ?? defaults?.disableAdvanceButton,
@@ -98,19 +98,6 @@ export function mergePopoverOptions(
     hideFooter: overrides?.hideFooter ?? defaults?.hideFooter,
     hidePreviousButton: overrides?.hidePreviousButton ?? defaults?.hidePreviousButton,
     placementTryOrder: cloneArray(placementTryOrder),
-    keyboardShortcuts: hasKeyboardShortcuts
-      ? {
-          previous: cloneArray(
-            overrides?.keyboardShortcuts?.previous ?? defaults?.keyboardShortcuts?.previous,
-          ),
-          advance: cloneArray(
-            overrides?.keyboardShortcuts?.advance ?? defaults?.keyboardShortcuts?.advance,
-          ),
-          cancel: cloneArray(
-            overrides?.keyboardShortcuts?.cancel ?? defaults?.keyboardShortcuts?.cancel,
-          ),
-        }
-      : undefined,
   };
 }
 
@@ -160,12 +147,35 @@ export function mergeStepBehavior(
   }
   return {
     allowInteraction: overrides?.allowInteraction ?? defaults?.allowInteraction,
-    disableAutoFocus: overrides?.disableAutoFocus ?? defaults?.disableAutoFocus,
-    disableAutoScroll: overrides?.disableAutoScroll ?? defaults?.disableAutoScroll,
-    missingTargetStrategy: overrides?.missingTargetStrategy ?? defaults?.missingTargetStrategy,
+    autoFocus: overrides?.autoFocus ?? defaults?.autoFocus,
+    autoScroll: overrides?.autoScroll ?? defaults?.autoScroll,
+    keyboard: mergeKeyboardShortcuts(defaults?.keyboard, overrides?.keyboard),
+    missingTarget: mergeMissingTarget(defaults?.missingTarget, overrides?.missingTarget),
     scroll: mergeScrollOptions(defaults?.scroll, overrides?.scroll),
-    targetTimeout: overrides?.targetTimeout ?? defaults?.targetTimeout,
     overlayClick: overrides?.overlayClick ?? defaults?.overlayClick,
+  };
+}
+
+function mergeKeyboardShortcuts(
+  defaults?: KeyboardShortcuts,
+  overrides?: KeyboardShortcuts,
+): KeyboardShortcuts | undefined {
+  if (!defaults && !overrides) return undefined;
+  return {
+    previous: cloneArray(overrides?.previous ?? defaults?.previous),
+    advance: cloneArray(overrides?.advance ?? defaults?.advance),
+    cancel: cloneArray(overrides?.cancel ?? defaults?.cancel),
+  };
+}
+
+function mergeMissingTarget(
+  defaults?: MissingTargetOptions,
+  overrides?: MissingTargetOptions,
+): MissingTargetOptions | undefined {
+  if (!defaults && !overrides) return undefined;
+  return {
+    strategy: overrides?.strategy ?? defaults?.strategy,
+    timeout: overrides?.timeout ?? defaults?.timeout,
   };
 }
 

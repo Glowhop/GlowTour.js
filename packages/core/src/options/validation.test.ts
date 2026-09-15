@@ -16,7 +16,10 @@ function workflow(options: StartOptions<string> = {}) {
 
 describe("runtime option validation", () => {
   const invalidOptions: readonly { options: StartOptions<string>; path: string }[] = [
-    { options: { behavior: { targetTimeout: -1 } }, path: "options.behavior.targetTimeout" },
+    {
+      options: { behavior: { missingTarget: { timeout: -1 } } },
+      path: "options.behavior.missingTarget.timeout",
+    },
     {
       options: { overlay: { animation: { duration: Number.POSITIVE_INFINITY, easing: "linear" } } },
       path: "options.overlay.animation.duration",
@@ -73,7 +76,7 @@ describe("runtime option validation", () => {
     assert.doesNotThrow(() =>
       validateWorkflowOptions(
         workflow({
-          behavior: { targetTimeout: 0 },
+          behavior: { missingTarget: { timeout: 0 } },
           indicator: { animation: { duration: 0, easing: "linear" }, gap: 0 },
           overlay: {
             animation: { duration: 0, easing: "linear" },

@@ -172,7 +172,7 @@ export const examples: readonly Example[] = [
   {
     Demo: RelocateTargetDemo,
     description:
-      'missingTargetStrategy: "wait" keeps a step alive while its target leaves the page, then follows it to its new place.',
+      'missingTarget: { strategy: "wait" } keeps a step alive while its target leaves the page, then follows it to its new place.',
     label: "Moving target",
     source: relocateTargetSource,
     title: "Moving target",

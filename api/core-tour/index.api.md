@@ -34,14 +34,25 @@ interface GlowTourOptions {
 }
 
 interface IndicatorOptions extends BaseOptions {
-    disabled?: boolean;
+    hidden?: boolean;
     gap?: number;
     placementTryOrder?: readonly TryOrderOptions[];
+}
+
+interface KeyboardShortcuts {
+    previous?: readonly string[];
+    advance?: readonly string[];
+    cancel?: readonly string[];
 }
 
 interface LifecycleHookContext<T> {
     readonly step: TourCurrentStep<T> | null;
     abort(): void;
+}
+
+interface MissingTargetOptions {
+    strategy?: "wait" | "skip" | "error";
+    timeout?: number;
 }
 
 interface OverlayOptions extends BaseOptions {
@@ -52,14 +63,14 @@ interface OverlayOptions extends BaseOptions {
 }
 
 interface PopoverArrowOptions {
-    disabled?: boolean;
+    hidden?: boolean;
     color?: string;
     size?: number;
     borderWidth?: number;
     borderRadius?: number;
     edgePadding?: number;
     styleNonce?: string;
-    disableAutoStyles?: boolean;
+    autoStyles?: boolean;
 }
 
 interface PopoverOptions extends BaseOptions {
@@ -71,11 +82,6 @@ interface PopoverOptions extends BaseOptions {
     disableAdvanceButton?: boolean;
     hideAdvanceButton?: boolean;
     gap?: number;
-    keyboardShortcuts?: {
-        previous?: readonly string[];
-        advance?: readonly string[];
-        cancel?: readonly string[];
-    };
 }
 
 type PrimitiveValue = string | number | boolean | null;
@@ -127,11 +133,11 @@ type StepActionResult = boolean | void;
 
 interface StepBehavior {
     allowInteraction?: boolean;
-    disableAutoFocus?: boolean;
-    disableAutoScroll?: boolean;
-    missingTargetStrategy?: "wait" | "skip" | "error";
+    autoFocus?: boolean;
+    autoScroll?: boolean;
+    keyboard?: KeyboardShortcuts;
+    missingTarget?: MissingTargetOptions;
     scroll?: ScrollOptions;
-    targetTimeout?: number;
     overlayClick?: "none" | "advance" | "cancel";
 }
 

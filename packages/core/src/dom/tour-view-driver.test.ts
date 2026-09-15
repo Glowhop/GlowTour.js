@@ -451,7 +451,7 @@ function createStep(
     animated?: boolean;
     cancellable?: boolean;
     advanceShortcuts?: readonly string[];
-    disableAutoScroll?: boolean;
+    autoScroll?: boolean;
     overlayClick?: "none" | "advance" | "cancel";
   } = {},
 ) {
@@ -461,7 +461,8 @@ function createStep(
     cancellable: options.cancellable,
     behavior: {
       allowInteraction: options.allowInteraction,
-      disableAutoScroll: options.disableAutoScroll,
+      autoScroll: options.autoScroll,
+      keyboard: options.advanceShortcuts ? { advance: options.advanceShortcuts } : undefined,
     },
   })
     .step({
@@ -469,12 +470,7 @@ function createStep(
       behavior: options.overlayClick ? { overlayClick: options.overlayClick } : undefined,
       content: "content",
       // Pin the gap so the transform expectations below stay independent of the default.
-      popover: {
-        gap: 14,
-        ...(options.advanceShortcuts
-          ? { keyboardShortcuts: { advance: options.advanceShortcuts } }
-          : {}),
-      },
+      popover: { gap: 14 },
       target: "#target",
       title: "title",
     })
@@ -893,7 +889,7 @@ describe("DomTourViewDriver", () => {
 
     step.props.set((props) => ({
       ...props,
-      indicator: { ...props.indicator, disabled: true },
+      indicator: { ...props.indicator, hidden: true },
       overlay: { ...props.overlay, color: "rgb(12, 34, 56)", opacity: 0.4 },
       popover: { ...props.popover, disableAdvanceButton: true },
     }));
@@ -1125,13 +1121,13 @@ describe("DomTourViewDriver", () => {
     const animationStart = createdAnimations.length;
     step.props.set((props) => ({
       ...props,
-      indicator: { ...props.indicator, disabled: true },
+      indicator: { ...props.indicator, hidden: true },
     }));
     flushFrame();
 
     step.props.set((props) => ({
       ...props,
-      indicator: { ...props.indicator, disabled: false },
+      indicator: { ...props.indicator, hidden: false },
     }));
     flushFrame();
     resolveAnimations(animationStart);
@@ -2440,7 +2436,7 @@ describe("DomTourViewDriver", () => {
       reducedMotion = mode === "reduced-motion";
       const { driver, elements } = installDriver();
       const step = createStep({ allowInteraction: true, animated: mode !== "workflow" });
-      if (mode === "indicator-disabled") step.props.update({ indicator: { disabled: true } });
+      if (mode === "indicator-disabled") step.props.update({ indicator: { hidden: true } });
       step.target = createTarget() as unknown as HTMLElement;
       await driver.show(step, "advance", new AbortController().signal);
       flushFrame();
@@ -3127,7 +3123,7 @@ describe("DomTourViewDriver", () => {
   test("waits for nothing when the step opts out of scrolling", async () => {
     installScroller();
     const { driver, elements } = installDriver();
-    const step = createStep({ disableAutoScroll: true });
+    const step = createStep({ autoScroll: false });
     const target = createOffscreenTarget();
     let scrolls = 0;
     target.scrollIntoView = () => {
