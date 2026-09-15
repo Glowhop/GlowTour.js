@@ -41,8 +41,8 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // from 20.75 KiB for freezing a step on its last position while a lost
     // target comes back instead of tearing the presentation down, then from
     // 21 KiB for presenting a step while its scroll is still travelling, then
-    // from 21.5 KiB for `context.setAllowInteraction()`, which applies an
-    // interaction change live (modality, focus, pointer fade) on the step.
+    // from 21.5 KiB for applying a `behavior.allowInteraction` changed through
+    // the step props live (modality, focus, pointer fade) on the step.
     gzipBudget: 21.75 * KIB,
     name: "Core index",
     outputExtension: "js",

@@ -32,8 +32,8 @@ type StoredStepProps = ReturnType<StepPropsStore<string>["get"]>;
 const removedTarget: keyof StoredStepProps = "target";
 // @ts-expect-error Lifecycle configuration must not be exposed through context.props.
 const removedResetPropsOnEnter: keyof StoredStepProps = "resetPropsOnEnter";
-// @ts-expect-error Static behavior must not be exposed through context.props.
-const removedBehavior: keyof StoredStepProps = "behavior";
+// Behavior is a dynamic step prop.
+const _storedBehavior: keyof StoredStepProps = "behavior";
 
 const popoverOptions: PopoverOptions = {
   disableAdvanceButton: true,
@@ -71,7 +71,7 @@ void removedProgressOption;
 void removedButtonOption;
 void removedTarget;
 void removedResetPropsOnEnter;
-void removedBehavior;
+void _storedBehavior;
 void popoverOptions;
 void behaviorOptions;
 void removedStepScroll;
@@ -200,7 +200,6 @@ function createContext(
     direction: "advance",
     initialProps: { content: "", title: "" },
     props: {} as StepContext<string>["props"],
-    setAllowInteraction: () => {},
     signal,
     target,
   };

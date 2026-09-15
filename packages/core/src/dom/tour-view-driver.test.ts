@@ -2363,8 +2363,7 @@ describe("DomTourViewDriver", () => {
 
     animationMode = "controlled";
     const animationStart = createdAnimations.length;
-    step.allowInteraction = false;
-    driver.syncInteraction(step);
+    step.props.update({ behavior: { allowInteraction: false } });
 
     assert.equal(elements.popover.getAttribute("aria-modal"), "true");
     assert.equal(target.hasAttribute("inert"), true);
@@ -2394,8 +2393,7 @@ describe("DomTourViewDriver", () => {
 
     animationMode = "controlled";
     const animationStart = createdAnimations.length;
-    step.allowInteraction = true;
-    driver.syncInteraction(step);
+    step.props.update({ behavior: { allowInteraction: true } });
 
     assert.equal(elements.popover.hasAttribute("aria-modal"), false);
     assert.equal(target.hasAttribute("inert"), false);
@@ -2422,10 +2420,8 @@ describe("DomTourViewDriver", () => {
 
     animationMode = "controlled";
     const animationStart = createdAnimations.length;
-    step.allowInteraction = false;
-    driver.syncInteraction(step);
-    step.allowInteraction = true;
-    driver.syncInteraction(step);
+    step.props.update({ behavior: { allowInteraction: false } });
+    step.props.update({ behavior: { allowInteraction: true } });
 
     const fades = createdAnimations
       .slice(animationStart)
@@ -2451,8 +2447,7 @@ describe("DomTourViewDriver", () => {
       await flushMicrotasks();
 
       const animationStart = createdAnimations.length;
-      step.allowInteraction = false;
-      driver.syncInteraction(step);
+      step.props.update({ behavior: { allowInteraction: false } });
       await flushMicrotasks();
 
       // A disabled indicator stays hidden: any fade it gets runs from and to zero opacity.
@@ -2476,8 +2471,7 @@ describe("DomTourViewDriver", () => {
     const { driver, elements } = installDriver();
     const step = createStep({ allowInteraction: true });
     step.target = createTarget() as unknown as HTMLElement;
-    step.allowInteraction = false;
-    driver.syncInteraction(step);
+    step.props.update({ behavior: { allowInteraction: false } });
     assert.equal(elements.popover.hasAttribute("aria-modal"), false);
 
     await driver.show(step, "advance", new AbortController().signal);
@@ -2752,7 +2746,9 @@ describe("DomTourViewDriver", () => {
       behavior: { allowInteraction: true },
     })
       .step({ id: "step-9", content: "a", target: "#a", title: "a" })
-      .onTargetEvent("click", (_event, { setAllowInteraction }) => setAllowInteraction(false))
+      .onTargetEvent("click", (_event, { props }) =>
+        props.update({ behavior: { allowInteraction: false } }),
+      )
       .build();
     const definition = workflow.steps[0];
     if (!definition) throw new Error("Expected a step definition");
@@ -3547,8 +3543,7 @@ describe("DomTourViewDriver", () => {
       target.isConnected = false;
       flushFrame();
       await flushMicrotasks();
-      step.allowInteraction = true;
-      driver.syncInteraction(step);
+      step.props.update({ behavior: { allowInteraction: true } });
       assert.equal(elements.popover.getAttribute("aria-modal"), "true");
 
       step.target = createTarget() as unknown as HTMLElement;
