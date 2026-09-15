@@ -1,3 +1,4 @@
+import type { ReadonlyStepProps } from "../definition";
 import type {
   AnimationOptions,
   BaseOptions,
@@ -6,7 +7,27 @@ import type {
   PopoverOptions,
   ScrollOptions,
   StepBehavior,
+  StepPropsPatch,
 } from "../types";
+
+/**
+ * Merges a partial change into step props: fields it leaves out are kept, `data` is merged key by
+ * key, `overlay` / `popover` / `indicator` go through their option merges, and arrays are replaced.
+ * Builds a step's initial props over the workflow defaults, and backs `StepPropsStore.update`.
+ */
+export function mergeStepProps<T>(
+  base: StepPropsPatch<T>,
+  patch: StepPropsPatch<T>,
+): ReadonlyStepProps<T> {
+  return {
+    ...base,
+    ...patch,
+    data: patch.data ? { ...base.data, ...patch.data } : base.data,
+    overlay: mergeOverlayOptions(base.overlay, patch.overlay),
+    popover: mergePopoverOptions(base.popover, patch.popover),
+    indicator: mergeIndicatorOptions(base.indicator, patch.indicator),
+  } as ReadonlyStepProps<T>;
+}
 
 export function mergeOverlayOptions(
   defaults?: OverlayOptions,

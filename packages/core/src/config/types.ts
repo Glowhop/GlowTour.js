@@ -7,7 +7,7 @@ import type {
   PrimitiveValue,
   StepAction,
   StepBehavior,
-  StepTransitionAction,
+  StepHookAction,
 } from "../types";
 
 /**
@@ -60,15 +60,15 @@ export type BuiltinAction =
 export type StepActionRef<T = string> = BuiltinAction | StepAction<T>;
 
 /**
- * A reference to a transition hook (`advanceAction`/`previousAction`/`cancelAction`).
+ * A reference to a step hook (`enterAction`/`leaveAction`).
  *
- * `BeforeActionStepContext` has a `target` but no `signal`/navigation methods, which the
- * `BuiltinAction` verbs (`wait`, `waitUntilElement`, `clickTarget`, `focusTarget`) all need — none
- * of them can run in this slot. With no registry to fall back on, a transition hook is therefore
- * only expressible as a same-runtime JS function, never as plain JSON. This is a plain function
- * type (not a union) precisely because there is nothing else valid to put here.
+ * Step hooks run while a transition is in progress. The `BuiltinAction` verbs describe a step's
+ * own action sequence (`wait` would stall the transition, `clickTarget` would act on a step that
+ * is not shown yet or is being left), so they are not accepted here. With no registry to fall back
+ * on, a step hook is only expressible as a same-runtime JS function, never as plain JSON. This is a
+ * plain function type (not a union) precisely because there is nothing else valid to put here.
  */
-export type TransitionActionRef<T = string> = StepTransitionAction<T>;
+export type StepHookActionRef<T = string> = StepHookAction<T>;
 
 /** JSON config form of a single `onTargetEvent` registration. */
 export interface EventHandlerConfig<T = string> {
@@ -89,7 +89,6 @@ export interface StepConfig<T = string> {
   readonly id: string;
   /** CSS selector for the step's target. Functions and `HTMLElement` are not supported in config form. */
   readonly target: string;
-  readonly resetPropsOnEnter?: boolean;
   readonly overlay?: OverlayOptions;
   readonly popover?: PopoverOptions;
   readonly indicator?: IndicatorOptions;
@@ -99,9 +98,10 @@ export interface StepConfig<T = string> {
   readonly data?: Record<string, PrimitiveValue>;
   readonly actions?: readonly StepActionRef<T>[];
   readonly eventHandlers?: readonly EventHandlerConfig<T>[];
-  readonly advanceAction?: TransitionActionRef<T>;
-  readonly previousAction?: TransitionActionRef<T>;
-  readonly cancelAction?: TransitionActionRef<T>;
+  /** Runs after the target is resolved and before the step is shown. Mirrors `beforeEnter`. */
+  readonly enterAction?: StepHookActionRef<T>;
+  /** Runs before navigating away from the step, never on cancel. Mirrors `beforeLeave`. */
+  readonly leaveAction?: StepHookActionRef<T>;
 }
 
 /**

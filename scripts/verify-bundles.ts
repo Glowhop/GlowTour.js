@@ -40,8 +40,10 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // animation on WebKit, where `d` cannot be animated by the engine, then
     // from 20.75 KiB for freezing a step on its last position while a lost
     // target comes back instead of tearing the presentation down, then from
-    // 21 KiB for presenting a step while its scroll is still travelling.
-    gzipBudget: 21.5 * KIB,
+    // 21 KiB for presenting a step while its scroll is still travelling, then
+    // from 21.5 KiB for `context.setAllowInteraction()`, which applies an
+    // interaction change live (modality, focus, pointer fade) on the step.
+    gzipBudget: 21.75 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

@@ -17,7 +17,10 @@ function context(target = element()): StepContext<string> {
     advance: async () => {},
     cancel: async () => {},
     previous: async () => {},
+    direction: "advance",
+    initialProps: { content: "", title: "" },
     props: {} as StepContext<string>["props"],
+    setAllowInteraction: () => {},
     signal: new AbortController().signal,
     target,
   };
@@ -28,7 +31,8 @@ describe("createWorkflowFromConfig", () => {
     const onStart = () => {};
     const inlineAction = () => true;
     const clickHandler = () => {};
-    const advanceAction = () => {};
+    const enterAction = () => {};
+    const leaveAction = () => {};
 
     const config: WorkflowConfig = {
       name: "onboarding",
@@ -43,7 +47,8 @@ describe("createWorkflowFromConfig", () => {
           data: { seatsRemaining: 3 },
           actions: [{ type: "wait", ms: 300 }, inlineAction, { type: "clickTarget" }],
           eventHandlers: [{ event: "click", action: clickHandler }],
-          advanceAction,
+          enterAction,
+          leaveAction,
         },
       ],
     };
@@ -60,7 +65,8 @@ describe("createWorkflowFromConfig", () => {
       .do(inlineAction)
       .clickTarget()
       .onTargetEvent("click", clickHandler)
-      .beforeAdvance(advanceAction)
+      .beforeEnter(enterAction)
+      .beforeLeave(leaveAction)
       .build();
 
     const actual = createWorkflowFromConfig(config);
@@ -79,7 +85,8 @@ describe("createWorkflowFromConfig", () => {
       actual.steps[0].eventHandlers.map((handler) => handler.event).join(","),
       expected.steps[0].eventHandlers.map((handler) => handler.event).join(","),
     );
-    assert.equal(actual.steps[0].advanceAction, advanceAction);
+    assert.equal(actual.steps[0].enterAction, enterAction);
+    assert.equal(actual.steps[0].leaveAction, leaveAction);
   });
 
   test("maps the wait builtin to a plain delay instruction", () => {

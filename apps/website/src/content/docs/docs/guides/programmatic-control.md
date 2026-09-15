@@ -113,24 +113,23 @@ const workflow = tour
   .build();
 ```
 
-## Transition callbacks
+## Step hooks
 
-React to step transitions. These are builder *methods* chained after a `.step()` call, not options
-inside it - they attach to the step that precedes them:
+Run code when a step is entered or left. These are builder *methods* chained after a `.step()` call,
+not options inside it - they attach to the step that precedes them:
 
 ```typescript
 const workflow = tour
-  .create("transitions")
+  .create("hooks")
   .step({
-    id: "step1-2",
+    id: "step1",
     target: "#step1",
     title: "First",
     content: "Step 1",
   })
-  .beforeAdvance(async (context) => {
-    console.log("About to advance from step 1");
+  .beforeLeave(async ({ direction }) => {
     // Perform async work, e.g., save user progress
-    await saveProgress();
+    if (direction === "advance") await saveProgress();
   })
   .step({
     id: "step2",
@@ -138,22 +137,79 @@ const workflow = tour
     title: "Second",
     content: "Step 2",
   })
-  .beforePrevious(async (context) => {
-    console.log("About to go back to step 1");
-  })
-  .step({
-    id: "step3",
-    target: "#step3",
-    title: "Third",
-    content: "Step 3",
-  })
-  .beforeCancel(async (context) => {
-    console.log("About to cancel the tour");
+  .beforeEnter(({ direction, props, initialProps }) => {
+    // Coming back from a later step: start again from the declared props.
+    if (direction === "previous") props.set(initialProps);
   })
   .build();
 ```
 
-`.beforeAdvance()`, `.beforePrevious()`, and `.beforeCancel()` can be async and will pause the transition until they resolve.
+- `.beforeEnter()` runs after the step's target is resolved and before the step is shown, so the props
+  it sets are the first ones rendered.
+- `.beforeLeave()` runs before `advance()`, `previous()`, `goToStep()`, or finishing the tour. It does
+  not run on cancel: use the workflow's `onCancel` option, which receives the current step.
+- Both can be async and pause the transition until they resolve. `context.direction` tells which way
+  the tour is moving.
+
+Step props are not reset automatically: a value set with `context.props.set()` is still there when the
+tour comes back to the step, until the workflow runs again.
+
+## Updating step props
+
+`context.props` is a small store: `get()` reads the current props, `set()` replaces them, and
+`update()` merges a partial change into them:
+
+```typescript
+.do(({ props }) => {
+  // Only this option changes; the other popover options, the title and the content are kept.
+  props.update({ popover: { disableAdvanceButton: false } });
+})
+```
+
+- Fields left out of the change are kept.
+- `data` is merged key by key.
+- `overlay`, `popover`, and `indicator` are merged the way step options merge over the workflow
+  defaults.
+- Arrays such as `placementTryOrder` are replaced, never concatenated.
+
+Pass a function to compute the change from the current props:
+
+```typescript
+props.update((current) => ({ data: { clicks: Number(current.data?.clicks ?? 0) + 1 } }));
+```
+
+`update()` validates and publishes once, like `set()`. To remove a value, use `set()`.
+
+## Changing interaction during a step
+
+`behavior.allowInteraction` sets whether the page can be used when a step is shown.
+`context.setAllowInteraction()` changes it while the step is on screen. It applies at once: the
+page becomes inert or usable again, focus leaves the target when interaction is blocked, and the
+indicator fades out or back in.
+
+A button the user may click only once:
+
+```typescript
+.step({
+  id: "pay",
+  target: "#pay",
+  title: "Pay",
+  content: "Click Pay to continue.",
+  behavior: { allowInteraction: true },
+  popover: { hideAdvanceButton: true },
+})
+.onTargetEvent("click", (_event, { props, setAllowInteraction }) => {
+  setAllowInteraction(false);
+  props.update({ popover: { hideAdvanceButton: false } });
+})
+```
+
+Like step props, the value is kept when the tour comes back to the step, until the workflow runs
+again. To start from the configured value on every visit, reset it in `beforeEnter`:
+
+```typescript
+.beforeEnter(({ setAllowInteraction }) => setAllowInteraction(true))
+```
 
 ## Step actions
 
@@ -288,8 +344,9 @@ const workflow = tour
     onStart(context) {
       analytics.track("tour_started");
     },
-    onCancel(context) {
-      analytics.track("tour_cancelled");
+    onCancel({ step }) {
+      // The lifecycle context carries a snapshot of the step the user was on.
+      analytics.track("tour_cancelled", { step: step?.id });
     },
     onFinish(context) {
       analytics.track("tour_completed");
@@ -301,8 +358,8 @@ const workflow = tour
     title: "Welcome",
     content: "Let's get started!",
   })
-  .beforeAdvance(async () => {
-    await api.logEvent("welcome_seen");
+  .beforeLeave(async ({ direction }) => {
+    if (direction === "advance") await api.logEvent("welcome_seen");
   })
   .wait(500)
   .step({
@@ -322,10 +379,6 @@ const workflow = tour
     target: "#dashboard",
     title: "You're ready!",
     content: "Explore your dashboard.",
-  })
-  .beforeCancel(async (context) => {
-    // The transition context carries the step's props and its resolved target element.
-    await api.logEvent("cancelled_on", { step: context.title });
   })
   .build();
 

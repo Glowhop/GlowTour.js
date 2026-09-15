@@ -2348,6 +2348,140 @@ describe("DomTourViewDriver", () => {
     assert.equal(tab.defaultPrevented, true);
     assert.equal(document.activeElement, elements.back);
   });
+  test("blocks interaction live: inerts the page, pulls focus out of the target, and fades the pointer out", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    const target = createTarget();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    target.focus();
+    assert.equal(document.activeElement, target);
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
+
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    step.allowInteraction = false;
+    driver.syncInteraction(step);
+
+    assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+    assert.equal(target.hasAttribute("inert"), true);
+    assert.equal(elements.overlay.getAttribute("data-glow-tour-allow-interaction"), "false");
+    assert.equal(document.activeElement, elements.advance);
+    const fade = createdAnimations
+      .slice(animationStart)
+      .find((animation) => animation.target === elements.pointer);
+    assert.deepEqual(fade?.keyframes, { opacity: 0 });
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
+
+    fade?.resolve();
+    await flushMicrotasks();
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
+    assert.equal(elements.pointer.style.getPropertyValue("opacity"), "0");
+  });
+
+  test("allows interaction live: releases the page and fades the pointer in", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    const target = createTarget();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    assert.equal(target.hasAttribute("inert"), true);
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
+
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    step.allowInteraction = true;
+    driver.syncInteraction(step);
+
+    assert.equal(elements.popover.hasAttribute("aria-modal"), false);
+    assert.equal(target.hasAttribute("inert"), false);
+    assert.equal(elements.overlay.getAttribute("data-glow-tour-allow-interaction"), "true");
+    target.focus();
+    assert.equal(document.activeElement, target);
+    const fade = createdAnimations
+      .slice(animationStart)
+      .find((animation) => animation.target === elements.pointer);
+    assert.deepEqual(fade?.keyframes, { opacity: 1 });
+
+    fade?.resolve();
+    await flushMicrotasks();
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
+    assert.equal(elements.pointer.style.getPropertyValue("opacity"), "1");
+  });
+
+  test("lets the latest interaction change win over a pointer fade still running", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    step.allowInteraction = false;
+    driver.syncInteraction(step);
+    step.allowInteraction = true;
+    driver.syncInteraction(step);
+
+    const fades = createdAnimations
+      .slice(animationStart)
+      .filter((animation) => animation.target === elements.pointer);
+    assert.deepEqual(fades[0]?.keyframes, { opacity: 0 });
+    assert.equal(fades[0]?.cancelled, true);
+    resolveAnimations(animationStart);
+    await flushMicrotasks();
+    assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
+    assert.equal(elements.pointer.style.getPropertyValue("opacity"), "1");
+  });
+
+  test("changes interaction without pointer animations when motion is off or the indicator is disabled", async () => {
+    for (const mode of ["workflow", "reduced-motion", "indicator-disabled"] as const) {
+      createdAnimations = [];
+      reducedMotion = mode === "reduced-motion";
+      const { driver, elements } = installDriver();
+      const step = createStep({ allowInteraction: true, animated: mode !== "workflow" });
+      if (mode === "indicator-disabled") step.props.update({ indicator: { disabled: true } });
+      step.target = createTarget() as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      await flushMicrotasks();
+
+      const animationStart = createdAnimations.length;
+      step.allowInteraction = false;
+      driver.syncInteraction(step);
+      await flushMicrotasks();
+
+      // A disabled indicator stays hidden: any fade it gets runs from and to zero opacity.
+      assert.equal(
+        mode === "indicator-disabled"
+          ? createdAnimations
+              .slice(animationStart)
+              .some((animation) => JSON.stringify(animation.keyframes) === '{"opacity":1}')
+          : hasAnimationFor(elements.pointer, animationStart),
+        false,
+        mode,
+      );
+      assert.equal(elements.pointer.getAttribute("aria-hidden"), "true", mode);
+      assert.equal(elements.pointer.style.getPropertyValue("opacity"), "0", mode);
+      assert.equal(elements.popover.getAttribute("aria-modal"), "true", mode);
+      driver.dispose();
+    }
+  });
+
+  test("leaves an interaction change to a step that is not presented yet", async () => {
+    const { driver, elements } = installDriver();
+    const step = createStep({ allowInteraction: true });
+    step.target = createTarget() as unknown as HTMLElement;
+    step.allowInteraction = false;
+    driver.syncInteraction(step);
+    assert.equal(elements.popover.hasAttribute("aria-modal"), false);
+
+    await driver.show(step, "advance", new AbortController().signal);
+    assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+  });
+
   test("allows only the current interactive target subtree outside the popover", async () => {
     const { driver, elements } = installDriver(),
       firstTarget = createTarget(),
@@ -2589,7 +2723,10 @@ describe("DomTourViewDriver", () => {
       .onTargetEvent("click", (_event, context) => {
         assert.equal(context.target, target);
         assert.equal(context.signal, controller.signal);
-        assert.equal(context.props.get().title, "a");
+        assert.equal(context.props.get().title, "changed");
+        assert.equal(context.initialProps, step.initialProps);
+        assert.equal(context.initialProps.title, "a");
+        assert.equal(context.direction, "previous");
         throw new Error("event failed");
       })
       .build();
@@ -2597,12 +2734,37 @@ describe("DomTourViewDriver", () => {
     if (!definition) throw new Error("Expected a step definition");
     const step = new ActiveStep(definition, workflow.options);
     step.target = target as unknown as HTMLElement;
+    step.direction = "previous";
+    step.props.set((current) => ({ ...current, title: "changed" }));
 
-    await driver.show(step, "advance", controller.signal);
+    await driver.show(step, "previous", controller.signal);
     target.dispatchEvent(new MockEvent("click"));
     await flushMicrotasks();
 
     assert.deepEqual(calls, ["error:event failed"]);
+  });
+  test("lets a target event handler block interaction live through its context", async () => {
+    const { driver, elements } = installDriver();
+    const target = createTarget();
+    const workflow = new WorkflowBuilder<string>("event-interaction", {
+      behavior: { allowInteraction: true },
+    })
+      .step({ id: "step-9", content: "a", target: "#a", title: "a" })
+      .onTargetEvent("click", (_event, { setAllowInteraction }) => setAllowInteraction(false))
+      .build();
+    const definition = workflow.steps[0];
+    if (!definition) throw new Error("Expected a step definition");
+    const step = new ActiveStep(definition, workflow.options);
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    assert.equal(elements.popover.hasAttribute("aria-modal"), false);
+    target.dispatchEvent(new MockEvent("click"));
+    await flushMicrotasks();
+
+    assert.equal(step.allowInteraction, false);
+    assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+    assert.equal(target.hasAttribute("inert"), true);
   });
   test("ignores an event handler rejection after the active step changes", async () => {
     let release: (() => void) | undefined;
@@ -3351,6 +3513,26 @@ describe("DomTourViewDriver", () => {
       step.target = newTarget as unknown as HTMLElement;
       await driver.retarget(step, new AbortController().signal);
 
+      assert.equal(elements.popover.hasAttribute("aria-modal"), false);
+    });
+
+    test("keeps interaction off while frozen after a live change, and applies it once retargeted", async () => {
+      const { driver, elements } = installDriver();
+      const step = createStep();
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+      step.allowInteraction = true;
+      driver.syncInteraction(step);
+      assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+
+      step.target = createTarget() as unknown as HTMLElement;
+      await driver.retarget(step, new AbortController().signal);
       assert.equal(elements.popover.hasAttribute("aria-modal"), false);
     });
 

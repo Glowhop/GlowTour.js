@@ -48,9 +48,8 @@ describe("validateWorkflowConfig", () => {
             { event: "click", action: { type: "focusTarget" } },
             { event: ["keydown", "keyup"], action: () => {} },
           ],
-          advanceAction: () => {},
-          previousAction: () => {},
-          cancelAction: () => {},
+          enterAction: () => {},
+          leaveAction: () => {},
         },
       ],
     };
@@ -89,13 +88,39 @@ describe("validateWorkflowConfig", () => {
     assert.ok(issues.some((issue) => issue.path === "name"));
   });
 
-  test("rejects a builtin action used as a transition hook", () => {
+  test("rejects a builtin action used as a step hook", () => {
     const config = minimalConfig();
     const issues = issuesOf({
       ...config,
-      steps: [{ ...config.steps[0], advanceAction: { type: "clickTarget" } }],
+      steps: [
+        {
+          ...config.steps[0],
+          enterAction: { type: "focusTarget" },
+          leaveAction: { type: "clickTarget" },
+        },
+      ],
     });
-    assert.ok(issues.some((issue) => issue.path === "steps[0].advanceAction"));
+    assert.ok(issues.some((issue) => issue.path === "steps[0].enterAction"));
+    assert.ok(issues.some((issue) => issue.path === "steps[0].leaveAction"));
+  });
+
+  test("rejects the removed transition hook and reset keys as unknown step keys", () => {
+    const config = minimalConfig();
+    const removedKeys = ["advanceAction", "previousAction", "cancelAction", "resetPropsOnEnter"];
+    const issues = issuesOf({
+      ...config,
+      steps: [
+        {
+          ...config.steps[0],
+          advanceAction: () => {},
+          cancelAction: () => {},
+          previousAction: () => {},
+          resetPropsOnEnter: false,
+        },
+      ],
+    });
+    const paths = issues.map((issue) => issue.path);
+    for (const key of removedKeys) assert.ok(paths.includes(`steps[0].${key}`));
   });
 
   test("rejects a builtin action used as a lifecycle hook", () => {
@@ -216,7 +241,7 @@ describe("validateWorkflowConfig", () => {
           target: "#other",
           title: "Title",
           content: "Content",
-          advanceAction: { type: "wait", ms: 1 },
+          leaveAction: { type: "wait", ms: 1 },
         },
       ],
     });
@@ -225,7 +250,7 @@ describe("validateWorkflowConfig", () => {
     assert.ok(paths.includes("bogus"));
     assert.ok(paths.includes("name"));
     assert.ok(paths.includes("steps[0].target"));
-    assert.ok(paths.includes("steps[1].advanceAction"));
+    assert.ok(paths.includes("steps[1].leaveAction"));
     assert.ok(issues.length >= 4);
   });
 
