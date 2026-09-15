@@ -17,6 +17,19 @@ Changesets keeps these seven packages in one fixed version group:
 
 The private `@glowhop/playground` is ignored by Changesets and is never published.
 
+## Versioning policy
+
+The public API of every package entry point is recorded under `api/`, generated from the sources
+with `bun run api:report`. `bun test` fails when the committed reports and the sources disagree, so
+every public API change shows up in review as a diff under `api/`.
+
+- Adding an export, an option, or a member to a union such as `TourEventType`, `TourStatus`, or
+  `TourEventSource` is a minor change. Code that switches over these unions must keep a default
+  branch.
+- The 1.4 API overhaul removes and renames public API in a minor release, without deprecation.
+  After 1.4.0, removing or renaming an export, an option, a component, or a union member requires
+  a major release.
+
 ## Validation
 
 Before a release, CI runs the checks, typecheck, unit and browser tests, seven-package build and
