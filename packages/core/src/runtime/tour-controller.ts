@@ -26,11 +26,11 @@ import { attachRootBridge } from "./root-bridge";
 const DEFAULT_TARGET_TIMEOUT = 3000;
 /**
  * How long a step stays frozen on its last known position after its target
- * disappears from the DOM, before the configured `missingTargetStrategy`
+ * disappears from the DOM, before the configured `missingTarget.strategy`
  * takes over. Covers the dominant case — a framework remounting the target
  * within a frame or two — without a visible unmount/remount flicker. Not
  * configurable: it is a presentation detail of the recovery, not a policy
- * choice; `missingTargetStrategy` and `targetTimeout` remain the only knobs.
+ * choice; `missingTarget.strategy` and `missingTarget.timeout` remain the only knobs.
  * Exported for the test suite's timing assertions only.
  */
 export const TARGET_LOSS_GRACE_MS = 150;
@@ -431,8 +431,8 @@ export class TourController<T> {
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
     const signal = this.signalFor(operation);
-    const strategy = step.behavior?.missingTargetStrategy ?? "error";
-    const timeout = step.behavior?.targetTimeout ?? DEFAULT_TARGET_TIMEOUT;
+    const strategy = step.behavior?.missingTarget?.strategy ?? "error";
+    const timeout = step.behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
     const startedAt = Date.now();
     while (true) {
       const target = await step.resolveTarget(signal);
@@ -450,7 +450,7 @@ export class TourController<T> {
   /**
    * Repeatedly re-resolves `step.target` until it succeeds or `budgetMs`
    * elapses, polling every 16ms like `resolveTarget`. Unlike `resolveTarget`
-   * it never applies `missingTargetStrategy` itself — callers decide what a
+   * it never applies `missingTarget.strategy` itself — callers decide what a
    * timed-out budget means (grace period vs. a "wait" strategy's own
    * timeout), so the same polling loop serves both.
    */
@@ -503,7 +503,7 @@ export class TourController<T> {
         return;
       }
 
-      const strategy = step.behavior?.missingTargetStrategy ?? "error";
+      const strategy = step.behavior?.missingTarget?.strategy ?? "error";
       if (strategy === "skip") {
         await this.navigate(index + (direction === "advance" ? 1 : -1), direction, operation, step);
         return;
@@ -512,8 +512,8 @@ export class TourController<T> {
 
       // The grace period counts against the "wait" budget rather than
       // extending it — a longer configured timeout is the only way to wait
-      // longer overall, `targetTimeout` is never silently doubled.
-      const timeout = step.behavior?.targetTimeout ?? DEFAULT_TARGET_TIMEOUT;
+      // longer overall, `missingTarget.timeout` is never silently doubled.
+      const timeout = step.behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
       const recoveredAfterWait = await this.pollForTarget(
         step,
         operation,

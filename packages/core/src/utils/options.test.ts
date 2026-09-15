@@ -18,7 +18,7 @@ describe("mergePopoverOptions", () => {
           borderRadius: 4,
           borderWidth: 2,
           color: "var(--workflow-arrow)",
-          disabled: true,
+          hidden: true,
           edgePadding: 18,
           size: 14,
         },
@@ -26,7 +26,7 @@ describe("mergePopoverOptions", () => {
       {
         arrow: {
           color: "#4c35fd",
-          disabled: false,
+          hidden: false,
           edgePadding: -8,
           size: 20,
         },
@@ -37,8 +37,8 @@ describe("mergePopoverOptions", () => {
       borderRadius: 4,
       borderWidth: 2,
       color: "#4c35fd",
-      disableAutoStyles: undefined,
-      disabled: false,
+      autoStyles: undefined,
+      hidden: false,
       edgePadding: -8,
       size: 20,
       styleNonce: undefined,

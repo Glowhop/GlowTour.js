@@ -202,8 +202,9 @@ Each field takes effect when GlowTour reads it:
 | --- | --- | --- |
 | `allowInteraction` | Continuously | Applies at once: the page becomes inert or usable again, focus leaves the target when interaction is blocked, and the indicator fades out or back in |
 | `overlayClick` | On each click on the dimmed area | Applies to the next click |
-| `disableAutoFocus`, `disableAutoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
-| `missingTargetStrategy`, `targetTimeout` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
+| `autoFocus`, `autoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
+| `keyboard` | On each key press | Applies to the next key press |
+| `missingTarget` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
 
 A button the user may click only once:
 

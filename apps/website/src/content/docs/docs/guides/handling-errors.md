@@ -15,19 +15,19 @@ Every step can declare how to handle a missing target:
   target: "#settings-panel",
   title: "Settings",
   content: "Configure your preferences.",
-  behavior: { missingTargetStrategy: "error", targetTimeout: 3000 },
+  behavior: { missingTarget: { strategy: "error", timeout: 3000 } },
 })
 ```
 
 | Strategy | Timeout applies | Behavior |
 | --- | --- | --- |
 | `"error"` | No | Throw immediately, halting the tour. The error is reported on all three channels. |
-| `"wait"` | Yes, default 3000ms | Poll for the target, waiting up to `targetTimeout` before falling back to `"error"` |
+| `"wait"` | Yes, default 3000ms | Poll for the target, waiting up to `missingTarget.timeout` before falling back to `"error"` |
 | `"skip"` | No | Resolve to `null` and advance past the step without showing it. No error is thrown. |
 
 The default is `"error"` because missing targets are usually bugs: the app changed, the selector is stale, or a dynamic element never rendered. Catching them loudly keeps tours working.
 
-`"wait"` suits async scenarios where a target might appear after navigation or a fetch. Set `targetTimeout` to match your app's worst case, or leave it at 3000ms and override per step if needed.
+`"wait"` suits async scenarios where a target might appear after navigation or a fetch. Set `missingTarget.timeout` to match your app's worst case, or leave it at 3000ms and override per step if needed.
 
 `"skip"` is for optional steps that some users may never see. If skipped forward past the last step, the tour finishes. If skipped backward past the first, the tour cancels (unless it is not cancellable, then it stays on the first step).
 
@@ -144,7 +144,7 @@ The lifecycle hooks are the opposite: a throw in `onStart`, `onCancel` or `onFin
 
 ## Example: recovery UI
 
-Combine state and `missingTargetStrategy` to build a transparent recovery path:
+Combine state and `missingTarget.strategy` to build a transparent recovery path:
 
 ```typescript
 const tour = createGlowTour({
@@ -167,7 +167,7 @@ const workflow = tour
     title: "Your cart",
     content: "Review your items.",
     // If the cart element hasn't loaded yet, wait a bit.
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .step({
     id: "checkout",
@@ -175,7 +175,7 @@ const workflow = tour
     title: "Proceed to checkout",
     content: "Click here to complete your order.",
     // If checkout is removed or hidden (app error), skip it silently.
-    behavior: { missingTargetStrategy: "skip" },
+    behavior: { missingTarget: { strategy: "skip" } },
   })
   .build();
 

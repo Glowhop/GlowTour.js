@@ -493,7 +493,7 @@ export const customStyledIndicatorWorkflow = customStyledIndicatorTour
     content:
       "overlay.color/opacity, popover.arrow, a custom <Pointer> glyph, and behavior.allowInteraction, all at once.",
     overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true } },
+    popover: { arrow: { hidden: true } },
     behavior: { allowInteraction: true },
   })
   .build();
@@ -831,7 +831,7 @@ export const relocateTargetWorkflow = relocateTargetTour
     title: "Move this card",
     content:
       "Click it. It leaves the page for a moment, then comes back in the other column - the tour waits for it instead of failing.",
-    behavior: { allowInteraction: true, missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { allowInteraction: true, missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .build();
 

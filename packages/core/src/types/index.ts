@@ -31,16 +31,16 @@ export interface TargetResolverContext {
 export interface StepBehavior {
   /** Allow user interaction with the target: the page is no longer inert and pointer events reach the target through the cutout, while the dimmed area still catches clicks. Change it during the step with `context.props.update({ behavior: { allowInteraction } })`. @default false */
   allowInteraction?: boolean;
-  /** Disable automatic focus on the target when the step is entered. @default false */
-  disableAutoFocus?: boolean;
-  /** Disable automatic scroll to the target when the step is entered. @default false */
-  disableAutoScroll?: boolean;
-  /** How to handle when the target is not found: `"wait"` waits and retries, `"skip"` advances to next step, `"error"` halts the tour. @default "error" */
-  missingTargetStrategy?: "wait" | "skip" | "error";
+  /** Move focus into the popover when the step is shown. @default true */
+  autoFocus?: boolean;
+  /** Scroll the target into view when the step is entered. @default true */
+  autoScroll?: boolean;
+  /** Keyboard shortcuts for navigation while the step is shown. */
+  keyboard?: KeyboardShortcuts;
+  /** What the step does when its target cannot be found. */
+  missingTarget?: MissingTargetOptions;
   /** Scroll behavior options. */
   scroll?: ScrollOptions;
-  /** Timeout in ms to wait for target to appear before applying missingTargetStrategy. @default 3000 */
-  targetTimeout?: number;
   /**
    * Behavior when the dimmed overlay backdrop (outside the cutout around the
    * target) is clicked: `"advance"` moves to the next step, `"cancel"` ends
@@ -49,6 +49,24 @@ export interface StepBehavior {
    * @default "none"
    */
   overlayClick?: "none" | "advance" | "cancel";
+}
+
+/** Keys that navigate the tour while a step is shown. */
+export interface KeyboardShortcuts {
+  /** Keys that go to the previous step. @default ["ArrowLeft", "Backspace"] */
+  previous?: readonly string[];
+  /** Keys that advance to the next step. @default ["Enter", "ArrowRight"] */
+  advance?: readonly string[];
+  /** Keys that cancel the tour. @default ["Escape"] */
+  cancel?: readonly string[];
+}
+
+/** How a step handles a target that cannot be found. */
+export interface MissingTargetOptions {
+  /** `"wait"` retries until `timeout`, `"skip"` moves past the step, `"error"` fails the tour. @default "error" */
+  strategy?: "wait" | "skip" | "error";
+  /** How long to look for the target, in milliseconds, before applying `strategy`. @default 3000 */
+  timeout?: number;
 }
 
 /** Placement directions for positioning the pointer or popover around the target. */
@@ -66,8 +84,8 @@ export interface BaseOptions {
 
 /** Configures the pointer indicator that highlights the target element. */
 export interface IndicatorOptions extends BaseOptions {
-  /** Hide the indicator. @default false */
-  disabled?: boolean;
+  /** Hide the indicator. It only shows on steps that allow interaction. @default false */
+  hidden?: boolean;
   /** Gap between the target and the indicator in pixels. */
   gap?: number;
   /** Placement preference order when positioning the indicator. @default ["left", "right", "top", "bottom"] */
@@ -89,7 +107,7 @@ export interface OverlayOptions extends BaseOptions {
 /** Configures the arrow that points from the popover to the target. */
 export interface PopoverArrowOptions {
   /** Hide the arrow. @default false */
-  disabled?: boolean;
+  hidden?: boolean;
   /** Color of the arrow (CSS color). */
   color?: string;
   /** Size of the arrow in pixels. @default 12 */
@@ -107,11 +125,12 @@ export interface PopoverArrowOptions {
    */
   styleNonce?: string;
   /**
-   * Skip injecting the built-in arrow `<style>` element entirely. Provide the
+   * Inject the built-in arrow `<style>` element. Set `false` to provide the
    * equivalent rules yourself through whatever channel your CSP allows, such
    * as an external stylesheet.
+   * @default true
    */
-  disableAutoStyles?: boolean;
+  autoStyles?: boolean;
 }
 
 /** Configures the popover box that displays content for each step. */
@@ -138,21 +157,6 @@ export interface PopoverOptions extends BaseOptions {
   hideAdvanceButton?: boolean;
   /** Gap between the target and the popover in pixels. @default 16 */
   gap?: number;
-  /** Keyboard shortcuts for navigation. */
-  keyboardShortcuts?: {
-    /**
-     * Keys that trigger previous step. @default ["ArrowLeft", "Backspace"]
-     */
-    previous?: readonly string[];
-    /**
-     * Keys that trigger advance step. @default ["Enter", "ArrowRight"]
-     */
-    advance?: readonly string[];
-    /**
-     * Keys that trigger cancel. @default ["Escape"]
-     */
-    cancel?: readonly string[];
-  };
 }
 
 /**

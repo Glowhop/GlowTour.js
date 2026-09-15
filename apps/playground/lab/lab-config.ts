@@ -74,7 +74,7 @@ export const LAB_CONFIG = {
     clickOnce:
       "Cliquez une seule fois sur la cible : l’interaction est ensuite coupée et le bouton Suivant apparaît. Revenez avec Précédent, la cible reste bloquée.",
     skipped:
-      "Cette étape n’a pas de cible : missingTargetStrategy: 'skip' la saute et émet step:skip. Elle ne doit jamais s’afficher.",
+      "Cette étape n’a pas de cible : missingTarget.strategy 'skip' la saute et émet step:skip. Elle ne doit jamais s’afficher.",
     automaticReturn:
       "Continuez. Cette étape saura vous renvoyer automatiquement après la démonstration suivante.",
     previous: "Premier passage : retour automatique. Second passage : la garde stoppe la boucle.",
@@ -84,7 +84,7 @@ export const LAB_CONFIG = {
     relocateDelayLabel: "Délai de réapparition",
     relocateAway: "Zone d’accueil",
     relocateHint:
-      "Sous 150 ms le gel est invisible. Au-delà du targetTimeout, la stratégie wait abandonne.",
+      "Sous 150 ms le gel est invisible. Au-delà de missingTarget.timeout, la stratégie wait abandonne.",
     appended:
       "Cette étape vient d’un autre workflow. Déclenchez l’événement personnalisé pour finir.",
   },

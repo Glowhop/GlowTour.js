@@ -10,7 +10,7 @@ Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetProps
 - `beforeEnter(callback)` runs after the step's target is resolved and before `driver.show()`. The
   step is not committed yet, so the controller does not publish and the view has not subscribed to
   the step's props: whatever the hook sets is the first thing rendered. A step skipped by
-  `missingTargetStrategy: "skip"` does not run it.
+  `missingTarget: { strategy: "skip" }` does not run it.
 - `beforeLeave(callback)` runs at the start of a navigation away from the step: `advance()`,
   `previous()`, `goTo()`, or advancing past the last step. It never runs on cancel.
 - Both receive `StepHookContext<T>`: `StepContext<T>` without `advance`, `cancel` and `previous`,
@@ -19,7 +19,7 @@ Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetProps
   back to `idle`, like an `onStart` abort. During the recovery of a lost target, the lost step cannot
   stay on screen, so an abort becomes that step's missing-target error.
 - A navigation resolves the destination target first, passing over steps skipped by
-  `missingTargetStrategy: "skip"`, then runs `beforeEnter`. Only then does it emit, in order: the
+  `missingTarget: { strategy: "skip" }`, then runs `beforeEnter`. Only then does it emit, in order: the
   held `tour:start` (first navigation of a run), `step:skip` for each skipped step, one `step:leave`
   for the step being left, and `step:enter` once the step is shown. Nothing is emitted for an
   aborted navigation. Going back past the first step over skipped steps keeps the current step.

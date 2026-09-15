@@ -267,13 +267,13 @@ describe("PopoverElement positioning", () => {
     });
   });
 
-  test("accepts a clamped candidate without an arrow when arrow.disabled is true", () => {
+  test("accepts a clamped candidate without an arrow when arrow.hidden is true", () => {
     const popover = new PopoverElement(new MockElement(100, 60) as unknown as HTMLElement);
 
     assert.deepEqual(
       popover.resolvePosition(
         rect(270, 80, 20, 20),
-        createStep(["bottom"], { arrow: { disabled: true } }),
+        createStep(["bottom"], { arrow: { hidden: true } }),
       ),
       { arrowOffset: null, placement: "bottom", x: 186, y: 114 },
     );
@@ -313,7 +313,7 @@ describe("PopoverElement positioning", () => {
     assert.equal(element.attributes.has("data-glow-tour-arrow-hidden"), false);
     assert.equal(element.styles.get("--glow-tour-arrow-offset"), "16px");
 
-    popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"], { arrow: { disabled: true } }));
+    popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"], { arrow: { hidden: true } }));
     assert.equal(element.attributes.has("data-glow-tour-arrow-hidden"), true);
     assert.equal(element.styles.has("--glow-tour-arrow-offset"), false);
   });
@@ -536,13 +536,13 @@ describe("PopoverElement arrow stylesheet", () => {
     assert.equal(document.styles[0]?.nonce, "csp-nonce-123");
   });
 
-  test("skips injection when disableAutoStyles is set", () => {
+  test("skips injection when autoStyles is false", () => {
     const document = new MockStyleRoot(9);
     const element = new MockElement(100, 60, document);
 
     new TestPopoverElement(element as unknown as HTMLElement).getStyles(
       rect(20, 80, 20, 20),
-      createStep(["bottom"], { arrow: { disableAutoStyles: true } }),
+      createStep(["bottom"], { arrow: { autoStyles: false } }),
     );
 
     assert.equal(document.styles.length, 0);
