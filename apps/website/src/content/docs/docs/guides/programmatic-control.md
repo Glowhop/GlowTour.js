@@ -180,6 +180,37 @@ props.update((current) => ({ data: { clicks: Number(current.data?.clicks ?? 0) +
 
 `update()` validates and publishes once, like `set()`. To remove a value, use `set()`.
 
+## Changing interaction during a step
+
+`behavior.allowInteraction` sets whether the page can be used when a step is shown.
+`context.setAllowInteraction()` changes it while the step is on screen. It applies at once: the
+page becomes inert or usable again, focus leaves the target when interaction is blocked, and the
+indicator fades out or back in.
+
+A button the user may click only once:
+
+```typescript
+.step({
+  id: "pay",
+  target: "#pay",
+  title: "Pay",
+  content: "Click Pay to continue.",
+  behavior: { allowInteraction: true },
+  popover: { hideAdvanceButton: true },
+})
+.onTargetEvent("click", (_event, { props, setAllowInteraction }) => {
+  setAllowInteraction(false);
+  props.update({ popover: { hideAdvanceButton: false } });
+})
+```
+
+Like step props, the value is kept when the tour comes back to the step, until the workflow runs
+again. To start from the configured value on every visit, reset it in `beforeEnter`:
+
+```typescript
+.beforeEnter(({ setAllowInteraction }) => setAllowInteraction(true))
+```
+
 ## Step actions
 
 Sequence work between steps using `.do()`, `.wait()`, and other action methods:

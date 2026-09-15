@@ -22,6 +22,7 @@ Replace the step transition hooks with `beforeEnter` / `beforeLeave`, and stop r
 - Both hooks receive a `StepHookContext` (`props`, `initialProps`, `target`, `signal`, `direction`) without navigation methods. JSON config: `enterAction` / `leaveAction`.
 - `context.props.update(patch)` merges a partial change into the step props, instead of spreading every level by hand: `props.update({ popover: { disableAdvanceButton: false } })`. `data` is merged key by key, `overlay` / `popover` / `indicator` are merged like step options over workflow defaults, and arrays are replaced. It also accepts a function of the current props.
 - `StepContext` (actions and target event handlers) now exposes `initialProps` and `direction`, the direction of the navigation that entered the step.
+- `context.setAllowInteraction(allowed)` changes `behavior.allowInteraction` while the step is on screen: the page becomes inert or usable again at once, focus leaves the target when interaction is blocked, and the indicator fades out or in. The value is kept when the tour comes back to the step, until the workflow runs again. Also available in `beforeEnter` / `beforeLeave`.
 
 **Migration**
 

@@ -646,6 +646,7 @@ export class TourController<T> {
       direction,
       initialProps: step.initialProps,
       props: step.props,
+      setAllowInteraction: step.setAllowInteraction,
       signal: this.signalFor(operation),
       target: step.target,
     });

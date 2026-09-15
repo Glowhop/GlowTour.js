@@ -199,6 +199,7 @@ function createContext(
     direction: "advance",
     initialProps: { content: "", title: "" },
     props: {} as StepContext<string>["props"],
+    setAllowInteraction: () => {},
     signal,
     target,
   };
