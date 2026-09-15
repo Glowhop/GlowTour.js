@@ -18,7 +18,6 @@ export interface WorkflowStepDraft<T> {
   id: string;
   target: StepParameters<T>["target"];
   props: StepProps<T>;
-  behavior?: StepParameters<T>["behavior"];
   actions: StepActionInstruction<T>[];
   targetEvents: TargetEventHandler<T>[];
   beforeEnter: StepHookAction<T> | null;
@@ -83,12 +82,6 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
     id: draft.id,
     target: draft.target,
     props: freezeStepProps(draft.props),
-    behavior:
-      draft.behavior &&
-      freezeRecord({
-        ...draft.behavior,
-        scroll: draft.behavior.scroll && freezeRecord({ ...draft.behavior.scroll }),
-      }),
     actions: freezeRecord(draft.actions.map((action) => action)),
     targetEvents: freezeRecord(draft.targetEvents.map((handler) => freezeRecord({ ...handler }))),
     beforeEnter: draft.beforeEnter,

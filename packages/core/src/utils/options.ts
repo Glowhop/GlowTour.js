@@ -12,7 +12,8 @@ import type {
 
 /**
  * Merges a partial change into step props: fields it leaves out are kept, `data` is merged key by
- * key, `overlay` / `popover` / `indicator` go through their option merges, and arrays are replaced.
+ * key, `overlay` / `popover` / `indicator` / `behavior` go through their option merges, and arrays
+ * are replaced.
  * Builds a step's initial props over the workflow defaults, and backs `StepPropsStore.update`.
  */
 export function mergeStepProps<T>(
@@ -26,6 +27,7 @@ export function mergeStepProps<T>(
     overlay: mergeOverlayOptions(base.overlay, patch.overlay),
     popover: mergePopoverOptions(base.popover, patch.popover),
     indicator: mergeIndicatorOptions(base.indicator, patch.indicator),
+    behavior: mergeStepBehavior(base.behavior, patch.behavior),
   } as ReadonlyStepProps<T>;
 }
 
