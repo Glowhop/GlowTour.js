@@ -43,13 +43,10 @@ const POPOVER_KEYS = [
   "animation",
   "placementTryOrder",
   "arrow",
-  "hideFooter",
-  "disablePreviousButton",
-  "hidePreviousButton",
-  "disableAdvanceButton",
-  "hideAdvanceButton",
+  "controls",
   "gap",
 ] as const;
+const CONTROL_KEYS = ["advance", "previous", "cancel"] as const;
 const POPOVER_ARROW_KEYS = [
   "hidden",
   "color",
@@ -581,12 +578,24 @@ function validatePopoverShape(path: string, value: unknown, issues: ConfigValida
     "right",
   ]);
   validatePopoverArrowShape(`${path}.arrow`, value.arrow, issues);
-  validateOptionalBoolean(`${path}.hideFooter`, value.hideFooter, issues);
-  validateOptionalBoolean(`${path}.disablePreviousButton`, value.disablePreviousButton, issues);
-  validateOptionalBoolean(`${path}.hidePreviousButton`, value.hidePreviousButton, issues);
-  validateOptionalBoolean(`${path}.disableAdvanceButton`, value.disableAdvanceButton, issues);
-  validateOptionalBoolean(`${path}.hideAdvanceButton`, value.hideAdvanceButton, issues);
+  validateControlsShape(`${path}.controls`, value.controls, issues);
   validateOptionalFiniteNonNegative(`${path}.gap`, value.gap, issues);
+}
+
+function validateControlsShape(
+  path: string,
+  value: unknown,
+  issues: ConfigValidationIssue[],
+): void {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    issues.push({ path, message: "must be an object" });
+    return;
+  }
+  assertNoUnknownKeys(value, CONTROL_KEYS, path, issues);
+  for (const key of CONTROL_KEYS) {
+    validateOptionalEnum(`${path}.${key}`, value[key], ["visible", "hidden", "disabled"], issues);
+  }
 }
 
 function validateMissingTargetShape(

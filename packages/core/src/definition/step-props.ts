@@ -18,6 +18,7 @@ export function cloneStepProps<T>(props: ReadonlyStepProps<T>): StepProps<T> {
       ...props.popover,
       animation: props.popover.animation && { ...props.popover.animation },
       arrow: props.popover.arrow && { ...props.popover.arrow },
+      controls: props.popover.controls && { ...props.popover.controls },
       placementTryOrder: props.popover.placementTryOrder && [...props.popover.placementTryOrder],
     },
     indicator: props.indicator && {
@@ -52,6 +53,7 @@ export function freezeStepProps<T>(props: ReadonlyStepProps<T>): ReadonlyStepPro
   if (cloned.overlay) Object.freeze(cloned.overlay);
   if (cloned.popover?.animation) Object.freeze(cloned.popover.animation);
   if (cloned.popover?.arrow) Object.freeze(cloned.popover.arrow);
+  if (cloned.popover?.controls) Object.freeze(cloned.popover.controls);
   if (cloned.popover?.placementTryOrder) Object.freeze(cloned.popover.placementTryOrder);
   if (cloned.popover) Object.freeze(cloned.popover);
   if (cloned.indicator?.animation) Object.freeze(cloned.indicator.animation);

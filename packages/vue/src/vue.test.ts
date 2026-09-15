@@ -134,8 +134,8 @@ describe("vue adapter contract", () => {
       const emittedSource = readFileSync(join(directory, "index.js"), "utf8");
       assert.equal(
         emittedSource.match(/\/\* @__PURE__ \*\/ defineComponent\d*\(/g)?.length,
-        11,
-        "every exported presentation component must be marked pure in the flattened entry",
+        12,
+        "every presentation component, including the default tour footer, must be marked pure in the flattened entry",
       );
     } finally {
       rmSync(directory, { force: true, recursive: true });

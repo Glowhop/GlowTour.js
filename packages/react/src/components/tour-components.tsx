@@ -227,15 +227,10 @@ export function Content(props: ContentProps) {
 
 /**
  * The footer section of the popover, typically containing navigation buttons.
- * Automatically hidden if configured via `popover.hideFooter`.
  * @param props HTML attributes and children.
- * @returns The footer container, or null if hidden.
+ * @returns The footer container.
  */
 export function Footer({ children, ...props }: ElementProps) {
-  const { tour } = useTourContext();
-  const step = useStep(useTourSnapshot(tour));
-  if (step?.popover?.hideFooter) return null;
-
   return (
     <footer {...props} data-glow-tour-footer>
       {children}
@@ -377,12 +372,13 @@ export function BackTrigger({ backLabel, ...props }: BackTriggerProps) {
   const snapshot = useTourSnapshot(tour);
 
   const step = useStep(snapshot);
-  if (step?.popover?.hidePreviousButton) return null;
+  const control = step?.popover?.controls?.previous;
+  if (control === "hidden") return null;
   const label = backLabel ?? "Back step";
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canPrevious || step?.popover?.disablePreviousButton === true}
+      capabilityDisabled={!snapshot.canPrevious || control === "disabled"}
       label={label}
       marker="previous"
     />
@@ -399,14 +395,15 @@ export function AdvanceTrigger({ finishLabel, advanceLabel, ...props }: AdvanceT
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
   const step = useStep(snapshot);
-  if (step?.popover?.hideAdvanceButton) return null;
+  const control = step?.popover?.controls?.advance;
+  if (control === "hidden") return null;
   const label = snapshot.isLastStep
     ? (finishLabel ?? "Finish tour")
     : (advanceLabel ?? "Advance step");
   return (
     <Trigger
       {...props}
-      capabilityDisabled={!snapshot.canAdvance || step?.popover?.disableAdvanceButton === true}
+      capabilityDisabled={!snapshot.canAdvance || control === "disabled"}
       label={label}
       marker="advance"
     />
@@ -422,9 +419,10 @@ export function AdvanceTrigger({ finishLabel, advanceLabel, ...props }: AdvanceT
 export function CancelTrigger(props: CancelTriggerProps) {
   const { tour } = useTourContext();
   const snapshot = useTourSnapshot(tour);
-  if (!snapshot.canCancel) return null;
+  const control = useStep(snapshot)?.popover?.controls?.cancel;
+  if (!snapshot.canCancel || control === "hidden") return null;
   return (
-    <Trigger {...props} capabilityDisabled={!snapshot.canCancel} label="Skip" marker="cancel" />
+    <Trigger {...props} capabilityDisabled={control === "disabled"} label="Skip" marker="cancel" />
   );
 }
 

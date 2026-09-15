@@ -49,6 +49,7 @@ function freezePopover(options: StepParameters<unknown>["popover"]) {
       ...options,
       animation: freezeAnimation(options.animation),
       arrow: options.arrow && freezeRecord({ ...options.arrow }),
+      controls: options.controls && freezeRecord({ ...options.controls }),
       placementTryOrder: options.placementTryOrder && freezeRecord([...options.placementTryOrder]),
     })
   );
