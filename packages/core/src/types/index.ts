@@ -29,27 +29,44 @@ export interface TargetResolverContext {
 
 /** Configures step-level interaction behavior and error handling. */
 export interface StepBehavior {
-  /** Allow user interaction with the page outside the target element. @default false */
+  /** Allow user interaction with the target: the page is no longer inert and pointer events reach the target through the cutout, while the dimmed area still catches clicks. Change it during the step with `context.props.update({ behavior: { allowInteraction } })`. @default false */
   allowInteraction?: boolean;
-  /** Disable automatic focus on the target when the step is entered. @default false */
-  disableAutoFocus?: boolean;
-  /** Disable automatic scroll to the target when the step is entered. @default false */
-  disableAutoScroll?: boolean;
-  /** How to handle when the target is not found: `"wait"` waits and retries, `"skip"` advances to next step, `"error"` halts the tour. @default "error" */
-  missingTargetStrategy?: "wait" | "skip" | "error";
+  /** Move focus into the popover when the step is shown. @default true */
+  autoFocus?: boolean;
+  /** Scroll the target into view when the step is entered. @default true */
+  autoScroll?: boolean;
+  /** Keyboard shortcuts for navigation while the step is shown. */
+  keyboard?: KeyboardShortcuts;
+  /** What the step does when its target cannot be found. */
+  missingTarget?: MissingTargetOptions;
   /** Scroll behavior options. */
   scroll?: ScrollOptions;
-  /** Timeout in ms to wait for target to appear before applying missingTargetStrategy. @default 3000 */
-  targetTimeout?: number;
   /**
    * Behavior when the dimmed overlay backdrop (outside the cutout around the
    * target) is clicked: `"advance"` moves to the next step, `"cancel"` ends
    * the tour, `"none"` ignores the click. Has no effect when
-   * `allowInteraction` is `true`, since the page stays fully interactive and
-   * there is no modal backdrop to click.
+   * `allowInteraction` is `true`: clicks on the dimmed area are then ignored.
    * @default "none"
    */
   overlayClick?: "none" | "advance" | "cancel";
+}
+
+/** Keys that navigate the tour while a step is shown. */
+export interface KeyboardShortcuts {
+  /** Keys that go to the previous step. @default ["ArrowLeft", "Backspace"] */
+  previous?: readonly string[];
+  /** Keys that advance to the next step. @default ["Enter", "ArrowRight"] */
+  advance?: readonly string[];
+  /** Keys that cancel the tour. @default ["Escape"] */
+  cancel?: readonly string[];
+}
+
+/** How a step handles a target that cannot be found. */
+export interface MissingTargetOptions {
+  /** `"wait"` retries until `timeout`, `"skip"` moves past the step, `"error"` fails the tour. @default "error" */
+  strategy?: "wait" | "skip" | "error";
+  /** How long to look for the target, in milliseconds, before applying `strategy`. @default 3000 */
+  timeout?: number;
 }
 
 /** Placement directions for positioning the pointer or popover around the target. */
@@ -67,8 +84,8 @@ export interface BaseOptions {
 
 /** Configures the pointer indicator that highlights the target element. */
 export interface IndicatorOptions extends BaseOptions {
-  /** Hide the indicator. @default false */
-  disabled?: boolean;
+  /** Hide the indicator. It only shows on steps that allow interaction. @default false */
+  hidden?: boolean;
   /** Gap between the target and the indicator in pixels. */
   gap?: number;
   /** Placement preference order when positioning the indicator. @default ["left", "right", "top", "bottom"] */
@@ -90,7 +107,7 @@ export interface OverlayOptions extends BaseOptions {
 /** Configures the arrow that points from the popover to the target. */
 export interface PopoverArrowOptions {
   /** Hide the arrow. @default false */
-  disabled?: boolean;
+  hidden?: boolean;
   /** Color of the arrow (CSS color). */
   color?: string;
   /** Size of the arrow in pixels. @default 12 */
@@ -108,11 +125,12 @@ export interface PopoverArrowOptions {
    */
   styleNonce?: string;
   /**
-   * Skip injecting the built-in arrow `<style>` element entirely. Provide the
+   * Inject the built-in arrow `<style>` element. Set `false` to provide the
    * equivalent rules yourself through whatever channel your CSP allows, such
    * as an external stylesheet.
+   * @default true
    */
-  disableAutoStyles?: boolean;
+  autoStyles?: boolean;
 }
 
 /** Configures the popover box that displays content for each step. */
@@ -139,21 +157,6 @@ export interface PopoverOptions extends BaseOptions {
   hideAdvanceButton?: boolean;
   /** Gap between the target and the popover in pixels. @default 16 */
   gap?: number;
-  /** Keyboard shortcuts for navigation. */
-  keyboardShortcuts?: {
-    /**
-     * Keys that trigger previous step. @default ["ArrowLeft", "Backspace"]
-     */
-    previous?: readonly string[];
-    /**
-     * Keys that trigger advance step. @default ["Enter", "ArrowRight"]
-     */
-    advance?: readonly string[];
-    /**
-     * Keys that trigger cancel. @default ["Escape"]
-     */
-    cancel?: readonly string[];
-  };
 }
 
 /**
@@ -187,8 +190,8 @@ export interface AnimationOptions {
 export interface LifecycleHookContext<T> {
   /**
    * The step associated with this lifecycle transition:
-   * - `onStart`: the first step about to be entered (`workflow.steps[0]`), or
-   *   `null` if the workflow has no steps.
+   * - `onStart`: the step `run()` starts on (the `startAt` step, or the first
+   *   step), or `null` if the workflow has no steps.
    * - `onCancel`: the step the tour is currently on when cancellation is
    *   requested. Always non-null in practice, since a step is always active
    *   at the point a tour can be cancelled.
@@ -254,12 +257,21 @@ export type StepPropsUpdate<T> =
   | ReadonlyStepProps<T>
   | ((current: ReadonlyStepProps<T>) => ReadonlyStepProps<T>);
 
+/**
+ * Partial change to step properties, for `StepPropsStore.update`. Fields it leaves out are kept.
+ * `data` is merged key by key; `overlay`, `popover` and `indicator` are merged the way step options
+ * merge over workflow defaults; arrays such as `placementTryOrder` are replaced.
+ */
+export type StepPropsPatch<T> = Partial<ReadonlyStepProps<T>>;
+
 /** Store for the current step's properties. */
 export interface StepPropsStore<T> {
   /** Get the current step properties. */
   get(): ReadonlyStepProps<T>;
-  /** Update the current step properties. */
+  /** Replace the current step properties. */
   set(update: StepPropsUpdate<T>): void;
+  /** Merge a partial change into the current step properties. See `StepPropsPatch`. */
+  update(patch: StepPropsPatch<T> | ((current: ReadonlyStepProps<T>) => StepPropsPatch<T>)): void;
   /** Subscribe to changes in step properties. Returns an unsubscribe function. */
   subscribe(listener: (props: ReadonlyStepProps<T>) => void): () => void;
 }
@@ -271,6 +283,18 @@ export interface StepContext<T> {
   cancel(): Promise<void>;
   /** Navigate to the previous step. */
   previous(): Promise<void>;
+  /**
+   * Navigate to the step with this id, skipping the steps in between. Stops the remaining actions
+   * of this step, like `advance()`. Throws when no step has this id.
+   */
+  goTo(id: string): Promise<void>;
+  /**
+   * The direction of the navigation that entered this step. Captured when the context is created, so
+   * it does not change while the step's callbacks run.
+   */
+  readonly direction: TourDirection;
+  /** The step properties as initially configured, before any `props.set()`. */
+  readonly initialProps: ReadonlyStepProps<T>;
   /** The DOM element being highlighted for this step. */
   readonly target: HTMLElement;
   /** Store for reading and updating the current step's properties. */
@@ -279,12 +303,21 @@ export interface StepContext<T> {
   readonly signal: AbortSignal;
 }
 
-/** Context passed to transition hooks (beforeAdvance, beforePrevious, beforeCancel). */
-export type BeforeActionStepContext<T> = Readonly<
-  ReadonlyStepProps<T> & {
-    readonly target: HTMLElement;
-  }
->;
+/**
+ * Context passed to the `beforeEnter` and `beforeLeave` step hooks. It has no navigation methods:
+ * a transition is already in progress when these hooks run. `direction` is the direction of that
+ * navigation, so the step being left and the step being entered see the same value.
+ */
+export interface StepHookContext<T>
+  extends Omit<StepContext<T>, "advance" | "cancel" | "goTo" | "previous"> {
+  /**
+   * Call it synchronously, or before the hook's returned promise resolves, to stop the navigation.
+   * The tour stays on the step it was on and emits nothing: `beforeLeave` keeps the step, and
+   * `beforeEnter` does not show the next one. When `beforeEnter` aborts the first step of `run()`,
+   * the tour goes back to `idle`, like an `onStart` abort.
+   */
+  abort(): void;
+}
 
 /** Context passed to target event handlers. */
 export type StepEventContext<T> = StepContext<T>;
@@ -309,18 +342,18 @@ export type StepAction<T> = (
 /** A step action or a delay in milliseconds. */
 export type StepActionInstruction<T> = StepAction<T> | number;
 
-/** A callback that runs before transitioning to the next/previous step or cancelling. */
-export type StepTransitionAction<T> = (context: BeforeActionStepContext<T>) => void | Promise<void>;
+/** A callback that runs before a step is entered or left (`beforeEnter` / `beforeLeave`). */
+export type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>;
 
 /** Handler for an event fired on the target element during a step. */
-export interface EventHandler<TStepProps, TEvent extends Event = Event> {
+export interface TargetEventHandler<TStepProps, TEvent extends Event = Event> {
   /** Event name(s) to listen for. */
   event: string;
   /** Callback invoked when the event fires. */
   callback: (event: TEvent, context: StepEventContext<TStepProps>) => void | Promise<void>;
 }
 
-/** Tour lifecycle status. */
+/** Tour lifecycle status. New statuses may be added in a minor release: keep a default branch when switching over it. */
 export type TourStatus =
   | "idle"
   | "starting"
@@ -392,8 +425,11 @@ export interface GlowTour<T> {
   advance(): Promise<void>;
   /** Go to the previous step. */
   previous(): Promise<void>;
-  /** Jump to a specific step by index. */
-  goToStep(index: number): Promise<void>;
+  /**
+   * Go to the step with this id, skipping the steps in between. Does nothing while a transition is
+   * in progress or when that step is already shown. Throws when no step has this id.
+   */
+  goTo(id: string): Promise<void>;
   /** Cancel the current tour. */
   cancel(): Promise<void>;
   /** Dispose the tour and free resources. */
@@ -423,17 +459,20 @@ export interface RunOptions {
 /**
  * What triggered a transition.
  *
- * `"api"` covers every call your own code makes — `advance()`, `previous()`,
- * `goToStep()`, `cancel()`, and the `context.advance()` available inside a step
- * action. The other three are the user acting on the tour UI directly.
+ * `"api"` covers every call your own code makes: `advance()`, `previous()`,
+ * `goTo()`, `cancel()`, and the same methods on the context of a step action.
+ * The other three are the user acting on the tour UI directly.
+ *
+ * New sources may be added in a minor release: keep a default branch when switching over it.
  */
 export type TourEventSource = "api" | "trigger" | "keyboard" | "overlay";
 
-/** Name of a monitoring event. */
+/** Name of a monitoring event. New events may be added in a minor release: keep a default branch when switching over it. */
 export type TourEventType =
   | "tour:start"
   | "step:enter"
   | "step:leave"
+  | "step:skip"
   | "tour:complete"
   | "tour:cancel"
   | "tour:error";
@@ -513,11 +552,6 @@ export type StepParameters<T> = {
   id: string;
   /** The target element or selector for this step. */
   target: TargetResolver;
-  /**
-   * Reset step properties to initial values when entering this step.
-   * @default true
-   */
-  resetPropsOnEnter?: boolean;
   /** Overlay options for this step (overrides workflow defaults). */
   overlay?: OverlayOptions;
   /** Popover options for this step (overrides workflow defaults). */

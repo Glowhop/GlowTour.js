@@ -7,7 +7,7 @@ A tour can start on any step, not just the first one. That single option is what
 
 ## The one hard limit
 
-**A workflow can never be serialized.** Step callbacks - `do`, `waitUntil`, `beforeAdvance`, function targets, event handlers - are code, and code does not round-trip through storage. So what you persist is never the tour itself: it is a pointer to a step in a workflow your app rebuilds from its own source.
+**A workflow can never be serialized.** Step callbacks - `do`, `waitUntil`, `beforeLeave`, function targets, event handlers - are code, and code does not round-trip through storage. So what you persist is never the tour itself: it is a pointer to a step in a workflow your app rebuilds from its own source.
 
 In practice: save a step id, rebuild the workflow on the next page exactly as you built it on the first, and hand the id to `run()`.
 
@@ -64,17 +64,19 @@ Clear the key on `onFinish` and `onCancel` so a completed tour does not resume i
 
 Navigation stays with your router - GlowTour.js knows nothing about Next, vue-router, or `location.assign`. Two shapes cover the common cases.
 
-**SPA, no reload.** The tour instance survives the route change, so nothing needs persisting. Navigate in `beforeAdvance` and let the next step wait for its target:
+**SPA, no reload.** The tour instance survives the route change, so nothing needs persisting. Navigate in `beforeLeave` and let the next step wait for its target:
 
 ```typescript
 .step({ id: "dashboard", target: "#kpi-card", title: "Dashboard", content: "..." })
-.beforeAdvance(() => router.push("/profile"))
+.beforeLeave(({ direction }) => {
+  if (direction === "advance") return router.push("/profile");
+})
 .step({
   id: "profile",
   target: "#profile-avatar",
   title: "Profile",
   content: "...",
-  behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+  behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
 })
 ```
 
@@ -82,7 +84,8 @@ Navigation stays with your router - GlowTour.js knows nothing about Next, vue-ro
 
 ```typescript
 // Page A
-.beforeAdvance(() => {
+.beforeLeave(({ direction }) => {
+  if (direction !== "advance") return;
   sessionStorage.setItem(KEY, "settings");
   location.assign("/settings");
 })
@@ -99,6 +102,6 @@ if (saved) await tour.run(workflow, { startAt: saved });
 These are app decisions, so the core does not decide them for you:
 
 - **The workflow changed** since the id was saved - `run()` throws; fall back to starting over, or store a version alongside the id.
-- **The target no longer exists** on the resumed step - that is an ordinary missing-target case, handled by `behavior.missingTargetStrategy` - see [Handling errors](/docs/guides/handling-errors).
+- **The target no longer exists** on the resumed step - that is an ordinary missing-target case, handled by `behavior.missingTarget` - see [Handling errors](/docs/guides/handling-errors).
 - **The user comes back days later** - add your own expiry when you write the key.
 - **Two tabs** - the simplest workable rule is last-writer-wins; use a per-tab key if you need better.

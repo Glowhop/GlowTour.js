@@ -163,16 +163,30 @@ function subscribeToCurrentStep(
   };
 }
 
+/**
+ * The content is a live region, and screen readers announce it again whenever it is rewritten,
+ * even with the text it already shows. Every state update renders, so leave unchanged values
+ * alone.
+ */
 function renderValue(element: HTMLElement, value: VanillaTourContent) {
+  const only = element.childNodes.length === 1 ? element.firstChild : null;
   if (typeof value === "string") {
+    const TEXT_NODE = 3;
+    if (
+      value === ""
+        ? element.childNodes.length === 0
+        : only?.nodeType === TEXT_NODE && only.nodeValue === value
+    )
+      return;
     element.textContent = value;
     return;
   }
   if (typeof Node !== "undefined" && value instanceof Node) {
+    if (only === value) return;
     element.replaceChildren(value);
     return;
   }
-  element.replaceChildren();
+  if (element.childNodes.length > 0) element.replaceChildren();
 }
 
 function createOverlaySvg(host: HTMLElement) {

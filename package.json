@@ -19,6 +19,7 @@
     "docs": "bun run --cwd apps/website dev",
     "pack": "bun scripts/pack-packages.ts",
     "test:tarballs": "bun scripts/test-tarballs.ts",
+    "api:report": "bun scripts/api-report.ts --write",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release:prepare": "bun scripts/prepare-release.ts --dry-run",

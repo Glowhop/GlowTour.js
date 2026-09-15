@@ -31,8 +31,7 @@ export const TOUR_QUERY_PARAM = "tour";
  * where the arriving page's own scripts have not finished putting it there.
  */
 const acrossPageBoundary = {
-  missingTargetStrategy: "wait",
-  targetTimeout: 10_000,
+  missingTarget: { strategy: "wait", timeout: 10_000 },
 } as const;
 
 /**
@@ -50,9 +49,18 @@ export function takePendingStep(): string | null {
   return step;
 }
 
-/** Notes where the tour resumes, then hands the navigation to the client router. */
-function goTo(stepId: string, path: string): () => Promise<void> {
-  return async () => {
+/**
+ * A `beforeLeave` hook that, when the tour leaves the step in `direction`, notes where the tour
+ * resumes, then hands the navigation to the client router. Leaving in the other direction stays on
+ * the current page.
+ */
+function goTo(
+  direction: "advance" | "previous",
+  stepId: string,
+  path: string,
+): (context: { readonly direction: "advance" | "previous" }) => Promise<void> {
+  return async (context) => {
+    if (context.direction !== direction) return;
     pendingStep = stepId;
     await navigate(path);
   };
@@ -96,7 +104,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       target: '[data-tour="frameworks"]',
       title: "Five adapters, one engine",
     })
-    .beforeAdvance(goTo("adapter-install", "/react"))
+    .beforeLeave(goTo("advance", "adapter-install", "/react"))
     .step({
       behavior: acrossPageBoundary,
       content:
@@ -106,7 +114,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       target: '[data-tour="framework-install"]',
       title: "A different page, the same tour",
     })
-    .beforePrevious(goTo("frameworks", "/"))
+    .beforeLeave(goTo("previous", "frameworks", "/"))
     .step({
       content:
         "Build a workflow, render the tour, run it. This snippet comes straight from the examples directory of the repository - copy, paste, run.",
@@ -115,7 +123,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       target: '[data-tour="framework-quickstart"]',
       title: "Your first tour, in one file",
     })
-    .beforeAdvance(goTo("gallery", "/examples"))
+    .beforeLeave(goTo("advance", "gallery", "/examples"))
     .step({
       behavior: acrossPageBoundary,
       content:
@@ -125,7 +133,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       target: '[data-tour="examples-tabs"]',
       title: "The whole gallery",
     })
-    .beforePrevious(goTo("adapter-quickstart", "/react"))
+    .beforeLeave(goTo("previous", "adapter-quickstart", "/react"))
     .step({
       content:
         "That is the tour. It was about sixty lines of workflow. The documentation covers the rest: placement, scrolling, lifecycle hooks, accessibility, and SSR.",

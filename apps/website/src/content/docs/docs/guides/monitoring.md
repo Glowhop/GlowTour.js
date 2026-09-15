@@ -28,15 +28,23 @@ that instance runs - including workflows built from a [JSON config](/docs/guides
 
 | Event | Emitted |
 | --- | --- |
-| `tour:start` | Once `run()` has passed `onStart` without an abort, before the first step is shown |
+| `tour:start` | Once `run()` has passed `onStart` and the first step's `beforeEnter` without an abort, before any other event |
 | `step:enter` | Once a step is on screen and interactive |
 | `step:leave` | When a step is left - moving on, going back, finishing, or cancelling |
+| `step:skip` | When a navigation passes over a step whose target is missing and whose `missingTarget.strategy` is `"skip"` |
 | `tour:complete` | The tour ran past its last step |
 | `tour:cancel` | The tour was cancelled |
 | `tour:error` | The tour failed - see [Handling errors](/docs/guides/handling-errors) for response strategies |
 
 A completed two-step tour emits, in order: `tour:start`, `step:enter`, `step:leave`,
 `step:enter`, `step:leave`, `tour:complete`.
+
+A navigation that skips steps emits a `step:skip` for each of them first, then the `step:leave` of
+the step being left, then the `step:enter` of the step shown. A navigation that `beforeLeave` or
+`beforeEnter` aborts emits nothing, and neither does a tour whose first `beforeEnter` aborts.
+
+The list of events can grow in a minor release. Handle an unknown `type` with a default branch
+rather than assuming the table above is exhaustive.
 
 `tour:error` is not preceded by a `step:leave`: the step was not left, the tour died
 on it. The event names that step, so the pair still reconciles in a funnel.
@@ -70,7 +78,7 @@ beginnings - it is always `0`.
 | `"trigger"` | Clicked a Next / Back / Cancel button |
 | `"keyboard"` | Used a keyboard shortcut |
 | `"overlay"` | Clicked the dimmed backdrop |
-| `"api"` | Nothing - your own code called `advance()`, `previous()`, `goToStep()` or `cancel()`, including from inside a step action |
+| `"api"` | Nothing - your own code called `advance()`, `previous()`, `goTo()` or `cancel()`, including from inside a step action |
 
 This is usually the field worth grouping on. A drop-off where `source` is `"overlay"`
 is people trying to get out; the same drop-off on `"trigger"` is people reading the

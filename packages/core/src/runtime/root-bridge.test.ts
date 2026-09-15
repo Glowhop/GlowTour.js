@@ -243,7 +243,7 @@ describe("private root bridge", () => {
       "cancel",
       "create",
       "dispose",
-      "goToStep",
+      "goTo",
       "previous",
       "run",
       "state",
@@ -309,7 +309,7 @@ describe("private root bridge", () => {
       .create("with-popover")
       .step({
         id: "step-2",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "content",
         target: () => null,
         title: "title",
@@ -509,7 +509,7 @@ describe("private root bridge", () => {
           .create("replacement-popover")
           .step({
             id: "step-4",
-            behavior: { missingTargetStrategy: "skip" },
+            behavior: { missingTarget: { strategy: "skip" } },
             content: "content",
             target: () => null,
             title: "title",
@@ -688,7 +688,7 @@ describe("private root bridge", () => {
     const hookDefinition = hookTour
       .create("release-hook", { onStart: releaseHookPopover })
       .step({ id: "step-8", content: "content", target: () => root(), title: "title" })
-      .beforeAdvance(() => hookBinding.release())
+      .beforeLeave(() => hookBinding.release())
       .build();
     await hookTour.run(hookDefinition);
     await hookTour.advance();

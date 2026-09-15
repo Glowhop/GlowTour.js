@@ -7,12 +7,12 @@ import {
 } from "../definition";
 import { abortableDelay, abortError } from "../runtime/abort";
 import type {
-  EventHandler,
   StartOptions,
   StepAction,
   StepContext,
+  StepHookAction,
   StepParameters,
-  StepTransitionAction,
+  TargetEventHandler,
   WaitUntilOptions,
 } from "../types";
 
@@ -115,7 +115,6 @@ export class WorkflowBuilder<T> {
     this.currentStep = new WorkflowStepBuilder(this, {
       id: options.id,
       target: options.target,
-      resetPropsOnEnter: options.resetPropsOnEnter,
       props: {
         title: options.title,
         content: options.content,
@@ -123,13 +122,12 @@ export class WorkflowBuilder<T> {
         overlay: options.overlay,
         popover: options.popover,
         indicator: options.indicator,
+        behavior: options.behavior,
       },
-      behavior: options.behavior,
       actions: [],
-      eventHandlers: [],
-      advanceAction: null,
-      previousAction: null,
-      cancelAction: null,
+      targetEvents: [],
+      beforeEnter: null,
+      beforeLeave: null,
     });
     return this.currentStep;
   }
@@ -311,35 +309,29 @@ export class WorkflowStepBuilder<T> {
   }
 
   /**
-   * Add a callback that runs before advancing to the next step.
-   * @param callback The transition callback.
+   * Add a callback that runs each time this step is entered, after its target is resolved and
+   * before the step is shown. Props set here are the first ones displayed, which makes it the place
+   * to reset them: `beforeEnter(({ props, initialProps }) => props.set(initialProps))`. Call
+   * `context.abort()` to stay on the current step instead of showing this one.
+   * @param callback The hook callback; `context.direction` is the direction of the navigation in progress.
    * @returns This builder for chaining.
    */
-  beforeAdvance(callback: StepTransitionAction<T>) {
+  beforeEnter(callback: StepHookAction<T>) {
     this.assertActive();
-    this.draft.advanceAction = callback;
+    this.draft.beforeEnter = callback;
     return this;
   }
 
   /**
-   * Add a callback that runs before going to the previous step.
-   * @param callback The transition callback.
+   * Add a callback that runs before navigating away from this step: advance, previous, `goTo`,
+   * or finishing the tour. It does not run on cancel; use the workflow `onCancel` option instead.
+   * Call `context.abort()` to stay on this step.
+   * @param callback The hook callback; `context.direction` is the direction of the navigation in progress.
    * @returns This builder for chaining.
    */
-  beforePrevious(callback: StepTransitionAction<T>) {
+  beforeLeave(callback: StepHookAction<T>) {
     this.assertActive();
-    this.draft.previousAction = callback;
-    return this;
-  }
-
-  /**
-   * Add a callback that runs before cancelling the tour.
-   * @param callback The transition callback.
-   * @returns This builder for chaining.
-   */
-  beforeCancel(callback: StepTransitionAction<T>) {
-    this.assertActive();
-    this.draft.cancelAction = callback;
+    this.draft.beforeLeave = callback;
     return this;
   }
 
@@ -351,7 +343,7 @@ export class WorkflowStepBuilder<T> {
    */
   onTargetEvent<const TEventName extends EventName>(
     event: TEventName,
-    callback: EventHandler<T, EventForName<TEventName>>["callback"],
+    callback: TargetEventHandler<T, EventForName<TEventName>>["callback"],
   ): this;
   /**
    * Add an event listener to the target element for multiple event names.
@@ -361,7 +353,7 @@ export class WorkflowStepBuilder<T> {
    */
   onTargetEvent<const TEventNames extends readonly EventName[]>(
     events: TEventNames,
-    callback: EventHandler<T, EventForName<TEventNames[number]>>["callback"],
+    callback: TargetEventHandler<T, EventForName<TEventNames[number]>>["callback"],
   ): this;
   /**
    * Add an event listener to the target element for a custom event.
@@ -371,20 +363,20 @@ export class WorkflowStepBuilder<T> {
    */
   onTargetEvent<TEvent extends Event>(
     event: string,
-    callback: EventHandler<T, TEvent>["callback"],
+    callback: TargetEventHandler<T, TEvent>["callback"],
   ): this;
   onTargetEvent(
     eventOrEvents: string | readonly string[],
-    callback: EventHandler<T, Event>["callback"],
+    callback: TargetEventHandler<T, Event>["callback"],
   ): this {
     this.assertActive();
     const events = typeof eventOrEvents === "string" ? [eventOrEvents] : eventOrEvents;
     if (events.length === 0) throw new TypeError("events must not be empty");
     for (const event of events) {
       if (event.length === 0) throw new TypeError("event name must not be empty");
-      this.draft.eventHandlers.push({
+      this.draft.targetEvents.push({
         event,
-        callback: callback as EventHandler<T>["callback"],
+        callback: callback as TargetEventHandler<T>["callback"],
       });
     }
     return this;

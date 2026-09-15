@@ -1,11 +1,11 @@
 import type {
   BuiltinAction,
   ConfigValidationIssue,
-  EventHandlerConfig as CoreEventHandlerConfig,
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
-  TransitionActionRef as CoreTransitionActionRef,
+  StepHookActionRef as CoreStepHookActionRef,
+  TargetEventConfig as CoreTargetEventConfig,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -30,12 +30,12 @@ export { ConfigValidationError };
 export type WorkflowConfig = CoreWorkflowConfig<VanillaTourContent>;
 /** Vanilla step config: `StepConfig` pre-bound to `VanillaTourContent`. */
 export type StepConfig = CoreStepConfig<VanillaTourContent>;
-/** Vanilla event handler config: `EventHandlerConfig` pre-bound to `VanillaTourContent`. */
-export type EventHandlerConfig = CoreEventHandlerConfig<VanillaTourContent>;
+/** Vanilla target event config: `TargetEventConfig` pre-bound to `VanillaTourContent`. */
+export type TargetEventConfig = CoreTargetEventConfig<VanillaTourContent>;
 /** Vanilla step action reference: `StepActionRef` pre-bound to `VanillaTourContent`. */
 export type StepActionRef = CoreStepActionRef<VanillaTourContent>;
-/** Vanilla transition action reference: `TransitionActionRef` pre-bound to `VanillaTourContent`. */
-export type TransitionActionRef = CoreTransitionActionRef<VanillaTourContent>;
+/** Vanilla step hook reference: `StepHookActionRef` pre-bound to `VanillaTourContent`. */
+export type StepHookActionRef = CoreStepHookActionRef<VanillaTourContent>;
 /** Vanilla lifecycle action reference: `LifecycleActionRef` pre-bound to `VanillaTourContent`. */
 export type LifecycleActionRef = CoreLifecycleActionRef<VanillaTourContent>;
 /** Vanilla workflow definition produced from config, pre-bound to `VanillaTourContent`. */

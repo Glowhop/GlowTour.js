@@ -349,7 +349,7 @@ describe("react adapter browser behavior", () => {
       .step({
         id: "step-9",
         content: "First",
-        popover: { keyboardShortcuts: { advance: ["N"] } },
+        behavior: { keyboard: { advance: ["N"] } },
         target,
         title: "First",
       })
@@ -566,7 +566,7 @@ describe("react adapter browser behavior", () => {
     const workflow = tour
       .create("nonpreventing")
       .step({ id: "step-17", content: "First", target, title: "First" })
-      .beforeAdvance(() => {
+      .beforeLeave(() => {
         advances += 1;
       })
       .step({ id: "step-18", content: "Second", target, title: "Second" })
@@ -895,8 +895,8 @@ describe("react adapter browser behavior", () => {
       dispose() {
         React.act(() => tour.dispose());
       },
-      async goToStep(index: number) {
-        await React.act(() => tour.goToStep(index));
+      async goTo(id: string) {
+        await React.act(() => tour.goTo(id));
       },
       async previous() {
         await React.act(() => tour.previous());

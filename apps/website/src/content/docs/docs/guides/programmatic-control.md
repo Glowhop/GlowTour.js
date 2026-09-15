@@ -82,8 +82,8 @@ await tour.advance();
 // Go to the previous step
 await tour.previous();
 
-// Jump to a specific step by index
-await tour.goToStep(2);
+// Jump to a specific step by id
+await tour.goTo("billing");
 
 // Cancel and end the tour
 await tour.cancel();
@@ -113,24 +113,23 @@ const workflow = tour
   .build();
 ```
 
-## Transition callbacks
+## Step hooks
 
-React to step transitions. These are builder *methods* chained after a `.step()` call, not options
-inside it - they attach to the step that precedes them:
+Run code when a step is entered or left. These are builder *methods* chained after a `.step()` call,
+not options inside it - they attach to the step that precedes them:
 
 ```typescript
 const workflow = tour
-  .create("transitions")
+  .create("hooks")
   .step({
-    id: "step1-2",
+    id: "step1",
     target: "#step1",
     title: "First",
     content: "Step 1",
   })
-  .beforeAdvance(async (context) => {
-    console.log("About to advance from step 1");
+  .beforeLeave(async ({ direction }) => {
     // Perform async work, e.g., save user progress
-    await saveProgress();
+    if (direction === "advance") await saveProgress();
   })
   .step({
     id: "step2",
@@ -138,22 +137,102 @@ const workflow = tour
     title: "Second",
     content: "Step 2",
   })
-  .beforePrevious(async (context) => {
-    console.log("About to go back to step 1");
-  })
-  .step({
-    id: "step3",
-    target: "#step3",
-    title: "Third",
-    content: "Step 3",
-  })
-  .beforeCancel(async (context) => {
-    console.log("About to cancel the tour");
+  .beforeEnter(({ direction, props, initialProps }) => {
+    // Coming back from a later step: start again from the declared props.
+    if (direction === "previous") props.set(initialProps);
   })
   .build();
 ```
 
-`.beforeAdvance()`, `.beforePrevious()`, and `.beforeCancel()` can be async and will pause the transition until they resolve.
+- `.beforeEnter()` runs after the step's target is resolved and before the step is shown, so the props
+  it sets are the first ones rendered.
+- `.beforeLeave()` runs before `advance()`, `previous()`, `goTo()`, or finishing the tour. It does
+  not run on cancel: use the workflow's `onCancel` option, which receives the current step.
+- Both can be async and pause the transition until they resolve. `context.direction` tells which way
+  the tour is moving.
+- Both can stop the navigation with `context.abort()`, called synchronously or before their promise
+  resolves. The tour stays on the step it was on and emits no event. When the first step's
+  `beforeEnter` aborts, the tour goes back to `idle`, like an aborted `onStart`.
+
+```typescript
+.beforeLeave(({ abort, direction }) => {
+  // Keep the user here until the form is valid.
+  if (direction === "advance" && !form.checkValidity()) abort();
+})
+```
+
+Step props are not reset automatically: a value set with `context.props.set()` is still there when the
+tour comes back to the step, until the workflow runs again.
+
+## Updating step props
+
+`context.props` is a small store: `get()` reads the current props, `set()` replaces them, and
+`update()` merges a partial change into them:
+
+```typescript
+.do(({ props }) => {
+  // Only this option changes; the other popover options, the title and the content are kept.
+  props.update({ popover: { disableAdvanceButton: false } });
+})
+```
+
+- Fields left out of the change are kept.
+- `data` is merged key by key.
+- `overlay`, `popover`, and `indicator` are merged the way step options merge over the workflow
+  defaults.
+- Arrays such as `placementTryOrder` are replaced, never concatenated.
+
+Pass a function to compute the change from the current props:
+
+```typescript
+props.update((current) => ({ data: { clicks: Number(current.data?.clicks ?? 0) + 1 } }));
+```
+
+`update()` validates and publishes once, like `set()`. To remove a value, use `set()`.
+
+## Changing behavior during a step
+
+`behavior` is part of the step props: `context.props.update({ behavior })` changes it while the
+tour runs, and `context.props.get().behavior` reads it. Like the other props, the value is kept
+when the tour comes back to the step, until the workflow runs again.
+
+Each field takes effect when GlowTour reads it:
+
+| Field | Read | A change made during the step |
+| --- | --- | --- |
+| `allowInteraction` | Continuously | Applies at once: the page becomes inert or usable again, focus leaves the target when interaction is blocked, and the indicator fades out or back in |
+| `overlayClick` | On each click on the dimmed area | Applies to the next click |
+| `autoFocus`, `autoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
+| `keyboard` | On each key press | Applies to the next key press |
+| `missingTarget` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
+
+A button the user may click only once:
+
+```typescript
+.step({
+  id: "pay",
+  target: "#pay",
+  title: "Pay",
+  content: "Click Pay to continue.",
+  behavior: { allowInteraction: true },
+  popover: { hideAdvanceButton: true },
+})
+.onTargetEvent("click", (_event, { props }) => {
+  props.update({
+    behavior: { allowInteraction: false },
+    popover: { hideAdvanceButton: false },
+  });
+})
+```
+
+To start from the configured behavior on every visit, reset it in `beforeEnter`:
+
+```typescript
+.beforeEnter(({ props, initialProps }) => props.update({ behavior: initialProps.behavior }))
+```
+
+`props.set()` replaces every prop, `behavior` included: spread the current props to keep it, or the
+step runs without the behavior it was configured with.
 
 ## Step actions
 
@@ -288,8 +367,9 @@ const workflow = tour
     onStart(context) {
       analytics.track("tour_started");
     },
-    onCancel(context) {
-      analytics.track("tour_cancelled");
+    onCancel({ step }) {
+      // The lifecycle context carries a snapshot of the step the user was on.
+      analytics.track("tour_cancelled", { step: step?.id });
     },
     onFinish(context) {
       analytics.track("tour_completed");
@@ -301,8 +381,8 @@ const workflow = tour
     title: "Welcome",
     content: "Let's get started!",
   })
-  .beforeAdvance(async () => {
-    await api.logEvent("welcome_seen");
+  .beforeLeave(async ({ direction }) => {
+    if (direction === "advance") await api.logEvent("welcome_seen");
   })
   .wait(500)
   .step({
@@ -322,10 +402,6 @@ const workflow = tour
     target: "#dashboard",
     title: "You're ready!",
     content: "Explore your dashboard.",
-  })
-  .beforeCancel(async (context) => {
-    // The transition context carries the step's props and its resolved target element.
-    await api.logEvent("cancelled_on", { step: context.title });
   })
   .build();
 

@@ -77,7 +77,7 @@ export function mountLab<TContent>({
    * Takes the nomad target out of the DOM and puts it back somewhere else. The
    * step resolves it by selector, so the core recovers on the reinserted node:
    * under the freeze grace the move is invisible, beyond it the presentation
-   * stays parked until the element returns or `targetTimeout` runs out.
+   * stays parked until the element returns or `missingTarget.timeout` runs out.
    */
   const relocateTarget = () => {
     clearRelocateTimer();

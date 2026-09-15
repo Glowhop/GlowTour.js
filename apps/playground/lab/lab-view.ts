@@ -87,12 +87,17 @@ export function createLabView(root: HTMLElement, framework: string): LabView {
               <span>onTargetEvent('click')</span>
               <button id="${selectorId(selectors.clickAdvance)}" type="button">Cliquer pour avancer</button>
             </article>
-            ${targetCard(selectorId(selectors.return), "09", "advance guard")}
-            ${targetCard(selectorId(selectors.previous), "10", "previous")}
-            ${targetCard(selectorId(selectors.autoAdvance), "11", "auto advance")}
+            <article class="lab-target-card">
+              ${cardNumber("09")}
+              <span>behavior.allowInteraction</span>
+              <button id="${selectorId(selectors.clickOnce)}" type="button">Cliquer une seule fois</button>
+            </article>
+            ${targetCard(selectorId(selectors.return), "10", "advance guard")}
+            ${targetCard(selectorId(selectors.previous), "11", "previous")}
+            ${targetCard(selectorId(selectors.autoAdvance), "12", "auto advance")}
             <article class="lab-target-card lab-relocate-card" id="${selectorId(selectors.relocate)}">
-              ${cardNumber("12")}
-              <span>missingTargetStrategy: wait</span>
+              ${cardNumber("13")}
+              <span>missingTarget.strategy: wait</span>
               <div class="lab-relocate-slots">
                 <div class="lab-relocate-slot" data-lab-relocate-home>
                   <button id="${selectorId(selectors.nomad)}" type="button">Cible nomade</button>
@@ -116,7 +121,7 @@ export function createLabView(root: HTMLElement, framework: string): LabView {
               <small class="lab-relocate-hint">${copy.relocateHint}</small>
             </article>
             <article class="lab-target-card lab-final-card">
-              ${cardNumber("13")}
+              ${cardNumber("14")}
               <span>append / custom event / finish</span>
               <button id="${selectorId(selectors.customEvent)}" type="button">Envoyer ${event.completion}</button>
             </article>

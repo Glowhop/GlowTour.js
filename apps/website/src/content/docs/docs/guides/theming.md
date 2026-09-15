@@ -72,8 +72,8 @@ given property in one channel or the other, not both. `--glow-tour-arrow-border-
 no JS equivalent and is only settable from CSS.
 :::
 
-To change the arrow's *shape* rather than its values, set `popover.arrow.disableAutoStyles`
-to skip the injected rules entirely and write your own. The popover carries a
+To change the arrow's *shape* rather than its values, set `popover.arrow.autoStyles`
+to `false` to skip the injected rules entirely and write your own. The popover carries a
 `data-glow-tour-placement` attribute, and the computed `--glow-tour-arrow-offset`, to
 position whatever you draw.
 

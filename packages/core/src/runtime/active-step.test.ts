@@ -44,7 +44,7 @@ async function withGlobalHTMLElement<T>(
 function definition(options: {
   indicator?: { gap?: number };
   popover?: {
-    arrow?: { color?: string; disabled?: boolean; edgePadding?: number; size?: number };
+    arrow?: { color?: string; hidden?: boolean; edgePadding?: number; size?: number };
     hideFooter?: boolean;
     gap?: number;
   };
@@ -52,7 +52,7 @@ function definition(options: {
   return new WorkflowBuilder<string>("active-step", {
     indicator: { gap: 22 },
     popover: {
-      arrow: { color: "var(--workflow-arrow)", disabled: true, edgePadding: 18, size: 12 },
+      arrow: { color: "var(--workflow-arrow)", hidden: true, edgePadding: 18, size: 12 },
       disableAdvanceButton: true,
       hideFooter: true,
       gap: 18,
@@ -73,8 +73,8 @@ describe("ActiveStep presentation options", () => {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "var(--workflow-arrow)",
-      disableAutoStyles: undefined,
-      disabled: true,
+      autoStyles: undefined,
+      hidden: true,
       edgePadding: 18,
       size: 12,
       styleNonce: undefined,
@@ -84,7 +84,7 @@ describe("ActiveStep presentation options", () => {
   test("keeps step presentation overrides above workflow defaults", () => {
     const workflow = definition({
       indicator: { gap: 8 },
-      popover: { arrow: { color: "#4c35fd", disabled: false, size: 20 }, gap: 6 },
+      popover: { arrow: { color: "#4c35fd", hidden: false, size: 20 }, gap: 6 },
     });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
@@ -94,15 +94,15 @@ describe("ActiveStep presentation options", () => {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "#4c35fd",
-      disableAutoStyles: undefined,
-      disabled: false,
+      autoStyles: undefined,
+      hidden: false,
       edgePadding: 18,
       size: 20,
       styleNonce: undefined,
     });
   });
 
-  test("stores effective presentation props and resets nested mutations", () => {
+  test("stores effective presentation props and restores nested mutations from initial props", () => {
     const workflow = definition({ popover: { gap: 6, hideFooter: false } });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
@@ -117,17 +117,17 @@ describe("ActiveStep presentation options", () => {
     assert.equal(step.snapshot().currentProps.popover?.disableAdvanceButton, false);
     assert.equal(step.snapshot().currentProps.popover?.hideFooter, true);
 
-    step.reset();
+    step.props.set(step.initialProps);
     assert.equal(step.props.get().popover?.disableAdvanceButton, true);
     assert.equal(step.props.get().popover?.hideFooter, false);
   });
 
-  test("resets from its immutable initial definition", () => {
+  test("restores from its immutable initial definition", () => {
     const workflow = definition({});
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
     step.props.set((props) => ({ ...props, data: { version: 2 } }));
-    step.reset();
+    step.props.set(step.initialProps);
 
     assert.equal(Object.isFrozen(step.initialProps), true);
     assert.deepEqual(step.props.get().data, undefined);

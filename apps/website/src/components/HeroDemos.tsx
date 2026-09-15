@@ -16,7 +16,7 @@ import {
 } from "@glowhop/react-tour";
 import { Bell, Rocket, Trash2, UserPlus } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar, DemoCard, FakeField, SkeletonLine } from "./demo-ui";
 
 const targetButtonClass =
@@ -226,6 +226,17 @@ export const waitForAsyncWorkflow = waitForAsyncTour
     title: "Load the data first",
     content: 'Click "Load data" - the next step waits for an element that doesn\'t exist yet.',
     behavior: { allowInteraction: true },
+    popover: { disableAdvanceButton: true },
+  })
+  .waitUntilElement("#hero-wait-for-async-loaded")
+  .do(async (context) => {
+    if (!context.props.get().data?.loaded) await context.advance();
+    context.props.update({ data: { loaded: true } });
+  })
+  .beforeEnter((context) => {
+    if (context.props.get().data?.loaded) {
+      context.props.update({ popover: { disableAdvanceButton: false } });
+    }
   })
   .step({
     id: "wait-for-async-loaded",
@@ -233,7 +244,6 @@ export const waitForAsyncWorkflow = waitForAsyncTour
     title: "The tour waited for this",
     content: "waitUntilElement(selector) held the tour until this element appeared in the DOM.",
   })
-  .waitUntilElement("#hero-wait-for-async-loaded")
   .step({
     id: "wait-for-async-row-1",
     target: "#hero-wait-for-async-row-1",
@@ -483,7 +493,7 @@ export const customStyledIndicatorWorkflow = customStyledIndicatorTour
     content:
       "overlay.color/opacity, popover.arrow, a custom <Pointer> glyph, and behavior.allowInteraction, all at once.",
     overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true } },
+    popover: { arrow: { hidden: true } },
     behavior: { allowInteraction: true },
   })
   .build();
@@ -806,6 +816,76 @@ export function CustomThemeDemo() {
         Run this demo
       </button>
       <DefaultTour tour={customThemeTour} />
+    </div>
+  );
+}
+
+// 13. A target that leaves the page and comes back somewhere else -------------
+
+const relocateTargetTour = createGlowTour();
+export const relocateTargetWorkflow = relocateTargetTour
+  .create("hero-relocate-target")
+  .step({
+    id: "relocate-target",
+    target: "#hero-relocate-target",
+    title: "Move this card",
+    content:
+      "Click it. It leaves the page for a moment, then comes back in the other column - the tour waits for it instead of failing.",
+    behavior: { allowInteraction: true, missingTarget: { strategy: "wait", timeout: 5000 } },
+  })
+  .build();
+
+const relocateColumns = ["left", "right"] as const;
+/** Longer than the tour's short freeze on a lost target, so the step really relies on "wait". */
+const RELOCATE_DELAY_MS = 1200;
+
+export function RelocateTargetDemo() {
+  const [column, setColumn] = useState<(typeof relocateColumns)[number]>("left");
+  const [moving, setMoving] = useState(false);
+
+  useEffect(() => {
+    if (!moving) return;
+    const timer = setTimeout(() => {
+      setColumn((current) => (current === "left" ? "right" : "left"));
+      setMoving(false);
+    }, RELOCATE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [moving]);
+
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <DemoCard className="p-4">
+        <h4 className="text-sm font-semibold text-text">Board</h4>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          {relocateColumns.map((slot) => (
+            <div
+              key={slot}
+              className="flex h-28 items-center justify-center rounded-glow border border-dashed border-border bg-surface-muted p-2"
+            >
+              {!moving && column === slot ? (
+                <button
+                  id="hero-relocate-target"
+                  type="button"
+                  onClick={() => setMoving(true)}
+                  className={targetButtonClass}
+                >
+                  Move me
+                </button>
+              ) : (
+                <span className="text-xs text-text-muted">{moving ? "Moving..." : "Empty"}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </DemoCard>
+      <button
+        type="button"
+        onClick={() => void relocateTargetTour.run(relocateTargetWorkflow)}
+        className={runButtonClass}
+      >
+        Run this demo
+      </button>
+      <DefaultTour tour={relocateTargetTour} />
     </div>
   );
 }

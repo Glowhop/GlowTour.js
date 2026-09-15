@@ -103,6 +103,17 @@ const workflow = tour
     title: "Load the data first",
     content: "The next step waits for an element that doesn't exist yet.",
     behavior: { allowInteraction: true },
+    popover: { disableAdvanceButton: true },
+  })
+  .waitUntilElement("#loaded-content")
+  .do(async (context) => {
+    if (!context.props.get().data?.loaded) await context.advance();
+    context.props.update({ data: { loaded: true } });
+  })
+  .beforeEnter((context) => {
+    if (context.props.get().data?.loaded) {
+      context.props.update({ popover: { disableAdvanceButton: false } });
+    }
   })
   .step({
     id: "loaded-content",
@@ -110,7 +121,6 @@ const workflow = tour
     title: "The tour waited for this",
     content: "waitUntilElement(selector) held the tour until this element appeared.",
   })
-  .waitUntilElement("#loaded-content")
   .step({
     id: "activity-row-1",
     target: "#activity-row-1",
@@ -211,7 +221,7 @@ const workflow = tour
     title: "Same tour, fully customized",
     content: "overlay/popover overrides, a custom pointer glyph, and allowInteraction, all at once.",
     overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true } },
+    popover: { arrow: { hidden: true } },
     behavior: { allowInteraction: true },
   })
   .build();
@@ -374,6 +384,51 @@ const workflow = tour
 /* the default theme pushes Skip away with an inline-end auto margin */
 .terminal-tour [data-glow-tour-cancel-trigger] {
   margin-inline-end: 0;
+}
+
+tour.run(workflow);`;
+
+export const relocateTargetSource = `const tour = createGlowTour();
+
+const workflow = tour
+  .create("board")
+  .step({
+    id: "card",
+    target: "#card",
+    title: "Move this card",
+    content: "It leaves the page, then comes back in the other column.",
+    behavior: {
+      allowInteraction: true,
+      // Keep the step while the card is gone instead of failing the tour.
+      missingTarget: { strategy: "wait", timeout: 5000 },
+    },
+  })
+  .build();
+
+// Clicking the card removes it, then renders it in the other column:
+// the same #card selector, a new element, somewhere else on the page.
+function Board() {
+  const [column, setColumn] = useState("left");
+  const [moving, setMoving] = useState(false);
+
+  useEffect(() => {
+    if (!moving) return;
+    const timer = setTimeout(() => {
+      setColumn((current) => (current === "left" ? "right" : "left"));
+      setMoving(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [moving]);
+
+  return ["left", "right"].map((slot) => (
+    <div key={slot} className="column">
+      {!moving && column === slot && (
+        <button id="card" onClick={() => setMoving(true)}>
+          Move me
+        </button>
+      )}
+    </div>
+  ));
 }
 
 tour.run(workflow);`;

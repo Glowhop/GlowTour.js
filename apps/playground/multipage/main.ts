@@ -64,8 +64,9 @@ const spaWorkflow = tour
     title: "Dashboard",
     content: "Step 1 lives on the dashboard view. Advancing triggers a SPA route change.",
   })
-  .beforeAdvance(() => {
-    log("beforeAdvance - pushState to ?view=profile");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "advance") return;
+    log("beforeLeave(advance) - pushState to ?view=profile");
     navigate("profile");
   })
   .step({
@@ -73,10 +74,11 @@ const spaWorkflow = tour
     target: "#profile-avatar",
     title: "Profile",
     content: "Step 2 targets an element that only exists after the route change.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
-  .beforePrevious(() => {
-    log("beforePrevious - pushState back to the dashboard");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "previous") return;
+    log("beforeLeave(previous) - pushState back to the dashboard");
     navigate("dashboard");
   })
 
@@ -85,7 +87,7 @@ const spaWorkflow = tour
     target: "#profile-save",
     title: "Save",
     content: "Step 3 is on the same view as step 2. Finish to end the tour.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .build();
 
@@ -104,8 +106,11 @@ const reloadWorkflow = tour
     title: "Dashboard",
     content: "Advancing persists the tour position, then hard-navigates to page B.",
   })
-  .beforeAdvance(() => {
-    log("beforeAdvance - persisting the next step id and calling location.assign('page-b.html')");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "advance") return;
+    log(
+      "beforeLeave(advance) - persisting the next step id and calling location.assign('page-b.html')",
+    );
     persistTour({ workflow: "reload-multipage", stepId: "reload-settings" });
     location.assign("page-b.html");
   })
@@ -114,7 +119,7 @@ const reloadWorkflow = tour
     target: "#settings-panel",
     title: "Settings",
     content: "This target only exists on page B.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .build();
 

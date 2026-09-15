@@ -4,23 +4,19 @@ import {
   type ReadonlyStepProps,
   type WorkflowStepDefinition,
 } from "../definition";
-import type { StepPropsStore } from "../types";
-import {
-  mergeIndicatorOptions,
-  mergeOverlayOptions,
-  mergePopoverOptions,
-  mergeStepBehavior,
-} from "../utils/options";
+import type { StepPropsStore, TourDirection } from "../types";
+import { mergeStepProps } from "../utils/options";
 import { resolveTargetElement } from "../utils/utils";
 import { createStepPropsStore } from "./step-props-store";
 
 export class ActiveStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
   readonly props: StepPropsStore<T>;
-  readonly behavior;
   readonly animated: boolean | undefined;
   readonly allowScroll: boolean;
   target: HTMLElement | null = null;
+  /** The navigation that last brought the tour to this step. */
+  direction: TourDirection = "advance";
 
   constructor(
     readonly definition: WorkflowStepDefinition<T>,
@@ -29,22 +25,20 @@ export class ActiveStep<T> {
     readonly path = "steps[0]",
     private readonly rootDocument?: Document,
   ) {
-    this.initialProps = freezeStepProps({
-      title: definition.props.title,
-      content: definition.props.content,
-      data: definition.props.data,
-      overlay: mergeOverlayOptions(defaults.overlay, definition.props.overlay),
-      popover: mergePopoverOptions(defaults.popover, definition.props.popover),
-      indicator: mergeIndicatorOptions(defaults.indicator, definition.props.indicator),
-    });
+    // The workflow options go in whole: freezeStepProps keeps only the step prop keys.
+    this.initialProps = freezeStepProps(mergeStepProps(defaults, definition.props));
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
-    this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
     this.allowScroll = defaults.allowScroll !== false;
   }
 
-  reset() {
-    this.props.set(this.initialProps);
+  /** The step behavior, read live: `props.update({ behavior })` changes it while the step runs. */
+  get behavior() {
+    return this.props.get().behavior;
+  }
+
+  get allowInteraction() {
+    return this.behavior?.allowInteraction === true;
   }
 
   get overlay() {

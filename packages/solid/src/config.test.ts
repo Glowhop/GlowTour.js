@@ -10,6 +10,7 @@ describe("solid config entry point", () => {
     // cast. See HANDOFF-serializable-config.md.
     const definition = createWorkflowFromConfig({
       name: "onboarding",
+      version: "1.1",
       steps: [{ id: "s1", target: "#invite-button", title: "Invite", content: "Invite your team" }],
     });
 

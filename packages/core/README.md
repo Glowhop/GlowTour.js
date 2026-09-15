@@ -23,11 +23,11 @@ const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", 
 | Placement | `popover.placementTryOrder`, `indicator.placementTryOrder` | Try `top`, `bottom`, `left`, `right`; the resolved position may be `center`. |
 | Interaction | `behavior.allowInteraction` | Allows pointer interaction through the overlay. |
 | Scroll | step/start `scroll` | Uses `behavior`, `block`, and `inline` scroll options. The step appears without waiting for the scroll. |
-| Callbacks | `onStart`, `onCancel`, `onFinish`; `beforeAdvance`, `beforePrevious`, `beforeCancel` | Start callbacks are workflow options; transition callbacks are step builder methods. |
+| Callbacks | `onStart`, `onCancel`, `onFinish`; `beforeEnter`, `beforeLeave` | Start callbacks are workflow options; step hooks are step builder methods and receive the navigation `direction`. Step props are not reset on enter; reset them in `beforeEnter`. |
 | Actions | `.do(fn)`, `.wait(ms)`, `.waitUntil(fn)`, `.waitUntilElement(selector)` | `waitUntil` defaults to a 16 ms interval and 3000 ms timeout. |
 | Target events | `.onTargetEvent("click", fn)` | Handlers receive the event and step context. |
 
-`tour.state.get()` returns status, current step, navigation capabilities, and errors; `tour.state.subscribe(listener)` observes changes. The controller exposes `run`, `advance`, `previous`, `goToStep`, and `cancel`. A new run or navigation cancels the previous operation; `dispose()` cancels pending work, releases the root, and makes the controller unusable.
+`tour.state.get()` returns status, current step, navigation capabilities, and errors; `tour.state.subscribe(listener)` observes changes. The controller exposes `run`, `advance`, `previous`, `goTo`, and `cancel`. A new run or navigation cancels the previous operation; `dispose()` cancels pending work, releases the root, and makes the controller unusable.
 
 ## Errors and rendering fallbacks
 

@@ -3,9 +3,9 @@ import { abortableDelay } from "../runtime/abort";
 import type { StepAction } from "../types";
 import type {
   BuiltinAction,
-  EventHandlerConfig,
   StepActionRef,
   StepConfig,
+  TargetEventConfig,
   WorkflowDefinitionFromConfig,
 } from "./types";
 import { type ValidateWorkflowConfigOptions, validateWorkflowConfig } from "./validate";
@@ -63,7 +63,7 @@ export function createWorkflowFromConfig<T = string>(
 
 /**
  * Applies a single `StepConfig` to a `WorkflowBuilder`: the `.step()` call itself, then actions,
- * event handlers, and transition hooks.
+ * event handlers, and step hooks.
  * @param builder The workflow builder to add the step to.
  * @param stepConfig The config-form step to apply.
  * @param path Error path for this step, e.g. `steps[2]`.
@@ -76,7 +76,6 @@ function applyStepConfig<T>(
   const step = builder.step({
     id: stepConfig.id,
     target: stepConfig.target,
-    resetPropsOnEnter: stepConfig.resetPropsOnEnter,
     overlay: stepConfig.overlay,
     popover: stepConfig.popover,
     indicator: stepConfig.indicator,
@@ -90,13 +89,12 @@ function applyStepConfig<T>(
     applyStepActionRef(step, actionRef, `${path}.actions[${index}]`);
   }
 
-  for (const [index, handler] of (stepConfig.eventHandlers ?? []).entries()) {
-    applyEventHandler(step, handler, `${path}.eventHandlers[${index}]`);
+  for (const [index, handler] of (stepConfig.targetEvents ?? []).entries()) {
+    applyTargetEvent(step, handler, `${path}.targetEvents[${index}]`);
   }
 
-  if (stepConfig.advanceAction) step.beforeAdvance(stepConfig.advanceAction);
-  if (stepConfig.previousAction) step.beforePrevious(stepConfig.previousAction);
-  if (stepConfig.cancelAction) step.beforeCancel(stepConfig.cancelAction);
+  if (stepConfig.beforeEnter) step.beforeEnter(stepConfig.beforeEnter);
+  if (stepConfig.beforeLeave) step.beforeLeave(stepConfig.beforeLeave);
 }
 
 /**
@@ -148,18 +146,18 @@ function applyBuiltinAction<T>(
 }
 
 /**
- * Resolves the `event`/`action` pair of an `EventHandlerConfig` and applies it to `step` via
+ * Resolves the `event`/`action` pair of a `TargetEventConfig` and applies it to `step` via
  * `.onTargetEvent()`, once per event name (mirroring the builder's own multi-event handling).
  * @param step The step builder to apply the handler to.
  * @param handler The config-form event handler.
  * @param path Error path for this handler.
  */
-function applyEventHandler<T>(
+function applyTargetEvent<T>(
   step: WorkflowStepBuilder<T>,
-  handler: EventHandlerConfig<T>,
+  handler: TargetEventConfig<T>,
   path: string,
 ): void {
-  const action = resolveEventHandlerAction(handler.action, `${path}.action`);
+  const action = resolveTargetEventAction(handler.action, `${path}.action`);
   const events = typeof handler.event === "string" ? [handler.event] : handler.event;
   for (const event of events) {
     step.onTargetEvent(event, async (_event, context) => {
@@ -180,7 +178,7 @@ function applyEventHandler<T>(
  * @param ref The action ref to resolve.
  * @param path Error path for this ref, used if resolution fails at build time.
  */
-function resolveEventHandlerAction<T>(ref: StepActionRef<T>, path: string): StepAction<T> {
+function resolveTargetEventAction<T>(ref: StepActionRef<T>, path: string): StepAction<T> {
   if (typeof ref === "function") return ref;
 
   const scratch = new WorkflowBuilder<string>("__config_event_handler_scratch__");

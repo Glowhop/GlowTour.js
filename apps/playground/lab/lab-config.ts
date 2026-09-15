@@ -23,6 +23,8 @@ export const LAB_CONFIG = {
     actions: "#api-lab-actions",
     eventField: "#api-lab-event-field",
     clickAdvance: "#api-lab-click-advance",
+    clickOnce: "#api-lab-click-once",
+    missingTarget: "#api-lab-missing-target",
     return: "#api-lab-return",
     previous: "#api-lab-previous",
     autoAdvance: "#api-lab-auto-advance",
@@ -58,7 +60,7 @@ export const LAB_CONFIG = {
     heading: "Builder API Lab",
     description: "Un parcours exécutable couvrant chaque API du builder GlowTour.js.",
     targetsHeading: "Cibles du parcours",
-    targetsSummary: "13 étapes · 17 méthodes",
+    targetsSummary: "15 étapes · 18 méthodes",
     intro: "Le workflow démarre avec ses options globales et une cible par sélecteur CSS.",
     focus: "La cible est un HTMLElement transmis directement. Le champ reçoit le focus.",
     focused: "Focus appliqué. Cette phrase a été injectée via context.props.",
@@ -69,6 +71,10 @@ export const LAB_CONFIG = {
       "La première action continue la chaîne. La seconde l’arrête avant l’action sentinelle.",
     eventField: "Survolez le champ ou appuyez sur une touche, puis continuez.",
     clickAdvance: "Le bouton Suivant est masqué. Cliquez directement sur la cible pour avancer.",
+    clickOnce:
+      "Cliquez une seule fois sur la cible : l’interaction est ensuite coupée et le bouton Suivant apparaît. Revenez avec Précédent, la cible reste bloquée.",
+    skipped:
+      "Cette étape n’a pas de cible : missingTarget.strategy 'skip' la saute et émet step:skip. Elle ne doit jamais s’afficher.",
     automaticReturn:
       "Continuez. Cette étape saura vous renvoyer automatiquement après la démonstration suivante.",
     previous: "Premier passage : retour automatique. Second passage : la garde stoppe la boucle.",
@@ -78,7 +84,7 @@ export const LAB_CONFIG = {
     relocateDelayLabel: "Délai de réapparition",
     relocateAway: "Zone d’accueil",
     relocateHint:
-      "Sous 150 ms le gel est invisible. Au-delà du targetTimeout, la stratégie wait abandonne.",
+      "Sous 150 ms le gel est invisible. Au-delà de missingTarget.timeout, la stratégie wait abandonne.",
     appended:
       "Cette étape vient d’un autre workflow. Déclenchez l’événement personnalisé pour finir.",
   },
