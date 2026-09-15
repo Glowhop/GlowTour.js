@@ -28,6 +28,8 @@
   <a href="https://github.com/Glowhop/GlowTour.js/issues"><b>Issues</b></a>
 </p>
 
+<p align="center">Upgrading from 1.3? Follow the <a href="https://glowtour.dev/docs/migration/1-4">migration guide to 1.4</a>.</p>
+
 <p align="center"><img src="assets/demo.gif" alt="A GlowTour.js walkthrough highlighting controls in an analytics dashboard" width="820"></p>
 
 ---
