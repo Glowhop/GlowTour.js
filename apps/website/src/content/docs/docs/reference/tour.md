@@ -95,20 +95,24 @@ previous(): Promise<void>
 </button>
 ```
 
-### `tour.goToStep(index)`
+### `tour.goTo(id)`
 
-Jumps to a specific step by index, skipping the steps in between.
+Goes to the step with this `id`, skipping the steps in between. The direction (`"advance"` or `"previous"`) follows the position of that step. It does nothing while a transition is in progress or when that step is already shown, and it throws when no step has this `id`.
+
+Steps are designated by `id`, like `startAt` in `run()`: an index would break as soon as steps are reordered or inserted.
 
 **Signature**:
 ```typescript
-goToStep(index: number): Promise<void>
+goTo(id: string): Promise<void>
 ```
 
 **Usage**:
 ```typescript
-// Jump straight to the fourth step (0-indexed)
-await tour.goToStep(3);
+// Jump straight to the billing step
+await tour.goTo("billing");
 ```
+
+A step action or a target event handler can do the same with `context.goTo(id)`, which also stops the remaining actions of its step, like `context.advance()`.
 
 ### `tour.cancel()`
 

@@ -112,7 +112,7 @@ await tour.run(workflow);
 // ← The first step is now visible. Any other step may still fail later.
 ```
 
-So a `try/catch` around `run()` only catches failures on that first step. A target missing on step 2, 3, or later is not caught there - it rejects the `advance()`, `previous()`, or `goToStep()` call that caused it:
+So a `try/catch` around `run()` only catches failures on that first step. A target missing on step 2, 3, or later is not caught there - it rejects the `advance()`, `previous()`, or `goTo()` call that caused it:
 
 ```typescript
 try {

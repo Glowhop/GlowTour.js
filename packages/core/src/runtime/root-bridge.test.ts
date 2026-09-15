@@ -243,7 +243,7 @@ describe("private root bridge", () => {
       "cancel",
       "create",
       "dispose",
-      "goToStep",
+      "goTo",
       "previous",
       "run",
       "state",

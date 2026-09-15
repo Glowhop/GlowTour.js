@@ -53,7 +53,7 @@ async function main(): Promise<void> {
   clearPersistedTour();
   log(`Persisted tour: ${persisted.workflow} @ "${persisted.stepId}"`);
 
-  // The whole resume: one option. No goToStep(), no skippable prefix steps.
+  // The whole resume: one option. No goTo(), no skippable prefix steps.
   try {
     await tour.run(workflow, { startAt: persisted.stepId });
     const state = tour.state.get();

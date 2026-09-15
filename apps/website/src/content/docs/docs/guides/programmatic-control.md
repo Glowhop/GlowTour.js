@@ -82,8 +82,8 @@ await tour.advance();
 // Go to the previous step
 await tour.previous();
 
-// Jump to a specific step by index
-await tour.goToStep(2);
+// Jump to a specific step by id
+await tour.goTo("billing");
 
 // Cancel and end the tour
 await tour.cancel();
@@ -146,7 +146,7 @@ const workflow = tour
 
 - `.beforeEnter()` runs after the step's target is resolved and before the step is shown, so the props
   it sets are the first ones rendered.
-- `.beforeLeave()` runs before `advance()`, `previous()`, `goToStep()`, or finishing the tour. It does
+- `.beforeLeave()` runs before `advance()`, `previous()`, `goTo()`, or finishing the tour. It does
   not run on cancel: use the workflow's `onCancel` option, which receives the current step.
 - Both can be async and pause the transition until they resolve. `context.direction` tells which way
   the tour is moving.

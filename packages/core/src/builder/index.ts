@@ -323,7 +323,7 @@ export class WorkflowStepBuilder<T> {
   }
 
   /**
-   * Add a callback that runs before navigating away from this step: advance, previous, `goToStep`,
+   * Add a callback that runs before navigating away from this step: advance, previous, `goTo`,
    * or finishing the tour. It does not run on cancel; use the workflow `onCancel` option instead.
    * Call `context.abort()` to stay on this step.
    * @param callback The hook callback; `context.direction` is the direction of the navigation in progress.
