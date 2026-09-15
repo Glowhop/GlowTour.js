@@ -38,6 +38,9 @@ that instance runs - including workflows built from a [JSON config](/docs/guides
 A completed two-step tour emits, in order: `tour:start`, `step:enter`, `step:leave`,
 `step:enter`, `step:leave`, `tour:complete`.
 
+The list of events can grow in a minor release. Handle an unknown `type` with a default branch
+rather than assuming the table above is exhaustive.
+
 `tour:error` is not preceded by a `step:leave`: the step was not left, the tour died
 on it. The event names that step, so the pair still reconciles in a funnel.
 

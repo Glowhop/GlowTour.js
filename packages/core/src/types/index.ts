@@ -342,7 +342,7 @@ export interface EventHandler<TStepProps, TEvent extends Event = Event> {
   callback: (event: TEvent, context: StepEventContext<TStepProps>) => void | Promise<void>;
 }
 
-/** Tour lifecycle status. */
+/** Tour lifecycle status. New statuses may be added in a minor release: keep a default branch when switching over it. */
 export type TourStatus =
   | "idle"
   | "starting"
@@ -448,10 +448,12 @@ export interface RunOptions {
  * `"api"` covers every call your own code makes — `advance()`, `previous()`,
  * `goToStep()`, `cancel()`, and the `context.advance()` available inside a step
  * action. The other three are the user acting on the tour UI directly.
+ *
+ * New sources may be added in a minor release: keep a default branch when switching over it.
  */
 export type TourEventSource = "api" | "trigger" | "keyboard" | "overlay";
 
-/** Name of a monitoring event. */
+/** Name of a monitoring event. New events may be added in a minor release: keep a default branch when switching over it. */
 export type TourEventType =
   | "tour:start"
   | "step:enter"

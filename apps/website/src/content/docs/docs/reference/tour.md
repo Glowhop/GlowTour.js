@@ -204,4 +204,6 @@ Controller-related type exports for TypeScript users:
 - `TourState` - Immutable state object returned by `tour.state.get()`
 - `TourCurrentStep` - The active step's target and props, part of `TourState`
 
+`TourStatus`, `TourEventType`, and `TourEventSource` are unions that can gain members in a minor release. When you switch over them, keep a default branch.
+
 See the [Builder reference](/docs/reference/builder) for `tour.create()`'s workflow/step-building API and every option's default value.
