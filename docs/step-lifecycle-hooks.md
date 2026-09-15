@@ -13,7 +13,16 @@ Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetProps
   `missingTargetStrategy: "skip"` does not run it.
 - `beforeLeave(callback)` runs at the start of a navigation away from the step: `advance()`,
   `previous()`, `goToStep()`, or advancing past the last step. It never runs on cancel.
-- Both receive `StepHookContext<T> = Omit<StepContext<T>, "advance" | "cancel" | "previous">`.
+- Both receive `StepHookContext<T>`: `StepContext<T>` without `advance`, `cancel` and `previous`,
+  plus `abort()`. Called before the hook settles, `abort()` stops the navigation: the tour stays on
+  its current step and emits nothing. When the first step's `beforeEnter` aborts, the tour goes
+  back to `idle`, like an `onStart` abort. During the recovery of a lost target, the lost step cannot
+  stay on screen, so an abort becomes that step's missing-target error.
+- A navigation resolves the destination target first, passing over steps skipped by
+  `missingTargetStrategy: "skip"`, then runs `beforeEnter`. Only then does it emit, in order: the
+  held `tour:start` (first navigation of a run), `step:skip` for each skipped step, one `step:leave`
+  for the step being left, and `step:enter` once the step is shown. Nothing is emitted for an
+  aborted navigation. Going back past the first step over skipped steps keeps the current step.
 - `StepContext` gains `initialProps` and `direction`. `direction` is captured when a context is
   created, not read live, so a long-running action never sees the direction of a later navigation.
   It is the direction of the navigation in progress: when the tour goes back from B to A, B's

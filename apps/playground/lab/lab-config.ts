@@ -24,6 +24,7 @@ export const LAB_CONFIG = {
     eventField: "#api-lab-event-field",
     clickAdvance: "#api-lab-click-advance",
     clickOnce: "#api-lab-click-once",
+    missingTarget: "#api-lab-missing-target",
     return: "#api-lab-return",
     previous: "#api-lab-previous",
     autoAdvance: "#api-lab-auto-advance",
@@ -59,7 +60,7 @@ export const LAB_CONFIG = {
     heading: "Builder API Lab",
     description: "Un parcours exécutable couvrant chaque API du builder GlowTour.js.",
     targetsHeading: "Cibles du parcours",
-    targetsSummary: "14 étapes · 18 méthodes",
+    targetsSummary: "15 étapes · 18 méthodes",
     intro: "Le workflow démarre avec ses options globales et une cible par sélecteur CSS.",
     focus: "La cible est un HTMLElement transmis directement. Le champ reçoit le focus.",
     focused: "Focus appliqué. Cette phrase a été injectée via context.props.",
@@ -72,6 +73,8 @@ export const LAB_CONFIG = {
     clickAdvance: "Le bouton Suivant est masqué. Cliquez directement sur la cible pour avancer.",
     clickOnce:
       "Cliquez une seule fois sur la cible : l’interaction est ensuite coupée et le bouton Suivant apparaît. Revenez avec Précédent, la cible reste bloquée.",
+    skipped:
+      "Cette étape n’a pas de cible : missingTargetStrategy: 'skip' la saute et émet step:skip. Elle ne doit jamais s’afficher.",
     automaticReturn:
       "Continuez. Cette étape saura vous renvoyer automatiquement après la démonstration suivante.",
     previous: "Premier passage : retour automatique. Second passage : la garde stoppe la boucle.",

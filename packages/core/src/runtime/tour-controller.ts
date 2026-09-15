@@ -9,6 +9,7 @@ import type {
   RunOptions,
   StartOptions,
   StepContext,
+  StepHookAction,
   StepHookContext,
   TourDirection,
   TourEvent,
@@ -102,6 +103,11 @@ export class TourController<T> {
   private readonly stepPropsSubscriptions: Array<() => void> = [];
   private tourStartedAt = 0;
   private stepEnteredAt = 0;
+  /**
+   * The step `tour:start` names, while that event is held back. It is emitted just before the
+   * first event that can no longer be taken back, so a start that a `beforeEnter` aborts emits nothing.
+   */
+  private pendingTourStart: ActiveStep<T> | null | undefined;
   private commandSource: TourEventSource = "api";
 
   readonly state = Object.freeze({
@@ -197,12 +203,12 @@ export class TourController<T> {
         return;
       }
       this.tourStartedAt = Date.now();
-      this.emit("tour:start", this.steps[startIndex] ?? null, 0);
+      this.pendingTourStart = this.steps[startIndex] ?? null;
       if (this.steps.length === 0) {
         await this.finish(operation);
         return;
       }
-      await this.enter(startIndex, "advance", operation);
+      await this.navigate(startIndex, "advance", operation);
     } catch (error) {
       await this.handleFailure(error, operation);
     }
@@ -281,26 +287,56 @@ export class TourController<T> {
     if (!this.disposed) this.publish();
   }
 
-  private async enter(index: number, direction: TourDirection, operation: number): Promise<void> {
-    // The direction is set first on purpose: `step:leave` must report the
-    // navigation that causes the departure, not the one that brought the user in.
-    this.direction = direction;
-    this.emitStepLeave(this.currentStep());
-    this.setStatus("transitioning");
+  /**
+   * Moves to the step at `index`, or further in `direction` past steps skipped for a missing target.
+   * Nothing is emitted before `beforeEnter` lets the navigation through, so an abort leaves no trace.
+   * Then come the held `tour:start`, a `step:skip` per skipped step, and one `step:leave` for the
+   * step being left. `lostStep` is the step whose target disappeared during recovery: it cannot stay
+   * on screen, so reaching the first-step boundary or an abort turns into its missing-target error.
+   */
+  private async navigate(
+    index: number,
+    direction: TourDirection,
+    operation: number,
+    lostStep?: ActiveStep<T>,
+  ): Promise<void> {
+    const from = this.currentStep();
+    // `transition()` already published it after running `beforeLeave`.
+    if (this.status !== "transitioning") this.setStatus("transitioning");
     this.assertCurrent(operation);
-    const step = this.steps[index];
-    if (!step) throw new Error(`Step index ${index} is out of bounds`);
-    const target = await this.resolveTarget(step, operation);
-    this.assertCurrent(operation);
-    if (!target) {
-      await this.advancePastMissingTarget(index, direction, operation);
+    const skipped: ActiveStep<T>[] = [];
+    let step = this.steps[index];
+    let target: HTMLElement | null = null;
+    while (step) {
+      target = await this.resolveTarget(step, operation);
+      this.assertCurrent(operation);
+      if (target) break;
+      skipped.push(step);
+      index += direction === "advance" ? 1 : -1;
+      step = this.steps[index];
+    }
+    if (!step || !target) {
+      if (index >= this.steps.length) await this.finish(operation, skipped);
+      else if (!lostStep) this.setStatus("active");
+      else if (this.canCancel()) await this.cancelCurrent(operation);
+      else throw this.missingTargetError(lostStep);
       return;
     }
     step.target = target;
     step.direction = direction;
     // Runs before the step is committed and shown, so props set here are the first ones rendered.
-    await step.definition.enterAction?.(this.createStepHookContext(step, operation, direction));
-    this.assertCurrent(operation);
+    if (await this.runStepHook(step.definition.enterAction, step, operation, direction)) {
+      if (lostStep) throw this.missingTargetError(lostStep);
+      if (from) this.setStatus("active");
+      else this.resetToIdle();
+      return;
+    }
+    // Committed before `step:leave`: that event reports the navigation that causes the departure,
+    // not the one that brought the user in.
+    this.direction = direction;
+    this.flushTourStart();
+    for (const skippedStep of skipped) this.emit("step:skip", skippedStep, 0);
+    this.emitStepLeave(from);
     let committed = false;
     const commitStep = () => {
       this.assertCurrent(operation);
@@ -341,25 +377,37 @@ export class TourController<T> {
     if (!step) return;
     this.setStatus("transitioning");
     this.assertCurrent(operation);
-    await step.definition.leaveAction?.(this.createStepHookContext(step, operation, direction));
-    this.assertCurrent(operation);
+    if (await this.runStepHook(step.definition.leaveAction, step, operation, direction)) {
+      this.setStatus("active");
+      return;
+    }
+    // `canNavigate` already refuses going back from the first step.
+    await this.navigate(
+      destination ?? this.index + (direction === "advance" ? 1 : -1),
+      direction,
+      operation,
+    );
+  }
 
-    if (destination !== undefined) {
-      await this.enter(destination, direction, operation);
-      return;
-    }
-    if (direction === "advance") {
-      const nextIndex = this.index + 1;
-      if (nextIndex >= this.steps.length) await this.finish(operation);
-      else await this.enter(nextIndex, direction, operation);
-      return;
-    }
-    if (this.index === 0) {
-      if (this.canCancel()) await this.cancelCurrent(operation);
-      else this.setStatus("active");
-      return;
-    }
-    await this.enter(this.index - 1, direction, operation);
+  /** Runs `beforeEnter` or `beforeLeave`, and tells whether it called `abort()` before settling. */
+  private async runStepHook(
+    hook: StepHookAction<T> | null,
+    step: ActiveStep<T>,
+    operation: number,
+    direction: TourDirection,
+  ) {
+    if (!hook) return false;
+    let aborted = false;
+    await hook(
+      Object.freeze({
+        ...this.createStepHookContext(step, operation, direction),
+        abort: () => {
+          aborted = true;
+        },
+      }),
+    );
+    this.assertCurrent(operation);
+    return aborted;
   }
 
   private async runActions(operation: number) {
@@ -459,7 +507,7 @@ export class TourController<T> {
 
       const strategy = step.behavior?.missingTargetStrategy ?? "error";
       if (strategy === "skip") {
-        await this.advancePastRecoveryMissingTarget(step, index, direction, operation);
+        await this.navigate(index + (direction === "advance" ? 1 : -1), direction, operation, step);
         return;
       }
       if (strategy !== "wait") throw this.missingTargetError(step);
@@ -490,38 +538,11 @@ export class TourController<T> {
     }
   }
 
-  private async advancePastMissingTarget(
-    index: number,
-    direction: TourDirection,
-    operation: number,
-  ) {
-    const nextIndex = direction === "advance" ? index + 1 : index - 1;
-    if (nextIndex >= this.steps.length) await this.finish(operation);
-    else if (nextIndex < 0) {
-      if (this.canCancel()) await this.cancelCurrent(operation);
-      else this.setStatus("active");
-    } else await this.enter(nextIndex, direction, operation);
-  }
-
-  private async advancePastRecoveryMissingTarget(
-    step: ActiveStep<T>,
-    index: number,
-    direction: TourDirection,
-    operation: number,
-  ) {
-    const nextIndex = direction === "advance" ? index + 1 : index - 1;
-    if (nextIndex >= this.steps.length) await this.finish(operation);
-    else if (nextIndex < 0) {
-      if (this.canCancel()) await this.cancelCurrent(operation);
-      else throw this.missingTargetError(step);
-    } else await this.enter(nextIndex, direction, operation);
-  }
-
   private missingTargetError(step: ActiveStep<T>) {
     return new Error(`Missing target at ${step.path}: ${String(step.definition.target)}`);
   }
 
-  private async finish(operation: number) {
+  private async finish(operation: number, skipped: readonly ActiveStep<T>[] = []) {
     this.assertCurrent(operation);
     const step = this.currentStep();
     const { context, isAborted } = this.createLifecycleHookContext(step);
@@ -532,6 +553,8 @@ export class TourController<T> {
       else this.resetToIdle();
       return;
     }
+    this.flushTourStart();
+    for (const skippedStep of skipped) this.emit("step:skip", skippedStep, 0);
     this.emitStepLeave(step);
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
@@ -550,6 +573,7 @@ export class TourController<T> {
       this.setStatus("active");
       return;
     }
+    this.flushTourStart();
     this.emitStepLeave(step);
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
@@ -584,6 +608,7 @@ export class TourController<T> {
     this.steps = [];
     this.index = -1;
     this.retainedPresentation = null;
+    this.pendingTourStart = undefined;
     this.setStatus("idle");
   }
 
@@ -595,6 +620,7 @@ export class TourController<T> {
     this.setStatus("error");
     // No `step:leave` here: the step was not left, the tour died on it. The
     // event names that step so the pair still reconciles in an analytics funnel.
+    this.flushTourStart();
     this.emit("tour:error", this.currentStep(), Date.now() - this.tourStartedAt, error);
     if (!this.isCurrent(operation)) throw error;
     try {
@@ -640,7 +666,7 @@ export class TourController<T> {
     step: ActiveStep<T>,
     operation: number,
     direction: TourDirection,
-  ): StepHookContext<T> {
+  ): Omit<StepHookContext<T>, "abort"> {
     if (!step.target) throw new Error("Cannot create a step context without a target");
     return Object.freeze({
       direction,
@@ -806,6 +832,14 @@ export class TourController<T> {
     } catch (error) {
       this.reportSubscriberError(error);
     }
+  }
+
+  /** Emits the held `tour:start` once, before the first event that can no longer be taken back. */
+  private flushTourStart() {
+    const step = this.pendingTourStart;
+    if (step === undefined) return;
+    this.pendingTourStart = undefined;
+    this.emit("tour:start", step, 0);
   }
 
   /** Emits `step:leave` for the step being left, with the time spent on it. */

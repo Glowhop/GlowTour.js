@@ -155,7 +155,9 @@ type StepEventContext<T> = StepContext<T>;
 
 type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>;
 
-type StepHookContext<T> = Omit<StepContext<T>, "advance" | "cancel" | "previous">;
+interface StepHookContext<T> extends Omit<StepContext<T>, "advance" | "cancel" | "previous"> {
+    abort(): void;
+}
 
 type StepParameters<T> = {
     id: string;
@@ -212,7 +214,7 @@ type TourEventListener = (event: TourEvent) => void;
 
 type TourEventSource = "api" | "trigger" | "keyboard" | "overlay";
 
-type TourEventType = "tour:start" | "step:enter" | "step:leave" | "tour:complete" | "tour:cancel" | "tour:error";
+type TourEventType = "tour:start" | "step:enter" | "step:leave" | "step:skip" | "tour:complete" | "tour:cancel" | "tour:error";
 
 interface TourState<T> {
     readonly name: string;
