@@ -694,7 +694,6 @@ describe("instance-first TourController", () => {
       await navigation;
       assert.deepEqual(snapshots, [
         `transitioning:${["zero", "one", "two"][scenario.start]}`,
-        `transitioning:${["zero", "one", "two"][scenario.start]}`,
         `transitioning:${["zero", "one", "two"][scenario.destination]}`,
         `active:${["zero", "one", "two"][scenario.destination]}`,
       ]);
@@ -1484,6 +1483,146 @@ describe("instance-first TourController", () => {
 
     assert.deepEqual(entered, ["three:advance"]);
     assert.equal(tour.state.get().currentStepIndex, 2);
+  });
+
+  test("stays on the current step without events when beforeLeave aborts, synchronously or not", async () => {
+    const events: string[] = [];
+    let blockAdvance = true;
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
+      onEvent: (event) => events.push(event.type),
+    });
+    const workflow = tour
+      .create("aborted-leave")
+      .step({ id: "first", content: "1", target: targetResolver, title: "1" })
+      .beforeLeave(({ abort }) => {
+        if (blockAdvance) abort();
+      })
+      .step({ id: "second", content: "2", target: targetResolver, title: "2" })
+      .beforeLeave(async ({ abort }) => {
+        await Promise.resolve();
+        abort();
+      })
+      .build();
+
+    await tour.run(workflow);
+    events.length = 0;
+    await tour.advance();
+    assert.deepEqual(events, []);
+    assert.equal(tour.state.get().currentStepIndex, 0);
+    assert.equal(tour.state.get().status, "active");
+
+    blockAdvance = false;
+    await tour.advance();
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    events.length = 0;
+    await tour.previous();
+    assert.deepEqual(events, []);
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().direction, "advance");
+  });
+
+  test("keeps the tour on its last step when beforeLeave aborts finishing", async () => {
+    let finishes = 0;
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("aborted-finish", {
+        onFinish: () => {
+          finishes += 1;
+        },
+      })
+      .step({ id: "only", content: "1", target: targetResolver, title: "1" })
+      .beforeLeave(({ abort }) => abort())
+      .build();
+
+    await tour.run(workflow);
+    await tour.advance();
+
+    assert.equal(finishes, 0);
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 0);
+  });
+
+  test("stays on the current step without step:skip when beforeEnter of the next step aborts", async () => {
+    const events: string[] = [];
+    let entered = 0;
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
+      onEvent: (event) => events.push(`${event.type}:${event.stepId}`),
+    });
+    const workflow = tour
+      .create("aborted-enter")
+      .step({ id: "first", content: "1", target: targetResolver, title: "1" })
+      .step({
+        id: "gone",
+        behavior: { missingTargetStrategy: "skip" },
+        content: "2",
+        target: () => null,
+        title: "2",
+      })
+      .step({ id: "blocked", content: "3", target: targetResolver, title: "3" })
+      .beforeEnter(({ abort }) => {
+        entered += 1;
+        abort();
+      })
+      .build();
+
+    await tour.run(workflow);
+    events.length = 0;
+    await tour.advance();
+
+    assert.equal(entered, 1);
+    assert.deepEqual(events, []);
+    assert.equal(tour.state.get().currentStepIndex, 0);
+    assert.equal(tour.state.get().status, "active");
+  });
+
+  test("ignores abort() called after the hook has settled", async () => {
+    let lateAbort: (() => void) | undefined;
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("late-abort")
+      .step({ id: "first", content: "1", target: targetResolver, title: "1" })
+      .beforeLeave(({ abort }) => {
+        lateAbort = abort;
+      })
+      .step({ id: "second", content: "2", target: targetResolver, title: "2" })
+      .build();
+
+    await tour.run(workflow);
+    await tour.advance();
+    lateAbort?.();
+
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().status, "active");
+  });
+
+  test("stays on the current step when going back skips past the first step", async () => {
+    let firstAvailable = true;
+    const events: string[] = [];
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
+      onEvent: (event) => events.push(event.type),
+    });
+    const workflow = tour
+      .create("back-past-start")
+      .step({
+        id: "first",
+        behavior: { missingTargetStrategy: "skip" },
+        content: "1",
+        target: () => (firstAvailable ? target : null),
+        title: "1",
+      })
+      .step({ id: "second", content: "2", target: targetResolver, title: "2" })
+      .build();
+
+    await tour.run(workflow);
+    await tour.advance();
+    firstAvailable = false;
+    events.length = 0;
+    await tour.previous();
+
+    assert.deepEqual(events, []);
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().status, "active");
   });
 
   test("exposes the arrival direction to actions and the departure direction to beforeLeave", async () => {
@@ -3091,6 +3230,65 @@ describe("monitoring events", () => {
         "tour:complete:invite",
       ],
     );
+  });
+
+  test("emits step:skip for each skipped step, then a single step:leave, in both directions", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+    const skip = { missingTargetStrategy: "skip" } as const;
+    const workflow = tour
+      .create("skips")
+      .step({ id: "first", content: "1", target: targetResolver, title: "1" })
+      .step({ id: "gone", behavior: skip, content: "2", target: () => null, title: "2" })
+      .step({ id: "also-gone", behavior: skip, content: "3", target: () => null, title: "3" })
+      .step({ id: "last", content: "4", target: targetResolver, title: "4" })
+      .build();
+
+    await tour.run(workflow);
+    await tour.advance();
+    await tour.previous();
+
+    assert.deepEqual(
+      events.map((event) => `${event.type}:${event.stepId}:${event.direction}`),
+      [
+        "tour:start:first:advance",
+        "step:enter:first:advance",
+        "step:skip:gone:advance",
+        "step:skip:also-gone:advance",
+        "step:leave:first:advance",
+        "step:enter:last:advance",
+        "step:skip:also-gone:previous",
+        "step:skip:gone:previous",
+        "step:leave:last:previous",
+        "step:enter:first:previous",
+      ],
+    );
+    const skips = events.filter((event) => event.type === "step:skip");
+    assert.deepEqual(
+      skips.map((event) => [event.stepIndex, event.durationMs]),
+      [
+        [1, 0],
+        [2, 0],
+        [2, 0],
+        [1, 0],
+      ],
+    );
+  });
+
+  test("emits nothing and returns to idle when beforeEnter aborts the first step", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+    const workflow = tour
+      .create("aborted-start")
+      .step({ id: "first", content: "1", target: targetResolver, title: "1" })
+      .beforeEnter(({ abort }) => abort())
+      .build();
+
+    await tour.run(workflow);
+
+    assert.deepEqual(events, []);
+    assert.equal(tour.state.get().status, "idle");
+    assert.equal(tour.state.get().currentStep, null);
   });
 
   test("emits tour:cancel after leaving the step the user was on", async () => {

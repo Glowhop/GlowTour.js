@@ -311,7 +311,8 @@ export class WorkflowStepBuilder<T> {
   /**
    * Add a callback that runs each time this step is entered, after its target is resolved and
    * before the step is shown. Props set here are the first ones displayed, which makes it the place
-   * to reset them: `beforeEnter(({ props, initialProps }) => props.set(initialProps))`.
+   * to reset them: `beforeEnter(({ props, initialProps }) => props.set(initialProps))`. Call
+   * `context.abort()` to stay on the current step instead of showing this one.
    * @param callback The hook callback; `context.direction` is the direction of the navigation in progress.
    * @returns This builder for chaining.
    */
@@ -324,6 +325,7 @@ export class WorkflowStepBuilder<T> {
   /**
    * Add a callback that runs before navigating away from this step: advance, previous, `goToStep`,
    * or finishing the tour. It does not run on cancel; use the workflow `onCancel` option instead.
+   * Call `context.abort()` to stay on this step.
    * @param callback The hook callback; `context.direction` is the direction of the navigation in progress.
    * @returns This builder for chaining.
    */
