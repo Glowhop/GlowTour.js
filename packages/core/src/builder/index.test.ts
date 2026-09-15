@@ -36,11 +36,11 @@ const removedResetPropsOnEnter: keyof StoredStepProps = "resetPropsOnEnter";
 const _storedBehavior: keyof StoredStepProps = "behavior";
 
 const popoverOptions: PopoverOptions = {
-  disableAdvanceButton: true,
-  disablePreviousButton: true,
-  hideAdvanceButton: true,
+  controls: { advance: "hidden", cancel: "visible", previous: "disabled" },
+};
+const removedFooterOption: PopoverOptions = {
+  // @ts-expect-error Footer visibility follows popover.controls.
   hideFooter: true,
-  hidePreviousButton: true,
 };
 const behaviorOptions: StepBehavior = {
   autoFocus: false,
@@ -73,6 +73,7 @@ void removedTarget;
 void removedResetPropsOnEnter;
 void _storedBehavior;
 void popoverOptions;
+void removedFooterOption;
 void behaviorOptions;
 void removedStepScroll;
 void removedStartScroll;
@@ -90,7 +91,7 @@ function assertStepHookContext(context: StepHookContext<string>) {
   // @ts-expect-error Initial props must stay readonly.
   context.initialProps.title = "Changed";
   // @ts-expect-error Nested initial props must stay readonly.
-  if (context.initialProps.popover) context.initialProps.popover.hideFooter = true;
+  if (context.initialProps.popover) context.initialProps.popover.gap = 1;
   // @ts-expect-error Hooks run during a transition and must not expose navigation commands.
   context.advance;
   // @ts-expect-error Hooks run during a transition and must not expose navigation commands.

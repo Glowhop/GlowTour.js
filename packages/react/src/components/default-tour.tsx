@@ -11,6 +11,7 @@ import {
   Pointer,
   Popover,
   Root,
+  useTour,
 } from "./tour-components";
 
 /** Props for the DefaultTour component. */
@@ -35,12 +36,27 @@ export function DefaultTour({ idPrefix, tour }: DefaultTourProps) {
       <Popover>
         <Header />
         <Content />
-        <Footer>
-          <CancelTrigger />
-          <BackTrigger />
-          <AdvanceTrigger />
-        </Footer>
+        <DefaultFooter />
       </Popover>
     </Root>
+  );
+}
+
+/** The footer of the default tour, omitted when every control is hidden. */
+function DefaultFooter() {
+  const state = useTour();
+  const controls = state.currentStep?.currentProps.popover?.controls;
+  if (
+    controls?.advance === "hidden" &&
+    controls.previous === "hidden" &&
+    (controls.cancel === "hidden" || !state.canCancel)
+  )
+    return null;
+  return (
+    <Footer>
+      <CancelTrigger />
+      <BackTrigger />
+      <AdvanceTrigger />
+    </Footer>
   );
 }

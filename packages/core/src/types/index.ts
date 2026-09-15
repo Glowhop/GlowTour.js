@@ -133,28 +133,34 @@ export interface PopoverArrowOptions {
   autoStyles?: boolean;
 }
 
+/**
+ * Display state of a popover control. `"visible"` is the default. New states may be added in a
+ * minor version.
+ */
+export type TourControlState = "visible" | "hidden" | "disabled";
+
+/** Display state of each popover control. */
+export interface PopoverControls {
+  /** The advance button. @default "visible" */
+  advance?: TourControlState;
+  /** The previous button. @default "visible" */
+  previous?: TourControlState;
+  /** The cancel button, never shown when the tour is not cancellable. @default "visible" */
+  cancel?: TourControlState;
+}
+
 /** Configures the popover box that displays content for each step. */
 export interface PopoverOptions extends BaseOptions {
   /** Placement preference order for the popover around the target. @default ["bottom", "top", "right", "left"] */
   placementTryOrder?: readonly TryOrderOptions[];
   /** Arrow configuration. */
   arrow?: PopoverArrowOptions;
-  /** Hide the footer section. @default false */
-  hideFooter?: boolean;
   /**
-   * Disables only previous-button and previous-keyboard controls. Programmatic
-   * navigation through the tour API and step context remains available.
+   * Display state of the advance, previous and cancel controls. `"hidden"` removes a button and
+   * `"disabled"` disables it; both also block its keyboard shortcut and `overlayClick`. Navigation
+   * through the tour API and the step context stays available.
    */
-  disablePreviousButton?: boolean;
-  /** Hide the previous button. @default false */
-  hidePreviousButton?: boolean;
-  /**
-   * Disables only advance-button and advance-keyboard controls. Programmatic
-   * navigation through the tour API and step context remains available.
-   */
-  disableAdvanceButton?: boolean;
-  /** Hide the advance button. @default false */
-  hideAdvanceButton?: boolean;
+  controls?: PopoverControls;
   /** Gap between the target and the popover in pixels. @default 16 */
   gap?: number;
 }

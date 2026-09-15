@@ -1,5 +1,9 @@
 import type { VanillaGlowTour } from "../glow-tour";
-import { areGlowTourElementsRegistered, type GlowTourRootElement } from "./web-components";
+import {
+  areGlowTourElementsRegistered,
+  defaultTourFooters,
+  type GlowTourRootElement,
+} from "./web-components";
 
 /** Options for creating a default tour element. */
 export interface CreateDefaultTourElementOptions {
@@ -41,6 +45,7 @@ export function createDefaultTourElement(
   const back = document.createElement("glow-tour-back-trigger");
   const advance = document.createElement("glow-tour-advance-trigger");
 
+  defaultTourFooters.add(footer);
   footer.append(cancel, back, advance);
   popover.append(header, content, footer);
   root.append(overlay, pointer, popover);

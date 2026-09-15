@@ -375,7 +375,10 @@ describe("vanilla adapter browser behavior", () => {
     observer.observe(content, { characterData: true, childList: true, subtree: true });
 
     // A live region rewritten with the same text is announced again by screen readers.
-    activeProps.set((props) => ({ ...props, popover: { hideFooter: true } }));
+    activeProps.set((props) => ({
+      ...props,
+      popover: { controls: { advance: "hidden", previous: "hidden", cancel: "hidden" } },
+    }));
     await settle();
 
     assert.equal(rewrites.length, 0);
@@ -409,13 +412,13 @@ describe("vanilla adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Two",
-      popover: { hideFooter: true },
+      popover: { controls: { advance: "hidden", previous: "hidden", cancel: "hidden" } },
       title: "Updated",
     }));
     await settle();
     assert.equal(element.querySelector("[data-glow-tour-header]")?.textContent, "Updated");
     assert.equal(element.querySelector("[data-glow-tour-content]")?.textContent, "Two");
-    assert.equal(element.querySelector<HTMLElement>("[data-glow-tour-footer]")?.hidden, true);
+    assert.equal(element.querySelector<HTMLElement>("[data-glow-tour-footer]")?.hidden, false);
     assert.ok(element.querySelector("svg[data-glow-tour-overlay]"));
     assert.equal(
       element.querySelector('[data-glow-tour-pointer-direction="top"]')?.textContent,

@@ -34,6 +34,7 @@ GlowTour.js supports full keyboard navigation with no mouse required:
 | `Tab` | Focus navigation | Trapped within popover while step disallows outside interaction |
 
 Shortcuts are disabled while:
+- The matching control is `"hidden"` or `"disabled"` in `popover.controls`
 - A modifier key (`Ctrl`, `Cmd`, `Alt`) is held
 - IME composition is in progress
 - Focus is in an editable field (for Advance/Previous only; Escape always works)

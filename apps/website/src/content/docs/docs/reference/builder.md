@@ -336,11 +336,9 @@ Control the information box that displays step title and content.
 |--------|------|---------|-------------|
 | `placementTryOrder` | Array | `["bottom", "top", "right", "left"]` | Preferred placements in order of preference |
 | `gap` | number | `16` | Spacing between popover and target, and the minimum margin it keeps from the viewport edges (in pixels) |
-| `hideFooter` | boolean | `false` | Hide the footer with navigation buttons |
-| `hideAdvanceButton` | boolean | `false` | Hide the "Next" button (keyboard still works) |
-| `disableAdvanceButton` | boolean | `false` | Disable advancing (keyboard and button blocked) |
-| `hidePreviousButton` | boolean | `false` | Hide the "Previous" button (keyboard still works) |
-| `disablePreviousButton` | boolean | `false` | Disable going back (keyboard and button blocked) |
+| `controls.advance` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the advance button. `"hidden"` and `"disabled"` also block its keyboard shortcut and `overlayClick: "advance"` |
+| `controls.previous` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the previous button, with its keyboard shortcut |
+| `controls.cancel` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the cancel button, with `Escape` and `overlayClick: "cancel"`. The button is never shown when the tour is not cancellable |
 | `animated` | boolean | `true` | Enable/disable animation |
 | `animation` | AnimationOptions | - | Custom animation (duration and easing) |
 | `arrow` | PopoverArrowOptions | - | Arrow/pointer styling (see [Arrow options](#arrow-options)) |
@@ -350,9 +348,11 @@ Control the information box that displays step title and content.
 popover: {
   placementTryOrder: ["right", "bottom", "left", "top"],
   gap: 20,
-  hideFooter: false
+  controls: { previous: "hidden" }
 }
 ```
+
+A hidden or disabled control only blocks the popover UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. The default tour component omits the footer when every control is hidden; a footer you compose yourself is always rendered.
 
 ### Arrow options
 
