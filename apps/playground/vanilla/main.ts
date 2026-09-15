@@ -33,7 +33,7 @@ lab.rendererRoot.innerHTML = `
       <glow-tour-header></glow-tour-header>
       <glow-tour-content></glow-tour-content>
       <glow-tour-footer>
-        <glow-tour-back-trigger></glow-tour-back-trigger>
+        <glow-tour-previous-trigger></glow-tour-previous-trigger>
         <glow-tour-advance-trigger></glow-tour-advance-trigger>
         <glow-tour-cancel-trigger></glow-tour-cancel-trigger>
       </glow-tour-footer>

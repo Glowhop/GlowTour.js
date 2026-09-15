@@ -125,7 +125,7 @@ tour inside it - which is what lets a single dark example sit on an otherwise li
 
 ```tsx
 <div data-glow-tour-theme="dark">
-  <GlowTour.Default tour={tour} />
+  <GlowTourDefault tour={tour} />
 </div>
 ```
 
@@ -186,25 +186,25 @@ not guarantee.
 For complete control over the popover layout, header styling, or footer layout, you can use custom composition and write your own styles:
 
 ```tsx
-import { GlowTour, createGlowTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTourAdvanceTrigger, GlowTourCancelTrigger, GlowTourContent, GlowTourFooter, GlowTourHeader, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourRoot } from "@glowhop/react-tour";
 import "./custom-tour.css";
 
 const tour = createGlowTour();
 
 export function CustomStyledTour() {
   return (
-    <GlowTour.Root tour={tour}>
-      <GlowTour.Overlay />
-      <GlowTour.Pointer />
-      <GlowTour.Popover className="my-custom-popover">
-        <GlowTour.Header className="my-custom-header" />
-        <GlowTour.Content className="my-custom-content" />
-        <GlowTour.Footer className="my-custom-footer">
-          <GlowTour.CancelTrigger />
-          <GlowTour.AdvanceTrigger />
-        </GlowTour.Footer>
-      </GlowTour.Popover>
-    </GlowTour.Root>
+    <GlowTourRoot tour={tour}>
+      <GlowTourOverlay />
+      <GlowTourPointer />
+      <GlowTourPopover className="my-custom-popover">
+        <GlowTourHeader className="my-custom-header" />
+        <GlowTourContent className="my-custom-content" />
+        <GlowTourFooter className="my-custom-footer">
+          <GlowTourCancelTrigger />
+          <GlowTourAdvanceTrigger />
+        </GlowTourFooter>
+      </GlowTourPopover>
+    </GlowTourRoot>
   );
 }
 ```

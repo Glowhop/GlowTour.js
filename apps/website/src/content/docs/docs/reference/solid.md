@@ -18,38 +18,38 @@ function createGlowTour(options?: GlowTourOptions): Tour
 
 ## Components
 
-### `DefaultTour`
+### `GlowTourDefault`
 
 Pre-composed tour with overlay, popover, pointer, and all navigation buttons.
 
 **Props**:
 ```typescript
-interface DefaultTourProps {
+interface GlowTourDefaultProps {
   tour: Tour
 }
 ```
 
 **Usage**:
 ```tsx
-<DefaultTour tour={tour} />
+<GlowTourDefault tour={tour} />
 ```
 
 ### `GlowTour.*`
 
 Composition primitives for custom layouts:
 
-- `GlowTour.Root` - Root container
-- `GlowTour.Overlay` - Backdrop overlay
-- `GlowTour.Pointer` - Decorative indicator/arrow
-- `GlowTour.Popover` - Dialog container
-- `GlowTour.Header` - Title area
-- `GlowTour.Content` - Description area
-- `GlowTour.Footer` - Navigation button container
-- `GlowTour.AdvanceTrigger` - Next step button
-- `GlowTour.BackTrigger` - Previous step button
-- `GlowTour.CancelTrigger` - Dismiss button
+- `GlowTourRoot` - Root container
+- `GlowTourOverlay` - Backdrop overlay
+- `GlowTourPointer` - Decorative indicator/arrow
+- `GlowTourPopover` - Dialog container
+- `GlowTourHeader` - Title area
+- `GlowTourContent` - Description area
+- `GlowTourFooter` - Navigation button container
+- `GlowTourAdvanceTrigger` - Next step button
+- `GlowTourPreviousTrigger` - Previous step button
+- `GlowTourCancelTrigger` - Dismiss button
 
-These components are also available as flat named exports: `Root`, `Overlay`, `Pointer`, `Popover`, `Header`, `Content`, `Footer`, `AdvanceTrigger`, `BackTrigger`, `CancelTrigger`.
+These components are also available as flat named exports: `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, `GlowTourAdvanceTrigger`, `GlowTourPreviousTrigger`, `GlowTourCancelTrigger`.
 
 **Props** (all components):
 ```typescript
@@ -60,7 +60,7 @@ interface ComponentProps {
 }
 ```
 
-### `GlowTour.Pointer` (detailed)
+### `GlowTourPointer` (detailed)
 
 Customizes the directional content (emoji or custom content) of the pointer indicator.
 
@@ -85,7 +85,7 @@ interface PointerProps extends ComponentProps {
 
 **Usage** (with custom content):
 ```tsx
-<GlowTour.Pointer
+<GlowTourPointer
   directionContent={{
     top: "⬆️",
     bottom: "⬇️",
@@ -97,7 +97,7 @@ interface PointerProps extends ComponentProps {
 
 **Usage** (with custom element):
 ```tsx
-<GlowTour.Pointer
+<GlowTourPointer
   directionContent={{
     bottom: <span class="custom-pointer">↓</span>
   }}
@@ -106,25 +106,25 @@ interface PointerProps extends ComponentProps {
 
 **Usage** (default pointers):
 ```tsx
-<GlowTour.Root tour={tour}>
-  <GlowTour.Overlay />
-  <GlowTour.Pointer />
-  <GlowTour.Popover>
-    <GlowTour.Header />
-    <GlowTour.Content />
-    <GlowTour.Footer>
-      <GlowTour.CancelTrigger />
-      <GlowTour.AdvanceTrigger />
-    </GlowTour.Footer>
-  </GlowTour.Popover>
-</GlowTour.Root>
+<GlowTourRoot tour={tour}>
+  <GlowTourOverlay />
+  <GlowTourPointer />
+  <GlowTourPopover>
+    <GlowTourHeader />
+    <GlowTourContent />
+    <GlowTourFooter>
+      <GlowTourCancelTrigger />
+      <GlowTourAdvanceTrigger />
+    </GlowTourFooter>
+  </GlowTourPopover>
+</GlowTourRoot>
 ```
 
 ## Hooks
 
 ### `useTour()`
 
-Returns reactive tour state via Solid signals. Must be called inside `<GlowTour.Root tour={...}>`.
+Returns reactive tour state via Solid signals. Must be called inside `<GlowTourRoot tour={...}>`.
 
 **Signature**:
 ```typescript
@@ -172,7 +172,7 @@ return (
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
 - `SolidTourContent` - Solid content type
-- `PointerDirectionContent` - Content configuration for `Pointer` component directions
+- `PointerDirectionContent` - Content configuration for `GlowTourPointer` component directions
 - `GlowTourOptions` - Options for `createGlowTour`
 - `StartOptions` - Options for `tour.create`
 
@@ -180,10 +180,10 @@ return (
 
 ```typescript
 export type { GlowTourOptions, StartOptions } from "@glowhop/core-tour";
-export { DefaultTour, type DefaultTourProps } from "./components/default-tour";
+export { GlowTourDefault, type GlowTourDefaultProps } from "./components/default-tour";
 export {
   AdvanceTrigger,
-  BackTrigger,
+  GlowTourPreviousTrigger,
   CancelTrigger,
   Content,
   Footer,

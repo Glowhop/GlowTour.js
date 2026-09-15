@@ -121,7 +121,7 @@ import {
   GlowTourContent,
   GlowTourFooter,
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
+  GlowTourPreviousTrigger,
   GlowTourCancelTrigger,
 } from "@glowhop/vue-tour";
 </script>
@@ -135,7 +135,7 @@ import {
       <GlowTourContent />
       <GlowTourFooter>
         <GlowTourCancelTrigger />
-        <GlowTourBackTrigger />
+        <GlowTourPreviousTrigger />
         <GlowTourAdvanceTrigger />
       </GlowTourFooter>
     </GlowTourPopover>

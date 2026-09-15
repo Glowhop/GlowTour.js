@@ -13,7 +13,7 @@ Creates a tour controller instance. Inherited from Core.
 
 **Signature**:
 ```typescript
-function createGlowTour(options?: GlowTourOptions): VanillaGlowTour
+function createGlowTour(options?: GlowTourOptions): Tour
 ```
 
 ### `registerGlowTourElements()`
@@ -33,24 +33,19 @@ registerGlowTourElements();
 // Elements are now available: glow-tour-root, glow-tour-overlay, etc.
 ```
 
-### `createDefaultTourElement(tour)`
+### `glow-tour-default`
 
-Creates a pre-composed tour element tree (overlay, popover, pointer, buttons).
+A complete tour: a `glow-tour-root` with the overlay, pointer, popover, header, content, footer and the three controls. The structure is built the first time the element is connected, and the footer is hidden when every control is hidden.
 
-**Signature**:
-```typescript
-function createDefaultTourElement(
-  tour: VanillaGlowTour,
-  options?: CreateDefaultTourElementOptions
-): GlowTourRootElement
-```
-
-**Returns**: A `glow-tour-root` custom element ready to append to the DOM
+**Properties**:
+- `tour: Tour | null` - The tour instance
+- `idPrefix: string | undefined` - Prefix for internal element IDs, also set with the `id-prefix` attribute
 
 **Usage**:
 ```typescript
-const root = createDefaultTourElement(tour);
-document.body.append(root);
+const element = document.createElement("glow-tour-default");
+element.tour = tour;
+document.body.append(element);
 ```
 
 ## Custom elements
@@ -60,7 +55,7 @@ document.body.append(root);
 Root container for the entire tour.
 
 **Properties**:
-- `tour: VanillaGlowTour` - Set the tour instance
+- `tour: Tour` - Set the tour instance
 
 **Usage**:
 ```typescript
@@ -165,7 +160,7 @@ footer.append(button);
 **Properties**:
 - `disabled: boolean` - Disable the button
 
-### `glow-tour-back-trigger`
+### `glow-tour-previous-trigger`
 
 "Previous" button to go back to the previous step.
 
@@ -185,7 +180,7 @@ const GLOW_TOUR_ELEMENT_NAMES: readonly [
   "glow-tour-footer",
   "glow-tour-popover",
   "glow-tour-pointer",
-  "glow-tour-back-trigger",
+  "glow-tour-previous-trigger",
   "glow-tour-advance-trigger",
   "glow-tour-cancel-trigger",
   "glow-tour-overlay",
@@ -249,7 +244,7 @@ await tour.run(workflow);
 
 ## Types
 
-- `VanillaGlowTour` - Tour controller
+- `Tour` - Tour controller
 - `VanillaTourContent` - Content type for `title` and `content`: `string | Node`
 - `TourState` - Tour state
 - `WorkflowDefinition` - Immutable workflow
@@ -257,4 +252,4 @@ await tour.run(workflow);
 - `GlowTourRootElement` - Root element type
 - `GlowTourPointerElement` - Pointer element type
 - `PointerDirectionContent` - Content configuration for pointer directions
-- `CreateDefaultTourElementOptions` - Options for `createDefaultTourElement`
+- `GlowTourDefaultElement` - Default tour element type

@@ -185,7 +185,7 @@ export async function runTourScenario(
       "Shift+Tab reaches the Back button",
     );
     // VoiceOver sometimes speaks only the button's shortcut hint when focus moves between buttons.
-    await expectSpokenAny(driver, ["Back step", "ArrowLeft Backspace"]);
+    await expectSpokenAny(driver, ["Previous step", "ArrowLeft Backspace"]);
     await checkpoint("moved to the Back button");
     await driver.press("Enter");
     await expect(dialog(STEP_TEXT.welcome)).toBeVisible();

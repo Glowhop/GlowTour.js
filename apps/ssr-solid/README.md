@@ -1,7 +1,7 @@
 # apps/ssr-solid
 
 A minimal SolidStart (v2) app used to verify that `@glowhop/solid-tour`'s packaged
-`DefaultTour` component is safe to use in a real server-rendered + hydrated Solid app.
+`GlowTourDefault` component is safe to use in a real server-rendered + hydrated Solid app.
 
 ## Why this exists
 
@@ -14,7 +14,7 @@ by calling components inconsistently.
 
 A real SolidStart app is the scenario that tells us whether this is an actual risk for
 consumers: SolidStart's JSX compiler invokes components consistently (always through
-`createComponent`) on both the server and the client, and the packaged `DefaultTour`
+`createComponent`) on both the server and the client, and the packaged `GlowTourDefault`
 (`packages/solid/src/components/default-tour.tsx`) is itself implemented with
 `createComponent` throughout. This app is the end-to-end check that those two facts
 add up to a safe real-world experience — no manual workaround needed by consumers.
@@ -22,7 +22,7 @@ add up to a safe real-world experience — no manual workaround needed by consum
 ## What it does
 
 - Renders a heading (`#tour-target`) and a button (`#tour-trigger`).
-- Wires up a 2-step tour via `createGlowTour()` and renders `<DefaultTour tour={tour} />`.
+- Wires up a 2-step tour via `createGlowTour()` and renders `<GlowTourDefault tour={tour} />`.
 - Clicking the trigger starts the tour; clicking "Advance" moves to the next step.
 
 ## Running the verification test locally
@@ -52,4 +52,4 @@ The test suite (`tests/ssr-hydration.pw.ts`) checks:
 
 As of this writing, both tests pass: SSR output is correct and hydration completes
 with no console/page errors and no "template is not a function" crash. The packaged
-`DefaultTour` component is safe to use as-is in a real SolidStart app.
+`GlowTourDefault` component is safe to use as-is in a real SolidStart app.
