@@ -28,6 +28,7 @@ await createGlowTour().run(workflow);
 ```jsonc
 {
   "name": "onboarding",
+  "version": "1.1",
   "cancellable": true,
   "overlay": { "opacity": 0.55 },
   "popover": { "gap": 16 },
@@ -42,7 +43,7 @@ await createGlowTour().run(workflow);
         { "type": "waitUntilElement", "selector": "#invite-button", "timeout": 5000 },
         { "type": "clickTarget" }
       ],
-      "eventHandlers": [
+      "targetEvents": [
         { "event": "click", "action": { "type": "focusTarget" } }
       ]
     },
@@ -57,7 +58,7 @@ await createGlowTour().run(workflow);
 }
 ```
 
-- `name` and `steps` are required.
+- `version`, `name`, and `steps` are required. `version` is the version of the config format, currently `"1.1"`.
 - Every step requires `id`, `target`, `title`, and `content`. Step ids must be unique within the workflow; they are what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
 - `target` is a CSS selector. Function and `HTMLElement` targets remain builder-only.
 - `title` and `content` are strings for JSON loaded from a CMS or API.
@@ -75,6 +76,7 @@ import type { WorkflowConfig } from "@glowhop/react-tour/config";
 
 const config: WorkflowConfig = {
   name: "onboarding",
+  version: "1.1",
   steps: [
     {
       target: "#invite-button",
@@ -95,7 +97,7 @@ Keep this object declarative when it must be transported as JSON. `WorkflowConfi
 
 ### Built-in actions
 
-`actions[]` and `eventHandlers[].action` accept declarative action objects:
+`actions[]` and `targetEvents[].action` accept declarative action objects:
 
 | `type` | Fields | Builder equivalent |
 | --- | --- | --- |
@@ -130,13 +132,14 @@ This makes CMS payloads and generated configuration easier to diagnose in one pa
 
 Plain JSON covers targets, presentation options, data, and built-in actions. Same-runtime configuration objects can additionally contain functions, but they can no longer be transported as JSON.
 
-`actions[]` and `eventHandlers[].action` accept an inline function:
+`actions[]` and `targetEvents[].action` accept an inline function:
 
 ```typescript
 import type { WorkflowConfig } from "@glowhop/react-tour/config";
 
 const config: WorkflowConfig = {
   name: "onboarding",
+  version: "1.1",
   steps: [
     {
       target: "#invite-button",
@@ -155,7 +158,7 @@ const config: WorkflowConfig = {
 const workflow = createWorkflowFromConfig(config);
 ```
 
-`enterAction` and `leaveAction` (the config form of `.beforeEnter()` and `.beforeLeave()`), plus `onStart`, `onCancel`, and `onFinish`, accept only functions. Built-in actions cannot run in those contexts.
+`beforeEnter` and `beforeLeave` (the config form of `.beforeEnter()` and `.beforeLeave()`), plus `onStart`, `onCancel`, and `onFinish`, accept only functions. Built-in actions cannot run in those contexts.
 
 For CMS-driven behavior, keep an identifier in `data` and attach the implementation in application code:
 
@@ -164,7 +167,7 @@ const config = {
   ...parsed,
   steps: parsed.steps.map((step) => ({
     ...step,
-    leaveAction: ({ direction, props }: StepHookContext<string>) => {
+    beforeLeave: ({ direction, props }: StepHookContext<string>) => {
       if (direction !== "advance") return;
       analytics.track(String(props.get().data?.trackingId ?? "unknown-step"));
     },
@@ -202,6 +205,7 @@ The default validation requires string values because that is the safe format fo
 const workflow = createWorkflowFromConfig(
   {
     name: "onboarding",
+    version: "1.1",
     steps: [
       {
         target: "#invite-button",

@@ -323,7 +323,7 @@ export class TourController<T> {
     step.target = target;
     step.direction = direction;
     // Runs before the step is committed and shown, so props set here are the first ones rendered.
-    if (await this.runStepHook(step.definition.enterAction, step, operation, direction)) {
+    if (await this.runStepHook(step.definition.beforeEnter, step, operation, direction)) {
       if (lostStep) throw this.missingTargetError(lostStep);
       if (from) this.setStatus("active");
       else this.resetToIdle();
@@ -375,7 +375,7 @@ export class TourController<T> {
     if (!step) return;
     this.setStatus("transitioning");
     this.assertCurrent(operation);
-    if (await this.runStepHook(step.definition.leaveAction, step, operation, direction)) {
+    if (await this.runStepHook(step.definition.beforeLeave, step, operation, direction)) {
       this.setStatus("active");
       return;
     }

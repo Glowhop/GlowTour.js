@@ -30,11 +30,6 @@ function createWorkflowFromConfig<T = string>(config: unknown, options?: Validat
 
 type CreateWorkflowFromConfigOptions = ValidateWorkflowConfigOptions;
 
-interface EventHandlerConfig<T = string> {
-    readonly event: string | readonly string[];
-    readonly action: StepActionRef<T>;
-}
-
 type LifecycleActionRef<T = string> = (context: LifecycleHookContext<T>) => void | Promise<void>;
 
 type StepActionRef<T = string> = BuiltinAction | StepAction<T>;
@@ -50,12 +45,17 @@ interface StepConfig<T = string> {
     readonly content: T;
     readonly data?: Record<string, PrimitiveValue>;
     readonly actions?: readonly StepActionRef<T>[];
-    readonly eventHandlers?: readonly EventHandlerConfig<T>[];
-    readonly enterAction?: StepHookActionRef<T>;
-    readonly leaveAction?: StepHookActionRef<T>;
+    readonly targetEvents?: readonly TargetEventConfig<T>[];
+    readonly beforeEnter?: StepHookActionRef<T>;
+    readonly beforeLeave?: StepHookActionRef<T>;
 }
 
 type StepHookActionRef<T = string> = StepHookAction<T>;
+
+interface TargetEventConfig<T = string> {
+    readonly event: string | readonly string[];
+    readonly action: StepActionRef<T>;
+}
 
 function validateWorkflowConfig<T = string>(config: unknown, options?: ValidateWorkflowConfigOptions): WorkflowConfig<T>;
 
@@ -64,6 +64,7 @@ interface ValidateWorkflowConfigOptions {
 }
 
 interface WorkflowConfig<T = string> {
+    readonly version: "1.1";
     readonly name: string;
     readonly cancellable?: boolean;
     readonly allowScroll?: boolean;

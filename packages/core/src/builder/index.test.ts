@@ -140,10 +140,10 @@ describe("WorkflowBuilder public contract", () => {
     assert.equal(Object.isFrozen(definition), true);
     assert.equal(Object.isFrozen(definition.steps[0].actions), true);
     assert.deepEqual(
-      definition.steps[0].eventHandlers.map(({ event }) => event),
+      definition.steps[0].targetEvents.map(({ event }) => event),
       ["click", "keydown"],
     );
-    assert.equal(definition.steps[0].eventHandlers[0].callback, callback);
+    assert.equal(definition.steps[0].targetEvents[0].callback, callback);
   });
 
   test("stores step hooks on the definition, outside dynamic step props", () => {
@@ -151,9 +151,9 @@ describe("WorkflowBuilder public contract", () => {
     const leave = () => {};
     const definition = workflow("step-hooks").beforeEnter(enter).beforeLeave(leave).build();
 
-    assert.equal(definition.steps[0].enterAction, enter);
-    assert.equal(definition.steps[0].leaveAction, leave);
-    assert.equal("enterAction" in definition.steps[0].props, false);
+    assert.equal(definition.steps[0].beforeEnter, enter);
+    assert.equal(definition.steps[0].beforeLeave, leave);
+    assert.equal("beforeEnter" in definition.steps[0].props, false);
     assert.equal("resetPropsOnEnter" in definition.steps[0], false);
   });
 
@@ -242,11 +242,11 @@ describe("StepBuilder.onTargetEvent", () => {
       .build();
 
     assert.deepEqual(
-      workflow.steps[0].eventHandlers.map(({ event }) => event),
+      workflow.steps[0].targetEvents.map(({ event }) => event),
       ["click", "keydown"],
     );
-    assert.equal(workflow.steps[0].eventHandlers[0].callback, callback);
-    assert.equal(workflow.steps[0].eventHandlers[1].callback, callback);
+    assert.equal(workflow.steps[0].targetEvents[0].callback, callback);
+    assert.equal(workflow.steps[0].targetEvents[1].callback, callback);
   });
 });
 
@@ -465,8 +465,8 @@ describe("StepBuilder.append", () => {
       workflow.steps.map((step) => step.props.title),
       ["First", "Reusable"],
     );
-    assert.equal(workflow.steps[1].enterAction, enter);
-    assert.equal(workflow.steps[1].leaveAction, leave);
+    assert.equal(workflow.steps[1].beforeEnter, enter);
+    assert.equal(workflow.steps[1].beforeLeave, leave);
   });
 
   test("rejects an empty workflow definition", () => {

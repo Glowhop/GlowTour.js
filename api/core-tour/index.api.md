@@ -15,11 +15,6 @@ interface BaseOptions {
 
 function createGlowTour<T>(options?: GlowTourOptions): GlowTour<T>;
 
-interface EventHandler<TStepProps, TEvent extends Event = Event> {
-    event: string;
-    callback: (event: TEvent, context: StepEventContext<TStepProps>) => void | Promise<void>;
-}
-
 type EventName = keyof HTMLElementEventMap;
 
 interface GlowTour<T> {
@@ -183,6 +178,11 @@ interface StepPropsStore<T> {
 
 type StepPropsUpdate<T> = ReadonlyStepProps<T> | ((current: ReadonlyStepProps<T>) => ReadonlyStepProps<T>);
 
+interface TargetEventHandler<TStepProps, TEvent extends Event = Event> {
+    event: string;
+    callback: (event: TEvent, context: StepEventContext<TStepProps>) => void | Promise<void>;
+}
+
 type TargetResolver = string | HTMLElement | ((context: TargetResolverContext) => HTMLElement | null | Promise<HTMLElement | null>);
 
 interface TargetResolverContext {
@@ -278,8 +278,8 @@ interface WorkflowStepDefinition<T> {
     readonly behavior?: DeepReadonly<StepBehavior>;
     readonly props: ReadonlyStepProps<T>;
     readonly actions: readonly StepActionInstruction<T>[];
-    readonly eventHandlers: readonly EventHandler<T>[];
-    readonly enterAction: StepHookAction<T> | null;
-    readonly leaveAction: StepHookAction<T> | null;
+    readonly targetEvents: readonly TargetEventHandler<T>[];
+    readonly beforeEnter: StepHookAction<T> | null;
+    readonly beforeLeave: StepHookAction<T> | null;
 }
 ```

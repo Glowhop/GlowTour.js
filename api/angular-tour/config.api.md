@@ -13,8 +13,6 @@ function createWorkflowFromConfig(config: unknown, options?: ValidateWorkflowCon
 
 export { CreateWorkflowFromConfigOptions } from "@glowhop/core-tour";
 
-type EventHandlerConfig = CoreEventHandlerConfig<AngularTourContent>;
-
 type LifecycleActionRef = CoreLifecycleActionRef<AngularTourContent>;
 
 type StepActionRef = CoreStepActionRef<AngularTourContent>;
@@ -22,6 +20,8 @@ type StepActionRef = CoreStepActionRef<AngularTourContent>;
 type StepConfig = CoreStepConfig<AngularTourContent>;
 
 type StepHookActionRef = CoreStepHookActionRef<AngularTourContent>;
+
+type TargetEventConfig = CoreTargetEventConfig<AngularTourContent>;
 
 function validateWorkflowConfig(config: unknown, options?: ValidateWorkflowConfigOptions): WorkflowConfig;
 
