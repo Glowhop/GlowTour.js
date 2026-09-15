@@ -1,9 +1,5 @@
 import "@glowhop/styles-tour/default.css";
-import {
-  createDefaultTourElement,
-  createGlowTour,
-  registerGlowTourElements,
-} from "@glowhop/vanilla-tour";
+import { createGlowTour, registerGlowTourElements } from "@glowhop/vanilla-tour";
 
 registerGlowTourElements();
 
@@ -35,5 +31,6 @@ container.append(button);
 document.body.append(container);
 
 // Create and append the tour component
-const root = createDefaultTourElement(tour);
+const root = document.createElement("glow-tour-default");
+root.tour = tour;
 document.body.append(root);

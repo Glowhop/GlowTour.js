@@ -16,7 +16,7 @@ page. */}
 <script>
   // The theme itself is imported from src/styles/global.css: see the note there.
   import "@glowhop/vanilla-tour/auto";
-  import { createDefaultTourElement, createGlowTour } from "@glowhop/vanilla-tour";
+  import { createGlowTour } from "@glowhop/vanilla-tour";
   import { buildSiteTourWorkflow, takePendingStep, TOUR_QUERY_PARAM } from "../lib/site-tour";
 
   const tour = createGlowTour();
@@ -25,7 +25,11 @@ page. */}
   /** The controller lives for the whole visit; only its elements are per-page. */
   function mount(): void {
     const host = document.querySelector("[data-site-tour-root]");
-    if (host && !host.firstElementChild) host.append(createDefaultTourElement(tour));
+    if (host && !host.firstElementChild) {
+      const element = document.createElement("glow-tour-default");
+      element.tour = tour;
+      host.append(element);
+    }
   }
 
   mount();

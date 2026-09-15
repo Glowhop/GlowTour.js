@@ -1,18 +1,17 @@
 export type { GlowTourOptions } from "@glowhop/core-tour";
-export { DefaultTour, type DefaultTourProps } from "./components/default-tour";
+export { GlowTourDefault, type GlowTourDefaultProps } from "./components/default-tour";
 export type { PointerDirectionContent } from "./components/tour-components";
 export {
-  AdvanceTrigger,
-  BackTrigger,
-  CancelTrigger,
-  Content,
-  Footer,
-  GlowTour,
-  Header,
-  Overlay,
-  Pointer,
-  Popover,
-  Root,
+  GlowTourAdvanceTrigger,
+  GlowTourCancelTrigger,
+  GlowTourContent,
+  GlowTourFooter,
+  GlowTourHeader,
+  GlowTourOverlay,
+  GlowTourPointer,
+  GlowTourPopover,
+  GlowTourPreviousTrigger,
+  GlowTourRoot,
   useTour,
 } from "./components/tour-components";
 export type {

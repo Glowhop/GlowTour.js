@@ -1,6 +1,6 @@
 import { render } from "solid-js/web";
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, DefaultTour } from "@glowhop/solid-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/solid-tour";
 
 const tour = createGlowTour();
 const workflow = tour
@@ -24,7 +24,7 @@ if (appRoot) {
             Start tour
           </button>
         </div>
-        <DefaultTour tour={tour} />
+        <GlowTourDefault tour={tour} />
       </>
     ),
     appRoot,

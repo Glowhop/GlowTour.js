@@ -1,6 +1,19 @@
 /** @jsxImportSource solid-js */
 
-import { createGlowTour, GlowTour, type SolidTourContent } from "@glowhop/solid-tour";
+import {
+  createGlowTour,
+  GlowTourAdvanceTrigger,
+  GlowTourCancelTrigger,
+  GlowTourContent,
+  GlowTourFooter,
+  GlowTourHeader,
+  GlowTourOverlay,
+  GlowTourPointer,
+  GlowTourPopover,
+  GlowTourPreviousTrigger,
+  GlowTourRoot,
+  type SolidTourContent,
+} from "@glowhop/solid-tour";
 import "@glowhop/styles-tour/default.css";
 import { render } from "solid-js/web";
 import { type LabContentFactory, mountLab } from "../lab";
@@ -23,19 +36,19 @@ const lab = mountLab({ content, framework: "SolidJS", root, tour });
 
 const disposeRenderer = render(
   () => (
-    <GlowTour.Root tour={tour}>
-      <GlowTour.Overlay />
-      <GlowTour.Pointer />
-      <GlowTour.Popover>
-        <GlowTour.Header />
-        <GlowTour.Content />
-        <GlowTour.Footer>
-          <GlowTour.BackTrigger />
-          <GlowTour.AdvanceTrigger />
-          <GlowTour.CancelTrigger />
-        </GlowTour.Footer>
-      </GlowTour.Popover>
-    </GlowTour.Root>
+    <GlowTourRoot tour={tour}>
+      <GlowTourOverlay />
+      <GlowTourPointer />
+      <GlowTourPopover>
+        <GlowTourHeader />
+        <GlowTourContent />
+        <GlowTourFooter>
+          <GlowTourPreviousTrigger />
+          <GlowTourAdvanceTrigger />
+          <GlowTourCancelTrigger />
+        </GlowTourFooter>
+      </GlowTourPopover>
+    </GlowTourRoot>
   ),
   lab.rendererRoot,
 );

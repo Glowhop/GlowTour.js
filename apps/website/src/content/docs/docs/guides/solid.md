@@ -15,7 +15,7 @@ npm i @glowhop/solid-tour @glowhop/styles-tour
 
 ```tsx
 import "@glowhop/styles-tour/default.css";
-import { DefaultTour, createGlowTour } from "@glowhop/solid-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
 ```
 
 ## Instance scoping
@@ -28,17 +28,17 @@ import { createGlowTour } from "@glowhop/solid-tour";
 export const tour = createGlowTour();
 ```
 
-Then mount the `DefaultTour` component in your app:
+Then mount the `GlowTourDefault` component in your app:
 
 ```tsx
-import { DefaultTour } from "@glowhop/solid-tour";
+import { GlowTourDefault } from "@glowhop/solid-tour";
 import { tour } from "./tour";
 
 export function App() {
   return (
     <>
       {/* Your app content */}
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </>
   );
 }
@@ -49,7 +49,7 @@ export function App() {
 ```tsx
 import { render } from "solid-js/web";
 import "@glowhop/styles-tour/default.css";
-import { DefaultTour, createGlowTour } from "@glowhop/solid-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
 
 const tour = createGlowTour();
 
@@ -86,7 +86,7 @@ function TourApp() {
         </section>
         <button onClick={() => void tour.run(workflow)}>Start tour</button>
       </main>
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </>
   );
 }
@@ -96,9 +96,9 @@ render(() => <TourApp />, document.getElementById("app")!);
 
 ## Customize progressively
 
-`DefaultTour` is the shortest path to a complete tour. Keep it while you only need visual changes, then move to composition when you need to change the popover structure.
+`GlowTourDefault` is the shortest path to a complete tour. Keep it while you only need visual changes, then move to composition when you need to change the popover structure.
 
-### Style `DefaultTour` with CSS
+### Style `GlowTourDefault` with CSS
 
 The default component reads the theme's CSS custom properties, so colors, spacing, and shape can change without replacing any components:
 
@@ -110,39 +110,48 @@ The default component reads the theme's CSS custom properties, so colors, spacin
 }
 ```
 
-Keep rendering `<DefaultTour tour={tour} />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+Keep rendering `<GlowTourDefault tour={tour} />`. See the [theming guide](/docs/guides/theming) for all available tokens.
 
 ### Compose the default layout
 
-When you need to add, remove, or rearrange content, expand `DefaultTour` into the primitives it assembles for you:
+When you need to add, remove, or rearrange content, expand `GlowTourDefault` into the primitives it assembles for you:
 
 ```tsx
 import {
-  GlowTour,
+  GlowTourAdvanceTrigger,
+  GlowTourCancelTrigger,
+  GlowTourContent,
+  GlowTourFooter,
+  GlowTourHeader,
+  GlowTourOverlay,
+  GlowTourPointer,
+  GlowTourPopover,
+  GlowTourPreviousTrigger,
+  GlowTourRoot,
 } from "@glowhop/solid-tour";
 
 export function CustomTour() {
   return (
-    <GlowTour.Root tour={tour}>
-      <GlowTour.Overlay />
-      <GlowTour.Pointer />
-      <GlowTour.Popover>
-        <GlowTour.Header />
-        <GlowTour.Content />
-        <GlowTour.Footer>
-          <GlowTour.CancelTrigger />
-          <GlowTour.BackTrigger />
-          <GlowTour.AdvanceTrigger />
-        </GlowTour.Footer>
-      </GlowTour.Popover>
-    </GlowTour.Root>
+    <GlowTourRoot tour={tour}>
+      <GlowTourOverlay />
+      <GlowTourPointer />
+      <GlowTourPopover>
+        <GlowTourHeader />
+        <GlowTourContent />
+        <GlowTourFooter>
+          <GlowTourCancelTrigger />
+          <GlowTourPreviousTrigger />
+          <GlowTourAdvanceTrigger />
+        </GlowTourFooter>
+      </GlowTourPopover>
+    </GlowTourRoot>
   );
 }
 ```
 
 ### Add a custom step counter
 
-Components rendered inside `GlowTour.Root` can read its reactive state with `useTour()`. Add this small component to the popover from the previous example:
+Components rendered inside `GlowTourRoot` can read its reactive state with `useTour()`. Add this small component to the popover from the previous example:
 
 ```tsx
 import { Show } from "solid-js";
@@ -162,21 +171,21 @@ function StepCounter() {
 ```
 
 ```tsx
-<GlowTour.Popover>
-  <GlowTour.Header />
+<GlowTourPopover>
+  <GlowTourHeader />
   <StepCounter />
-  <GlowTour.Content />
+  <GlowTourContent />
   {/* Keep the same footer as above. */}
-</GlowTour.Popover>
+</GlowTourPopover>
 ```
 
-To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTour.Content` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
+To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
 See the runnable [Live step counter example](/examples).
 
 ### Subscribe outside the composition
 
-`useTour()` is intended for descendants of `GlowTour.Root`. Elsewhere in a Solid application, adapt the store to a signal and dispose the subscription with the component owner:
+`useTour()` is intended for descendants of `GlowTourRoot`. Elsewhere in a Solid application, adapt the store to a signal and dispose the subscription with the component owner:
 
 ```tsx
 import { createSignal, onCleanup } from "solid-js";
@@ -201,4 +210,4 @@ GlowTour.js requires Solid 1.8 or later. The adapter uses Solid's Context API an
 
 ## SSR
 
-`DefaultTour` supports server-side rendering. The component renders as an inert container on the server and hydrates correctly on the client. See the SSR guide for details.
+`GlowTourDefault` supports server-side rendering. The component renders as an inert container on the server and hydrates correctly on the client. See the SSR guide for details.

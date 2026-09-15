@@ -8,18 +8,18 @@ Compatibility: Solid 1.8+ (`^1.8.0`). SSR: the root renders through Solid's serv
 ```tsx
 import { render } from "solid-js/web";
 import "@glowhop/styles-tour/default.css";
-import { DefaultTour, createGlowTour } from "@glowhop/solid-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
 
 const tour = createGlowTour();
 const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
-render(() => <><button id="welcome">Welcome</button><button type="button" onClick={() => void tour.run(workflow)}>Start tour</button><DefaultTour tour={tour} /></>, document.getElementById("app")!);
+render(() => <><button id="welcome">Welcome</button><button type="button" onClick={() => void tour.run(workflow)}>Start tour</button><GlowTourDefault tour={tour} /></>, document.getElementById("app")!);
 ```
 
 <!-- glow-tour:snippet solid-advanced -->
 ```tsx
-import { GlowTour, createGlowTour } from "@glowhop/solid-tour";
+import { createGlowTour, GlowTourAdvanceTrigger, GlowTourContent, GlowTourFooter, GlowTourHeader, GlowTourOverlay, GlowTourPopover, GlowTourRoot } from "@glowhop/solid-tour";
 const tour = createGlowTour(); const workflow = tour.create("custom").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
-export function CustomTour() { return <><button id="welcome">Target</button><button type="button" onClick={() => void tour.run(workflow)}>Start</button><GlowTour.Root tour={tour}><GlowTour.Overlay /><GlowTour.Popover><GlowTour.Header /><GlowTour.Content /><GlowTour.Footer><GlowTour.AdvanceTrigger /></GlowTour.Footer></GlowTour.Popover></GlowTour.Root></>; }
+export function CustomTour() { return <><button id="welcome">Target</button><button type="button" onClick={() => void tour.run(workflow)}>Start</button><GlowTourRoot tour={tour}><GlowTourOverlay /><GlowTourPopover><GlowTourHeader /><GlowTourContent /><GlowTourFooter><GlowTourAdvanceTrigger /></GlowTourFooter></GlowTourPopover></GlowTourRoot></>; }
 ```
 
-`GlowTour.Root` and named primitives (`Overlay`, `Pointer`, `Popover`, `Header`, `Content`, `Footer`, and triggers) provide composition. `useTour()` exposes native Solid reactive state. Static/dynamic targets, placement, interaction, scroll, callbacks, actions/events, cancellation, and cleanup follow Core.
+`GlowTourRoot` and named primitives (`GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, and triggers) provide composition. `useTour()` exposes native Solid reactive state. Static/dynamic targets, placement, interaction, scroll, callbacks, actions/events, cancellation, and cleanup follow Core.

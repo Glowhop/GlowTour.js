@@ -15,7 +15,7 @@ test.describe("GlowTour.js SSR + hydration in a real Next.js app", () => {
     expect(html).toContain('id="start-tour-trigger"');
     expect(html).toContain('id="step-one-target"');
     expect(html).toContain('id="step-two-target"');
-    // The tour root/popover markers from the packaged DefaultTour should
+    // The tour root/popover markers from the packaged GlowTourDefault should
     // also be present in the SSR output.
     expect(html).toContain("data-glow-tour-root");
     expect(html).toContain("data-glow-tour-popover");

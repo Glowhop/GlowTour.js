@@ -16,7 +16,6 @@ npm i @glowhop/vanilla-tour @glowhop/styles-tour
 ```typescript
 import "@glowhop/styles-tour/default.css";
 import {
-  createDefaultTourElement,
   createGlowTour,
   registerGlowTourElements,
 } from "@glowhop/vanilla-tour";
@@ -39,7 +38,6 @@ The pure entry point requires explicit registration. Alternatively, import from 
 ```typescript
 import "@glowhop/styles-tour/default.css";
 import {
-  createDefaultTourElement,
   createGlowTour,
   registerGlowTourElements,
 } from "@glowhop/vanilla-tour";
@@ -65,7 +63,8 @@ const workflow = tour
   .build();
 
 // Create the root tour element and append it
-const tourRoot = createDefaultTourElement(tour);
+const tourRoot = document.createElement("glow-tour-default");
+tourRoot.tour = tour;
 document.body.append(tourRoot);
 
 // Create and wire up a start button
@@ -103,7 +102,7 @@ In your HTML:
 
 ## Customize progressively
 
-`createDefaultTourElement(tour)` is the shortest path to a complete tour. Keep it while you only need visual changes, then compose the custom elements directly when you need to change the popover structure.
+`<glow-tour-default>` is the shortest path to a complete tour. Keep it while you only need visual changes, then compose the custom elements directly when you need to change the popover structure.
 
 ### Style the default tour with CSS
 
@@ -117,7 +116,7 @@ The default element reads the theme's CSS custom properties, so colors, spacing,
 }
 ```
 
-Keep using `createDefaultTourElement(tour)`. See the [theming guide](/docs/guides/theming) for all available tokens.
+Keep using `<glow-tour-default>`. See the [theming guide](/docs/guides/theming) for all available tokens.
 
 ### Compose the default layout
 
@@ -135,10 +134,10 @@ const content = document.createElement("glow-tour-content");
 const footer = document.createElement("glow-tour-footer");
 
 const cancelTrigger = document.createElement("glow-tour-cancel-trigger");
-const backTrigger = document.createElement("glow-tour-back-trigger");
+const previousTrigger = document.createElement("glow-tour-previous-trigger");
 const advanceTrigger = document.createElement("glow-tour-advance-trigger");
 
-footer.append(cancelTrigger, backTrigger, advanceTrigger);
+footer.append(cancelTrigger, previousTrigger, advanceTrigger);
 popover.append(header, content, footer);
 root.append(overlay, pointer, popover);
 document.body.append(root);
@@ -149,13 +148,13 @@ document.body.append(root);
 Vanilla custom elements do not have a framework context hook, so give the custom counter the tour instance and let it manage its own subscription:
 
 ```typescript
-import type { TourState, VanillaGlowTour } from "@glowhop/vanilla-tour";
+import type { Tour, TourState } from "@glowhop/vanilla-tour";
 
 class StepCounter extends HTMLElement {
-  #tour?: VanillaGlowTour;
+  #tour?: Tour;
   #unsubscribe?: () => void;
 
-  set tour(tour: VanillaGlowTour) {
+  set tour(tour: Tour) {
     this.#tour = tour;
     if (this.isConnected) this.#subscribe();
   }
@@ -268,7 +267,7 @@ The node is inserted as-is in `glow-tour-content` (or `glow-tour-header`). Keep 
 Each custom element exposes properties and follows standard DOM patterns:
 
 - **`glow-tour-root`**: Set `tour` property to the tour instance.
-- **Triggers** (`glow-tour-advance-trigger`, `glow-tour-cancel-trigger`, `glow-tour-back-trigger`): Set `disabled` to control availability from your code.
+- **Triggers** (`glow-tour-advance-trigger`, `glow-tour-cancel-trigger`, `glow-tour-previous-trigger`): Set `disabled` to control availability from your code.
 - **All elements**: Use standard `addEventListener` and DOM APIs for styling and interaction.
 
 ## Modern browsers

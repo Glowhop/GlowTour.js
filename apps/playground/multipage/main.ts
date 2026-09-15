@@ -1,6 +1,6 @@
 import "@glowhop/styles-tour/default.css";
 import "@glowhop/vanilla-tour/auto";
-import { createDefaultTourElement, createGlowTour } from "@glowhop/vanilla-tour";
+import { createGlowTour } from "@glowhop/vanilla-tour";
 import "../src/styles.css";
 import { clearPersistedTour, createLogger, persistTour, readPersistedTour } from "./shared";
 
@@ -13,7 +13,9 @@ const log = createLogger(logPanel);
 const tour = createGlowTour({
   onSubscriberError: (error) => log(`onSubscriberError - ${error.message}`),
 });
-document.body.append(createDefaultTourElement(tour));
+const tourElement = document.createElement("glow-tour-default");
+tourElement.tour = tour;
+document.body.append(tourElement);
 
 // Debug handle so the lab can be driven from the console.
 (window as unknown as { __tour: typeof tour }).__tour = tour;
