@@ -3,13 +3,13 @@ import type { WorkflowDefinition } from "../definition";
 import { DomTourViewDriver, type TourViewDriver } from "../dom/tour-view-driver";
 import { validateWorkflowOptions } from "../options/validation";
 import type {
-  BeforeActionStepContext,
   GlowTour,
   GlowTourOptions,
   LifecycleHookContext,
   RunOptions,
   StartOptions,
   StepContext,
+  StepHookContext,
   TourDirection,
   TourEvent,
   TourEventListener,
@@ -290,7 +290,6 @@ export class TourController<T> {
     this.assertCurrent(operation);
     const step = this.steps[index];
     if (!step) throw new Error(`Step index ${index} is out of bounds`);
-    if (step.definition.resetPropsOnEnter !== false) step.reset();
     const target = await this.resolveTarget(step, operation);
     this.assertCurrent(operation);
     if (!target) {
@@ -298,6 +297,10 @@ export class TourController<T> {
       return;
     }
     step.target = target;
+    step.direction = direction;
+    // Runs before the step is committed and shown, so props set here are the first ones rendered.
+    await step.definition.enterAction?.(this.createStepHookContext(step, operation, direction));
+    this.assertCurrent(operation);
     let committed = false;
     const commitStep = () => {
       this.assertCurrent(operation);
@@ -338,9 +341,7 @@ export class TourController<T> {
     if (!step) return;
     this.setStatus("transitioning");
     this.assertCurrent(operation);
-    const hook =
-      direction === "advance" ? step.definition.advanceAction : step.definition.previousAction;
-    await hook?.(this.createBeforeActionStepContext(step));
+    await step.definition.leaveAction?.(this.createStepHookContext(step, operation, direction));
     this.assertCurrent(operation);
 
     if (destination !== undefined) {
@@ -542,10 +543,6 @@ export class TourController<T> {
 
   private async cancelCurrent(operation: number) {
     const step = this.currentStep();
-    if (step?.definition.cancelAction) {
-      await step.definition.cancelAction(this.createBeforeActionStepContext(step));
-    }
-    this.assertCurrent(operation);
     const { context, isAborted } = this.createLifecycleHookContext(step);
     await this.workflow?.options.onCancel?.(context);
     this.assertCurrent(operation);
@@ -619,8 +616,8 @@ export class TourController<T> {
     operation: number,
     onControl?: () => void,
   ): StepContext<T> {
-    if (!step.target) throw new Error("Cannot create a step context without a target");
     return Object.freeze({
+      ...this.createStepHookContext(step, operation, step.direction),
       advance: async () => {
         onControl?.();
         this.assertCurrent(operation);
@@ -636,16 +633,21 @@ export class TourController<T> {
         this.assertCurrent(operation);
         await this.transition("previous", operation);
       },
-      props: step.props,
-      signal: this.signalFor(operation),
-      target: step.target,
     });
   }
 
-  private createBeforeActionStepContext(step: ActiveStep<T>): BeforeActionStepContext<T> {
+  private createStepHookContext(
+    step: ActiveStep<T>,
+    operation: number,
+    direction: TourDirection,
+  ): StepHookContext<T> {
     if (!step.target) throw new Error("Cannot create a step context without a target");
     return Object.freeze({
-      ...step.props.get(),
+      direction,
+      initialProps: step.initialProps,
+      props: step.props,
+      setAllowInteraction: step.setAllowInteraction,
+      signal: this.signalFor(operation),
       target: step.target,
     });
   }

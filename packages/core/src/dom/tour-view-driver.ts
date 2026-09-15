@@ -9,7 +9,7 @@ import {
   TOUR_TRIGGER_SELECTOR,
 } from "../state/focusable";
 import { ScrollLock } from "../state/scroll-lock";
-import type { TourDirection, TourEventSource } from "../types";
+import type { ResolvedPlacement, TourDirection, TourEventSource } from "../types";
 import {
   isElement,
   isHTMLElement,
@@ -210,13 +210,15 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.activeTarget = null;
       this.targetFocusedAtFreeze = false;
       this.currentStep = step;
+      // `syncInteraction` ignores the step once another one is shown.
+      step.syncInteraction = () => this.syncInteraction(step);
       this.currentSignal = signal;
       this.direction = direction;
       this.lastTargetRect = null;
       this.lastViewport = null;
       this.presentationDirty = false;
       this.awaitingStepUi = true;
-      const modal = step.behavior?.allowInteraction !== true;
+      const modal = !step.allowInteraction;
       // Claimed before anything moves: a second modal tour fails without being presented.
       if (modal) this.claimModal();
       // Blocks the page until a modal step is presented, and queues shortcuts while a visible
@@ -372,7 +374,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // is the one the step was already parked on rather than a fresh reading.
     await this.appear(() => targetRect as DOMRect, step, generation, null, false);
     this.throwIfStale(generation);
-    this.syncModality(step.behavior?.allowInteraction === true);
+    this.syncModality(step.allowInteraction);
     this.activateFocus(step, target, this.direction, generation);
     this.syncScrollLock(step);
     this.throwIfStale(generation);
@@ -380,7 +382,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private initializeElements(step: ActiveStep<T>, replaceVisiblePopover: boolean) {
-    const interactionAllowed = step.behavior?.allowInteraction === true;
+    const interactionAllowed = step.allowInteraction;
     this.overlay?.initializeProps();
     this.overlay?.setAnimationOptions(
       animationOptions(step, step.overlay, this.overlay.getElement()),
@@ -543,11 +545,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const popoverPlacement = this.popover?.resolvePosition(targetRect, step).placement;
     return Promise.all([
       this.popover?.present(targetRect, step) ?? Promise.resolve(),
-      this.isPointerEnabled(step)
-        ? (this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement) ??
-          Promise.resolve())
-        : (this.pointer?.disappear() ?? Promise.resolve()),
+      this.presentPointer(targetRect, step, popoverPlacement) ?? Promise.resolve(),
     ]);
+  }
+
+  /** Fades the pointer in on the target, or out when the step does not show it. */
+  private presentPointer(
+    targetRect: DOMRect,
+    step: ActiveStep<T>,
+    popoverPlacement: ResolvedPlacement | undefined,
+  ) {
+    return this.isPointerEnabled(step)
+      ? this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement)
+      : this.pointer?.disappear();
   }
 
   private attachStepResources(
@@ -619,7 +629,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           advance: () => this.commandForStep("advance", step, signal),
           cancel: () => this.commandForStep("cancel", step, signal),
           previous: () => this.commandForStep("previous", step, signal),
+          direction: step.direction,
+          initialProps: step.initialProps,
           props: step.props,
+          setAllowInteraction: step.setAllowInteraction,
           signal,
           target,
         });
@@ -785,7 +798,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       event.altKey
     )
       return;
-    if (event.key === "Tab" && step.behavior?.allowInteraction !== true) {
+    if (event.key === "Tab" && !step.allowInteraction) {
       this.loopFocus(event);
       return;
     }
@@ -824,7 +837,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private handleOverlayClick(event: MouseEvent, step: ActiveStep<T>, target: HTMLElement) {
     if (this.currentStep !== step || event.defaultPrevented) return;
-    if (step.behavior?.allowInteraction === true) return;
+    if (step.allowInteraction) return;
     const path = event.composedPath();
     const popover = this.popover?.getElement();
     const pointer = this.pointer?.getElement();
@@ -862,7 +875,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // A modal step inerts the page only once presented. Until then keys must not act on the page,
     // as inert would have prevented: a second Enter on the trigger would start the tour again.
     if (
-      step.behavior?.allowInteraction !== true &&
+      !step.allowInteraction &&
       isHTMLElement(target, root) &&
       target !== target.ownerDocument.body &&
       !root?.contains(target)
@@ -934,7 +947,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (deferFocus) this.pendingFocusGeneration = generation;
     this.focusGuard.activate({
       allowedTarget: target,
-      allowTargetInteraction: step.behavior?.allowInteraction === true,
+      allowTargetInteraction: step.allowInteraction,
       autoFocus: autoFocus && !deferFocus,
       direction,
       fallback: this.root ?? popover.parentElement,
@@ -1137,7 +1150,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private isPointerEnabled(step: ActiveStep<T>) {
-    return step.behavior?.allowInteraction === true && step.indicator?.disabled !== true;
+    return step.allowInteraction && step.indicator?.disabled !== true;
   }
 
   private cleanupStepResources() {
@@ -1198,9 +1211,55 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    * and to restore the step's own setting once retargeted.
    */
   private applyInteractionLock(step: ActiveStep<T>, locked: boolean) {
-    const allowed = !locked && step.behavior?.allowInteraction === true;
+    const allowed = !locked && step.allowInteraction;
     this.overlay?.setInteractionAllowed(allowed);
     this.syncModality(allowed);
+  }
+
+  /** Applies the step's own interaction setting to the overlay, the page modality and the focus guard. */
+  private applyInteraction(step: ActiveStep<T>, target: HTMLElement) {
+    this.applyInteractionLock(step, false);
+    const popover = this.popover?.getElement();
+    if (isHTMLElement(popover, this.root ?? popover)) {
+      this.focusGuard.update({
+        allowedTarget: target,
+        allowTargetInteraction: step.allowInteraction,
+        direction: this.direction,
+        fallback: this.root ?? popover.parentElement,
+        popover,
+      });
+    }
+  }
+
+  /**
+   * Applies `step.allowInteraction` changed while the step is on screen. A step still entering
+   * reads the new value when it presents, and a frozen one keeps interaction off until
+   * `retarget()` restores it. The indicator fades in or out instead of snapping.
+   */
+  syncInteraction(step: ActiveStep<T>) {
+    const target = this.activeTarget;
+    if (
+      this.disposed ||
+      !this.active ||
+      this.frozen ||
+      this.awaitingStepUi ||
+      this.currentStep !== step ||
+      !target
+    )
+      return;
+    const focusWasInTarget = this.isFocusInsideTarget(target);
+    this.applyInteraction(step, target);
+    if (focusWasInTarget && !step.allowInteraction) this.focusGuard.focus();
+    const targetRect = target.getBoundingClientRect();
+    this.pointer?.cancelAnimations();
+    this.observeDynamicOperation(
+      this.presentPointer(
+        targetRect,
+        step,
+        this.popover?.resolvePosition(targetRect, step).placement,
+      ),
+      this.generation,
+    );
   }
 
   private isFocusInsideTarget(target: HTMLElement) {
@@ -1226,21 +1285,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.frozen = false;
     this.currentSignal = signal;
     this.activeTarget = target;
-    this.applyInteractionLock(step, false);
+    this.applyInteraction(step, target);
     this.attachTargetResources(step, target, this.generation, signal);
-    const popover = this.popover?.getElement();
-    if (isHTMLElement(popover, this.root ?? popover)) {
-      this.focusGuard.update({
-        allowedTarget: target,
-        allowTargetInteraction: step.behavior?.allowInteraction === true,
-        direction: this.direction,
-        fallback: this.root ?? popover.parentElement,
-        popover,
-      });
-    }
     if (this.targetFocusedAtFreeze) {
       this.targetFocusedAtFreeze = false;
-      if (step.behavior?.allowInteraction === true) target.focus();
+      if (step.allowInteraction) target.focus();
     }
     this.syncControlState(step);
     this.syncShortcutLabels(step);

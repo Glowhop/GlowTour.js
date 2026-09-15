@@ -688,7 +688,7 @@ describe("private root bridge", () => {
     const hookDefinition = hookTour
       .create("release-hook", { onStart: releaseHookPopover })
       .step({ id: "step-8", content: "content", target: () => root(), title: "title" })
-      .beforeAdvance(() => hookBinding.release())
+      .beforeLeave(() => hookBinding.release())
       .build();
     await hookTour.run(hookDefinition);
     await hookTour.advance();

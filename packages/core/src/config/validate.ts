@@ -19,7 +19,6 @@ const TOP_LEVEL_KEYS = [
 const STEP_KEYS = [
   "id",
   "target",
-  "resetPropsOnEnter",
   "overlay",
   "popover",
   "indicator",
@@ -29,9 +28,8 @@ const STEP_KEYS = [
   "data",
   "actions",
   "eventHandlers",
-  "advanceAction",
-  "previousAction",
-  "cancelAction",
+  "enterAction",
+  "leaveAction",
 ] as const;
 
 const EVENT_HANDLER_KEYS = ["event", "action"] as const;
@@ -225,7 +223,6 @@ function validateStepConfigShape(
   if (titleError) issues.push({ path: `${path}.title`, message: titleError });
   const contentError = validateContent(value.content, `${path}.content`);
   if (contentError) issues.push({ path: `${path}.content`, message: contentError });
-  validateOptionalBoolean(`${path}.resetPropsOnEnter`, value.resetPropsOnEnter, issues);
   validateOverlayShape(`${path}.overlay`, value.overlay, issues);
   validatePopoverShape(`${path}.popover`, value.popover, issues);
   validateIndicatorShape(`${path}.indicator`, value.indicator, issues);
@@ -252,9 +249,8 @@ function validateStepConfigShape(
     }
   }
 
-  validateTransitionActionRefShape(`${path}.advanceAction`, value.advanceAction, issues);
-  validateTransitionActionRefShape(`${path}.previousAction`, value.previousAction, issues);
-  validateTransitionActionRefShape(`${path}.cancelAction`, value.cancelAction, issues);
+  validateHookActionRefShape(`${path}.enterAction`, value.enterAction, issues);
+  validateHookActionRefShape(`${path}.leaveAction`, value.leaveAction, issues);
 }
 
 /**
@@ -317,16 +313,15 @@ function validateStepActionRefShape(
 }
 
 /**
- * Validates a `TransitionActionRef` (`advanceAction`/`previousAction`/`cancelAction`) or a
- * `LifecycleActionRef` (`onStart`/`onCancel`/`onFinish`): only a function is valid. Neither
- * `BeforeActionStepContext` (no `signal`/navigation) nor `LifecycleHookContext` (no `target` at
- * all) supports any `BuiltinAction` verb, and there is no registry, so any non-function value —
- * including a builtin action object — is rejected.
- * @param path Error path for this ref, e.g. `steps[2].advanceAction`.
+ * Validates a `StepHookActionRef` (`enterAction`/`leaveAction`) or a `LifecycleActionRef`
+ * (`onStart`/`onCancel`/`onFinish`): only a function is valid. Built-in actions describe a step's
+ * own action sequence, not hooks, and there is no registry, so any non-function value (including a
+ * builtin action object) is rejected.
+ * @param path Error path for this ref, e.g. `steps[2].leaveAction`.
  * @param value The candidate ref value, or `undefined` if not set.
  * @param issues Collector for every issue found.
  */
-function validateTransitionActionRefShape(
+function validateHookActionRefShape(
   path: string,
   value: unknown,
   issues: ConfigValidationIssue[],
@@ -339,13 +334,13 @@ function validateTransitionActionRefShape(
   });
 }
 
-/** See {@link validateTransitionActionRefShape} — lifecycle hooks share the same restriction. */
+/** See {@link validateHookActionRefShape}: lifecycle hooks share the same restriction. */
 function validateLifecycleActionRefShape(
   path: string,
   value: unknown,
   issues: ConfigValidationIssue[],
 ): void {
-  validateTransitionActionRefShape(path, value, issues);
+  validateHookActionRefShape(path, value, issues);
 }
 
 /**

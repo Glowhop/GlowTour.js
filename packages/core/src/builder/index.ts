@@ -11,8 +11,8 @@ import type {
   StartOptions,
   StepAction,
   StepContext,
+  StepHookAction,
   StepParameters,
-  StepTransitionAction,
   WaitUntilOptions,
 } from "../types";
 
@@ -115,7 +115,6 @@ export class WorkflowBuilder<T> {
     this.currentStep = new WorkflowStepBuilder(this, {
       id: options.id,
       target: options.target,
-      resetPropsOnEnter: options.resetPropsOnEnter,
       props: {
         title: options.title,
         content: options.content,
@@ -127,9 +126,8 @@ export class WorkflowBuilder<T> {
       behavior: options.behavior,
       actions: [],
       eventHandlers: [],
-      advanceAction: null,
-      previousAction: null,
-      cancelAction: null,
+      enterAction: null,
+      leaveAction: null,
     });
     return this.currentStep;
   }
@@ -311,35 +309,27 @@ export class WorkflowStepBuilder<T> {
   }
 
   /**
-   * Add a callback that runs before advancing to the next step.
-   * @param callback The transition callback.
+   * Add a callback that runs each time this step is entered, after its target is resolved and
+   * before the step is shown. Props set here are the first ones displayed, which makes it the place
+   * to reset them: `beforeEnter(({ props, initialProps }) => props.set(initialProps))`.
+   * @param callback The hook callback; `context.direction` is the direction of the navigation in progress.
    * @returns This builder for chaining.
    */
-  beforeAdvance(callback: StepTransitionAction<T>) {
+  beforeEnter(callback: StepHookAction<T>) {
     this.assertActive();
-    this.draft.advanceAction = callback;
+    this.draft.enterAction = callback;
     return this;
   }
 
   /**
-   * Add a callback that runs before going to the previous step.
-   * @param callback The transition callback.
+   * Add a callback that runs before navigating away from this step: advance, previous, `goToStep`,
+   * or finishing the tour. It does not run on cancel; use the workflow `onCancel` option instead.
+   * @param callback The hook callback; `context.direction` is the direction of the navigation in progress.
    * @returns This builder for chaining.
    */
-  beforePrevious(callback: StepTransitionAction<T>) {
+  beforeLeave(callback: StepHookAction<T>) {
     this.assertActive();
-    this.draft.previousAction = callback;
-    return this;
-  }
-
-  /**
-   * Add a callback that runs before cancelling the tour.
-   * @param callback The transition callback.
-   * @returns This builder for chaining.
-   */
-  beforeCancel(callback: StepTransitionAction<T>) {
-    this.assertActive();
-    this.draft.cancelAction = callback;
+    this.draft.leaveAction = callback;
     return this;
   }
 

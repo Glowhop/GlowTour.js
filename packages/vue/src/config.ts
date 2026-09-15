@@ -5,7 +5,7 @@ import type {
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
-  TransitionActionRef as CoreTransitionActionRef,
+  StepHookActionRef as CoreStepHookActionRef,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -34,8 +34,8 @@ export type StepConfig = CoreStepConfig<VueTourContent>;
 export type EventHandlerConfig = CoreEventHandlerConfig<VueTourContent>;
 /** Vue step action reference: `StepActionRef` pre-bound to `VueTourContent`. */
 export type StepActionRef = CoreStepActionRef<VueTourContent>;
-/** Vue transition action reference: `TransitionActionRef` pre-bound to `VueTourContent`. */
-export type TransitionActionRef = CoreTransitionActionRef<VueTourContent>;
+/** Vue step hook reference: `StepHookActionRef` pre-bound to `VueTourContent`. */
+export type StepHookActionRef = CoreStepHookActionRef<VueTourContent>;
 /** Vue lifecycle action reference: `LifecycleActionRef` pre-bound to `VueTourContent`. */
 export type LifecycleActionRef = CoreLifecycleActionRef<VueTourContent>;
 /** Vue workflow definition produced from config, pre-bound to `VueTourContent`. */

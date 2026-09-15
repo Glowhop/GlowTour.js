@@ -1,6 +1,7 @@
 import { freezeStepProps, type ReadonlyStepProps } from "../definition";
 import { validateStepProps } from "../options/validation";
-import type { StepPropsStore, StepPropsUpdate } from "../types";
+import type { StepPropsPatch, StepPropsStore, StepPropsUpdate } from "../types";
+import { mergeStepProps } from "../utils/options";
 
 export function createStepPropsStore<T>(
   initialProps: ReadonlyStepProps<T>,
@@ -22,15 +23,19 @@ export function createStepPropsStore<T>(
     }
   };
 
+  const set = (update: StepPropsUpdate<T>) => {
+    const next = typeof update === "function" ? update(current) : update;
+    validateStepProps(path, next);
+    current = freezeStepProps(next);
+    const published = current;
+    for (const listener of Array.from(listeners)) notify(listener, published);
+  };
+
   return Object.freeze({
     get: () => current,
-    set: (update: StepPropsUpdate<T>) => {
-      const next = typeof update === "function" ? update(current) : update;
-      validateStepProps(path, next);
-      current = freezeStepProps(next);
-      const published = current;
-      for (const listener of Array.from(listeners)) notify(listener, published);
-    },
+    set,
+    update: (patch: StepPropsPatch<T> | ((current: ReadonlyStepProps<T>) => StepPropsPatch<T>)) =>
+      set((props) => mergeStepProps(props, typeof patch === "function" ? patch(props) : patch)),
     subscribe: (listener: (props: ReadonlyStepProps<T>) => void) => {
       notify(listener, current);
       listeners.add(listener);

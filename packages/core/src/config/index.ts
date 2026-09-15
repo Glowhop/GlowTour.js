@@ -7,7 +7,7 @@ export type {
   LifecycleActionRef,
   StepActionRef,
   StepConfig,
-  TransitionActionRef,
+  StepHookActionRef,
   WorkflowConfig,
   WorkflowDefinitionFromConfig,
 } from "./types";
