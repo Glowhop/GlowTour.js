@@ -111,7 +111,7 @@ export function injectGlowTour(): Signal<TourState<AngularTourContent> | null> {
 }
 
 @Directive()
-abstract class GlowTourReactiveComponent {
+export abstract class GlowTourReactiveComponent {
   protected readonly scope = useTourScope();
   protected readonly snapshot = this.scope.state;
   protected readonly step = computed(() => this.snapshot()?.currentStep?.currentProps ?? null);
@@ -241,9 +241,9 @@ export class GlowTourContent extends GlowTourReactiveComponent {
 @Component({
   selector: "glow-tour-footer",
   standalone: true,
-  template: `@if (!step()?.popover?.hideFooter) { <footer data-glow-tour-footer><ng-content /></footer> }`,
+  template: "<footer data-glow-tour-footer><ng-content /></footer>",
 })
-/** Footer component containing action buttons. Conditionally rendered based on tour step configuration. */
+/** Footer component containing action buttons. */
 export class GlowTourFooter extends GlowTourReactiveComponent {}
 
 @Directive()
@@ -414,10 +414,10 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
 }
 
 @Component({
-  selector: "glow-tour-back-trigger",
+  selector: "glow-tour-previous-trigger",
   standalone: true,
   template: `
-    @if (!step()?.popover?.hidePreviousButton) {
+    @if (step()?.popover?.controls?.previous !== "hidden") {
       <button
         data-glow-tour-previous-trigger
         [attr.aria-controls]="ariaControls()"
@@ -431,16 +431,16 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   `,
 })
 /** Button component for navigating to the previous step in the tour. */
-export class GlowTourBackTrigger extends GlowTourTrigger {
-  private readonly backLabelValue = signal<string | undefined>(undefined);
+export class GlowTourPreviousTrigger extends GlowTourTrigger {
+  private readonly previousLabelValue = signal<string | undefined>(undefined);
 
   /** Optional aria-label for the back button. */
   @Input() set ariaLabel(value: string | undefined) {
     this.setAriaLabel(value);
   }
   /** Optional label text for the back button. */
-  @Input() set backLabel(value: string | undefined) {
-    this.backLabelValue.set(value);
+  @Input() set previousLabel(value: string | undefined) {
+    this.previousLabelValue.set(value);
   }
   /** Whether the button is disabled. */
   @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
@@ -451,16 +451,16 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
     () =>
       this.consumerDisabled() ||
       this.unavailableWhileActive(!this.snapshot()?.canPrevious) ||
-      this.step()?.popover?.disablePreviousButton === true,
+      this.step()?.popover?.controls?.previous === "disabled",
   );
-  readonly label = computed(() => this.backLabelValue() ?? "Back step");
+  readonly label = computed(() => this.previousLabelValue() ?? "Previous step");
 }
 
 @Component({
   selector: "glow-tour-advance-trigger",
   standalone: true,
   template: `
-    @if (!step()?.popover?.hideAdvanceButton) {
+    @if (step()?.popover?.controls?.advance !== "hidden") {
       <button
         data-glow-tour-advance-trigger
         [attr.aria-controls]="ariaControls()"
@@ -499,7 +499,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
     () =>
       this.consumerDisabled() ||
       this.unavailableWhileActive(!this.snapshot()?.canAdvance) ||
-      this.step()?.popover?.disableAdvanceButton === true,
+      this.step()?.popover?.controls?.advance === "disabled",
   );
   readonly label = computed(() => {
     return this.snapshot()?.isLastStep
@@ -512,7 +512,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   selector: "glow-tour-cancel-trigger",
   standalone: true,
   template: `
-    @if (snapshot()?.canCancel) {
+    @if (snapshot()?.canCancel && step()?.popover?.controls?.cancel !== "hidden") {
       <button
         data-glow-tour-cancel-trigger
         [attr.aria-controls]="ariaControls()"
@@ -537,7 +537,10 @@ export class GlowTourCancelTrigger extends GlowTourTrigger {
   }
 
   readonly isDisabled = computed(
-    () => this.consumerDisabled() || this.unavailableWhileActive(!this.snapshot()?.canCancel),
+    () =>
+      this.consumerDisabled() ||
+      this.unavailableWhileActive(!this.snapshot()?.canCancel) ||
+      this.step()?.popover?.controls?.cancel === "disabled",
   );
   readonly label = computed(() => "Skip");
 }

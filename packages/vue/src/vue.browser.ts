@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 describe("vue adapter browser behavior", () => {
-  test("hydrates server-rendered DefaultTour markup without a mismatch and stays interactive", async () => {
+  test("hydrates server-rendered GlowTourDefault markup without a mismatch and stays interactive", async () => {
     const [{ createSSRApp, h }, { renderToString }, runtime] = await Promise.all([
       import("vue"),
       import("@vue/server-renderer"),
@@ -441,7 +441,7 @@ describe("vue adapter browser behavior", () => {
         h(runtime.GlowTourRoot, { tour }, () => [
           h(runtime.GlowTourPopover),
           h(runtime.GlowTourCancelTrigger),
-          h(runtime.GlowTourBackTrigger),
+          h(runtime.GlowTourPreviousTrigger),
           showAdvance.value
             ? h(runtime.GlowTourAdvanceTrigger, {
                 disabled: blockAdvance.value,
@@ -530,7 +530,7 @@ describe("vue adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      popover: { hideFooter: true, hideAdvanceButton: true },
+      popover: { controls: { advance: "hidden" } },
       title: "Updated title",
     }));
     await nextTick();
@@ -539,11 +539,11 @@ describe("vue adapter browser behavior", () => {
       container.querySelector("[data-glow-tour-content]")?.textContent,
       "Updated content",
     );
-    assert.equal(container.querySelector("[data-glow-tour-footer]"), null);
+    assert.equal(container.querySelector("[data-glow-tour-advance-trigger]"), null);
 
     activeProps.set((props) => ({
       ...props,
-      popover: { ...props.popover, hideFooter: false, hideAdvanceButton: false },
+      popover: { ...props.popover, controls: { advance: "visible" } },
     }));
     await nextTick();
     assert.equal(

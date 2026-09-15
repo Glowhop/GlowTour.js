@@ -1,9 +1,6 @@
 export type { GlowTourOptions } from "@glowhop/core-tour";
-export {
-  type CreateDefaultTourElementOptions,
-  createDefaultTourElement,
-} from "./components/default-tour";
 export type {
+  GlowTourDefaultElement,
   GlowTourPointerElement,
   GlowTourRootElement,
   PointerDirectionContent,
@@ -14,7 +11,6 @@ export type {
   StepPropsStore,
   Tour,
   TourState,
-  VanillaGlowTour,
   VanillaTourContent,
   WorkflowDefinition,
 } from "./glow-tour";

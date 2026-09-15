@@ -1,20 +1,21 @@
 import type { GlowTour as CoreGlowTour } from "@glowhop/core-tour";
 import type { ReactTourContent } from "../glow-tour";
 import {
-  AdvanceTrigger,
-  BackTrigger,
-  CancelTrigger,
-  Content,
-  Footer,
-  Header,
-  Overlay,
-  Pointer,
-  Popover,
-  Root,
+  GlowTourAdvanceTrigger,
+  GlowTourCancelTrigger,
+  GlowTourContent,
+  GlowTourFooter,
+  GlowTourHeader,
+  GlowTourOverlay,
+  GlowTourPointer,
+  GlowTourPopover,
+  GlowTourPreviousTrigger,
+  GlowTourRoot,
+  useTour,
 } from "./tour-components";
 
-/** Props for the DefaultTour component. */
-export interface DefaultTourProps {
+/** Props for the GlowTourDefault component. */
+export interface GlowTourDefaultProps {
   /** Optional prefix for internal element IDs. */
   readonly idPrefix?: string;
   /** The tour controller instance. */
@@ -27,20 +28,35 @@ export interface DefaultTourProps {
  * @param props The component props.
  * @returns The rendered tour UI.
  */
-export function DefaultTour({ idPrefix, tour }: DefaultTourProps) {
+export function GlowTourDefault({ idPrefix, tour }: GlowTourDefaultProps) {
   return (
-    <Root idPrefix={idPrefix} tour={tour}>
-      <Overlay />
-      <Pointer />
-      <Popover>
-        <Header />
-        <Content />
-        <Footer>
-          <CancelTrigger />
-          <BackTrigger />
-          <AdvanceTrigger />
-        </Footer>
-      </Popover>
-    </Root>
+    <GlowTourRoot idPrefix={idPrefix} tour={tour}>
+      <GlowTourOverlay />
+      <GlowTourPointer />
+      <GlowTourPopover>
+        <GlowTourHeader />
+        <GlowTourContent />
+        <DefaultFooter />
+      </GlowTourPopover>
+    </GlowTourRoot>
+  );
+}
+
+/** The footer of the default tour, omitted when every control is hidden. */
+function DefaultFooter() {
+  const state = useTour();
+  const controls = state.currentStep?.currentProps.popover?.controls;
+  if (
+    controls?.advance === "hidden" &&
+    controls.previous === "hidden" &&
+    (controls.cancel === "hidden" || !state.canCancel)
+  )
+    return null;
+  return (
+    <GlowTourFooter>
+      <GlowTourCancelTrigger />
+      <GlowTourPreviousTrigger />
+      <GlowTourAdvanceTrigger />
+    </GlowTourFooter>
   );
 }

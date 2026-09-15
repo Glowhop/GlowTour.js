@@ -43,7 +43,7 @@ const workflow = tour
     target: "#continue",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance().",
-    popover: { disableAdvanceButton: true },
+    popover: { controls: { advance: "disabled" } },
     behavior: { allowInteraction: true },
   })
   .onTargetEvent("click", (event, context) => context.advance())
@@ -103,7 +103,7 @@ const workflow = tour
     title: "Load the data first",
     content: "The next step waits for an element that doesn't exist yet.",
     behavior: { allowInteraction: true },
-    popover: { disableAdvanceButton: true },
+    popover: { controls: { advance: "disabled" } },
   })
   .waitUntilElement("#loaded-content")
   .do(async (context) => {
@@ -112,7 +112,7 @@ const workflow = tour
   })
   .beforeEnter((context) => {
     if (context.props.get().data?.loaded) {
-      context.props.update({ popover: { disableAdvanceButton: false } });
+      context.props.update({ popover: { controls: { advance: "visible" } } });
     }
   })
   .step({
@@ -203,7 +203,7 @@ const workflow = tour
 
 tour.run(workflow);`;
 
-export const customStyledIndicatorSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger } from "@glowhop/react-tour";
+export const customStyledIndicatorSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
@@ -226,25 +226,25 @@ const workflow = tour
   })
   .build();
 
-// Instead of <DefaultTour tour={tour} />, compose the pieces directly. Pointer takes
+// Instead of <GlowTourDefault tour={tour} />, compose the pieces directly. Pointer takes
 // per-direction content, not children, so it can show a distinct glyph for each placement:
-<Root tour={tour}>
-  <Overlay />
-  <Pointer directionContent={{ top: "🎯", bottom: "🎯", left: "🎯", right: "🎯" }} />
-  <Popover>
-    <Header />
-    <Content />
-    <Footer>
-      <CancelTrigger />
-      <BackTrigger />
-      <AdvanceTrigger />
-    </Footer>
-  </Popover>
-</Root>;
+<GlowTourRoot tour={tour}>
+  <GlowTourOverlay />
+  <GlowTourPointer directionContent={{ top: "🎯", bottom: "🎯", left: "🎯", right: "🎯" }} />
+  <GlowTourPopover>
+    <GlowTourHeader />
+    <GlowTourContent />
+    <GlowTourFooter>
+      <GlowTourCancelTrigger />
+      <GlowTourPreviousTrigger />
+      <GlowTourAdvanceTrigger />
+    </GlowTourFooter>
+  </GlowTourPopover>
+</GlowTourRoot>;
 
 tour.run(workflow);`;
 
-export const liveProgressSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger, createGlowTour, useTour } from "@glowhop/react-tour";
+export const liveProgressSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger, createGlowTour, useTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
@@ -269,20 +269,20 @@ function StepCounter() {
   );
 }
 
-<Root tour={tour}>
-  <Overlay />
-  <Pointer />
-  <Popover>
-    <Header />
+<GlowTourRoot tour={tour}>
+  <GlowTourOverlay />
+  <GlowTourPointer />
+  <GlowTourPopover>
+    <GlowTourHeader />
     <StepCounter />
-    <Content />
-    <Footer>
-      <CancelTrigger />
-      <BackTrigger />
-      <AdvanceTrigger />
-    </Footer>
-  </Popover>
-</Root>;
+    <GlowTourContent />
+    <GlowTourFooter>
+      <GlowTourCancelTrigger />
+      <GlowTourPreviousTrigger />
+      <GlowTourAdvanceTrigger />
+    </GlowTourFooter>
+  </GlowTourPopover>
+</GlowTourRoot>;
 
 tour.run(workflow);`;
 
@@ -307,7 +307,7 @@ const workflow = tour
 // Nothing to configure for the OS preference. To pin a theme, put the
 // attribute on <html> for the whole page, or on a wrapper for one tour:
 <div data-glow-tour-theme="dark">
-  <GlowTour.Default tour={tour} />
+  <GlowTourDefault tour={tour} />
 </div>;
 
 tour.run(workflow);`;
@@ -330,7 +330,7 @@ const workflow = tour
 // on any screen:
 //   .demo-long-content [data-glow-tour-popover] { max-height: min(320px, 100dvh); }
 <div className="demo-long-content" style={{ "--glow-tour-popover-width": "260px" }}>
-  <GlowTour.Default tour={tour} />
+  <GlowTourDefault tour={tour} />
 </div>;
 
 tour.run(workflow);`;
@@ -343,12 +343,12 @@ const workflow = tour
     id: "branch",
     target: "#branch",
     title: "$ theming --from-css",
-    content: "The same <GlowTour.Default /> as every other example. No styling from JS.",
+    content: "The same <GlowTourDefault /> as every other example. No styling from JS.",
   })
   .build();
 
 <div className="terminal-tour">
-  <GlowTour.Default tour={tour} />
+  <GlowTourDefault tour={tour} />
 </div>;
 
 /* The whole skin is CSS on an ancestor - the tokens are declared at zero

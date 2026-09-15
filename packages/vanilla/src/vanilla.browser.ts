@@ -86,9 +86,13 @@ describe("vanilla adapter browser behavior", () => {
   test("passes the shared default-tour acceptance contract", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");
-    const rootElement = runtime.createDefaultTourElement(tour, { idPrefix: "vanilla-default" });
-    document.body.append(target, rootElement);
+    const element = document.createElement("glow-tour-default");
+    element.idPrefix = "vanilla-default";
+    element.tour = tour;
+    document.body.append(target, element);
     await settle();
+    const rootElement = element.querySelector<HTMLElement>("[data-glow-tour-root]");
+    assert.ok(rootElement);
 
     await runDefaultTourAcceptance({
       content: (value) => value,
@@ -99,7 +103,7 @@ describe("vanilla adapter browser behavior", () => {
       tour,
       settle,
       async unmount() {
-        rootElement.remove();
+        element.remove();
         target.remove();
         await settle();
       },
@@ -375,7 +379,10 @@ describe("vanilla adapter browser behavior", () => {
     observer.observe(content, { characterData: true, childList: true, subtree: true });
 
     // A live region rewritten with the same text is announced again by screen readers.
-    activeProps.set((props) => ({ ...props, popover: { hideFooter: true } }));
+    activeProps.set((props) => ({
+      ...props,
+      popover: { controls: { advance: "hidden", previous: "hidden", cancel: "hidden" } },
+    }));
     await settle();
 
     assert.equal(rewrites.length, 0);
@@ -409,13 +416,13 @@ describe("vanilla adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Two",
-      popover: { hideFooter: true },
+      popover: { controls: { advance: "hidden", previous: "hidden", cancel: "hidden" } },
       title: "Updated",
     }));
     await settle();
     assert.equal(element.querySelector("[data-glow-tour-header]")?.textContent, "Updated");
     assert.equal(element.querySelector("[data-glow-tour-content]")?.textContent, "Two");
-    assert.equal(element.querySelector<HTMLElement>("[data-glow-tour-footer]")?.hidden, true);
+    assert.equal(element.querySelector<HTMLElement>("[data-glow-tour-footer]")?.hidden, false);
     assert.ok(element.querySelector("svg[data-glow-tour-overlay]"));
     assert.equal(
       element.querySelector('[data-glow-tour-pointer-direction="top"]')?.textContent,
@@ -477,7 +484,7 @@ describe("vanilla adapter browser behavior", () => {
     const tour = runtime.createGlowTour();
     const rootElement = root(tour, "authored");
     rootElement.innerHTML =
-      '<glow-tour-popover id="authored-popover" aria-labelledby="authored-title" aria-describedby="authored-description"><glow-tour-header id="authored-title"></glow-tour-header><glow-tour-content id="authored-description"></glow-tour-content></glow-tour-popover><glow-tour-back-trigger><button aria-controls="authored-popover" aria-label="Authored back">Back</button></glow-tour-back-trigger><glow-tour-advance-trigger><button aria-controls="authored-popover" aria-label="Authored advance">Advance</button></glow-tour-advance-trigger><glow-tour-cancel-trigger><button aria-controls="authored-popover" aria-label="Authored cancel">Cancel</button></glow-tour-cancel-trigger>';
+      '<glow-tour-popover id="authored-popover" aria-labelledby="authored-title" aria-describedby="authored-description"><glow-tour-header id="authored-title"></glow-tour-header><glow-tour-content id="authored-description"></glow-tour-content></glow-tour-popover><glow-tour-previous-trigger><button aria-controls="authored-popover" aria-label="Authored back">Back</button></glow-tour-previous-trigger><glow-tour-advance-trigger><button aria-controls="authored-popover" aria-label="Authored advance">Advance</button></glow-tour-advance-trigger><glow-tour-cancel-trigger><button aria-controls="authored-popover" aria-label="Authored cancel">Cancel</button></glow-tour-cancel-trigger>';
     document.body.append(rootElement);
     await settle();
     const values = Array.from(rootElement.querySelectorAll<HTMLElement>("[id], [aria-controls]"));
@@ -670,7 +677,7 @@ describe("vanilla adapter browser behavior", () => {
     const target = document.createElement("button");
     const element = root(tour, "controls");
     element.innerHTML =
-      "<glow-tour-popover></glow-tour-popover><glow-tour-back-trigger></glow-tour-back-trigger><glow-tour-cancel-trigger></glow-tour-cancel-trigger>";
+      "<glow-tour-popover></glow-tour-popover><glow-tour-previous-trigger></glow-tour-previous-trigger><glow-tour-cancel-trigger></glow-tour-cancel-trigger>";
     document.body.append(target, element);
     await settle();
     const tourWorkflow = tour

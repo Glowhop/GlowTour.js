@@ -43,9 +43,10 @@ Timing is part of the contract, because real screen readers lose track otherwise
   exposed so the live region announces the new content and `inert` never blurs the focused
   trigger. Pointer input is blocked with `pointer-events: none` during the fade instead, because
   the controller ignores commands while transitioning.
-- Tour state only disables a trigger while the tour is `active` (the vanilla adapter's
-  `capabilityDisabled`, and `unavailableWhileActive()` in the Angular adapter). A trigger natively
-  disabled during a transition loses focus.
+- Tour state never natively disables a trigger during a step transition: the React, Solid and Vue
+  triggers skip `canAdvance` / `canPrevious` while `status` is `"transitioning"`, and the vanilla
+  (`capabilityDisabled`) and Angular (`unavailableWhileActive()`) triggers only apply them while
+  `active`. A trigger natively disabled during a transition loses focus.
 
 ## Keyboard shortcut contract
 
@@ -69,6 +70,7 @@ queued during a step transition). A disabled or `aria-disabled` trigger does not
 
 Per-step overrides are supported via `step.behavior?.keyboard`; when a step doesn't
 override a command, the defaults above apply. Shortcuts are ignored while:
+- the matching control is `"hidden"` or `"disabled"` in `step.popover?.controls` (`isControlAvailable()`), which also removes the trigger's `aria-keyshortcuts`,
 - a modifier key (`ctrlKey`/`metaKey`/`altKey`) is held,
 - the event is part of IME composition (`isComposing`),
 - the event was already handled (`defaultPrevented`),

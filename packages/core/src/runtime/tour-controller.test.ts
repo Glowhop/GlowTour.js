@@ -711,7 +711,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-23",
         content: "one",
-        popover: { disableAdvanceButton: true },
+        popover: { controls: { advance: "disabled" } },
         target: targetResolver,
         title: "one",
       })
@@ -769,14 +769,14 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-24",
         content: "zero",
-        popover: { disableAdvanceButton: true },
+        popover: { controls: { advance: "disabled" } },
         target: targetResolver,
         title: "zero",
       })
       .step({
         id: "step-25",
         content: "one",
-        popover: { disablePreviousButton: true },
+        popover: { controls: { previous: "disabled" } },
         target: targetResolver,
         title: "one",
       })
@@ -812,7 +812,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-27",
         content: "zero",
-        popover: { disableAdvanceButton: true },
+        popover: { controls: { advance: "disabled" } },
         target: targetResolver,
         title: "zero",
       })
@@ -823,7 +823,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-28",
         content: "one",
-        popover: { disablePreviousButton: true },
+        popover: { controls: { previous: "disabled" } },
         target: targetResolver,
         title: "one",
       })
@@ -853,7 +853,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-30",
         content: "replacement",
-        popover: { disableAdvanceButton: true },
+        popover: { controls: { advance: "disabled" } },
         target: targetResolver,
         title: "replacement",
       })
@@ -2207,7 +2207,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-79",
         content: "one",
-        popover: { disableAdvanceButton: true },
+        popover: { controls: { advance: "disabled" } },
         target: targetResolver,
         title: "one",
       })
@@ -2217,7 +2217,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-80",
         content: "two",
-        popover: { disablePreviousButton: true },
+        popover: { controls: { previous: "disabled" } },
         target: targetResolver,
         title: "two",
       })
@@ -2231,7 +2231,7 @@ describe("instance-first TourController", () => {
 
     firstStepProps.set((props) => ({
       ...props,
-      popover: { ...props.popover, disableAdvanceButton: false },
+      popover: { ...props.popover, controls: { advance: "visible" } },
     }));
     await tour.previous();
     assert.equal(tour.state.get().currentStepIndex, 0);

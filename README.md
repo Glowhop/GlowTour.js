@@ -73,7 +73,7 @@ The adapters depend on `@glowhop/core-tour`; you only install it directly to bui
 
 ```tsx
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, DefaultTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 const workflow = tour
@@ -88,7 +88,7 @@ export function App() {
       <input id="workspace-name" />
       <button id="save">Save</button>
       <button type="button" onClick={() => void tour.run(workflow)}>Start tour</button>
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </>
   );
 }

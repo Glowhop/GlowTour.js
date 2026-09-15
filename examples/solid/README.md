@@ -18,12 +18,12 @@ Open `http://localhost:5173` in your browser.
 
 - Using `createGlowTour()` to initialize a tour instance
 - Building a workflow with `.create()` and `.step()`
-- Rendering the `DefaultTour` component
+- Rendering the `GlowTourDefault` component
 - Triggering the tour with `tour.run(workflow)`
 
 ## API Used
 
 - `createGlowTour()` from `@glowhop/solid-tour`
-- `DefaultTour` component
+- `GlowTourDefault` component
 - Tour workflow builder
 - Solid JSX

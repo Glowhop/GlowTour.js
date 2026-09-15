@@ -6,7 +6,6 @@ import {
   type AngularTourContent,
   createGlowTour,
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
@@ -14,6 +13,7 @@ import {
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
+  GlowTourPreviousTrigger,
   GlowTourRoot,
 } from "@glowhop/angular-tour";
 import "@glowhop/styles-tour/default.css";
@@ -43,7 +43,7 @@ lab.rendererRoot.append(document.createElement("angular-tour-renderer"));
     GlowTourHeader,
     GlowTourContent,
     GlowTourFooter,
-    GlowTourBackTrigger,
+    GlowTourPreviousTrigger,
     GlowTourAdvanceTrigger,
     GlowTourCancelTrigger,
   ],
@@ -55,7 +55,7 @@ lab.rendererRoot.append(document.createElement("angular-tour-renderer"));
         <glow-tour-header></glow-tour-header>
         <glow-tour-content></glow-tour-content>
         <glow-tour-footer>
-          <glow-tour-back-trigger></glow-tour-back-trigger>
+          <glow-tour-previous-trigger></glow-tour-previous-trigger>
           <glow-tour-advance-trigger></glow-tour-advance-trigger>
           <glow-tour-cancel-trigger></glow-tour-cancel-trigger>
         </glow-tour-footer>
