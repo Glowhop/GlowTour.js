@@ -29,7 +29,7 @@ export interface TargetResolverContext {
 
 /** Configures step-level interaction behavior and error handling. */
 export interface StepBehavior {
-  /** Allow user interaction with the target: the page is no longer inert and pointer events reach the target through the cutout, while the dimmed area still catches clicks. Change it during the step with `context.setAllowInteraction()`. @default false */
+  /** Allow user interaction with the target: the page is no longer inert and pointer events reach the target through the cutout, while the dimmed area still catches clicks. Change it during the step with `context.props.update({ behavior: { allowInteraction } })`. @default false */
   allowInteraction?: boolean;
   /** Disable automatic focus on the target when the step is entered. @default false */
   disableAutoFocus?: boolean;
@@ -295,12 +295,6 @@ export interface StepContext<T> {
   readonly target: HTMLElement;
   /** Store for reading and updating the current step's properties. */
   readonly props: StepPropsStore<T>;
-  /**
-   * Allows or blocks interaction with the page while the step is shown, overriding
-   * `behavior.allowInteraction`. Applies at once, fading the indicator in or out, and is kept when
-   * the tour comes back to this step, until the workflow runs again.
-   */
-  setAllowInteraction(allowed: boolean): void;
   /** Signal that aborts when the step is exited or the tour is cancelled. */
   readonly signal: AbortSignal;
 }

@@ -89,7 +89,7 @@ export function createLabView(root: HTMLElement, framework: string): LabView {
             </article>
             <article class="lab-target-card">
               ${cardNumber("09")}
-              <span>setAllowInteraction(false)</span>
+              <span>behavior.allowInteraction</span>
               <button id="${selectorId(selectors.clickOnce)}" type="button">Cliquer une seule fois</button>
             </article>
             ${targetCard(selectorId(selectors.return), "10", "advance guard")}

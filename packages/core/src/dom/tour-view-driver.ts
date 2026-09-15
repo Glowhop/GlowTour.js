@@ -140,6 +140,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private pendingFocusGeneration: number | null = null;
   private popover: PopoverElement | null = null;
   private presentationDirty = false;
+  /** The `allowInteraction` value the overlay, the page modality and the focus guard reflect. */
+  private appliedAllowInteraction = false;
+  /** Set when a live `allowInteraction` change started the pointer fade; the next frame clears it. */
+  private pointerFading = false;
   private rafId: number | null = null;
   private rafCancel: ((id: number) => void) | null = null;
   private root: HTMLElement | null = null;
@@ -211,8 +215,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.activeTarget = null;
       this.targetFocusedAtFreeze = false;
       this.currentStep = step;
-      // `syncInteraction` ignores the step once another one is shown.
-      step.syncInteraction = () => this.syncInteraction(step);
       this.currentSignal = signal;
       this.direction = direction;
       this.lastTargetRect = null;
@@ -264,8 +266,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.active = true;
       // Only now, as focus moves into the presented popover, like a native modal dialog. Inerting
       // the page while the popover is still hidden pulls the screen reader's cursor out of the
-      // tree with nowhere to go, and VoiceOver then stays silent.
-      this.syncModality(!modal);
+      // tree with nowhere to go, and VoiceOver then stays silent. Read live: `beforeEnter` or the
+      // entrance may have changed `behavior.allowInteraction` since the modal claim above.
+      this.syncModality(step.allowInteraction);
       this.activateFocus(step, target, direction, generation);
       this.syncScrollLock(step);
       this.throwIfStale(generation, signal);
@@ -389,6 +392,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       animationOptions(step, step.overlay, this.overlay.getElement()),
     );
     this.overlay?.setInteractionAllowed(interactionAllowed);
+    this.appliedAllowInteraction = interactionAllowed;
     this.popover?.initializeProps(!replaceVisiblePopover);
     this.popover?.setAnimationOptions(
       animationOptions(step, step.popover, this.popover.getElement()),
@@ -576,8 +580,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           return;
         }
         this.presentationDirty = true;
+        if (step.allowInteraction === this.appliedAllowInteraction) return;
+        this.syncInteraction(step);
+        // The pointer fade has started: the next frame must not snap it with `syncVisibility`.
+        this.pointerFading = step.allowInteraction === this.appliedAllowInteraction;
       }),
     );
+    // A change made while the step was still entering is applied now that it is presented.
+    if (step.allowInteraction !== this.appliedAllowInteraction) this.syncInteraction(step);
     this.stepCleanups.push(
       this.commands?.subscribeCapabilities?.((active) => {
         if (!this.isCurrentGeneration(generation)) return;
@@ -636,7 +646,6 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           direction: step.direction,
           initialProps: step.initialProps,
           props: step.props,
-          setAllowInteraction: step.setAllowInteraction,
           signal,
           target,
         });
@@ -764,7 +773,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.observeDynamicOperation(reposition, generation),
     );
     if (presentationChanged) {
-      this.pointer?.syncVisibility(this.isPointerEnabled(step), targetRect, step, popoverPlacement);
+      if (this.pointerFading) this.pointerFading = false;
+      else
+        this.pointer?.syncVisibility(
+          this.isPointerEnabled(step),
+          targetRect,
+          step,
+          popoverPlacement,
+        );
     } else if (this.isPointerEnabled(step)) {
       const pointer = this.pointer?.getElement();
       if (pointer?.getAttribute("aria-hidden") === "true") {
@@ -1161,6 +1177,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.cancelScroll?.();
     this.cancelScroll = null;
     this.presentationDirty = false;
+    this.pointerFading = false;
     if (this.rafId !== null) this.rafCancel?.(this.rafId);
     this.rafId = null;
     this.rafCancel = null;
@@ -1223,6 +1240,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   /** Applies the step's own interaction setting to the overlay, the page modality and the focus guard. */
   private applyInteraction(step: ActiveStep<T>, target: HTMLElement) {
     this.applyInteractionLock(step, false);
+    this.appliedAllowInteraction = step.allowInteraction;
     const popover = this.popover?.getElement();
     if (isHTMLElement(popover, this.root ?? popover)) {
       this.focusGuard.update({
@@ -1236,11 +1254,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   /**
-   * Applies `step.allowInteraction` changed while the step is on screen. A step still entering
-   * reads the new value when it presents, and a frozen one keeps interaction off until
-   * `retarget()` restores it. The indicator fades in or out instead of snapping.
+   * Applies a `behavior.allowInteraction` changed through the step props while the step is on
+   * screen. A step still entering reads the new value when it presents, and a frozen one keeps
+   * interaction off until `retarget()` restores it. The indicator fades in or out instead of snapping.
    */
-  syncInteraction(step: ActiveStep<T>) {
+  private syncInteraction(step: ActiveStep<T>) {
     const target = this.activeTarget;
     if (
       this.disposed ||

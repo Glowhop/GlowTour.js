@@ -21,7 +21,6 @@ function context(target = element()): StepContext<string> {
     direction: "advance",
     initialProps: { content: "", title: "" },
     props: {} as StepContext<string>["props"],
-    setAllowInteraction: () => {},
     signal: new AbortController().signal,
     target,
   };

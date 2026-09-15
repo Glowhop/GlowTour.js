@@ -38,6 +38,10 @@ export function cloneStepProps<T>(props: ReadonlyStepProps<T>): StepProps<T> {
         ...props.indicator.placementTryOrder,
       ],
     },
+    behavior: props.behavior && {
+      ...props.behavior,
+      scroll: props.behavior.scroll && { ...props.behavior.scroll },
+    },
   };
 }
 
@@ -65,5 +69,7 @@ export function freezeStepProps<T>(props: ReadonlyStepProps<T>): ReadonlyStepPro
   if (cloned.indicator?.animation) Object.freeze(cloned.indicator.animation);
   if (cloned.indicator?.placementTryOrder) Object.freeze(cloned.indicator.placementTryOrder);
   if (cloned.indicator) Object.freeze(cloned.indicator);
+  if (cloned.behavior?.scroll) Object.freeze(cloned.behavior.scroll);
+  if (cloned.behavior) Object.freeze(cloned.behavior);
   return Object.freeze(cloned);
 }
