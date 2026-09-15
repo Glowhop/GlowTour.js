@@ -15,7 +15,7 @@ const GlowTourContent: DefineComponent<ExtractPropTypes<{ ariaLive: { default: s
 
 const GlowTourDefault: DefineComponent<ExtractPropTypes<{ idPrefix: { type: StringConstructor; }; tour: { required: true; type: PropType<Tour>; }; }>, () => VNode<RendererNode, RendererElement, { [key: string]: any; }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<ExtractPropTypes<{ idPrefix: { type: StringConstructor; }; tour: { required: true; type: PropType<Tour>; }; }>, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>;
 
-const GlowTourFooter: DefineComponent<{}, () => VNode<RendererNode, RendererElement, { [key: string]: any; }> | null, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{}, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>;
+const GlowTourFooter: DefineComponent<{}, () => VNode<RendererNode, RendererElement, { [key: string]: any; }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{}, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>;
 
 const GlowTourHeader: DefineComponent<{}, () => VNode<RendererNode, RendererElement, { [key: string]: any; }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{}, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>;
 

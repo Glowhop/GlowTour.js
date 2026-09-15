@@ -214,7 +214,7 @@ describe("validateWorkflowConfig", () => {
         {
           ...config.steps[0],
           overlay: { color: 42 },
-          popover: { hideFooter: "yes" },
+          popover: { controls: { advance: "gone" } },
           indicator: { placementTryOrder: ["center"] },
           behavior: { overlayClick: "close" },
         },
@@ -223,7 +223,7 @@ describe("validateWorkflowConfig", () => {
 
     const paths = issues.map((issue) => issue.path);
     assert.ok(paths.includes("steps[0].overlay.color"));
-    assert.ok(paths.includes("steps[0].popover.hideFooter"));
+    assert.ok(paths.includes("steps[0].popover.controls.advance"));
     assert.ok(paths.includes("steps[0].indicator.placementTryOrder[0]"));
     assert.ok(paths.includes("steps[0].behavior.overlayClick"));
   });

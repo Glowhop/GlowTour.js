@@ -268,27 +268,18 @@ export function Content(props: ContentProps): JSX.Element {
 
 /**
  * The footer section of the popover, typically containing navigation buttons.
- * Automatically hidden if configured via `popover.hideFooter`.
  * @param props HTML attributes and children.
- * @returns The footer container, or null if hidden.
+ * @returns The footer container.
  */
 export function Footer(props: ElementProps): JSX.Element {
-  const context = useTourContext();
-  const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      return !currentStep(snapshot())?.popover?.hideFooter;
-    },
-    get children() {
-      return createComponent(
-        Dynamic,
-        mergeProps(props, {
-          component: "footer",
-          "data-glow-tour-footer": "",
-        }),
-      );
-    },
-  });
+  useTourContext();
+  return createComponent(
+    Dynamic,
+    mergeProps(props, {
+      component: "footer",
+      "data-glow-tour-footer": "",
+    }),
+  );
 }
 
 /**
@@ -438,7 +429,7 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
   return Show({
     get when() {
       const step = currentStep(snapshot());
-      return !step?.popover?.hidePreviousButton;
+      return step?.popover?.controls?.previous !== "hidden";
     },
     get children() {
       return Trigger(
@@ -446,7 +437,7 @@ export function BackTrigger(props: BackTriggerProps): JSX.Element {
           get capabilityDisabled() {
             return (
               !snapshot().canPrevious ||
-              currentStep(snapshot())?.popover?.disablePreviousButton === true
+              currentStep(snapshot())?.popover?.controls?.previous === "disabled"
             );
           },
           label: props.backLabel ?? "Back step",
@@ -468,7 +459,7 @@ export function AdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return !currentStep(snapshot())?.popover?.hideAdvanceButton;
+      return currentStep(snapshot())?.popover?.controls?.advance !== "hidden";
     },
     get children() {
       return Trigger(
@@ -476,7 +467,7 @@ export function AdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
           get capabilityDisabled() {
             return (
               !snapshot().canAdvance ||
-              currentStep(snapshot())?.popover?.disableAdvanceButton === true
+              currentStep(snapshot())?.popover?.controls?.advance === "disabled"
             );
           },
           get label() {
@@ -502,13 +493,18 @@ export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return snapshot().canCancel;
+      return (
+        snapshot().canCancel && currentStep(snapshot())?.popover?.controls?.cancel !== "hidden"
+      );
     },
     get children() {
       return Trigger(
         mergeProps(props, {
           get capabilityDisabled() {
-            return !snapshot().canCancel;
+            return (
+              !snapshot().canCancel ||
+              currentStep(snapshot())?.popover?.controls?.cancel === "disabled"
+            );
           },
           label: "Skip",
           marker: "cancel" as const,

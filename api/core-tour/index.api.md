@@ -73,14 +73,16 @@ interface PopoverArrowOptions {
     autoStyles?: boolean;
 }
 
+interface PopoverControls {
+    advance?: TourControlState;
+    previous?: TourControlState;
+    cancel?: TourControlState;
+}
+
 interface PopoverOptions extends BaseOptions {
     placementTryOrder?: readonly TryOrderOptions[];
     arrow?: PopoverArrowOptions;
-    hideFooter?: boolean;
-    disablePreviousButton?: boolean;
-    hidePreviousButton?: boolean;
-    disableAdvanceButton?: boolean;
-    hideAdvanceButton?: boolean;
+    controls?: PopoverControls;
     gap?: number;
 }
 
@@ -194,6 +196,8 @@ type TargetResolver = string | HTMLElement | ((context: TargetResolverContext) =
 interface TargetResolverContext {
     signal: AbortSignal;
 }
+
+type TourControlState = "visible" | "hidden" | "disabled";
 
 interface TourCurrentStep<T> {
     readonly id: string;

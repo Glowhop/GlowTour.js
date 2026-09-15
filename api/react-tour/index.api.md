@@ -20,9 +20,9 @@ interface DefaultTourProps {
     readonly tour: CoreGlowTour<ReactTourContent>;
 }
 
-function Footer(props: ElementProps): Element | null;
+function Footer(props: ElementProps): Element;
 
-const GlowTour: { Default: (props: DefaultTourProps) => Element; Root: (props: RootProps) => Element; Popover: (props: ElementProps) => Element; Header: (props: ContentProps) => Element; Content: (props: ContentProps) => Element; Footer: (props: ElementProps) => Element | null; Overlay: (props: OverlayProps) => Element; Pointer: (props: PointerProps) => Element; BackTrigger: (props: BackTriggerProps) => Element | null; AdvanceTrigger: (props: AdvanceTriggerProps) => Element | null; CancelTrigger: (props: ButtonProps) => Element | null; };
+const GlowTour: { Default: (props: DefaultTourProps) => Element; Root: (props: RootProps) => Element; Popover: (props: ElementProps) => Element; Header: (props: ContentProps) => Element; Content: (props: ContentProps) => Element; Footer: (props: ElementProps) => Element; Overlay: (props: OverlayProps) => Element; Pointer: (props: PointerProps) => Element; BackTrigger: (props: BackTriggerProps) => Element | null; AdvanceTrigger: (props: AdvanceTriggerProps) => Element | null; CancelTrigger: (props: ButtonProps) => Element | null; };
 
 export { GlowTourOptions } from "@glowhop/core-tour";
 

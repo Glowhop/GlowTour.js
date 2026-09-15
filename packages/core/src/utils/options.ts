@@ -3,7 +3,6 @@ import type {
   AnimationOptions,
   BaseOptions,
   IndicatorOptions,
-  KeyboardShortcuts,
   MissingTargetOptions,
   OverlayOptions,
   PopoverOptions,
@@ -91,12 +90,8 @@ export function mergePopoverOptions(
           autoStyles: overrides?.arrow?.autoStyles ?? defaults?.arrow?.autoStyles,
         }
       : undefined,
-    disableAdvanceButton: overrides?.disableAdvanceButton ?? defaults?.disableAdvanceButton,
-    disablePreviousButton: overrides?.disablePreviousButton ?? defaults?.disablePreviousButton,
+    controls: mergeCommands(defaults?.controls, overrides?.controls, (state) => state),
     gap: overrides?.gap ?? defaults?.gap,
-    hideAdvanceButton: overrides?.hideAdvanceButton ?? defaults?.hideAdvanceButton,
-    hideFooter: overrides?.hideFooter ?? defaults?.hideFooter,
-    hidePreviousButton: overrides?.hidePreviousButton ?? defaults?.hidePreviousButton,
     placementTryOrder: cloneArray(placementTryOrder),
   };
 }
@@ -149,22 +144,24 @@ export function mergeStepBehavior(
     allowInteraction: overrides?.allowInteraction ?? defaults?.allowInteraction,
     autoFocus: overrides?.autoFocus ?? defaults?.autoFocus,
     autoScroll: overrides?.autoScroll ?? defaults?.autoScroll,
-    keyboard: mergeKeyboardShortcuts(defaults?.keyboard, overrides?.keyboard),
+    keyboard: mergeCommands(defaults?.keyboard, overrides?.keyboard, cloneArray),
     missingTarget: mergeMissingTarget(defaults?.missingTarget, overrides?.missingTarget),
     scroll: mergeScrollOptions(defaults?.scroll, overrides?.scroll),
     overlayClick: overrides?.overlayClick ?? defaults?.overlayClick,
   };
 }
 
-function mergeKeyboardShortcuts(
-  defaults?: KeyboardShortcuts,
-  overrides?: KeyboardShortcuts,
-): KeyboardShortcuts | undefined {
+/** Merges a value per navigation command, such as `behavior.keyboard` or `popover.controls`. */
+function mergeCommands<V>(
+  defaults: { readonly previous?: V; readonly advance?: V; readonly cancel?: V } | undefined,
+  overrides: { readonly previous?: V; readonly advance?: V; readonly cancel?: V } | undefined,
+  copy: (value: V | undefined) => V | undefined,
+) {
   if (!defaults && !overrides) return undefined;
   return {
-    previous: cloneArray(overrides?.previous ?? defaults?.previous),
-    advance: cloneArray(overrides?.advance ?? defaults?.advance),
-    cancel: cloneArray(overrides?.cancel ?? defaults?.cancel),
+    previous: copy(overrides?.previous ?? defaults?.previous),
+    advance: copy(overrides?.advance ?? defaults?.advance),
+    cancel: copy(overrides?.cancel ?? defaults?.cancel),
   };
 }
 
@@ -181,4 +178,22 @@ function mergeMissingTarget(
 
 function cloneArray<T>(value?: readonly T[]) {
   return value ? [...value] : undefined;
+}
+
+/** Whether a popover control is visible and enabled, so the popover UI may run its command. */
+export function isControlAvailable(
+  props:
+    | {
+        readonly popover?: {
+          readonly controls?: {
+            readonly advance?: string;
+            readonly previous?: string;
+            readonly cancel?: string;
+          };
+        };
+      }
+    | undefined,
+  command: "advance" | "previous" | "cancel",
+) {
+  return props !== undefined && (props.popover?.controls?.[command] ?? "visible") === "visible";
 }
