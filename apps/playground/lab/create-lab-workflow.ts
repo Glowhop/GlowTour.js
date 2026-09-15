@@ -191,6 +191,20 @@ export function createLabWorkflow<TContent>(
       void context.advance();
     })
     .step({
+      id: "step-click-once",
+      target: selectors.clickOnce,
+      title: content.title("setAllowInteraction(false)"),
+      content: content.paragraph(copy.clickOnce),
+      popover: { hideAdvanceButton: true },
+      behavior: { allowInteraction: true },
+      data: { api: "setAllowInteraction" },
+    })
+    .onTargetEvent("click", (_targetEvent, { props, setAllowInteraction }) => {
+      actions.log("setAllowInteraction(false) - la cible ne répond plus");
+      setAllowInteraction(false);
+      props.update({ popover: { hideAdvanceButton: false } });
+    })
+    .step({
       id: "step-10",
       target: selectors.return,
       title: content.title("action() + advance()"),

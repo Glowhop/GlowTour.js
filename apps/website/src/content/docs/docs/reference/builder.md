@@ -420,7 +420,7 @@ Control step interaction and scrolling behavior.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element |
+| `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element. Change it during the step with `context.setAllowInteraction()` - see [Changing interaction during a step](/docs/guides/programmatic-control#changing-interaction-during-a-step) |
 | `disableAutoFocus` | boolean | `false` | Skip auto-focusing the target element |
 | `disableAutoScroll` | boolean | `false` | Skip auto-scrolling to the target |
 | `missingTargetStrategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found - see [Handling errors](/docs/guides/handling-errors) |

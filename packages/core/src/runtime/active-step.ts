@@ -15,6 +15,16 @@ export class ActiveStep<T> {
   readonly behavior;
   readonly animated: boolean | undefined;
   readonly allowScroll: boolean;
+  /** Live interaction setting: starts from `behavior.allowInteraction`, changed by `setAllowInteraction`. */
+  allowInteraction: boolean;
+  /** Applies a changed `allowInteraction` to the presentation. Set by the view driver showing the step. */
+  syncInteraction?: () => void;
+  /** Backs `context.setAllowInteraction` for step actions, hooks and target event handlers. */
+  readonly setAllowInteraction = (allowed: boolean) => {
+    if (this.allowInteraction === allowed) return;
+    this.allowInteraction = allowed;
+    this.syncInteraction?.();
+  };
   target: HTMLElement | null = null;
   /** The navigation that last brought the tour to this step. */
   direction: TourDirection = "advance";
@@ -30,6 +40,7 @@ export class ActiveStep<T> {
     this.initialProps = freezeStepProps(mergeStepProps(defaults, definition.props));
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
     this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
+    this.allowInteraction = this.behavior?.allowInteraction === true;
     this.animated = defaults.animated;
     this.allowScroll = defaults.allowScroll !== false;
   }
