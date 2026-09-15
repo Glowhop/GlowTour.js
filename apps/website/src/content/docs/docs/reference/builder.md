@@ -265,7 +265,7 @@ type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>
 
 ### `.beforeLeave(callback)`
 
-Runs before the tour navigates away from the step: `advance()`, `previous()`, `goToStep()`, or advancing past the last step to finish. Can be async: the navigation waits for it. It does not run on cancel; use the workflow's `onCancel` option, which receives the current step.
+Runs before the tour navigates away from the step: `advance()`, `previous()`, `goTo()`, or advancing past the last step to finish. Can be async: the navigation waits for it. It does not run on cancel; use the workflow's `onCancel` option, which receives the current step.
 
 **Signature**:
 ```typescript

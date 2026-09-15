@@ -78,7 +78,7 @@ beginnings - it is always `0`.
 | `"trigger"` | Clicked a Next / Back / Cancel button |
 | `"keyboard"` | Used a keyboard shortcut |
 | `"overlay"` | Clicked the dimmed backdrop |
-| `"api"` | Nothing - your own code called `advance()`, `previous()`, `goToStep()` or `cancel()`, including from inside a step action |
+| `"api"` | Nothing - your own code called `advance()`, `previous()`, `goTo()` or `cancel()`, including from inside a step action |
 
 This is usually the field worth grouping on. A drop-off where `source` is `"overlay"`
 is people trying to get out; the same drop-off on `"trigger"` is people reading the

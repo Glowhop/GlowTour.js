@@ -189,8 +189,8 @@ export function createLabWorkflow<TContent>(
       data: { api: "onTargetEvent", overload: "single" },
     })
     .onTargetEvent("click", (_targetEvent, context) => {
-      actions.log("onTargetEvent('click') - avance via le contexte");
-      void context.advance();
+      actions.log("onTargetEvent('click') - goTo('step-click-once') via le contexte");
+      void context.goTo("step-click-once");
     })
     .step({
       id: "step-click-once",

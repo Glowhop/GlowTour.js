@@ -12,7 +12,7 @@ Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetProps
   the step's props: whatever the hook sets is the first thing rendered. A step skipped by
   `missingTargetStrategy: "skip"` does not run it.
 - `beforeLeave(callback)` runs at the start of a navigation away from the step: `advance()`,
-  `previous()`, `goToStep()`, or advancing past the last step. It never runs on cancel.
+  `previous()`, `goTo()`, or advancing past the last step. It never runs on cancel.
 - Both receive `StepHookContext<T>`: `StepContext<T>` without `advance`, `cancel` and `previous`,
   plus `abort()`. Called before the hook settles, `abort()` stops the navigation: the tour stays on
   its current step and emits nothing. When the first step's `beforeEnter` aborts, the tour goes
@@ -29,7 +29,7 @@ Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetProps
   `beforeLeave` and A's `beforeEnter` both see `"previous"`, and A's actions keep that value. This
   is the same value `TourEvent.direction` reports for `step:leave` / `step:enter`.
 - `direction` was kept as the name because `TourDirection`, `state.direction` and
-  `TourEvent.direction` already use it. It does not tell a `goToStep()` jump from a button press, or
+  `TourEvent.direction` already use it. It does not tell a `goTo()` jump from a button press, or
   a finish from a regular advance; that would be a separate field, as `TourEvent.source` is.
 - JSON config: `enterAction` / `leaveAction`, functions only.
 

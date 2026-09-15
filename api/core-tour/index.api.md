@@ -27,7 +27,7 @@ interface GlowTour<T> {
     run(workflow: WorkflowDefinition<T>, options?: RunOptions): Promise<void>;
     advance(): Promise<void>;
     previous(): Promise<void>;
-    goToStep(index: number): Promise<void>;
+    goTo(id: string): Promise<void>;
     cancel(): Promise<void>;
     dispose(): void;
     readonly state: ReadonlyTourState<T>;
@@ -143,6 +143,7 @@ interface StepContext<T> {
     advance(): Promise<void>;
     cancel(): Promise<void>;
     previous(): Promise<void>;
+    goTo(id: string): Promise<void>;
     readonly direction: TourDirection;
     readonly initialProps: ReadonlyStepProps<T>;
     readonly target: HTMLElement;
@@ -155,7 +156,7 @@ type StepEventContext<T> = StepContext<T>;
 
 type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>;
 
-interface StepHookContext<T> extends Omit<StepContext<T>, "advance" | "cancel" | "previous"> {
+interface StepHookContext<T> extends Omit<StepContext<T>, "advance" | "cancel" | "goTo" | "previous"> {
     abort(): void;
 }
 

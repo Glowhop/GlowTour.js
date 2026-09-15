@@ -37,20 +37,13 @@ export const TARGET_LOSS_GRACE_MS = 150;
 const DISPOSED_ERROR_MESSAGE = "Tour controller is disposed";
 
 /**
- * Resolves `RunOptions.startAt` to a step index. Throws rather than silently
- * falling back to the first step: a stale id means the caller's stored position
- * no longer matches the workflow, and restarting an onboarding from the
- * beginning without saying so is a bug the end user sees.
+ * Resolves a step id (`RunOptions.startAt`, `goTo()`) to its index. Throws rather than silently
+ * falling back: a stale id means the caller's stored position no longer matches the workflow, and
+ * restarting an onboarding, or jumping nowhere, without saying so is a bug the end user sees.
  */
-function resolveStartIndex<T>(
-  workflow: WorkflowDefinition<T>,
-  startAt: string | undefined,
-): number {
-  if (startAt === undefined) return 0;
-  const index = workflow.steps.findIndex((step) => step.id === startAt);
-  if (index === -1) {
-    throw new Error(`Workflow "${workflow.name}" has no step with id "${startAt}" to start at.`);
-  }
+function resolveStepIndex<T>(workflow: WorkflowDefinition<T>, id: string): number {
+  const index = workflow.steps.findIndex((step) => step.id === id);
+  if (index === -1) throw new Error(`Workflow "${workflow.name}" has no step with id "${id}".`);
   return index;
 }
 
@@ -134,6 +127,7 @@ export class TourController<T> {
       canCancel: () => this.status === "active" && this.isCancelAvailable(),
       canPrevious: () => this.canNavigate("previous"),
       cancel: (source) => this.cancel(source),
+      goTo: (id) => this.goTo(id),
       isAdvanceDisabled: () => !this.isPresentedAdvanceAvailable(),
       isCancelDisabled: () => !this.isPresentedCancelAvailable(),
       isPreviousDisabled: () => !this.isPresentedPreviousAvailable(),
@@ -162,7 +156,8 @@ export class TourController<T> {
   async run(workflow: WorkflowDefinition<T>, runOptions: RunOptions = {}) {
     this.assertNotDisposed();
     validateWorkflowOptions(workflow);
-    const startIndex = resolveStartIndex(workflow, runOptions.startAt);
+    const startIndex =
+      runOptions.startAt === undefined ? 0 : resolveStepIndex(workflow, runOptions.startAt);
     const rootDocument = this.options.assertCanRun?.(workflow) ?? undefined;
     const retainedPresentation = this.capturePresentation();
     const operation = this.beginOperation();
@@ -224,14 +219,17 @@ export class TourController<T> {
     await this.transitionFromPublic("previous", undefined, source);
   }
 
-  async goToStep(index: number) {
+  async goTo(id: string) {
     this.assertNotDisposed();
-    if (this.status === "starting" || this.status === "transitioning") return;
-    if (index < 0 || index >= this.steps.length) {
-      throw new Error(`Step index ${index} is out of bounds`);
-    }
-    const direction = index > this.index ? "advance" : "previous";
-    await this.transitionFromPublic(direction, index, "api");
+    const workflow = this.workflow;
+    if (!workflow || this.status === "starting" || this.status === "transitioning") return;
+    const index = resolveStepIndex(workflow, id);
+    await this.transitionFromPublic(this.directionTo(index), index, "api");
+  }
+
+  /** The direction of a jump from the current step to the step at `index`. */
+  private directionTo(index: number): TourDirection {
+    return index > this.index ? "advance" : "previous";
   }
 
   async cancel(source: TourEventSource = "api") {
@@ -654,6 +652,13 @@ export class TourController<T> {
         this.assertCurrent(operation);
         if (this.canCancel()) await this.cancelCurrent(operation);
       },
+      goTo: async (id: string) => {
+        onControl?.();
+        this.assertCurrent(operation);
+        if (!this.workflow) return;
+        const index = resolveStepIndex(this.workflow, id);
+        await this.transition(this.directionTo(index), operation, index);
+      },
       previous: async () => {
         onControl?.();
         this.assertCurrent(operation);
@@ -936,7 +941,7 @@ export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
     cancel: () => controller.cancel(),
     create: (name, options) => controller.create(name, options),
     dispose: () => controller.dispose(),
-    goToStep: (index) => controller.goToStep(index),
+    goTo: (id) => controller.goTo(id),
     previous: () => controller.previous(),
     run: (workflow, runOptions) => controller.run(workflow, runOptions),
     state: controller.state,
