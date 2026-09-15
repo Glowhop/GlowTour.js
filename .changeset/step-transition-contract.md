@@ -14,7 +14,7 @@ Let step hooks stop a navigation, report skipped steps, and emit each transition
 **Added**
 
 - `abort()` in `beforeEnter` and `beforeLeave` stops the navigation: the tour stays on its current step and emits nothing. When the first step's `beforeEnter` aborts, the tour goes back to `idle`, like an `onStart` abort. Called after the hook has settled, it has no effect.
-- `step:skip` monitoring event, emitted for each step passed over by `missingTargetStrategy: "skip"`.
+- `step:skip` monitoring event, emitted for each step passed over by `missingTarget: { strategy: "skip" }`.
 
 **Event order**
 

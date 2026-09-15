@@ -74,7 +74,7 @@ const spaWorkflow = tour
     target: "#profile-avatar",
     title: "Profile",
     content: "Step 2 targets an element that only exists after the route change.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .beforeLeave(({ direction }) => {
     if (direction !== "previous") return;
@@ -87,7 +87,7 @@ const spaWorkflow = tour
     target: "#profile-save",
     title: "Save",
     content: "Step 3 is on the same view as step 2. Finish to end the tour.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .build();
 
@@ -119,7 +119,7 @@ const reloadWorkflow = tour
     target: "#settings-panel",
     title: "Settings",
     content: "This target only exists on page B.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .build();
 

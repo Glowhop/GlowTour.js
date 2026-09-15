@@ -221,7 +221,7 @@ const workflow = tour
     title: "Same tour, fully customized",
     content: "overlay/popover overrides, a custom pointer glyph, and allowInteraction, all at once.",
     overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true } },
+    popover: { arrow: { hidden: true } },
     behavior: { allowInteraction: true },
   })
   .build();
@@ -400,8 +400,7 @@ const workflow = tour
     behavior: {
       allowInteraction: true,
       // Keep the step while the card is gone instead of failing the tour.
-      missingTargetStrategy: "wait",
-      targetTimeout: 5000,
+      missingTarget: { strategy: "wait", timeout: 5000 },
     },
   })
   .build();

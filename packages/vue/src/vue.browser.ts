@@ -427,7 +427,7 @@ describe("vue adapter browser behavior", () => {
       .step({
         id: "step-6",
         content: "One",
-        popover: { keyboardShortcuts: { advance: ["N"] } },
+        behavior: { keyboard: { advance: ["N"] } },
         target,
         title: "One",
       })

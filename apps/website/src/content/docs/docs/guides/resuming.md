@@ -76,7 +76,7 @@ Navigation stays with your router - GlowTour.js knows nothing about Next, vue-ro
   target: "#profile-avatar",
   title: "Profile",
   content: "...",
-  behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+  behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
 })
 ```
 
@@ -102,6 +102,6 @@ if (saved) await tour.run(workflow, { startAt: saved });
 These are app decisions, so the core does not decide them for you:
 
 - **The workflow changed** since the id was saved - `run()` throws; fall back to starting over, or store a version alongside the id.
-- **The target no longer exists** on the resumed step - that is an ordinary missing-target case, handled by `behavior.missingTargetStrategy` - see [Handling errors](/docs/guides/handling-errors).
+- **The target no longer exists** on the resumed step - that is an ordinary missing-target case, handled by `behavior.missingTarget` - see [Handling errors](/docs/guides/handling-errors).
 - **The user comes back days later** - add your own expiry when you write the key.
 - **Two tabs** - the simplest workable rule is last-writer-wins; use a per-tab key if you need better.

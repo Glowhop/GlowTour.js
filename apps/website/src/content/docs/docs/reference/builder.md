@@ -238,7 +238,7 @@ const workflow = tour
 
 ### `.beforeEnter(callback)`
 
-Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTargetStrategy: "skip"` never runs it. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `run()`, the tour goes back to `idle`.
+Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTarget: { strategy: "skip" }` never runs it. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `run()`, the tour goes back to `idle`.
 
 Step props are not reset automatically: a value set with `context.props.set()` is still there when the tour comes back to the step, until the workflow runs again. `beforeEnter` is where to reset them, because what it sets is what the step renders first.
 
@@ -343,9 +343,6 @@ Control the information box that displays step title and content.
 | `disablePreviousButton` | boolean | `false` | Disable going back (keyboard and button blocked) |
 | `animated` | boolean | `true` | Enable/disable animation |
 | `animation` | AnimationOptions | - | Custom animation (duration and easing) |
-| `keyboardShortcuts.advance` | Array | `["Enter", "ArrowRight"]` | Keys to advance to next step |
-| `keyboardShortcuts.previous` | Array | `["ArrowLeft", "Backspace"]` | Keys to go to previous step |
-| `keyboardShortcuts.cancel` | Array | `["Escape"]` | Keys to cancel the tour |
 | `arrow` | PopoverArrowOptions | - | Arrow/pointer styling (see [Arrow options](#arrow-options)) |
 
 **Usage**:
@@ -353,12 +350,7 @@ Control the information box that displays step title and content.
 popover: {
   placementTryOrder: ["right", "bottom", "left", "top"],
   gap: 20,
-  hideFooter: false,
-  keyboardShortcuts: {
-    advance: ["Enter", "Space"],
-    previous: ["Backspace"],
-    cancel: ["Escape"]
-  }
+  hideFooter: false
 }
 ```
 
@@ -368,14 +360,14 @@ Customize the arrow that points from the popover to the target element.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `disabled` | boolean | `false` | Hide the arrow |
+| `hidden` | boolean | `false` | Hide the arrow |
 | `color` | string | - | Arrow color (uses theme's surface color if not set) |
 | `size` | number | `12` | Arrow dimensions (in pixels) |
 | `borderWidth` | number | `1` | Arrow border width (in pixels) |
 | `borderRadius` | number | `0` | Arrow border radius (in pixels) |
 | `edgePadding` | number | `16` | Spacing from popover edges (in pixels) |
 | `styleNonce` | string | - | CSP nonce for injected arrow styles |
-| `disableAutoStyles` | boolean | `false` | Skip injecting built-in arrow styles (provide your own CSS) |
+| `autoStyles` | boolean | `true` | Inject the built-in arrow styles. Set `false` to provide your own CSS |
 
 **Usage**:
 ```typescript
@@ -399,7 +391,7 @@ Control the decorative indicator/pointer that highlights the target element.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `disabled` | boolean | `false` | Hide the indicator |
+| `hidden` | boolean | `false` | Hide the indicator |
 | `gap` | number | `16` | Spacing between indicator and target (in pixels) |
 | `placementTryOrder` | Array | `["left", "right", "top", "bottom"]` | Preferred placements in order of preference |
 | `animated` | boolean | `true` | Enable/disable animation |
@@ -410,7 +402,7 @@ Control the decorative indicator/pointer that highlights the target element.
 indicator: {
   gap: 20,
   placementTryOrder: ["top", "bottom", "left", "right"],
-  disabled: false
+  hidden: false
 }
 ```
 
@@ -421,20 +413,22 @@ Control step interaction and scrolling behavior.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element. Every behavior option can change during the step with `context.props.update({ behavior })` - see [Changing behavior during a step](/docs/guides/programmatic-control#changing-behavior-during-a-step) |
-| `disableAutoFocus` | boolean | `false` | Skip auto-focusing the target element |
-| `disableAutoScroll` | boolean | `false` | Skip auto-scrolling to the target |
-| `missingTargetStrategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found - see [Handling errors](/docs/guides/handling-errors) |
+| `autoFocus` | boolean | `true` | Focus the popover when the step is shown |
+| `autoScroll` | boolean | `true` | Scroll the target into view when the step is shown |
+| `keyboard.advance` | Array | `["Enter", "ArrowRight"]` | Keys to advance to next step |
+| `keyboard.previous` | Array | `["ArrowLeft", "Backspace"]` | Keys to go to previous step |
+| `keyboard.cancel` | Array | `["Escape"]` | Keys to cancel the tour |
+| `missingTarget.strategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found - see [Handling errors](/docs/guides/handling-errors) |
+| `missingTarget.timeout` | number | `3000` | Time to wait for target with the `"wait"` strategy (in milliseconds) |
 | `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
-| `targetTimeout` | number | `3000` | Time to wait for target (in milliseconds) |
 | `scroll` | ScrollOptions | - | Scroll behavior (see [Scroll options](#scroll-options)) |
 
 **Usage**:
 ```typescript
 behavior: {
   allowInteraction: true,
-  disableAutoFocus: false,
-  missingTargetStrategy: "skip",
-  targetTimeout: 5000,
+  keyboard: { previous: [] },
+  missingTarget: { strategy: "skip" },
   scroll: {
     behavior: "smooth",
     block: "center",
@@ -443,7 +437,7 @@ behavior: {
 }
 ```
 
-**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTargetStrategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `targetTimeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
+**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTarget.strategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `missingTarget.timeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
 
 ### Lifecycle hook context
 
@@ -471,7 +465,7 @@ onCancel: (context) => {
 ### Scroll options
 
 Control how the browser scrolls to the target element. A step scrolls only when
-part of its target falls outside the viewport; `disableAutoScroll` opts out
+part of its target falls outside the viewport; `autoScroll: false` opts out
 entirely.
 
 The step does not wait for the scroll to finish before appearing. The spotlight

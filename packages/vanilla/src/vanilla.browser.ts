@@ -674,7 +674,7 @@ describe("vanilla adapter browser behavior", () => {
     document.body.append(target, element);
     await settle();
     const tourWorkflow = tour
-      .create("controls", { popover: { keyboardShortcuts: { advance: ["N"] } } })
+      .create("controls", { behavior: { keyboard: { advance: ["N"] } } })
       .step({ id: "step-5", content: "One", target, title: "One" })
       .step({ id: "step-6", content: "Two", target, title: "Two" })
       .build();

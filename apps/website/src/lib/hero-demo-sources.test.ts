@@ -19,13 +19,12 @@ const CITED_OPTIONS = [
   "allowScroll",
   "cancellable",
   "disableAdvanceButton",
-  "disableAutoFocus",
-  "disableAutoScroll",
+  "autoFocus",
+  "autoScroll",
   "hideFooter",
-  "missingTargetStrategy",
+  "missingTarget",
   "overlayClick",
   "placementTryOrder",
-  "targetTimeout",
 ] as const;
 
 function quotedTitles(source: string): readonly string[] {

@@ -60,10 +60,10 @@ export function createLabWorkflow<TContent>(
       content: content.paragraph(copy.focus),
       overlay: { color: "#241a70", opacity: 0.62, padding: 9, radius: 0 },
       popover: { placementTryOrder: ["right", "bottom"], gap: 18 },
-      indicator: { disabled: false, placementTryOrder: ["left", "bottom"] },
+      indicator: { hidden: false, placementTryOrder: ["left", "bottom"] },
       behavior: {
         allowInteraction: true,
-        disableAutoFocus: true,
+        autoFocus: false,
         scroll: { behavior: "smooth", block: "center", inline: "center" },
       },
       data: { api: "focusTarget", targetType: "element" },
@@ -122,9 +122,8 @@ export function createLabWorkflow<TContent>(
       title: content.title("TargetResolver + wait()"),
       content: content.paragraph(copy.resolver),
       behavior: {
-        disableAutoScroll: true,
-        missingTargetStrategy: "wait",
-        targetTimeout: timing.targetTimeout,
+        autoScroll: false,
+        missingTarget: { strategy: "wait", timeout: timing.targetTimeout },
       },
       data: { api: "wait", targetType: "resolver" },
     })
@@ -219,9 +218,9 @@ export function createLabWorkflow<TContent>(
     .step({
       id: "step-skipped",
       target: selectors.missingTarget,
-      title: content.title("missingTargetStrategy: 'skip'"),
+      title: content.title("missingTarget: { strategy: 'skip' }"),
       content: content.paragraph(copy.skipped),
-      behavior: { missingTargetStrategy: "skip" },
+      behavior: { missingTarget: { strategy: "skip" } },
       data: { api: "step:skip" },
     })
     .step({
@@ -270,13 +269,12 @@ export function createLabWorkflow<TContent>(
     .step({
       id: "step-13",
       target: selectors.nomad,
-      title: content.title("missingTargetStrategy: 'wait'"),
+      title: content.title("missingTarget: { strategy: 'wait' }"),
       content: content.paragraph(copy.relocate),
       behavior: {
-        missingTargetStrategy: "wait",
-        targetTimeout: timing.targetTimeout,
+        missingTarget: { strategy: "wait", timeout: timing.targetTimeout },
       },
-      data: { api: "missingTargetStrategy", strategy: "wait" },
+      data: { api: "missingTarget", strategy: "wait" },
     })
     .do(() => actions.relocateTarget())
     .append(appendedWorkflow)
