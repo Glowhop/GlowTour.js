@@ -39,6 +39,8 @@ export function createLabWorkflow<TContent>(
         actions.log(`create.onCancel - workflow annulé sur ${step?.id}`);
       },
       onFinish: () => actions.log("create.onFinish - API Lab terminé"),
+      onEvent: (tourEvent) =>
+        actions.log(`onEvent - ${tourEvent.type} (${tourEvent.stepId ?? "aucune étape"})`),
     })
     .step({
       id: "step-2",
@@ -202,7 +204,20 @@ export function createLabWorkflow<TContent>(
     .onTargetEvent("click", (_targetEvent, { props, setAllowInteraction }) => {
       actions.log("setAllowInteraction(false) - la cible ne répond plus");
       setAllowInteraction(false);
-      props.update({ popover: { hideAdvanceButton: false } });
+      props.update({ data: { clicked: true }, popover: { hideAdvanceButton: false } });
+    })
+    .beforeLeave(({ abort, direction, props }) => {
+      if (direction !== "advance" || props.get().data?.clicked === true) return;
+      actions.log("beforeLeave.abort() - cliquez d’abord sur la cible");
+      abort();
+    })
+    .step({
+      id: "step-skipped",
+      target: selectors.missingTarget,
+      title: content.title("missingTargetStrategy: 'skip'"),
+      content: content.paragraph(copy.skipped),
+      behavior: { missingTargetStrategy: "skip" },
+      data: { api: "step:skip" },
     })
     .step({
       id: "step-10",

@@ -150,6 +150,16 @@ const workflow = tour
   not run on cancel: use the workflow's `onCancel` option, which receives the current step.
 - Both can be async and pause the transition until they resolve. `context.direction` tells which way
   the tour is moving.
+- Both can stop the navigation with `context.abort()`, called synchronously or before their promise
+  resolves. The tour stays on the step it was on and emits no event. When the first step's
+  `beforeEnter` aborts, the tour goes back to `idle`, like an aborted `onStart`.
+
+```typescript
+.beforeLeave(({ abort, direction }) => {
+  // Keep the user here until the form is valid.
+  if (direction === "advance" && !form.checkValidity()) abort();
+})
+```
 
 Step props are not reset automatically: a value set with `context.props.set()` is still there when the
 tour comes back to the step, until the workflow runs again.
