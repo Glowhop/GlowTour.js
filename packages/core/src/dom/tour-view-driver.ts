@@ -47,6 +47,7 @@ export interface TourViewCommands {
   canAdvance(): boolean;
   canCancel(): boolean;
   canPrevious(): boolean;
+  goTo(id: string): Promise<void>;
   isAdvanceDisabled(): boolean;
   isCancelDisabled(): boolean;
   isPreviousDisabled(): boolean;
@@ -628,6 +629,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         const context = Object.freeze({
           advance: () => this.commandForStep("advance", step, signal),
           cancel: () => this.commandForStep("cancel", step, signal),
+          goTo: async (id: string) => {
+            if (!signal.aborted && this.currentStep === step) await this.commands?.goTo(id);
+          },
           previous: () => this.commandForStep("previous", step, signal),
           direction: step.direction,
           initialProps: step.initialProps,

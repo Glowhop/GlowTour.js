@@ -651,8 +651,8 @@ describe("instance-first TourController", () => {
     },
     {
       destination: 2,
-      navigate: (tour: TourController<string>) => tour.goToStep(2),
-      name: "goToStep",
+      navigate: (tour: TourController<string>) => tour.goTo("step-21"),
+      name: "goTo",
       start: 0,
     },
   ] as const) {
@@ -798,7 +798,7 @@ describe("instance-first TourController", () => {
     await tour.previous();
     assert.equal(tour.state.get().currentStepIndex, 0);
 
-    await tour.goToStep(2);
+    await tour.goTo("step-26");
     assert.equal(tour.state.get().currentStepIndex, 2);
   });
 
@@ -1642,8 +1642,8 @@ describe("instance-first TourController", () => {
     const workflow = builder.build();
 
     await tour.run(workflow);
-    await tour.goToStep(2);
-    await tour.goToStep(1);
+    await tour.goTo("three");
+    await tour.goTo("two");
     await tour.advance();
     await tour.advance();
 
@@ -2237,7 +2237,7 @@ describe("instance-first TourController", () => {
     assert.equal(tour.state.get().currentStepIndex, 0);
   });
 
-  test("awaits beforeLeave before goToStep navigation", async () => {
+  test("awaits beforeLeave before goTo navigation", async () => {
     const hook = deferred<void>();
     let calls = 0;
     const tour = createGlowTour<string>();
@@ -2252,11 +2252,12 @@ describe("instance-first TourController", () => {
       .build();
     await tour.run(workflow);
 
-    const navigation = tour.goToStep(1);
+    const navigation = tour.goTo("step-82");
     assert.equal(tour.state.get().status, "transitioning");
     assert.equal(tour.state.get().currentStepIndex, 0);
     assert.equal(calls, 1);
-    await tour.goToStep(99);
+    // Ignored while a transition is in progress, even for an id no step carries.
+    await tour.goTo("step-99");
     hook.resolve();
     await navigation;
     assert.equal(tour.state.get().currentStepIndex, 1);
@@ -2363,8 +2364,77 @@ describe("instance-first TourController", () => {
     await assert.rejects(() => tour.run(workflow), /disposed/);
     await assert.rejects(() => tour.advance(), /disposed/);
     await assert.rejects(() => tour.previous(), /disposed/);
-    await assert.rejects(() => tour.goToStep(0), /disposed/);
+    await assert.rejects(() => tour.goTo("step"), /disposed/);
     await assert.rejects(() => tour.cancel(), /disposed/);
+  });
+
+  test("goes to a step by id, in the direction of that step", async () => {
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("go-to-id")
+      .step({ id: "intro", content: "0", target: targetResolver, title: "0" })
+      .step({ id: "profile", content: "1", target: targetResolver, title: "1" })
+      .step({ id: "billing", content: "2", target: targetResolver, title: "2" })
+      .build();
+
+    await tour.goTo("billing");
+    assert.equal(tour.state.get().status, "idle");
+
+    await tour.run(workflow);
+    await tour.goTo("billing");
+    assert.equal(tour.state.get().currentStepIndex, 2);
+    assert.equal(tour.state.get().direction, "advance");
+
+    await tour.goTo("billing");
+    assert.equal(tour.state.get().currentStepIndex, 2);
+
+    await tour.goTo("profile");
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().direction, "previous");
+
+    await assert.rejects(
+      () => tour.goTo("pricing"),
+      /Workflow "go-to-id" has no step with id "pricing"\./,
+    );
+    assert.equal(tour.state.get().currentStepIndex, 1);
+    assert.equal(tour.state.get().status, "active");
+  });
+
+  test("lets a step action go to a step by id and stops its remaining actions", async () => {
+    const calls: string[] = [];
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("context-go-to")
+      .step({ id: "intro", content: "0", target: targetResolver, title: "0" })
+      .do(({ goTo }) => goTo("billing"))
+      .do(() => {
+        calls.push("sentinel");
+      })
+      .step({ id: "profile", content: "1", target: targetResolver, title: "1" })
+      .step({ id: "billing", content: "2", target: targetResolver, title: "2" })
+      .build();
+
+    await tour.run(workflow);
+
+    assert.equal(tour.state.get().currentStepIndex, 2);
+    assert.deepEqual(calls, []);
+  });
+
+  test("fails the tour when a step action goes to an unknown step id", async () => {
+    const events: string[] = [];
+    const tour = new TourController<string>(new NoopTourViewDriver(), {
+      onEvent: (event) => events.push(event.type),
+    });
+    const workflow = tour
+      .create("context-go-to-unknown")
+      .step({ id: "intro", content: "0", target: targetResolver, title: "0" })
+      .do(({ goTo }) => goTo("pricing"))
+      .build();
+
+    await assert.rejects(() => tour.run(workflow), /has no step with id "pricing"/);
+
+    assert.equal(tour.state.get().status, "error");
+    assert.equal(events.at(-1), "tour:error");
   });
 
   test("skips missing targets in the active navigation direction", async () => {
@@ -2383,7 +2453,7 @@ describe("instance-first TourController", () => {
       .build();
 
     await tour.run(workflow);
-    await tour.goToStep(2);
+    await tour.goTo("step-88");
     await tour.previous();
 
     assert.equal(tour.state.get().currentStepIndex, 0);
@@ -3040,7 +3110,7 @@ describe("instance-first TourController", () => {
       .build();
 
     await assert.rejects(() => tour.run(workflow, { startAt: "nope" }), {
-      message: 'Workflow "public-facade" has no step with id "nope" to start at.',
+      message: 'Workflow "public-facade" has no step with id "nope".',
     });
   });
 
@@ -3145,7 +3215,7 @@ describe("step ids and startAt", () => {
     const workflow = workflowOf(tour);
 
     await assert.rejects(() => tour.run(workflow, { startAt: "removed-step" }), {
-      message: 'Workflow "onboarding" has no step with id "removed-step" to start at.',
+      message: 'Workflow "onboarding" has no step with id "removed-step".',
     });
     assert.equal(tour.state.get().status, "idle");
   });

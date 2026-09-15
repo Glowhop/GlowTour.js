@@ -29,7 +29,7 @@ export interface TargetResolverContext {
 
 /** Configures step-level interaction behavior and error handling. */
 export interface StepBehavior {
-  /** Allow user interaction with the target and the rest of the page. Change it during the step with `context.setAllowInteraction()`. @default false */
+  /** Allow user interaction with the target: the page is no longer inert and pointer events reach the target through the cutout, while the dimmed area still catches clicks. Change it during the step with `context.setAllowInteraction()`. @default false */
   allowInteraction?: boolean;
   /** Disable automatic focus on the target when the step is entered. @default false */
   disableAutoFocus?: boolean;
@@ -45,8 +45,7 @@ export interface StepBehavior {
    * Behavior when the dimmed overlay backdrop (outside the cutout around the
    * target) is clicked: `"advance"` moves to the next step, `"cancel"` ends
    * the tour, `"none"` ignores the click. Has no effect when
-   * `allowInteraction` is `true`, since the page stays fully interactive and
-   * there is no modal backdrop to click.
+   * `allowInteraction` is `true`: clicks on the dimmed area are then ignored.
    * @default "none"
    */
   overlayClick?: "none" | "advance" | "cancel";
@@ -281,6 +280,11 @@ export interface StepContext<T> {
   /** Navigate to the previous step. */
   previous(): Promise<void>;
   /**
+   * Navigate to the step with this id, skipping the steps in between. Stops the remaining actions
+   * of this step, like `advance()`. Throws when no step has this id.
+   */
+  goTo(id: string): Promise<void>;
+  /**
    * The direction of the navigation that entered this step. Captured when the context is created, so
    * it does not change while the step's callbacks run.
    */
@@ -307,7 +311,7 @@ export interface StepContext<T> {
  * navigation, so the step being left and the step being entered see the same value.
  */
 export interface StepHookContext<T>
-  extends Omit<StepContext<T>, "advance" | "cancel" | "previous"> {
+  extends Omit<StepContext<T>, "advance" | "cancel" | "goTo" | "previous"> {
   /**
    * Call it synchronously, or before the hook's returned promise resolves, to stop the navigation.
    * The tour stays on the step it was on and emits nothing: `beforeLeave` keeps the step, and
@@ -423,8 +427,11 @@ export interface GlowTour<T> {
   advance(): Promise<void>;
   /** Go to the previous step. */
   previous(): Promise<void>;
-  /** Jump to a specific step by index. */
-  goToStep(index: number): Promise<void>;
+  /**
+   * Go to the step with this id, skipping the steps in between. Does nothing while a transition is
+   * in progress or when that step is already shown. Throws when no step has this id.
+   */
+  goTo(id: string): Promise<void>;
   /** Cancel the current tour. */
   cancel(): Promise<void>;
   /** Dispose the tour and free resources. */
@@ -454,9 +461,9 @@ export interface RunOptions {
 /**
  * What triggered a transition.
  *
- * `"api"` covers every call your own code makes — `advance()`, `previous()`,
- * `goToStep()`, `cancel()`, and the `context.advance()` available inside a step
- * action. The other three are the user acting on the tour UI directly.
+ * `"api"` covers every call your own code makes: `advance()`, `previous()`,
+ * `goTo()`, `cancel()`, and the same methods on the context of a step action.
+ * The other three are the user acting on the tour UI directly.
  *
  * New sources may be added in a minor release: keep a default branch when switching over it.
  */
