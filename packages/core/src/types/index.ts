@@ -187,8 +187,8 @@ export interface AnimationOptions {
 export interface LifecycleHookContext<T> {
   /**
    * The step associated with this lifecycle transition:
-   * - `onStart`: the first step about to be entered (`workflow.steps[0]`), or
-   *   `null` if the workflow has no steps.
+   * - `onStart`: the step `run()` starts on (the `startAt` step, or the first
+   *   step), or `null` if the workflow has no steps.
    * - `onCancel`: the step the tour is currently on when cancellation is
    *   requested. Always non-null in practice, since a step is always active
    *   at the point a tour can be cancelled.
@@ -306,7 +306,16 @@ export interface StepContext<T> {
  * a transition is already in progress when these hooks run. `direction` is the direction of that
  * navigation, so the step being left and the step being entered see the same value.
  */
-export type StepHookContext<T> = Omit<StepContext<T>, "advance" | "cancel" | "previous">;
+export interface StepHookContext<T>
+  extends Omit<StepContext<T>, "advance" | "cancel" | "previous"> {
+  /**
+   * Call it synchronously, or before the hook's returned promise resolves, to stop the navigation.
+   * The tour stays on the step it was on and emits nothing: `beforeLeave` keeps the step, and
+   * `beforeEnter` does not show the next one. When `beforeEnter` aborts the first step of `run()`,
+   * the tour goes back to `idle`, like an `onStart` abort.
+   */
+  abort(): void;
+}
 
 /** Context passed to target event handlers. */
 export type StepEventContext<T> = StepContext<T>;
@@ -458,6 +467,7 @@ export type TourEventType =
   | "tour:start"
   | "step:enter"
   | "step:leave"
+  | "step:skip"
   | "tour:complete"
   | "tour:cancel"
   | "tour:error";

@@ -80,6 +80,7 @@ export default defineConfig({
             { label: "Vue", link: "/docs/reference/vue" },
           ],
         },
+        { label: "Migrating to 1.4", link: "/docs/migration/1-4" },
         { label: "Compatibility", link: "/docs/compatibility" },
       ],
     }),

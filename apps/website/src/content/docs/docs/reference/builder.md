@@ -238,7 +238,7 @@ const workflow = tour
 
 ### `.beforeEnter(callback)`
 
-Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTargetStrategy: "skip"` never runs it.
+Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTargetStrategy: "skip"` never runs it. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `run()`, the tour goes back to `idle`.
 
 Step props are not reset automatically: a value set with `context.props.set()` is still there when the tour comes back to the step, until the workflow runs again. `beforeEnter` is where to reset them, because what it sets is what the step renders first.
 
@@ -249,7 +249,7 @@ beforeEnter(callback: StepHookAction<T>): WorkflowStepBuilder
 type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>
 ```
 
-`StepHookContext<T>` carries `props`, `initialProps`, `target`, `signal`, and `direction`, the direction of the navigation in progress (`"advance"` or `"previous"`). It has no `advance`, `previous`, or `cancel`: a transition is already in progress.
+`StepHookContext<T>` carries `props`, `initialProps`, `target`, `signal`, `direction`, the direction of the navigation in progress (`"advance"` or `"previous"`), and `abort()`, which stops that navigation when called synchronously or before the hook's promise resolves. It has no `advance`, `previous`, or `cancel`: a transition is already in progress.
 
 **Usage**:
 ```typescript
@@ -272,7 +272,7 @@ Runs before the tour navigates away from the step: `advance()`, `previous()`, `g
 beforeLeave(callback: StepHookAction<T>): WorkflowStepBuilder
 ```
 
-It receives the same `StepHookContext<T>`. `direction` is the direction of the navigation in progress, so the step being left and the step being entered see the same value. Branch on it to react to one direction only.
+It receives the same `StepHookContext<T>`. `direction` is the direction of the navigation in progress, so the step being left and the step being entered see the same value. Branch on it to react to one direction only. Call `context.abort()` to keep the tour on this step: the navigation stops, and finishing is prevented when this is the last step.
 
 **Usage**:
 ```typescript
@@ -551,7 +551,7 @@ Builder-related type exports for TypeScript users:
 - `AnimationOptions` - Animation options
 - `WaitUntilOptions` - Wait options
 - `StepContext` - Context passed to step actions and target event handlers
-- `StepHookContext` - Context passed to `beforeEnter` and `beforeLeave` (no navigation methods)
+- `StepHookContext` - Context passed to `beforeEnter` and `beforeLeave` (no navigation methods, `abort()` to stop the navigation)
 - `StepHookAction` - Callback type for `beforeEnter` and `beforeLeave`
 - `TargetResolver` - Target resolution function type
 
