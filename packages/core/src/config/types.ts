@@ -93,7 +93,7 @@ export interface StepConfig<T = string> {
   readonly popover?: PopoverOptions;
   readonly indicator?: IndicatorOptions;
   readonly behavior?: StepBehavior;
-  readonly title: T;
+  readonly title?: T;
   readonly content: T;
   readonly data?: Record<string, PrimitiveValue>;
   readonly actions?: readonly StepActionRef<T>[];

@@ -566,8 +566,8 @@ export type StepParameters<T> = {
   indicator?: IndicatorOptions;
   /** Step behavior (overrides workflow defaults). */
   behavior?: StepBehavior;
-  /** The title content for this step. */
-  title: T;
+  /** The title content for this step. Without a title, the popover is named by its content. */
+  title?: T;
   /** The body content for this step. */
   content: T;
   /** Arbitrary data associated with this step. */

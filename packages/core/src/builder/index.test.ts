@@ -84,7 +84,7 @@ void (null as BeforeActionStepContext<string> | null);
 function assertStepHookContext(context: StepHookContext<string>) {
   const target: HTMLElement = context.target;
   const direction: "advance" | "previous" = context.direction;
-  const title: string = context.initialProps.title;
+  const title: string | undefined = context.initialProps.title;
   const signal: AbortSignal = context.signal;
   context.props.set((current) => current);
 

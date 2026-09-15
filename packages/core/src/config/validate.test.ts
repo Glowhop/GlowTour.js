@@ -66,6 +66,12 @@ describe("validateWorkflowConfig", () => {
     assert.ok(issues.some((issue) => issue.path === "steps[0].target"));
   });
 
+  test("accepts a step without a title", () => {
+    const { title: _title, ...step } = minimalConfig().steps[0];
+    const config = { ...minimalConfig(), steps: [step] };
+    assert.equal(validateWorkflowConfig(config), config);
+  });
+
   test("requires the config format version", () => {
     const { version: _version, ...withoutVersion } = minimalConfig();
     for (const config of [withoutVersion, { ...minimalConfig(), version: "1.0" }]) {

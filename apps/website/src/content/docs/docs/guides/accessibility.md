@@ -12,7 +12,7 @@ Every adapter renders the same semantic structure for consistent assistive techn
 | Element | Role/Attributes | Purpose |
 | --- | --- | --- |
 | Popover | `role="dialog"`, `aria-labelledby`, `aria-describedby`, `aria-modal` | Identifies the tour popover as a modal dialog |
-| Title | Referenced by `aria-labelledby` | Provides the dialog name to screen readers |
+| Title | Referenced by `aria-labelledby` | Provides the dialog name to screen readers. A step without a title has no header: the description names the dialog, and `aria-describedby` is dropped so it is not read twice |
 | Description | `aria-live="polite"` | Announces content changes when stepping forward/back |
 | Overlay | `role="presentation"`, `aria-hidden` | Marks the decorative overlay as non-interactive |
 | Pointer | `aria-hidden="true"` | Hides the decorative indicator from screen readers |

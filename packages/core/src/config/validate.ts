@@ -193,7 +193,7 @@ function validateWorkflowConfigShape(
 }
 
 /**
- * Validates a single `StepConfig`: required `target`/`title`/`content`, no unknown/extra keys,
+ * Validates a single `StepConfig`: required `target`/`content`, optional `title`, no unknown keys,
  * and recurses into `actions`, `targetEvents`, and the transition action refs.
  * @param value The candidate step value.
  * @param path Error path prefix for this step, e.g. `steps[2]`.
@@ -224,7 +224,8 @@ function validateStepConfigShape(
       message: "target must be a non-empty CSS selector string",
     });
   }
-  const titleError = validateContent(value.title, `${path}.title`);
+  const titleError =
+    value.title === undefined ? null : validateContent(value.title, `${path}.title`);
   if (titleError) issues.push({ path: `${path}.title`, message: titleError });
   const contentError = validateContent(value.content, `${path}.content`);
   if (contentError) issues.push({ path: `${path}.content`, message: contentError });

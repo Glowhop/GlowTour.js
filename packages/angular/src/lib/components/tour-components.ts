@@ -191,17 +191,23 @@ export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <header data-glow-tour-header [id]="scope.binding()?.ids?.title">
-      @if (titleTemplate()) {
-        <ng-container [ngTemplateOutlet]="titleTemplate()" />
-      } @else {
-        {{ titleText() }}
-      }
-    </header>
+    @if (titled()) {
+      <header data-glow-tour-header [id]="scope.binding()?.ids?.title">
+        @if (titleTemplate()) {
+          <ng-container [ngTemplateOutlet]="titleTemplate()" />
+        } @else {
+          {{ titleText() }}
+        }
+      </header>
+    }
   `,
 })
 /** Header component displaying the current step's title. */
 export class GlowTourHeader extends GlowTourReactiveComponent {
+  readonly titled = computed(() => {
+    const step = this.step();
+    return !step || step.title != null;
+  });
   readonly titleTemplate = computed(() => {
     const title = this.step()?.title;
     return title instanceof TemplateRef ? title : null;
@@ -276,8 +282,8 @@ abstract class GlowTourBoundElement<T extends Element> {
     <section #tourElement
       [attr.aria-hidden]="idleAriaHidden"
       data-glow-tour-popover
-      [attr.aria-describedby]="scope.binding()?.ids?.description"
-      [attr.aria-labelledby]="scope.binding()?.ids?.title"
+      [attr.aria-describedby]="titled() ? scope.binding()?.ids?.description : null"
+      [attr.aria-labelledby]="titled() ? scope.binding()?.ids?.title : scope.binding()?.ids?.description"
       [id]="scope.binding()?.ids?.popover"
       [attr.inert]="idleInert"
       role="dialog"
@@ -292,6 +298,11 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
   protected readonly idleAriaHidden = POPOVER_IDLE_ATTRIBUTES["aria-hidden"];
   protected readonly idleInert = POPOVER_IDLE_ATTRIBUTES.inert;
   protected readonly idleStyle = POPOVER_IDLE_STYLE_TEXT;
+  // Without a title, the content names the dialog instead of describing it.
+  protected readonly titled = computed(() => {
+    const step = this.scope.state()?.currentStep?.currentProps;
+    return !step || step.title != null;
+  });
 
   ngOnInit() {
     this.bind(this.element.nativeElement, (binding, element) => binding.bindPopover(element));

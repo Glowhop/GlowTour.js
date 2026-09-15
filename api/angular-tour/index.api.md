@@ -38,6 +38,7 @@ class GlowTourFooter extends GlowTourReactiveComponent {}
 class GlowTourHeader extends GlowTourReactiveComponent {
     titleTemplate: Signal<TemplateRef<unknown> | null>;
     titleText: Signal<string>;
+    titled: Signal<boolean>;
 }
 
 export { GlowTourOptions } from "@glowhop/core-tour";
