@@ -89,6 +89,7 @@ type ReadonlyStepProps<T> = {
     readonly overlay?: DeepReadonly<OverlayOptions>;
     readonly popover?: DeepReadonly<PopoverOptions>;
     readonly indicator?: DeepReadonly<IndicatorOptions>;
+    readonly behavior?: DeepReadonly<StepBehavior>;
 };
 
 interface ReadonlyTourState<T> {
@@ -143,7 +144,6 @@ interface StepContext<T> {
     readonly initialProps: ReadonlyStepProps<T>;
     readonly target: HTMLElement;
     readonly props: StepPropsStore<T>;
-    setAllowInteraction(allowed: boolean): void;
     readonly signal: AbortSignal;
 }
 
@@ -255,7 +255,6 @@ interface WorkflowDefinition<T> {
 }
 
 class WorkflowStepBuilder {
-    __@STEP_BUILDER_INTERNAL@606(): WorkflowStepDraft<T>;
     append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T>;
     beforeEnter(callback: StepHookAction<T>): WorkflowStepBuilder<T>;
     beforeLeave(callback: StepHookAction<T>): WorkflowStepBuilder<T>;
@@ -275,7 +274,6 @@ class WorkflowStepBuilder {
 interface WorkflowStepDefinition<T> {
     readonly id: string;
     readonly target: TargetResolver;
-    readonly behavior?: DeepReadonly<StepBehavior>;
     readonly props: ReadonlyStepProps<T>;
     readonly actions: readonly StepActionInstruction<T>[];
     readonly targetEvents: readonly TargetEventHandler<T>[];

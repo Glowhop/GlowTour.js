@@ -5,26 +5,15 @@ import {
   type WorkflowStepDefinition,
 } from "../definition";
 import type { StepPropsStore, TourDirection } from "../types";
-import { mergeStepBehavior, mergeStepProps } from "../utils/options";
+import { mergeStepProps } from "../utils/options";
 import { resolveTargetElement } from "../utils/utils";
 import { createStepPropsStore } from "./step-props-store";
 
 export class ActiveStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
   readonly props: StepPropsStore<T>;
-  readonly behavior;
   readonly animated: boolean | undefined;
   readonly allowScroll: boolean;
-  /** Live interaction setting: starts from `behavior.allowInteraction`, changed by `setAllowInteraction`. */
-  allowInteraction: boolean;
-  /** Applies a changed `allowInteraction` to the presentation. Set by the view driver showing the step. */
-  syncInteraction?: () => void;
-  /** Backs `context.setAllowInteraction` for step actions, hooks and target event handlers. */
-  readonly setAllowInteraction = (allowed: boolean) => {
-    if (this.allowInteraction === allowed) return;
-    this.allowInteraction = allowed;
-    this.syncInteraction?.();
-  };
   target: HTMLElement | null = null;
   /** The navigation that last brought the tour to this step. */
   direction: TourDirection = "advance";
@@ -39,10 +28,17 @@ export class ActiveStep<T> {
     // The workflow options go in whole: freezeStepProps keeps only the step prop keys.
     this.initialProps = freezeStepProps(mergeStepProps(defaults, definition.props));
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
-    this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
-    this.allowInteraction = this.behavior?.allowInteraction === true;
     this.animated = defaults.animated;
     this.allowScroll = defaults.allowScroll !== false;
+  }
+
+  /** The step behavior, read live: `props.update({ behavior })` changes it while the step runs. */
+  get behavior() {
+    return this.props.get().behavior;
+  }
+
+  get allowInteraction() {
+    return this.behavior?.allowInteraction === true;
   }
 
   get overlay() {

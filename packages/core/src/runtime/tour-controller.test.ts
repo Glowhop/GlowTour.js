@@ -1058,7 +1058,6 @@ describe("instance-first TourController", () => {
       assert.equal("previous" in context, false);
       assert.equal("cancel" in context, false);
       assert.equal("behavior" in context, false);
-      assert.equal(typeof context.setAllowInteraction, "function");
     }
     assert.equal(Object.isFrozen(target), false);
   });
@@ -1362,14 +1361,12 @@ describe("instance-first TourController", () => {
     assert.deepEqual(await reenterFirstStep("data"), { data: { visits: 0 }, title: "mutated" });
   });
 
-  test("keeps setAllowInteraction on reentry, syncs only changes, and restarts from behavior on a new run", async () => {
+  test("keeps a behavior changed through props on reentry, and restarts from the definition on a new run", async () => {
     const shown: boolean[] = [];
-    const synced: boolean[] = [];
     class InteractionDriver extends NoopTourViewDriver<string> {
       override show(...args: Parameters<NoopTourViewDriver<string>["show"]>) {
         const step: ActiveStep<string> = args[0];
         shown.push(step.allowInteraction);
-        step.syncInteraction = () => synced.push(step.allowInteraction);
         return super.show(...args);
       }
     }
@@ -1391,19 +1388,21 @@ describe("instance-first TourController", () => {
       .build();
 
     await tour.run(workflow);
-    context.setAllowInteraction(false);
-    context.setAllowInteraction(false);
+    context.props.update({ behavior: { allowInteraction: false } });
+    assert.equal(tour.state.get().currentStep?.currentProps.behavior?.allowInteraction, false);
+    assert.throws(
+      () => context.props.update({ behavior: { targetTimeout: -1 } }),
+      /steps\[0\]\.behavior\.targetTimeout/,
+    );
     await tour.advance();
     await tour.previous();
     await tour.advance();
-    context.setAllowInteraction(true);
+    context.props.update({ behavior: { allowInteraction: true } });
     await tour.previous();
-    context.setAllowInteraction(false);
+    context.props.update({ behavior: { allowInteraction: false } });
     await tour.run(workflow);
 
     assert.deepEqual(shown, [true, false, false, false, true, true]);
-    // Step 1 keeps its hook while step 2 is shown; the DOM driver ignores a step it does not present.
-    assert.deepEqual(synced, [false, true, false]);
   });
 
   test("runs beforeEnter after target resolution and before the step is shown or published", async () => {

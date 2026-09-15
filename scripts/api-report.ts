@@ -66,12 +66,15 @@ export function generateApiReports(root = process.cwd()): Map<string, string> {
     return !hidden && !(name && ts.isPrivateIdentifier(name));
   };
 
-  // Members inherited from the standard library (for example `Error#stack`) are not this API.
+  // Members inherited from the standard library (for example `Error#stack`) are not this API, and
+  // members keyed by a module-private `unique symbol` get a name that changes with every build.
   const isOwnMember = (member: TypeScript.Symbol) =>
-    member.declarations?.every(
+    !member.name.startsWith("__@") &&
+    (member.declarations?.every(
       (declaration) =>
         isPublicMember(declaration) && !program.isSourceFileDefaultLibrary(declaration.getSourceFile()),
-    ) ?? true;
+    ) ??
+      true);
 
   const printClass = (name: string, symbol: TypeScript.Symbol, declaration: TypeScript.ClassDeclaration) => {
     const heritage = (declaration.heritageClauses ?? [])

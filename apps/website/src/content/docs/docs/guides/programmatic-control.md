@@ -190,12 +190,20 @@ props.update((current) => ({ data: { clicks: Number(current.data?.clicks ?? 0) +
 
 `update()` validates and publishes once, like `set()`. To remove a value, use `set()`.
 
-## Changing interaction during a step
+## Changing behavior during a step
 
-`behavior.allowInteraction` sets whether the page can be used when a step is shown.
-`context.setAllowInteraction()` changes it while the step is on screen. It applies at once: the
-page becomes inert or usable again, focus leaves the target when interaction is blocked, and the
-indicator fades out or back in.
+`behavior` is part of the step props: `context.props.update({ behavior })` changes it while the
+tour runs, and `context.props.get().behavior` reads it. Like the other props, the value is kept
+when the tour comes back to the step, until the workflow runs again.
+
+Each field takes effect when GlowTour reads it:
+
+| Field | Read | A change made during the step |
+| --- | --- | --- |
+| `allowInteraction` | Continuously | Applies at once: the page becomes inert or usable again, focus leaves the target when interaction is blocked, and the indicator fades out or back in |
+| `overlayClick` | On each click on the dimmed area | Applies to the next click |
+| `disableAutoFocus`, `disableAutoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
+| `missingTargetStrategy`, `targetTimeout` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
 
 A button the user may click only once:
 
@@ -208,18 +216,22 @@ A button the user may click only once:
   behavior: { allowInteraction: true },
   popover: { hideAdvanceButton: true },
 })
-.onTargetEvent("click", (_event, { props, setAllowInteraction }) => {
-  setAllowInteraction(false);
-  props.update({ popover: { hideAdvanceButton: false } });
+.onTargetEvent("click", (_event, { props }) => {
+  props.update({
+    behavior: { allowInteraction: false },
+    popover: { hideAdvanceButton: false },
+  });
 })
 ```
 
-Like step props, the value is kept when the tour comes back to the step, until the workflow runs
-again. To start from the configured value on every visit, reset it in `beforeEnter`:
+To start from the configured behavior on every visit, reset it in `beforeEnter`:
 
 ```typescript
-.beforeEnter(({ setAllowInteraction }) => setAllowInteraction(true))
+.beforeEnter(({ props, initialProps }) => props.update({ behavior: initialProps.behavior }))
 ```
+
+`props.set()` replaces every prop, `behavior` included: spread the current props to keep it, or the
+step runs without the behavior it was configured with.
 
 ## Step actions
 
