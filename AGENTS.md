@@ -1,6 +1,6 @@
 # AGENTS.md
 
-GlowTour.js is a production cross-framework guided-tour library managed as a Bun workspace monorepo. The public packages are `packages/core`, `packages/react`, `packages/vue`, `packages/angular`, `packages/solid`, `packages/vanilla`, and `packages/styles`. Reference applications live in `apps/`: `playground`, `website`, `ssr-react`, `ssr-vue`, and `ssr-solid`.
+GlowTour.js is a production cross-framework guided-tour library managed as a Bun workspace monorepo. The public packages are `packages/core`, `packages/react`, `packages/vue`, `packages/angular`, `packages/solid`, `packages/vanilla`, and `packages/styles`. Reference applications live in `apps/`: `playground`, `website`, `ssr-react`, `ssr-vue`, `ssr-solid`, `ssr-angular`, and `screen-readers` (assistive-technology tests run in CI).
 
 These instructions apply to any coding agent working in this repository.
 
@@ -74,18 +74,19 @@ Any behavioral modification under `packages/` must be exercised in a real browse
 - Do not consider unit tests, type checking, or a successful build a substitute for this browser validation.
 - If browser validation cannot be performed in the current environment, state that explicitly and do not describe the change as fully verified.
 
-### SSR validation: all three apps
+### SSR validation: all four apps
 
-If a change can affect SSR, hydration, browser-global access, package exports used during SSR, or adapter initialization, validate all three SSR reference apps, not only the adapter directly touched. The SSR apps consume the workspace packages' built entry points, so build the packages first:
+If a change can affect SSR, hydration, browser-global access, package exports used during SSR, or adapter initialization, validate all four SSR reference apps, not only the adapter directly touched. The SSR apps consume the workspace packages' built entry points, so build the packages first:
 
 ```bash
 bun run build
 bun run --cwd apps/ssr-react test
 bun run --cwd apps/ssr-vue test
 bun run --cwd apps/ssr-solid test
+bun run --cwd apps/ssr-angular test
 ```
 
-A change affecting SSR is not considered validated until React/Next.js, Vue/Nuxt, and SolidStart coverage all pass.
+A change affecting SSR is not considered validated until React/Next.js, Vue/Nuxt, SolidStart, and Angular SSR coverage all pass.
 
 ### Bundle-size budgets
 
@@ -106,7 +107,7 @@ Never raise a bundle-size limit merely to make CI green.
 - Establish the root cause before fixing when feasible.
 - Add or update a regression test that fails for the original bug and passes with the fix when the behavior is testable automatically.
 - Verify the actual user path in `apps/playground` for package behavior, even when the regression test passes.
-- If the bug concerns SSR, also run all three SSR app tests.
+- If the bug concerns SSR, also run all four SSR app tests.
 
 ## Scope and safety
 
