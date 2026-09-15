@@ -91,7 +91,7 @@ type PrimitiveValue = string | number | boolean | null;
 type ReadonlyStartOptions<T> = DeepReadonly<StartOptions<T>>;
 
 type ReadonlyStepProps<T> = {
-    readonly title: T;
+    readonly title?: T;
     readonly content: T;
     readonly data?: Readonly<Record<string, PrimitiveValue>>;
     readonly overlay?: DeepReadonly<OverlayOptions>;
@@ -170,7 +170,7 @@ type StepParameters<T> = {
     popover?: PopoverOptions;
     indicator?: IndicatorOptions;
     behavior?: StepBehavior;
-    title: T;
+    title?: T;
     content: T;
     data?: Record<string, PrimitiveValue>;
 };

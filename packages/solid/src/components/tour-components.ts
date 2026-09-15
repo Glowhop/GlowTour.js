@@ -184,6 +184,12 @@ export function GlowTourRoot(props: RootProps): JSX.Element {
  */
 export function GlowTourPopover(props: ElementProps): JSX.Element {
   const context = useTourContext();
+  const snapshot = useTourSnapshot(context.tour);
+  // Without a title, the content names the dialog instead of describing it.
+  const titled = () => {
+    const step = currentStep(snapshot());
+    return !step || step.title != null;
+  };
   const [local, other] = splitProps(props, ["as", "children"]);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPopover(element));
 
@@ -191,11 +197,12 @@ export function GlowTourPopover(props: ElementProps): JSX.Element {
     Dynamic,
     mergeProps(other, {
       get "aria-describedby"() {
-        return context.binding()?.ids.description;
+        return titled() ? context.binding()?.ids.description : undefined;
       },
       "aria-hidden": POPOVER_IDLE_ATTRIBUTES["aria-hidden"],
       get "aria-labelledby"() {
-        return context.binding()?.ids.title;
+        const ids = context.binding()?.ids;
+        return titled() ? ids?.title : ids?.description;
       },
       get component() {
         return local.as ?? "section";
@@ -226,19 +233,27 @@ export function GlowTourPopover(props: ElementProps): JSX.Element {
 export function GlowTourHeader(props: ContentProps): JSX.Element {
   const context = useTourContext();
   const snapshot = useTourSnapshot(context.tour);
-  return createComponent(
-    Dynamic,
-    mergeProps(props, {
-      component: "header",
-      "data-glow-tour-header": "",
-      get id() {
-        return context.binding()?.ids.title;
-      },
-      get children() {
-        return currentStep(snapshot())?.title ?? null;
-      },
-    }),
-  );
+  return Show({
+    get when() {
+      const step = currentStep(snapshot());
+      return !step || step.title != null;
+    },
+    get children() {
+      return createComponent(
+        Dynamic,
+        mergeProps(props, {
+          component: "header",
+          "data-glow-tour-header": "",
+          get id() {
+            return context.binding()?.ids.title;
+          },
+          get children() {
+            return currentStep(snapshot())?.title ?? null;
+          },
+        }),
+      );
+    },
+  });
 }
 
 /**
