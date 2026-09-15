@@ -17,6 +17,7 @@ function context(target = element()): StepContext<string> {
     advance: async () => {},
     cancel: async () => {},
     previous: async () => {},
+    goTo: async () => {},
     direction: "advance",
     initialProps: { content: "", title: "" },
     props: {} as StepContext<string>["props"],

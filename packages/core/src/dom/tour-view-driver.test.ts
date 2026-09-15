@@ -392,6 +392,7 @@ function createCommands(): { commands: TourViewCommands; calls: string[] } {
     calls,
     commands: {
       advance: async () => void calls.push("advance"),
+      goTo: async (id) => void calls.push(`goTo:${id}`),
       canAdvance: () => true,
       canCancel: () => true,
       canPrevious: () => true,
@@ -415,6 +416,7 @@ function createToggleableCommands() {
     calls,
     commands: {
       advance: async () => void calls.push("advance"),
+      goTo: async (id) => void calls.push(`goTo:${id}`),
       canAdvance: () => active,
       canCancel: () => active,
       canPrevious: () => active,
@@ -2765,6 +2767,24 @@ describe("DomTourViewDriver", () => {
     assert.equal(step.allowInteraction, false);
     assert.equal(elements.popover.getAttribute("aria-modal"), "true");
     assert.equal(target.hasAttribute("inert"), true);
+  });
+  test("lets a target event handler go to a step by id through its context", async () => {
+    const { calls, driver } = installDriver();
+    const target = createTarget();
+    const workflow = new WorkflowBuilder<string>("event-go-to")
+      .step({ id: "step-9", content: "a", target: "#a", title: "a" })
+      .onTargetEvent("click", (_event, { goTo }) => goTo("billing"))
+      .build();
+    const definition = workflow.steps[0];
+    if (!definition) throw new Error("Expected a step definition");
+    const step = new ActiveStep(definition, workflow.options);
+    step.target = target as unknown as HTMLElement;
+
+    await driver.show(step, "advance", new AbortController().signal);
+    target.dispatchEvent(new MockEvent("click"));
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, ["goTo:billing"]);
   });
   test("ignores an event handler rejection after the active step changes", async () => {
     let release: (() => void) | undefined;

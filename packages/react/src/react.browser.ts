@@ -895,8 +895,8 @@ describe("react adapter browser behavior", () => {
       dispose() {
         React.act(() => tour.dispose());
       },
-      async goToStep(index: number) {
-        await React.act(() => tour.goToStep(index));
+      async goTo(id: string) {
+        await React.act(() => tour.goTo(id));
       },
       async previous() {
         await React.act(() => tour.previous());
