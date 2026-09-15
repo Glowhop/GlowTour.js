@@ -623,7 +623,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
     signal: AbortSignal,
   ) {
-    for (const handler of step.definition.eventHandlers) {
+    for (const handler of step.definition.targetEvents) {
       const listener = (event: Event) => {
         if (!this.isCurrentGeneration(generation)) return;
         const context = Object.freeze({

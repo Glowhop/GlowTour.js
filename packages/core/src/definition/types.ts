@@ -1,5 +1,4 @@
 import type {
-  EventHandler,
   IndicatorOptions,
   OverlayOptions,
   PopoverOptions,
@@ -9,6 +8,7 @@ import type {
   StepBehavior,
   StepHookAction,
   StepParameters,
+  TargetEventHandler,
   TargetResolver,
 } from "../types";
 
@@ -45,9 +45,9 @@ export interface WorkflowStepDefinition<T> {
   readonly behavior?: DeepReadonly<StepBehavior>;
   readonly props: ReadonlyStepProps<T>;
   readonly actions: readonly StepActionInstruction<T>[];
-  readonly eventHandlers: readonly EventHandler<T>[];
-  readonly enterAction: StepHookAction<T> | null;
-  readonly leaveAction: StepHookAction<T> | null;
+  readonly targetEvents: readonly TargetEventHandler<T>[];
+  readonly beforeEnter: StepHookAction<T> | null;
+  readonly beforeLeave: StepHookAction<T> | null;
 }
 
 /** A complete tour workflow definition (immutable). */

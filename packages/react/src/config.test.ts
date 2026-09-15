@@ -11,6 +11,7 @@ describe("react config entry point", () => {
     // points (see HANDOFF-serializable-config.md).
     const definition = createWorkflowFromConfig({
       name: "onboarding",
+      version: "1.1",
       steps: [{ id: "s1", target: "#invite-button", title: "Invite", content: "Invite your team" }],
     });
 
