@@ -1,11 +1,11 @@
 import type {
   BuiltinAction,
   ConfigValidationIssue,
-  EventHandlerConfig as CoreEventHandlerConfig,
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
   StepHookActionRef as CoreStepHookActionRef,
+  TargetEventConfig as CoreTargetEventConfig,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -30,8 +30,8 @@ export { ConfigValidationError };
 export type WorkflowConfig = CoreWorkflowConfig<ReactTourContent>;
 /** React step config: `StepConfig` pre-bound to `ReactTourContent`. */
 export type StepConfig = CoreStepConfig<ReactTourContent>;
-/** React event handler config: `EventHandlerConfig` pre-bound to `ReactTourContent`. */
-export type EventHandlerConfig = CoreEventHandlerConfig<ReactTourContent>;
+/** React target event config: `TargetEventConfig` pre-bound to `ReactTourContent`. */
+export type TargetEventConfig = CoreTargetEventConfig<ReactTourContent>;
 /** React step action reference: `StepActionRef` pre-bound to `ReactTourContent`. */
 export type StepActionRef = CoreStepActionRef<ReactTourContent>;
 /** React step hook reference: `StepHookActionRef` pre-bound to `ReactTourContent`. */

@@ -32,11 +32,12 @@ describe("createWorkflowFromConfig", () => {
     const onStart = () => {};
     const inlineAction = () => true;
     const clickHandler = () => {};
-    const enterAction = () => {};
-    const leaveAction = () => {};
+    const beforeEnter = () => {};
+    const beforeLeave = () => {};
 
     const config: WorkflowConfig = {
       name: "onboarding",
+      version: "1.1",
       cancellable: true,
       onStart,
       steps: [
@@ -47,9 +48,9 @@ describe("createWorkflowFromConfig", () => {
           content: "Invite your team",
           data: { seatsRemaining: 3 },
           actions: [{ type: "wait", ms: 300 }, inlineAction, { type: "clickTarget" }],
-          eventHandlers: [{ event: "click", action: clickHandler }],
-          enterAction,
-          leaveAction,
+          targetEvents: [{ event: "click", action: clickHandler }],
+          beforeEnter,
+          beforeLeave,
         },
       ],
     };
@@ -66,8 +67,8 @@ describe("createWorkflowFromConfig", () => {
       .do(inlineAction)
       .clickTarget()
       .onTargetEvent("click", clickHandler)
-      .beforeEnter(enterAction)
-      .beforeLeave(leaveAction)
+      .beforeEnter(beforeEnter)
+      .beforeLeave(beforeLeave)
       .build();
 
     const actual = createWorkflowFromConfig(config);
@@ -83,16 +84,17 @@ describe("createWorkflowFromConfig", () => {
     assert.equal(actual.steps[0].actions[1], inlineAction);
     assert.equal(typeof actual.steps[0].actions[2], "function");
     assert.equal(
-      actual.steps[0].eventHandlers.map((handler) => handler.event).join(","),
-      expected.steps[0].eventHandlers.map((handler) => handler.event).join(","),
+      actual.steps[0].targetEvents.map((handler) => handler.event).join(","),
+      expected.steps[0].targetEvents.map((handler) => handler.event).join(","),
     );
-    assert.equal(actual.steps[0].enterAction, enterAction);
-    assert.equal(actual.steps[0].leaveAction, leaveAction);
+    assert.equal(actual.steps[0].beforeEnter, beforeEnter);
+    assert.equal(actual.steps[0].beforeLeave, beforeLeave);
   });
 
   test("maps the wait builtin to a plain delay instruction", () => {
     const definition = createWorkflowFromConfig({
       name: "wait",
+      version: "1.1",
       steps: [
         {
           id: "s3",
@@ -110,6 +112,7 @@ describe("createWorkflowFromConfig", () => {
   test("maps the clickTarget builtin to a click on the resolved target", () => {
     const definition = createWorkflowFromConfig({
       name: "click",
+      version: "1.1",
       steps: [
         {
           id: "s4",
@@ -135,6 +138,7 @@ describe("createWorkflowFromConfig", () => {
   test("maps the focusTarget builtin to a focus on the resolved target", () => {
     const definition = createWorkflowFromConfig({
       name: "focus",
+      version: "1.1",
       steps: [
         {
           id: "s5",
@@ -160,6 +164,7 @@ describe("createWorkflowFromConfig", () => {
   test("maps the waitUntilElement builtin to a poll for the selector", async () => {
     const definition = createWorkflowFromConfig({
       name: "wait-until-element",
+      version: "1.1",
       steps: [
         {
           id: "s6",
@@ -182,16 +187,17 @@ describe("createWorkflowFromConfig", () => {
     if (typeof action === "function") assert.equal(await action(context(target)), true);
   });
 
-  test("resolves a builtin action used inside an eventHandlers[].action slot", () => {
+  test("resolves a builtin action used inside an targetEvents[].action slot", () => {
     const definition = createWorkflowFromConfig({
       name: "event-handler-builtin",
+      version: "1.1",
       steps: [
         {
           id: "s7",
           target: "#target",
           title: "Title",
           content: "Content",
-          eventHandlers: [{ event: "click", action: { type: "focusTarget" } }],
+          targetEvents: [{ event: "click", action: { type: "focusTarget" } }],
         },
       ],
     });
@@ -201,7 +207,7 @@ describe("createWorkflowFromConfig", () => {
     target.focus = () => {
       focused = true;
     };
-    const handler = definition.steps[0].eventHandlers[0];
+    const handler = definition.steps[0].targetEvents[0];
     const EventConstructor = target.ownerDocument.defaultView?.Event as typeof Event;
     handler.callback(new EventConstructor("click"), context(target));
     assert.equal(focused, true);
@@ -210,6 +216,7 @@ describe("createWorkflowFromConfig", () => {
   test("attaches the original config as a frozen deep copy, leaving the caller's object untouched", () => {
     const config: WorkflowConfig = {
       name: "source-test",
+      version: "1.1",
       steps: [{ id: "step-3", target: "#target", title: "Title", content: "Content" }],
     };
 
@@ -246,6 +253,7 @@ describe("createWorkflowFromConfig", () => {
     const definition = createWorkflowFromConfig<RichContent | typeof content>(
       {
         name: "rich-source",
+        version: "1.1",
         steps: [{ id: "s8", target: "#target", title, content }],
       },
       { validateContent: () => null },
@@ -276,6 +284,7 @@ describe("createWorkflowFromConfig", () => {
       const tour = createGlowTour<string>();
       const workflow = createWorkflowFromConfig({
         name: "bare-core",
+        version: "1.1",
         steps: [{ id: "s9", target: "#a", title: "T", content: "C" }],
       });
       await assert.rejects(() => tour.run(workflow), /connected root/i);
@@ -287,6 +296,7 @@ describe("createWorkflowFromConfig", () => {
       const workflow = createWorkflowFromConfig<StandInContent>(
         {
           name: "adapter-stand-in",
+          version: "1.1",
           steps: [{ id: "s10", target: "#a", title: "T", content: "C" }],
         },
         { validateContent: () => null },

@@ -1,10 +1,10 @@
 import type {
   AnimationOptions,
-  EventHandler,
   StartOptions,
   StepActionInstruction,
   StepHookAction,
   StepParameters,
+  TargetEventHandler,
 } from "../types";
 import { cloneStepProps, freezeStepProps } from "./step-props";
 import type {
@@ -20,9 +20,9 @@ export interface WorkflowStepDraft<T> {
   props: StepProps<T>;
   behavior?: StepParameters<T>["behavior"];
   actions: StepActionInstruction<T>[];
-  eventHandlers: EventHandler<T>[];
-  enterAction: StepHookAction<T> | null;
-  leaveAction: StepHookAction<T> | null;
+  targetEvents: TargetEventHandler<T>[];
+  beforeEnter: StepHookAction<T> | null;
+  beforeLeave: StepHookAction<T> | null;
 }
 
 function freezeRecord<T extends object>(value: T): Readonly<T> {
@@ -90,9 +90,9 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
         scroll: draft.behavior.scroll && freezeRecord({ ...draft.behavior.scroll }),
       }),
     actions: freezeRecord(draft.actions.map((action) => action)),
-    eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
-    enterAction: draft.enterAction,
-    leaveAction: draft.leaveAction,
+    targetEvents: freezeRecord(draft.targetEvents.map((handler) => freezeRecord({ ...handler }))),
+    beforeEnter: draft.beforeEnter,
+    beforeLeave: draft.beforeLeave,
   });
 }
 
@@ -123,7 +123,7 @@ export function cloneWorkflowStepDraft<T>(
     ...definition,
     props: cloneStepProps(definition.props),
     actions: definition.actions.map((action) => action),
-    eventHandlers: [...definition.eventHandlers],
+    targetEvents: [...definition.targetEvents],
   };
 }
 
