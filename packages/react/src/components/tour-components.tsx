@@ -170,7 +170,10 @@ export function GlowTourRoot({ children, idPrefix, tour, ...props }: RootProps) 
  * @returns The popover container.
  */
 export function GlowTourPopover({ as: Component = "section", style, ...props }: ElementProps) {
-  const { binding } = useTourContext();
+  const { binding, tour } = useTourContext();
+  const step = useStep(useTourSnapshot(tour));
+  // Without a title, the content names the dialog instead of describing it.
+  const titled = !step || step.title != null;
   const ref = useBoundElement<HTMLElement>((activeBinding, element) =>
     activeBinding.bindPopover(element),
   );
@@ -178,9 +181,9 @@ export function GlowTourPopover({ as: Component = "section", style, ...props }: 
   return (
     <Component
       {...props}
-      aria-describedby={binding?.ids.description}
+      aria-describedby={titled ? binding?.ids.description : undefined}
       aria-hidden={POPOVER_IDLE_ATTRIBUTES["aria-hidden"]}
-      aria-labelledby={binding?.ids.title}
+      aria-labelledby={titled ? binding?.ids.title : binding?.ids.description}
       data-glow-tour-popover
       id={binding?.ids.popover}
       inert={POPOVER_IDLE_ATTRIBUTES.inert === "true"}
@@ -200,6 +203,7 @@ export function GlowTourPopover({ as: Component = "section", style, ...props }: 
 export function GlowTourHeader(props: ContentProps) {
   const { binding, tour } = useTourContext();
   const step = useStep(useTourSnapshot(tour));
+  if (step && step.title == null) return null;
 
   return (
     <header {...props} data-glow-tour-header id={binding?.ids.title}>

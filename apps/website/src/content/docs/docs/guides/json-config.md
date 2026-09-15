@@ -59,7 +59,7 @@ await createGlowTour().run(workflow);
 ```
 
 - `version`, `name`, and `steps` are required. `version` is the version of the config format, currently `"1.1"`.
-- Every step requires `id`, `target`, `title`, and `content`. Step ids must be unique within the workflow; they are what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
+- Every step requires `id`, `target`, and `content`; `title` is optional. Step ids must be unique within the workflow; they are what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
 - `target` is a CSS selector. Function and `HTMLElement` targets remain builder-only.
 - `title` and `content` are strings for JSON loaded from a CMS or API.
 - `overlay`, `popover`, `indicator`, and `behavior` use the same options as the builder, globally or per step.

@@ -20,7 +20,7 @@ interface GlowTourDefaultProps {
 
 function GlowTourFooter(props: ElementProps): Element;
 
-function GlowTourHeader(props: ContentProps): Element;
+function GlowTourHeader(props: ContentProps): Element | null;
 
 export { GlowTourOptions } from "@glowhop/core-tour";
 

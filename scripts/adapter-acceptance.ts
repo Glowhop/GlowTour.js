@@ -340,9 +340,32 @@ export async function runDefaultTourAcceptance<TContent>(
   assert.equal(footerShown(), false, `${name}: footer omitted without visible controls`);
   assert.equal(shown("[data-glow-tour-advance-trigger]"), false, `${name}: hidden advance`);
 
+  // Without a title, the header is omitted and the content names the dialog.
+  await tour.run(
+    tour
+      .create(`${name} untitled`)
+      .step({ id: "step-7", content: content("Untitled content"), target })
+      .build(),
+  );
+  await settle();
+  assert.match(root.textContent ?? "", /Untitled content/, `${name}: untitled step renders`);
+  assert.equal(shown("[data-glow-tour-header]"), false, `${name}: header omitted without a title`);
+  assert.equal(
+    popover.getAttribute("aria-labelledby"),
+    description.id,
+    `${name}: content names an untitled dialog`,
+  );
+  assert.equal(popover.hasAttribute("aria-describedby"), false, `${name}: untitled description`);
+
   await tour.run(workflow());
   await settle();
   assert.equal(footerShown(), true, `${name}: footer shown with visible controls`);
+  assert.equal(
+    popover.getAttribute("aria-labelledby"),
+    root.querySelector("[data-glow-tour-header]")?.id,
+    `${name}: title names the dialog again`,
+  );
+  assert.equal(popover.getAttribute("aria-describedby"), description.id, `${name}: description back`);
   requiredOwnedElement(root, "[data-glow-tour-cancel-trigger]", name).dispatchEvent(
     new MouseEvent("click", { bubbles: true, cancelable: true }),
   );

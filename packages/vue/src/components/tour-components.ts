@@ -179,12 +179,15 @@ export const GlowTourHeader = /* @__PURE__ */ defineComponent({
   setup(_props, { attrs }) {
     const context = useTourContext();
     const step = useStep();
-    return () =>
-      h(
+    return () => {
+      const current = step();
+      if (current && current.title == null) return null;
+      return h(
         "header",
         mergeProps(attrs, { "data-glow-tour-header": "", id: context.binding.value?.ids.title }),
-        [step()?.title ?? null],
+        [current?.title ?? null],
       );
+    };
   },
 });
 
@@ -228,13 +231,18 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPopover(activeElement),
     );
-    return () =>
-      h(
+    const step = useStep();
+    return () => {
+      const current = step();
+      // Without a title, the content names the dialog instead of describing it.
+      const titled = !current || current.title != null;
+      const ids = context.binding.value?.ids;
+      return h(
         "section",
         mergeProps({ style: POPOVER_IDLE_STYLE }, attrs, {
-          "aria-describedby": context.binding.value?.ids.description,
+          "aria-describedby": titled ? ids?.description : undefined,
           "aria-hidden": POPOVER_IDLE_ATTRIBUTES["aria-hidden"],
-          "aria-labelledby": context.binding.value?.ids.title,
+          "aria-labelledby": titled ? ids?.title : ids?.description,
           "data-glow-tour-popover": "",
           id: context.binding.value?.ids.popover,
           inert: POPOVER_IDLE_ATTRIBUTES.inert,
@@ -244,6 +252,7 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
         }),
         slots.default?.(),
       );
+    };
   },
 });
 

@@ -26,7 +26,7 @@ export type StepProps<T> = Omit<StepParameters<T>, "id" | "target">;
 
 /** Immutable step properties. */
 export type ReadonlyStepProps<T> = {
-  readonly title: T;
+  readonly title?: T;
   readonly content: T;
   readonly data?: Readonly<Record<string, PrimitiveValue>>;
   readonly overlay?: DeepReadonly<OverlayOptions>;
