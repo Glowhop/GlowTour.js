@@ -51,7 +51,7 @@ interface LifecycleHookContext<T> {
 }
 
 interface MissingTargetOptions {
-    strategy?: "wait" | "skip" | "error";
+    strategy?: "wait" | "skip" | "error" | "detached";
     timeout?: number;
 }
 

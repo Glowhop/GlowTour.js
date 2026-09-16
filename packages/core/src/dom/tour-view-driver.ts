@@ -251,7 +251,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.initializeElements(step, replaceVisiblePopover);
       // Read late, and again after the scroll: the rect the popover is placed
       // against has to be one that will not move again.
-      const resolveRect = () => target.getBoundingClientRect();
+      const resolveRect = () => presentationRect(step, target);
       await this.appear(
         resolveRect,
         step,
@@ -634,6 +634,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
     signal: AbortSignal,
   ) {
+    if (step.detached) return;
     for (const handler of step.definition.targetEvents) {
       const listener = (event: Event) => {
         if (!this.isCurrentGeneration(generation)) return;
@@ -726,7 +727,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (!this.awaitingStepUi) this.freezeForDisconnectedTarget(step, target, generation);
       return;
     }
-    const targetRect = target.getBoundingClientRect();
+    const targetRect = presentationRect(step, target);
     const targetSnapshot = snapshotRect(targetRect);
     const viewportSnapshot = snapshotViewport(target);
     const presentationChanged = this.presentationDirty;
@@ -862,8 +863,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const path = event.composedPath();
     const popover = this.popover?.getElement();
     const pointer = this.pointer?.getElement();
+    // A detached step stands on the body, which every click path includes.
     if (
-      path.includes(target) ||
+      (!step.detached && path.includes(target)) ||
       (popover && path.includes(popover)) ||
       (pointer && path.includes(pointer))
     )
@@ -1314,7 +1316,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    */
   private moveToRetargetedRect(step: ActiveStep<T>, target: HTMLElement) {
     const generation = this.generation;
-    const targetRect = target.getBoundingClientRect();
+    const targetRect = presentationRect(step, target);
     this.observeDynamicOperation(this.overlay?.animateTo(targetRect, step), generation);
     const placement = this.popover?.updatePosition(targetRect, step, (reposition) =>
       this.observeDynamicOperation(reposition, generation),
@@ -1366,7 +1368,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    */
   private beginTargetScroll(step: ActiveStep<T>, target: HTMLElement, signal: AbortSignal) {
     this.throwIfAborted(signal);
-    if (step.behavior?.autoScroll === false) return null;
+    if (step.detached || step.behavior?.autoScroll === false) return null;
     if (isInViewport(target.getBoundingClientRect(), target)) return null;
     const currentWindow = this.getWindow(target);
     if (!currentWindow) return null;
@@ -1487,6 +1489,18 @@ function animationOptions(
     duration: options?.animation?.duration,
     easing: options?.animation?.easing,
   };
+}
+
+/**
+ * The rect the presentation is placed against: the target's box, or an empty
+ * rect at the center of the viewport for a detached step, which the overlay
+ * draws without a cutout and the popover centers on.
+ */
+function presentationRect(step: { readonly detached?: boolean }, target: HTMLElement): DOMRect {
+  if (!step.detached) return target.getBoundingClientRect();
+  const viewport = viewportDimensions(target);
+  // Only the box itself is read: the snapshot derives the rest from it.
+  return { height: 0, left: viewport.width / 2, top: viewport.height / 2, width: 0 } as DOMRect;
 }
 
 function abortError() {

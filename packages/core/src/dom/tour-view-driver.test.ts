@@ -1228,6 +1228,18 @@ describe("DomTourViewDriver", () => {
     window.dispatchEvent(new MockEvent("click", { target: document.body }));
     assert.deepEqual(calls, ["cancel"]);
   });
+  test("presents a detached step modally, centered, over a backdrop without a cutout", async () => {
+    const { calls, driver, elements } = installDriver(),
+      step = createStep({ allowInteraction: true, overlayClick: "cancel" });
+    step.target = step.detach();
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(elements.popover.getAttribute("data-glow-tour-placement"), "center");
+    assert.equal(elements.overlay.getAttribute("data-glow-tour-allow-interaction"), "false");
+    // The body is on every click path: it must not count as a click on the target.
+    window.dispatchEvent(new MockEvent("click", { target: document.body }));
+    assert.deepEqual(calls, ["cancel"]);
+  });
   test("ignores an overlay click landing on the target element", async () => {
     const { calls, driver } = installDriver(),
       target = createTarget(),
