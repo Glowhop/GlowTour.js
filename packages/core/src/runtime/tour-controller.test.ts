@@ -1219,7 +1219,7 @@ describe("instance-first TourController", () => {
       [];
     driver.show = (step: ActiveStep<string>) => {
       shown.push({
-        allowInteraction: step.allowInteraction,
+        allowInteraction: step.allowsInteraction(),
         detached: step.detached,
         target: step.target,
       });
@@ -1453,7 +1453,7 @@ describe("instance-first TourController", () => {
     class InteractionDriver extends NoopTourViewDriver<string> {
       override show(...args: Parameters<NoopTourViewDriver<string>["show"]>) {
         const step: ActiveStep<string> = args[0];
-        shown.push(step.allowInteraction);
+        shown.push(step.allowsInteraction());
         return super.show(...args);
       }
     }

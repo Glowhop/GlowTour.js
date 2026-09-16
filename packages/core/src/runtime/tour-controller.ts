@@ -432,8 +432,9 @@ export class TourController<T> {
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
     const signal = this.signalFor(operation);
-    const strategy = step.behavior?.missingTarget?.strategy ?? "error";
-    const timeout = step.behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
+    const missingTarget = step.props.get().behavior?.missingTarget;
+    const strategy = missingTarget?.strategy ?? "error";
+    const timeout = missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
     const startedAt = Date.now();
     step.detached = false;
     while (true) {
@@ -498,7 +499,7 @@ export class TourController<T> {
       let recovered = await this.pollForTarget(step, operation, TARGET_LOSS_GRACE_MS);
       this.assertCurrent(operation);
       if (!recovered) {
-        const strategy = step.behavior?.missingTarget?.strategy ?? "error";
+        const strategy = step.props.get().behavior?.missingTarget?.strategy ?? "error";
         if (strategy === "skip") {
           await this.navigate(
             index + (direction === "advance" ? 1 : -1),
@@ -518,7 +519,7 @@ export class TourController<T> {
               ? await this.pollForTarget(
                   step,
                   operation,
-                  (step.behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT) -
+                  (step.props.get().behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT) -
                     TARGET_LOSS_GRACE_MS,
                 )
               : null;
