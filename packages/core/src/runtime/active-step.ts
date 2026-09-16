@@ -34,26 +34,12 @@ export class ActiveStep<T> {
     this.allowScroll = defaults.allowScroll !== false;
   }
 
-  /** The step behavior, read live: `props.update({ behavior })` changes it while the step runs. */
-  get behavior() {
-    return this.props.get().behavior;
-  }
-
-  /** A detached step has no target to interact with, so it always blocks the page. */
-  get allowInteraction() {
-    return !this.detached && this.behavior?.allowInteraction === true;
-  }
-
-  get overlay() {
-    return this.props.get().overlay;
-  }
-
-  get popover() {
-    return this.props.get().popover;
-  }
-
-  get indicator() {
-    return this.props.get().indicator;
+  /**
+   * Reads `behavior.allowInteraction` live: `props.update({ behavior })` changes it while the step runs.
+   * A detached step has no target to interact with, so it always blocks the page.
+   */
+  allowsInteraction() {
+    return !this.detached && this.props.get().behavior?.allowInteraction === true;
   }
 
   async resolveTarget(signal: AbortSignal) {

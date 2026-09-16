@@ -238,7 +238,7 @@ const workflow = tour
 
 ### `.beforeEnter(callback)`
 
-Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTarget: { strategy: "skip" }` never runs it. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `run()`, the tour goes back to `idle`.
+Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTarget: { strategy: "skip" }` never runs it; a step shown with `"detached"` runs it with the document's `<body>` as `context.target`. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `run()`, the tour goes back to `idle`.
 
 Step props are not reset automatically: a value set with `context.props.set()` is still there when the tour comes back to the step, until the workflow runs again. `beforeEnter` is where to reset them, because what it sets is what the step renders first.
 

@@ -206,4 +206,4 @@ When a step's message still matters without its element, use `detached` instead 
 })
 ```
 
-A detached step is shown as soon as its target is not found (`timeout` only applies to `wait`). It has no cutout and no pointer, doesn't scroll, and keeps the page blocked even when `allowInteraction` is `true`. `targetEvents` are not bound, and `context.target` in its actions and hooks is the document's `<body>`. A target that disappears for good while its step is on screen detaches the same way.
+A detached step is shown as soon as its target is not found (`timeout` only applies to `wait`). It has no cutout and no pointer, doesn't scroll, and keeps the page blocked even when `allowInteraction` is `true`. `targetEvents` are not bound, and `context.target` in its actions and hooks is the document's `<body>`. A target that disappears for good while its step is on screen detaches the same way, and focus moves back into the popover. A detached step stays detached until it is left, even if its target appears in the meantime.

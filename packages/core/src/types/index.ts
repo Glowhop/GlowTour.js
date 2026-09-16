@@ -308,7 +308,7 @@ export interface StepContext<T> {
   readonly direction: TourDirection;
   /** The step properties as initially configured, before any `props.set()`. */
   readonly initialProps: ReadonlyStepProps<T>;
-  /** The DOM element being highlighted for this step. */
+  /** The DOM element being highlighted for this step, or the document's `<body>` for a detached step. */
   readonly target: HTMLElement;
   /** Store for reading and updating the current step's properties. */
   readonly props: StepPropsStore<T>;
