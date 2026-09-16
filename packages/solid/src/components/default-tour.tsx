@@ -1,5 +1,5 @@
 import type { GlowTour as CoreGlowTour } from "@glowhop/core-tour";
-import { createComponent, type JSX, Show } from "solid-js";
+import { createComponent, type JSX } from "solid-js";
 import type { SolidTourContent } from "../glow-tour";
 import {
   GlowTourAdvanceTrigger,
@@ -12,7 +12,6 @@ import {
   GlowTourPopover,
   GlowTourPreviousTrigger,
   GlowTourRoot,
-  useTour,
 } from "./tour-components";
 
 /** Props for the GlowTourDefault component. */
@@ -46,37 +45,19 @@ export function GlowTourDefault(props: GlowTourDefaultProps): JSX.Element {
             return [
               createComponent(GlowTourHeader, {}),
               createComponent(GlowTourContent, {}),
-              createComponent(DefaultFooter, {}),
+              createComponent(GlowTourFooter, {
+                get children() {
+                  return [
+                    createComponent(GlowTourCancelTrigger, {}),
+                    createComponent(GlowTourPreviousTrigger, {}),
+                    createComponent(GlowTourAdvanceTrigger, {}),
+                  ];
+                },
+              }),
             ];
           },
         }),
       ];
-    },
-  });
-}
-
-/** The footer of the default tour, omitted when every control is hidden. */
-function DefaultFooter(): JSX.Element {
-  const state = useTour();
-  return Show({
-    get when() {
-      const controls = state().currentStep?.currentProps.popover?.controls;
-      return !(
-        controls?.advance === "hidden" &&
-        controls.previous === "hidden" &&
-        (controls.cancel === "hidden" || !state().canCancel)
-      );
-    },
-    get children() {
-      return createComponent(GlowTourFooter, {
-        get children() {
-          return [
-            createComponent(GlowTourCancelTrigger, {}),
-            createComponent(GlowTourPreviousTrigger, {}),
-            createComponent(GlowTourAdvanceTrigger, {}),
-          ];
-        },
-      });
     },
   });
 }

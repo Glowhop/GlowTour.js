@@ -48,10 +48,11 @@ rediscovered. The user-facing changes are listed in the migration guide
 
 ## Footer visibility
 
-- **Chosen:** only the default tour component omits its footer when every control is hidden.
-- **Rejected:** `GlowTourFooter` hiding itself.
-- **Why:** the footer accepts arbitrary children. Hiding it from the control states would remove
-  content the consumer placed there.
+- **Chosen:** the footer is always rendered, including in the default tour component.
+- **Rejected:** `GlowTourFooter` hiding itself, and the default tour component omitting its footer
+  when every control is hidden.
+- **Why:** the footer accepts arbitrary children, and the default tour component is a plain
+  composition of the public components. A tour without a footer is composed without one.
 
 ## JSON config format version
 
