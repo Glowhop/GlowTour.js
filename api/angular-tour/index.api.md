@@ -16,14 +16,6 @@ class GlowTourAdvanceTrigger extends GlowTourTrigger {
     label: Signal<string>;
 }
 
-class GlowTourBackTrigger extends GlowTourTrigger {
-    ariaLabel: string | undefined;
-    backLabel: string | undefined;
-    disabled: boolean;
-    isDisabled: Signal<boolean>;
-    label: Signal<string>;
-}
-
 class GlowTourCancelTrigger extends GlowTourTrigger {
     ariaLabel: string | undefined;
     disabled: boolean;
@@ -62,6 +54,14 @@ class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implements OnIni
 
 class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implements OnInit {
     ngOnInit(): void;
+}
+
+class GlowTourPreviousTrigger extends GlowTourTrigger {
+    ariaLabel: string | undefined;
+    disabled: boolean;
+    isDisabled: Signal<boolean>;
+    label: Signal<string>;
+    previousLabel: string | undefined;
 }
 
 class GlowTourRoot implements OnChanges, OnDestroy, OnInit {

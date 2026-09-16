@@ -62,7 +62,7 @@ The adapters depend on `@glowhop/core-tour`; you only install it directly if you
 ```tsx
 import { createRoot } from "react-dom/client";
 import "@glowhop/styles-tour/default.css";
-import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 const workflow = tour
@@ -76,7 +76,7 @@ createRoot(document.getElementById("app")!).render(
     <button type="button" onClick={() => void tour.run(workflow)}>
       Start tour
     </button>
-    <DefaultTour tour={tour} />
+    <GlowTourDefault tour={tour} />
   </>
 );
 ```
@@ -111,7 +111,7 @@ function start() {
 ```tsx
 import { render } from "solid-js/web";
 import "@glowhop/styles-tour/default.css";
-import { DefaultTour, createGlowTour } from "@glowhop/solid-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
 
 const tour = createGlowTour();
 const workflow = tour
@@ -125,7 +125,7 @@ render(() => (
     <button type="button" onClick={() => void tour.run(workflow)}>
       Start tour
     </button>
-    <DefaultTour tour={tour} />
+    <GlowTourDefault tour={tour} />
   </>
 ), document.getElementById("app")!);
 ```
@@ -164,7 +164,6 @@ export class TourComponent {
 ```typescript
 import "@glowhop/styles-tour/default.css";
 import {
-  createDefaultTourElement,
   createGlowTour,
   registerGlowTourElements,
 } from "@glowhop/vanilla-tour";
@@ -188,7 +187,8 @@ startButton.textContent = "Start tour";
 startButton.addEventListener("click", () => void tour.run(workflow));
 document.body.append(startButton);
 
-const root = createDefaultTourElement(tour);
+const root = document.createElement("glow-tour-default");
+root.tour = tour;
 document.body.append(root);
 ```
 

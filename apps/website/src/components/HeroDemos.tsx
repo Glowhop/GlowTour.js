@@ -1,17 +1,17 @@
 import "@glowhop/styles-tour/default.css";
 import {
-  AdvanceTrigger,
-  BackTrigger,
-  CancelTrigger,
-  Content,
   createGlowTour,
-  DefaultTour,
-  Footer,
-  Header,
-  Overlay,
-  Pointer,
-  Popover,
-  Root,
+  GlowTourAdvanceTrigger,
+  GlowTourCancelTrigger,
+  GlowTourContent,
+  GlowTourDefault,
+  GlowTourFooter,
+  GlowTourHeader,
+  GlowTourOverlay,
+  GlowTourPointer,
+  GlowTourPopover,
+  GlowTourPreviousTrigger,
+  GlowTourRoot,
   useTour,
 } from "@glowhop/react-tour";
 import { Bell, Rocket, Trash2, UserPlus } from "lucide-react";
@@ -81,7 +81,7 @@ export function NonInteractiveDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={nonInteractiveTour} />
+      <GlowTourDefault tour={nonInteractiveTour} />
     </div>
   );
 }
@@ -139,7 +139,7 @@ export function AdvanceOnClickDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={advanceOnClickTour} />
+      <GlowTourDefault tour={advanceOnClickTour} />
     </div>
   );
 }
@@ -210,7 +210,7 @@ export function PlacementOrderDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={placementOrderTour} />
+      <GlowTourDefault tour={placementOrderTour} />
     </div>
   );
 }
@@ -303,7 +303,7 @@ export function WaitForAsyncDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={waitForAsyncTour} />
+      <GlowTourDefault tour={waitForAsyncTour} />
     </div>
   );
 }
@@ -357,7 +357,7 @@ export function CancellableDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={cancellableTour} />
+      <GlowTourDefault tour={cancellableTour} />
     </div>
   );
 }
@@ -413,7 +413,7 @@ export function ConfirmCancelDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={confirmCancelTour} />
+      <GlowTourDefault tour={confirmCancelTour} />
     </div>
   );
 }
@@ -470,7 +470,7 @@ export function OverlayClickDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={overlayClickTour} />
+      <GlowTourDefault tour={overlayClickTour} />
     </div>
   );
 }
@@ -491,7 +491,7 @@ export const customStyledIndicatorWorkflow = customStyledIndicatorTour
     target: "#hero-custom-styled-target",
     title: "Same tour, fully customized",
     content:
-      "overlay.color/opacity, popover.arrow, a custom <Pointer> glyph, and behavior.allowInteraction, all at once.",
+      "overlay.color/opacity, popover.arrow, a custom <GlowTourPointer> glyph, and behavior.allowInteraction, all at once.",
     overlay: { color: "#0ea5e9", opacity: 0.35 },
     popover: { arrow: { hidden: true } },
     behavior: { allowInteraction: true },
@@ -538,19 +538,19 @@ export function CustomStyledIndicatorDemo() {
       >
         Run this demo
       </button>
-      <Root tour={customStyledIndicatorTour}>
-        <Overlay />
-        <Pointer directionContent={{ top: "🎯", bottom: "🎯", left: "🎯", right: "🎯" }} />
-        <Popover>
-          <Header />
-          <Content />
-          <Footer>
-            <CancelTrigger />
-            <BackTrigger />
-            <AdvanceTrigger />
-          </Footer>
-        </Popover>
-      </Root>
+      <GlowTourRoot tour={customStyledIndicatorTour}>
+        <GlowTourOverlay />
+        <GlowTourPointer directionContent={{ top: "🎯", bottom: "🎯", left: "🎯", right: "🎯" }} />
+        <GlowTourPopover>
+          <GlowTourHeader />
+          <GlowTourContent />
+          <GlowTourFooter>
+            <GlowTourCancelTrigger />
+            <GlowTourPreviousTrigger />
+            <GlowTourAdvanceTrigger />
+          </GlowTourFooter>
+        </GlowTourPopover>
+      </GlowTourRoot>
     </div>
   );
 }
@@ -621,22 +621,22 @@ export function LiveProgressDemo() {
       >
         Run this demo
       </button>
-      <Root tour={liveProgressTour}>
-        <Overlay />
-        <Pointer />
-        <Popover>
+      <GlowTourRoot tour={liveProgressTour}>
+        <GlowTourOverlay />
+        <GlowTourPointer />
+        <GlowTourPopover>
           <div className="flex justify-between">
-            <Header />
+            <GlowTourHeader />
             <StepCounter />
           </div>
-          <Content />
-          <Footer>
-            <CancelTrigger />
-            <BackTrigger />
-            <AdvanceTrigger />
-          </Footer>
-        </Popover>
-      </Root>
+          <GlowTourContent />
+          <GlowTourFooter>
+            <GlowTourCancelTrigger />
+            <GlowTourPreviousTrigger />
+            <GlowTourAdvanceTrigger />
+          </GlowTourFooter>
+        </GlowTourPopover>
+      </GlowTourRoot>
     </div>
   );
 }
@@ -709,7 +709,7 @@ export function ThemeDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={themeTour} />
+      <GlowTourDefault tour={themeTour} />
     </div>
   );
 }
@@ -754,7 +754,7 @@ export function LongContentDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={longContentTour} />
+      <GlowTourDefault tour={longContentTour} />
     </div>
   );
 }
@@ -769,7 +769,7 @@ export const customThemeWorkflow = customThemeTour
     target: "#hero-custom-theme-branch",
     title: "$ theming --from-css",
     content:
-      "Same <DefaultTour /> as every other example on this page. Nothing about this step is styled from JS.",
+      "Same <GlowTourDefault /> as every other example on this page. Nothing about this step is styled from JS.",
   })
   .step({
     id: "custom-theme-target",
@@ -815,7 +815,7 @@ export function CustomThemeDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={customThemeTour} />
+      <GlowTourDefault tour={customThemeTour} />
     </div>
   );
 }
@@ -885,7 +885,7 @@ export function RelocateTargetDemo() {
       >
         Run this demo
       </button>
-      <DefaultTour tour={relocateTargetTour} />
+      <GlowTourDefault tour={relocateTargetTour} />
     </div>
   );
 }

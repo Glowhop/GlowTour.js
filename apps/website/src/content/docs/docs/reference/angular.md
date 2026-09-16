@@ -161,13 +161,13 @@ Next step button. Selector: `glow-tour-advance-trigger`.
 <glow-tour-advance-trigger />
 ```
 
-### `GlowTourBackTrigger`
+### `GlowTourPreviousTrigger`
 
-Previous step button. Selector: `glow-tour-back-trigger`.
+Previous step button. Selector: `glow-tour-previous-trigger`.
 
 **Usage**:
 ```html
-<glow-tour-back-trigger />
+<glow-tour-previous-trigger />
 ```
 
 ### `GlowTourCancelTrigger`

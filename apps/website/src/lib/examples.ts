@@ -155,7 +155,7 @@ export const examples: readonly Example[] = [
   {
     Demo: CustomThemeDemo,
     description:
-      "The same DefaultTour, re-skinned entirely from CSS: --glow-tour-* tokens and an inherited font.",
+      "The same GlowTourDefault, re-skinned entirely from CSS: --glow-tour-* tokens and an inherited font.",
     label: "Custom theme",
     source: customThemeSource,
     title: "Custom theme",

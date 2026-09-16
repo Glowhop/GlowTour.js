@@ -1,7 +1,6 @@
 import {
   createGlowTour,
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
@@ -9,6 +8,7 @@ import {
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
+  GlowTourPreviousTrigger,
   GlowTourRoot,
   type VueTourContent,
 } from "@glowhop/vue-tour";
@@ -37,7 +37,7 @@ const app = createApp({
         h(GlowTourHeader),
         h(GlowTourContent),
         h(GlowTourFooter, null, () => [
-          h(GlowTourBackTrigger),
+          h(GlowTourPreviousTrigger),
           h(GlowTourAdvanceTrigger),
           h(GlowTourCancelTrigger),
         ]),

@@ -3,7 +3,6 @@ export { GlowTourDefault } from "./components/default-tour.js";
 export type { PointerDirectionContent } from "./components/tour-components.js";
 export {
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
@@ -11,6 +10,7 @@ export {
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
+  GlowTourPreviousTrigger,
   GlowTourRoot,
   useTour,
 } from "./components/tour-components.js";
