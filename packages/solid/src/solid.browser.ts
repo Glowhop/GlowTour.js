@@ -601,12 +601,13 @@ describe("solid adapter browser behavior", () => {
 
     await first.tour.run(firstWorkflow);
     assert.equal(container.textContent, "First tourFinish tour");
-    assert.equal(first.subscriptions, 2);
+    // Popover (title-dependent dialog relations), content and trigger each subscribe.
+    assert.equal(first.subscriptions, 3);
 
     setTour(second.tour);
     await Promise.resolve();
     assert.equal(first.unsubscriptions, first.subscriptions);
-    assert.equal(second.subscriptions, 2);
+    assert.equal(second.subscriptions, 3);
 
     await second.tour.run(secondWorkflow);
     assert.equal(container.textContent, "Second tourFinish tour");

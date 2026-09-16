@@ -48,7 +48,7 @@ step(params: StepParameters): WorkflowStepBuilder
 **Parameters**:
 - `id` - Stable identifier, unique within the workflow (required). Validated at `.build()` time. It is what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour, so prefer a name that survives reordering.
 - `target` - CSS selector, HTMLElement, or resolver function (required)
-- `title` - Step title displayed in popover (required)
+- `title` - Step title displayed in the popover header (optional: without a title, the header is omitted and the content names the dialog)
 - `content` - Step description displayed in popover (required)
 - `data` - Optional record for custom step data
 - `overlay` - Overlay options (see [Overlay options](#overlay-options))
