@@ -354,7 +354,7 @@ popover: {
 }
 ```
 
-A hidden or disabled control only blocks the popover UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. The default tour component omits the footer when every control is hidden; a footer you compose yourself is always rendered.
+A hidden or disabled control only blocks the popover UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. The footer is always rendered, even when every control is hidden.
 
 ### Arrow options
 

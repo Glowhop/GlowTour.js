@@ -35,7 +35,7 @@ registerGlowTourElements();
 
 ### `glow-tour-default`
 
-A complete tour: a `glow-tour-root` with the overlay, pointer, popover, header, content, footer and the three controls. The structure is built the first time the element is connected, and the footer is hidden when every control is hidden.
+A complete tour: a `glow-tour-root` with the overlay, pointer, popover, header, content, footer and the three controls. The structure is built the first time the element is connected.
 
 **Properties**:
 - `tour: Tour | null` - The tour instance

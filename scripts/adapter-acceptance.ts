@@ -316,7 +316,7 @@ export async function runDefaultTourAcceptance<TContent>(
     `${name}: props set in beforeEnter render first`,
   );
 
-  // The default tour omits its footer when no control is visible; an adapter may drop the footer or
+  // The default tour keeps its footer when every control is hidden; an adapter may drop an element or
   // hide an ancestor.
   const shown = (selector: string) => {
     const element = root.querySelector(selector);
@@ -337,8 +337,10 @@ export async function runDefaultTourAcceptance<TContent>(
   );
   await settle();
   assert.match(root.textContent ?? "", /Hidden controls title/, `${name}: hidden controls step renders`);
-  assert.equal(footerShown(), false, `${name}: footer omitted without visible controls`);
+  assert.equal(footerShown(), true, `${name}: footer kept without visible controls`);
   assert.equal(shown("[data-glow-tour-advance-trigger]"), false, `${name}: hidden advance`);
+  assert.equal(shown("[data-glow-tour-previous-trigger]"), false, `${name}: hidden previous`);
+  assert.equal(shown("[data-glow-tour-cancel-trigger]"), false, `${name}: hidden cancel`);
 
   // Without a title, the header is omitted and the content names the dialog.
   await tour.run(
