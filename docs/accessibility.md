@@ -69,6 +69,7 @@ queued during a step transition). A disabled or `aria-disabled` trigger does not
 
 Per-step overrides are supported via `step.behavior?.keyboard`; when a step doesn't
 override a command, the defaults above apply. Shortcuts are ignored while:
+- the matching control is `"hidden"` or `"disabled"` in `step.popover?.controls` (`isControlAvailable()`), which also removes the trigger's `aria-keyshortcuts`,
 - a modifier key (`ctrlKey`/`metaKey`/`altKey`) is held,
 - the event is part of IME composition (`isComposing`),
 - the event was already handled (`defaultPrevented`),

@@ -172,7 +172,7 @@ tour comes back to the step, until the workflow runs again.
 ```typescript
 .do(({ props }) => {
   // Only this option changes; the other popover options, the title and the content are kept.
-  props.update({ popover: { disableAdvanceButton: false } });
+  props.update({ popover: { controls: { advance: "visible" } } });
 })
 ```
 
@@ -215,12 +215,12 @@ A button the user may click only once:
   title: "Pay",
   content: "Click Pay to continue.",
   behavior: { allowInteraction: true },
-  popover: { hideAdvanceButton: true },
+  popover: { controls: { advance: "hidden" } },
 })
 .onTargetEvent("click", (_event, { props }) => {
   props.update({
     behavior: { allowInteraction: false },
-    popover: { hideAdvanceButton: false },
+    popover: { controls: { advance: "visible" } },
   });
 })
 ```

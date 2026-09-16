@@ -43,7 +43,7 @@ const workflow = tour
     target: "#continue",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance().",
-    popover: { disableAdvanceButton: true },
+    popover: { controls: { advance: "disabled" } },
     behavior: { allowInteraction: true },
   })
   .onTargetEvent("click", (event, context) => context.advance())
@@ -103,7 +103,7 @@ const workflow = tour
     title: "Load the data first",
     content: "The next step waits for an element that doesn't exist yet.",
     behavior: { allowInteraction: true },
-    popover: { disableAdvanceButton: true },
+    popover: { controls: { advance: "disabled" } },
   })
   .waitUntilElement("#loaded-content")
   .do(async (context) => {
@@ -112,7 +112,7 @@ const workflow = tour
   })
   .beforeEnter((context) => {
     if (context.props.get().data?.loaded) {
-      context.props.update({ popover: { disableAdvanceButton: false } });
+      context.props.update({ popover: { controls: { advance: "visible" } } });
     }
   })
   .step({

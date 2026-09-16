@@ -19,6 +19,7 @@ import type {
   TourState,
   TourStatus,
 } from "../types";
+import { isControlAvailable } from "../utils/options";
 import { abortableDelay, abortError } from "./abort";
 import { ActiveStep } from "./active-step";
 import { attachRootBridge } from "./root-bridge";
@@ -728,13 +729,11 @@ export class TourController<T> {
   }
 
   private isAdvanceButtonAvailable() {
-    const props = this.currentStep()?.props.get();
-    return props !== undefined && props.popover?.disableAdvanceButton !== true;
+    return isControlAvailable(this.currentStep()?.props.get(), "advance");
   }
 
   private isPreviousButtonAvailable() {
-    const props = this.currentStep()?.props.get();
-    return props !== undefined && props.popover?.disablePreviousButton !== true && this.index > 0;
+    return isControlAvailable(this.currentStep()?.props.get(), "previous") && this.index > 0;
   }
 
   private isCancelAvailable() {

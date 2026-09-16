@@ -10,6 +10,7 @@ import {
 } from "../state/focusable";
 import { ScrollLock } from "../state/scroll-lock";
 import type { ResolvedPlacement, TourDirection, TourEventSource } from "../types";
+import { isControlAvailable } from "../utils/options";
 import {
   isElement,
   isHTMLElement,
@@ -904,15 +905,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     }
     if (!queue) return;
-    const popover = step.props.get().popover;
     // Enter on a tour button queues that button's own command.
-    const command = this.keyboardCommand(
-      event,
-      step,
-      (command) =>
-        (command === "advance"
-          ? popover?.disableAdvanceButton
-          : command === "previous" && popover?.disablePreviousButton) !== true,
+    const command = this.keyboardCommand(event, step, (command) =>
+      isControlAvailable(step.props.get(), command),
     );
     if (!command) return;
     event.preventDefault();
@@ -984,11 +979,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private syncShortcutLabels(step: ActiveStep<T>) {
-    for (const advance of this.findTriggers("advance")) {
-      syncKeyShortcuts(advance, step.behavior?.keyboard?.advance ?? DEFAULT_SHORTCUTS.advance);
-    }
-    for (const previous of this.findTriggers("previous")) {
-      syncKeyShortcuts(previous, step.behavior?.keyboard?.previous ?? DEFAULT_SHORTCUTS.previous);
+    for (const command of ["advance", "previous"] as const) {
+      const shortcuts = isControlAvailable(step.props.get(), command)
+        ? (step.behavior?.keyboard?.[command] ?? DEFAULT_SHORTCUTS[command])
+        : [];
+      for (const trigger of this.findTriggers(command)) syncKeyShortcuts(trigger, shortcuts);
     }
   }
 
@@ -1069,18 +1064,22 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.syncControl(
         advance,
         this.commands?.isAdvanceDisabled() === true ||
-          step.props.get().popover?.disableAdvanceButton === true,
+          !isControlAvailable(step.props.get(), "advance"),
       );
     }
     for (const previous of this.findTriggers("previous")) {
       this.syncControl(
         previous,
         this.commands?.isPreviousDisabled() === true ||
-          step.props.get().popover?.disablePreviousButton === true,
+          !isControlAvailable(step.props.get(), "previous"),
       );
     }
     for (const cancel of this.findTriggers("cancel")) {
-      this.syncControl(cancel, this.commands?.isCancelDisabled() === true);
+      this.syncControl(
+        cancel,
+        this.commands?.isCancelDisabled() === true ||
+          !isControlAvailable(step.props.get(), "cancel"),
+      );
     }
   }
 
@@ -1125,19 +1124,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     step: ActiveStep<T>,
     trigger?: HTMLButtonElement | null,
   ) {
-    if (this.isConsumerDisabled(trigger ?? null)) return false;
-    if (command === "advance") {
-      return (
-        (this.commands?.canAdvance?.() ?? true) &&
-        step.props.get().popover?.disableAdvanceButton !== true
-      );
-    }
-    if (command === "previous") {
-      return (
-        (this.commands?.canPrevious?.() ?? true) &&
-        step.props.get().popover?.disablePreviousButton !== true
-      );
-    }
+    if (this.isConsumerDisabled(trigger ?? null) || !isControlAvailable(step.props.get(), command))
+      return false;
+    if (command === "advance") return this.commands?.canAdvance?.() ?? true;
+    if (command === "previous") return this.commands?.canPrevious?.() ?? true;
     return this.commands?.canCancel?.() ?? true;
   }
 

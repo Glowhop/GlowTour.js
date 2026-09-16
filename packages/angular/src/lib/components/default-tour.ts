@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, computed, Directive, Input } from "@angular/core";
 import type { GlowTour } from "@glowhop/core-tour";
 import type { AngularTourContent } from "../glow-tour";
 import {
@@ -11,8 +11,26 @@ import {
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
+  GlowTourReactiveComponent,
   GlowTourRoot,
 } from "./tour-components";
+
+/** Hides the footer of the default tour when every control is hidden. */
+@Directive({
+  selector: "glow-tour-footer[glowTourDefaultFooter]",
+  standalone: true,
+  host: { "[attr.hidden]": "controlsHidden() ? '' : null" },
+})
+class GlowTourDefaultFooter extends GlowTourReactiveComponent {
+  readonly controlsHidden = computed(() => {
+    const controls = this.step()?.popover?.controls;
+    return (
+      controls?.advance === "hidden" &&
+      controls.previous === "hidden" &&
+      (controls.cancel === "hidden" || !this.snapshot()?.canCancel)
+    );
+  });
+}
 
 @Component({
   selector: "glow-tour-default",
@@ -25,6 +43,7 @@ import {
     GlowTourHeader,
     GlowTourContent,
     GlowTourFooter,
+    GlowTourDefaultFooter,
     GlowTourCancelTrigger,
     GlowTourBackTrigger,
     GlowTourAdvanceTrigger,
@@ -36,7 +55,7 @@ import {
       <glow-tour-popover>
         <glow-tour-header />
         <glow-tour-content />
-        <glow-tour-footer>
+        <glow-tour-footer glowTourDefaultFooter>
           <glow-tour-cancel-trigger />
           <glow-tour-back-trigger />
           <glow-tour-advance-trigger />

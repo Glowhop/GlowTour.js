@@ -891,7 +891,7 @@ describe("DomTourViewDriver", () => {
       ...props,
       indicator: { ...props.indicator, hidden: true },
       overlay: { ...props.overlay, color: "rgb(12, 34, 56)", opacity: 0.4 },
-      popover: { ...props.popover, disableAdvanceButton: true },
+      popover: { ...props.popover, controls: { advance: "disabled" } },
     }));
 
     assert.notEqual(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
@@ -1067,7 +1067,7 @@ describe("DomTourViewDriver", () => {
 
     step.props.set((props) => ({
       ...props,
-      popover: { ...props.popover, disableAdvanceButton: true },
+      popover: { ...props.popover, controls: { advance: "disabled" } },
     }));
     flushFrame();
     await flushMicrotasks();
@@ -1678,8 +1678,7 @@ describe("DomTourViewDriver", () => {
       ...props,
       popover: {
         ...props.popover,
-        disablePreviousButton: true,
-        disableAdvanceButton: true,
+        controls: { previous: "disabled", advance: "disabled" },
       },
     }));
     window.dispatchEvent(
