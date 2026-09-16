@@ -523,7 +523,8 @@ export function registerGlowTourElements() {
       if (binding && !this.managedAttributes.isAuthored(this, "id")) {
         this.managedAttributes.set(this, "id", binding.ids.title);
       }
-      renderValue(this, props.title);
+      this.hidden = props.title == null;
+      renderValue(this, props.title ?? "");
     }
   }
 
@@ -583,21 +584,32 @@ export function registerGlowTourElements() {
       if (!this.managedAttributes.isAuthored(this, "id")) {
         this.managedAttributes.set(this, "id", context.binding.ids.popover);
       }
-      if (!this.managedAttributes.isAuthored(this, "aria-describedby")) {
-        this.managedAttributes.set(
-          this,
-          "aria-describedby",
-          effectiveId(root, "[data-glow-tour-content]", context.binding.ids.description),
-        );
-      }
-      if (!this.managedAttributes.isAuthored(this, "aria-labelledby")) {
-        this.managedAttributes.set(
-          this,
-          "aria-labelledby",
-          effectiveId(root, "[data-glow-tour-header]", context.binding.ids.title),
-        );
-      }
-      return context.binding.bindPopover(this);
+      const description = effectiveId(
+        root,
+        "[data-glow-tour-content]",
+        context.binding.ids.description,
+      );
+      const title = effectiveId(root, "[data-glow-tour-header]", context.binding.ids.title);
+      // Without a title, the content names the dialog instead of describing it.
+      const syncRelations = (titled: boolean) => {
+        if (!this.managedAttributes.isAuthored(this, "aria-describedby")) {
+          this.managedAttributes.set(this, "aria-describedby", titled ? description : null);
+        }
+        if (!this.managedAttributes.isAuthored(this, "aria-labelledby")) {
+          this.managedAttributes.set(this, "aria-labelledby", titled ? title : description);
+        }
+      };
+      syncRelations(true);
+      const release = context.binding.bindPopover(this);
+      const unsubscribe = context.tour
+        ? subscribeToCurrentStep(context.tour, (state, props) =>
+            syncRelations(!state.currentStep || props.title != null),
+          )
+        : undefined;
+      return () => {
+        unsubscribe?.();
+        release();
+      };
     }
   }
 

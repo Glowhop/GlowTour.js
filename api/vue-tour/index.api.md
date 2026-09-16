@@ -15,7 +15,7 @@ const GlowTourDefault: DefineComponent<ExtractPropTypes<{ idPrefix: { type: Stri
 
 const GlowTourFooter: DefineComponent<{}, () => VNode<RendererNode, RendererElement, { [key: string]: any; }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{}, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>;
 
-const GlowTourHeader: DefineComponent<{}, () => VNode<RendererNode, RendererElement, { [key: string]: any; }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{}, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>;
+const GlowTourHeader: DefineComponent<{}, () => VNode<RendererNode, RendererElement, { [key: string]: any; }> | null, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{}, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>;
 
 export { GlowTourOptions } from "@glowhop/core-tour";
 

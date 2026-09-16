@@ -21,7 +21,7 @@ their framework's rendering model, not in which attributes are applied.
 
 | Element | Attributes |
 | --- | --- |
-| Popover (`data-glow-tour-popover`) | `role="dialog"`, `aria-labelledby` (title id), `aria-describedby` (description id), `aria-modal="true"` while the step disallows target interaction |
+| Popover (`data-glow-tour-popover`) | `role="dialog"`, `aria-labelledby` (title id, or description id when the step has no title), `aria-describedby` (description id, only when the step has a title), `aria-modal="true"` while the step disallows target interaction |
 | Description content | `aria-live="polite"` so step text changes are announced |
 | Overlay/backdrop | `role="presentation"`, `aria-hidden` |
 | Pointer/indicator | `aria-hidden="true"` (decorative) |
