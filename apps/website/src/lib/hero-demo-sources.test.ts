@@ -17,11 +17,10 @@ import { examples } from "./examples";
 const CITED_OPTIONS = [
   "allowInteraction",
   "allowScroll",
-  "cancellable",
-  "disableAdvanceButton",
   "autoFocus",
   "autoScroll",
-  "hideFooter",
+  "cancellable",
+  "controls",
   "missingTarget",
   "overlayClick",
   "placementTryOrder",

@@ -45,7 +45,10 @@ function definition(options: {
   indicator?: { gap?: number };
   popover?: {
     arrow?: { color?: string; hidden?: boolean; edgePadding?: number; size?: number };
-    hideFooter?: boolean;
+    controls?: {
+      advance?: "visible" | "hidden" | "disabled";
+      cancel?: "visible" | "hidden" | "disabled";
+    };
     gap?: number;
   };
 }) {
@@ -53,8 +56,7 @@ function definition(options: {
     indicator: { gap: 22 },
     popover: {
       arrow: { color: "var(--workflow-arrow)", hidden: true, edgePadding: 18, size: 12 },
-      disableAdvanceButton: true,
-      hideFooter: true,
+      controls: { advance: "disabled", cancel: "hidden" },
       gap: 18,
     },
   })
@@ -103,23 +105,23 @@ describe("ActiveStep presentation options", () => {
   });
 
   test("stores effective presentation props and restores nested mutations from initial props", () => {
-    const workflow = definition({ popover: { gap: 6, hideFooter: false } });
+    const workflow = definition({ popover: { gap: 6, controls: { cancel: "visible" } } });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
-    assert.equal(step.props.get().popover?.disableAdvanceButton, true);
-    assert.equal(step.props.get().popover?.hideFooter, false);
+    assert.equal(step.props.get().popover?.controls?.advance, "disabled");
+    assert.equal(step.props.get().popover?.controls?.cancel, "visible");
     assert.equal(step.snapshot().currentProps.popover?.gap, 6);
 
     step.props.set((props) => ({
       ...props,
-      popover: { ...props.popover, disableAdvanceButton: false, hideFooter: true },
+      popover: { ...props.popover, controls: { advance: "visible", cancel: "hidden" } },
     }));
-    assert.equal(step.snapshot().currentProps.popover?.disableAdvanceButton, false);
-    assert.equal(step.snapshot().currentProps.popover?.hideFooter, true);
+    assert.equal(step.snapshot().currentProps.popover?.controls?.advance, "visible");
+    assert.equal(step.snapshot().currentProps.popover?.controls?.cancel, "hidden");
 
     step.props.set(step.initialProps);
-    assert.equal(step.props.get().popover?.disableAdvanceButton, true);
-    assert.equal(step.props.get().popover?.hideFooter, false);
+    assert.equal(step.props.get().popover?.controls?.advance, "disabled");
+    assert.equal(step.props.get().popover?.controls?.cancel, "visible");
   });
 
   test("restores from its immutable initial definition", () => {

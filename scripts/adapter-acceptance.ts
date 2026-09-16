@@ -316,8 +316,33 @@ export async function runDefaultTourAcceptance<TContent>(
     `${name}: props set in beforeEnter render first`,
   );
 
+  // The default tour omits its footer when no control is visible; an adapter may drop the footer or
+  // hide an ancestor.
+  const shown = (selector: string) => {
+    const element = root.querySelector(selector);
+    return element !== null && element.closest("[hidden]") === null;
+  };
+  const footerShown = () => shown("[data-glow-tour-footer]");
+  await tour.run(
+    tour
+      .create(`${name} hidden controls`)
+      .step({
+        id: "step-6",
+        content: content("Hidden controls content"),
+        popover: { controls: { advance: "hidden", cancel: "hidden", previous: "hidden" } },
+        target,
+        title: content("Hidden controls title"),
+      })
+      .build(),
+  );
+  await settle();
+  assert.match(root.textContent ?? "", /Hidden controls title/, `${name}: hidden controls step renders`);
+  assert.equal(footerShown(), false, `${name}: footer omitted without visible controls`);
+  assert.equal(shown("[data-glow-tour-advance-trigger]"), false, `${name}: hidden advance`);
+
   await tour.run(workflow());
   await settle();
+  assert.equal(footerShown(), true, `${name}: footer shown with visible controls`);
   requiredOwnedElement(root, "[data-glow-tour-cancel-trigger]", name).dispatchEvent(
     new MouseEvent("click", { bubbles: true, cancelable: true }),
   );

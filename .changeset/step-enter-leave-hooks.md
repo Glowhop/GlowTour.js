@@ -20,7 +20,7 @@ Replace the step transition hooks with `beforeEnter` / `beforeLeave`, and stop r
 - `.beforeEnter(callback)` runs each time a step is entered, after its target is resolved and before the step is shown, so the props it sets are the first ones rendered. It does not run for a step skipped by `missingTarget: { strategy: "skip" }`.
 - `.beforeLeave(callback)` runs before `advance()`, `previous()`, `goToStep()`, or finishing the tour. It never runs on cancel.
 - Both hooks receive a `StepHookContext` (`props`, `initialProps`, `target`, `signal`, `direction`) without navigation methods. JSON config: `enterAction` / `leaveAction`.
-- `context.props.update(patch)` merges a partial change into the step props, instead of spreading every level by hand: `props.update({ popover: { disableAdvanceButton: false } })`. `data` is merged key by key, `overlay` / `popover` / `indicator` are merged like step options over workflow defaults, and arrays are replaced. It also accepts a function of the current props.
+- `context.props.update(patch)` merges a partial change into the step props, instead of spreading every level by hand: `props.update({ popover: { controls: { advance: "visible" } } })`. `data` is merged key by key, `overlay` / `popover` / `indicator` are merged like step options over workflow defaults, and arrays are replaced. It also accepts a function of the current props.
 - `StepContext` (actions and target event handlers) now exposes `initialProps` and `direction`, the direction of the navigation that entered the step.
 
 **Migration**

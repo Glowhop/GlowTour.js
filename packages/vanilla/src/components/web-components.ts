@@ -54,6 +54,9 @@ export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-overlay",
 ] as const;
 
+/** Footers created by `createDefaultTourElement`, hidden when every control is hidden. */
+export const defaultTourFooters = new WeakSet<Element>();
+
 /** The root custom element that contains all tour UI. */
 export interface GlowTourRootElement extends HTMLElement {
   /** The tour controller instance. */
@@ -548,10 +551,16 @@ export function registerGlowTourElements() {
     }
 
     protected render(
-      _state: TourState<VanillaTourContent>,
+      state: TourState<VanillaTourContent>,
       props: ReadonlyStepProps<VanillaTourContent>,
     ) {
-      this.hidden = props.popover?.hideFooter === true;
+      if (defaultTourFooters.has(this)) {
+        const controls = props.popover?.controls;
+        this.hidden =
+          controls?.advance === "hidden" &&
+          controls.previous === "hidden" &&
+          (controls.cancel === "hidden" || !state.canCancel);
+      }
     }
   }
 
@@ -743,8 +752,8 @@ export function registerGlowTourElements() {
       props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canPrevious || props.popover?.disablePreviousButton === true,
-        hidden: props.popover?.hidePreviousButton === true,
+        disabled: !state.canPrevious || props.popover?.controls?.previous === "disabled",
+        hidden: props.popover?.controls?.previous === "hidden",
         label: this.getAttribute("back-label") ?? "Back step",
       };
     }
@@ -758,8 +767,8 @@ export function registerGlowTourElements() {
       props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canAdvance || props.popover?.disableAdvanceButton === true,
-        hidden: props.popover?.hideAdvanceButton === true,
+        disabled: !state.canAdvance || props.popover?.controls?.advance === "disabled",
+        hidden: props.popover?.controls?.advance === "hidden",
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")
           : (this.getAttribute("advance-label") ?? "Advance step"),
@@ -772,11 +781,11 @@ export function registerGlowTourElements() {
 
     protected details(
       state: TourState<VanillaTourContent>,
-      _props: ReadonlyStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canCancel,
-        hidden: !state.canCancel,
+        disabled: !state.canCancel || props.popover?.controls?.cancel === "disabled",
+        hidden: !state.canCancel || props.popover?.controls?.cancel === "hidden",
         label: "Skip",
       };
     }
