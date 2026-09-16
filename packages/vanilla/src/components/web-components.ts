@@ -55,9 +55,6 @@ export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-default",
 ] as const;
 
-/** Footers built by `<glow-tour-default>`, hidden when every control is hidden. */
-const defaultTourFooters = new WeakSet<Element>();
-
 /** The root custom element that contains all tour UI. */
 export interface GlowTourRootElement extends HTMLElement {
   /** The tour controller instance. */
@@ -548,23 +545,9 @@ export function registerGlowTourElements() {
     }
   }
 
-  class GlowTourFooter extends ReactiveElement {
+  class GlowTourFooter extends HTMLElement {
     connectedCallback() {
       this.setAttribute("data-glow-tour-footer", "");
-      super.connectedCallback();
-    }
-
-    protected render(
-      state: TourState<VanillaTourContent>,
-      props: ReadonlyStepProps<VanillaTourContent>,
-    ) {
-      if (defaultTourFooters.has(this)) {
-        const controls = props.popover?.controls;
-        this.hidden =
-          controls?.advance === "hidden" &&
-          controls.previous === "hidden" &&
-          (controls.cancel === "hidden" || !state.canCancel);
-      }
     }
   }
 
@@ -841,7 +824,6 @@ export function registerGlowTourElements() {
       const root = owner.createElement("glow-tour-root");
       const popover = owner.createElement("glow-tour-popover");
       const footer = owner.createElement("glow-tour-footer");
-      defaultTourFooters.add(footer);
       footer.append(
         owner.createElement("glow-tour-cancel-trigger"),
         owner.createElement("glow-tour-previous-trigger"),

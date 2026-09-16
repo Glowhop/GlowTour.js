@@ -1,16 +1,4 @@
-import {
-  createGlowTour,
-  GlowTourAdvanceTrigger,
-  GlowTourCancelTrigger,
-  GlowTourContent,
-  GlowTourFooter,
-  GlowTourHeader,
-  GlowTourOverlay,
-  GlowTourPointer,
-  GlowTourPopover,
-  GlowTourPreviousTrigger,
-  GlowTourRoot,
-} from "@glowhop/react-tour";
+import { createGlowTour, GlowTour } from "@glowhop/react-tour";
 import "@glowhop/styles-tour/default.css";
 import { createElement, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -31,18 +19,18 @@ const lab = mountLab({ content, framework: "React", root, tour });
 
 const reactRoot = createRoot(lab.rendererRoot);
 reactRoot.render(
-  <GlowTourRoot tour={tour}>
-    <GlowTourOverlay />
-    <GlowTourPointer />
-    <GlowTourPopover>
-      <GlowTourHeader />
-      <GlowTourContent />
-      <GlowTourFooter className="border border-amber-200">
-        <GlowTourCancelTrigger />
-        <GlowTourPreviousTrigger />
-        <GlowTourAdvanceTrigger />
-      </GlowTourFooter>
-    </GlowTourPopover>
-  </GlowTourRoot>,
+  <GlowTour.Root tour={tour}>
+    <GlowTour.Overlay />
+    <GlowTour.Pointer />
+    <GlowTour.Popover>
+      <GlowTour.Header />
+      <GlowTour.Content />
+      <GlowTour.Footer className="border border-amber-200">
+        <GlowTour.CancelTrigger />
+        <GlowTour.PreviousTrigger />
+        <GlowTour.AdvanceTrigger />
+      </GlowTour.Footer>
+    </GlowTour.Popover>
+  </GlowTour.Root>,
 );
 lab.addCleanup(() => reactRoot.unmount());

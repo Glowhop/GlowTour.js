@@ -31,6 +31,7 @@ void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTou
 describe("vue adapter contract", () => {
   test("exports an instance factory and named native components without legacy runtime values", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
+      "GlowTour",
       "GlowTourAdvanceTrigger",
       "GlowTourCancelTrigger",
       "GlowTourContent",
@@ -76,6 +77,32 @@ describe("vue adapter contract", () => {
     ]) {
       assert.equal(legacy in runtime, false, `${legacy} must not be public`);
     }
+  });
+
+  test("exposes the composition components under the GlowTour namespace", () => {
+    assert.deepEqual(Object.keys(runtime.GlowTour).sort(), [
+      "AdvanceTrigger",
+      "CancelTrigger",
+      "Content",
+      "Footer",
+      "Header",
+      "Overlay",
+      "Pointer",
+      "Popover",
+      "PreviousTrigger",
+      "Root",
+    ]);
+    assert.equal(runtime.GlowTour.AdvanceTrigger, runtime.GlowTourAdvanceTrigger);
+    assert.equal(runtime.GlowTour.CancelTrigger, runtime.GlowTourCancelTrigger);
+    assert.equal(runtime.GlowTour.Content, runtime.GlowTourContent);
+    assert.equal(runtime.GlowTour.Footer, runtime.GlowTourFooter);
+    assert.equal(runtime.GlowTour.Header, runtime.GlowTourHeader);
+    assert.equal(runtime.GlowTour.Overlay, runtime.GlowTourOverlay);
+    assert.equal(runtime.GlowTour.Pointer, runtime.GlowTourPointer);
+    assert.equal(runtime.GlowTour.Popover, runtime.GlowTourPopover);
+    assert.equal(runtime.GlowTour.PreviousTrigger, runtime.GlowTourPreviousTrigger);
+    assert.equal(runtime.GlowTour.Root, runtime.GlowTourRoot);
+    assert.equal("Default" in runtime.GlowTour, false);
   });
 
   test("imports without DOM globals for SSR", () => {
@@ -134,12 +161,27 @@ describe("vue adapter contract", () => {
       const emittedSource = readFileSync(join(directory, "index.js"), "utf8");
       assert.equal(
         emittedSource.match(/\/\* @__PURE__ \*\/ defineComponent\d*\(/g)?.length,
-        12,
-        "every presentation component, including the default tour footer, must be marked pure in the flattened entry",
+        11,
+        "every presentation component must be marked pure in the flattened entry",
       );
     } finally {
       rmSync(directory, { force: true, recursive: true });
     }
+  });
+
+  test("renders the namespaced composition like the named components", async () => {
+    const render = (root: typeof runtime.GlowTourRoot, popover: typeof runtime.GlowTourPopover) =>
+      renderToString(
+        createSSRApp({
+          render: () =>
+            h(root, { tour: runtime.createGlowTour() }, () => h(popover, null, () => "Content")),
+        }),
+      );
+
+    const html = await render(runtime.GlowTour.Root, runtime.GlowTour.Popover);
+    assert.match(html, /data-glow-tour-root/);
+    assert.match(html, /data-glow-tour-popover/);
+    assert.equal(html, await render(runtime.GlowTourRoot, runtime.GlowTourPopover));
   });
 
   test("renders a root boundary without client-generated IDs during SSR", async () => {
