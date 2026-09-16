@@ -73,7 +73,7 @@ function goTo(
  */
 function welcomeImage(): HTMLImageElement {
   const image = document.createElement("img");
-  image.src = "/welcome-image.png";
+  image.src = "/mascot-welcome-no-feet.png";
   image.alt = "Welcome! A wizard bunny waves hello before the tour of GlowTour.js begins.";
   // The intrinsic size reserves the box before the file loads, so the popover is centered on its
   // final height instead of growing under the user once the image arrives.
