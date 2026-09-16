@@ -45,6 +45,7 @@ describe("solid adapter contract", () => {
 
   test("exports an instance factory and component namespace without legacy runtime values", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
+      "GlowTour",
       "GlowTourAdvanceTrigger",
       "GlowTourCancelTrigger",
       "GlowTourContent",
@@ -62,7 +63,6 @@ describe("solid adapter contract", () => {
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.useTour, "function");
     assert.equal(typeof runtime.GlowTourDefault, "function");
-    assert.equal("GlowTour" in runtime, false);
 
     for (const legacy of [
       "Builder",
@@ -75,6 +75,49 @@ describe("solid adapter contract", () => {
     ]) {
       assert.equal(legacy in runtime, false, `${legacy} must not be public`);
     }
+  });
+
+  test("exposes the composition components under the GlowTour namespace", () => {
+    assert.deepEqual(Object.keys(runtime.GlowTour).sort(), [
+      "AdvanceTrigger",
+      "CancelTrigger",
+      "Content",
+      "Footer",
+      "Header",
+      "Overlay",
+      "Pointer",
+      "Popover",
+      "PreviousTrigger",
+      "Root",
+    ]);
+    assert.equal(runtime.GlowTour.AdvanceTrigger, runtime.GlowTourAdvanceTrigger);
+    assert.equal(runtime.GlowTour.CancelTrigger, runtime.GlowTourCancelTrigger);
+    assert.equal(runtime.GlowTour.Content, runtime.GlowTourContent);
+    assert.equal(runtime.GlowTour.Footer, runtime.GlowTourFooter);
+    assert.equal(runtime.GlowTour.Header, runtime.GlowTourHeader);
+    assert.equal(runtime.GlowTour.Overlay, runtime.GlowTourOverlay);
+    assert.equal(runtime.GlowTour.Pointer, runtime.GlowTourPointer);
+    assert.equal(runtime.GlowTour.Popover, runtime.GlowTourPopover);
+    assert.equal(runtime.GlowTour.PreviousTrigger, runtime.GlowTourPreviousTrigger);
+    assert.equal(runtime.GlowTour.Root, runtime.GlowTourRoot);
+    assert.equal("Default" in runtime.GlowTour, false);
+  });
+
+  test("renders the namespaced composition like the named components", () => {
+    const render = (root: typeof runtime.GlowTourRoot, popover: typeof runtime.GlowTourPopover) =>
+      renderToString(() =>
+        root({
+          tour: runtime.createGlowTour(),
+          get children() {
+            return popover({ children: "Content" });
+          },
+        }),
+      );
+
+    const html = render(runtime.GlowTour.Root, runtime.GlowTour.Popover);
+    assert.match(html, /data-glow-tour-root/);
+    assert.match(html, /data-glow-tour-popover/);
+    assert.equal(html, render(runtime.GlowTourRoot, runtime.GlowTourPopover));
   });
 
   test("renders a root boundary without client-generated IDs during SSR", () => {
@@ -140,7 +183,7 @@ describe("solid adapter contract", () => {
     ]) {
       assert.equal(typeof component, "function");
     }
-    for (const removed of ["Root", "BackTrigger", "DefaultTour", "GlowTour"]) {
+    for (const removed of ["Root", "BackTrigger", "DefaultTour"]) {
       assert.equal(removed in runtime, false, `${removed} must not be exported`);
     }
   });

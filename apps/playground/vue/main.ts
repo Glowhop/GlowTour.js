@@ -1,20 +1,8 @@
-import {
-  createGlowTour,
-  GlowTourAdvanceTrigger,
-  GlowTourCancelTrigger,
-  GlowTourContent,
-  GlowTourFooter,
-  GlowTourHeader,
-  GlowTourOverlay,
-  GlowTourPointer,
-  GlowTourPopover,
-  GlowTourPreviousTrigger,
-  GlowTourRoot,
-  type VueTourContent,
-} from "@glowhop/vue-tour";
+import { createGlowTour, type VueTourContent } from "@glowhop/vue-tour";
 import "@glowhop/styles-tour/default.css";
 import { createApp, h } from "vue";
 import { type LabContentFactory, mountLab } from "../lab";
+import PlaygroundTour from "./PlaygroundTour.vue";
 import "../lab/lab.css";
 import "../src/styles.css";
 
@@ -28,21 +16,6 @@ const content: LabContentFactory<VueTourContent> = {
 };
 const lab = mountLab({ content, framework: "Vue", root, tour });
 
-const app = createApp({
-  render: () =>
-    h(GlowTourRoot, { tour }, () => [
-      h(GlowTourOverlay),
-      h(GlowTourPointer),
-      h(GlowTourPopover, null, () => [
-        h(GlowTourHeader),
-        h(GlowTourContent),
-        h(GlowTourFooter, null, () => [
-          h(GlowTourPreviousTrigger),
-          h(GlowTourAdvanceTrigger),
-          h(GlowTourCancelTrigger),
-        ]),
-      ]),
-    ]),
-});
+const app = createApp(PlaygroundTour, { tour });
 app.mount(lab.rendererRoot);
 lab.addCleanup(() => app.unmount());
