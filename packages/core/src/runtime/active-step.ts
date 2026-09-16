@@ -32,25 +32,9 @@ export class ActiveStep<T> {
     this.allowScroll = defaults.allowScroll !== false;
   }
 
-  /** The step behavior, read live: `props.update({ behavior })` changes it while the step runs. */
-  get behavior() {
-    return this.props.get().behavior;
-  }
-
-  get allowInteraction() {
-    return this.behavior?.allowInteraction === true;
-  }
-
-  get overlay() {
-    return this.props.get().overlay;
-  }
-
-  get popover() {
-    return this.props.get().popover;
-  }
-
-  get indicator() {
-    return this.props.get().indicator;
+  /** Reads `behavior.allowInteraction` live: `props.update({ behavior })` changes it while the step runs. */
+  allowsInteraction() {
+    return this.props.get().behavior?.allowInteraction === true;
   }
 
   async resolveTarget(signal: AbortSignal) {

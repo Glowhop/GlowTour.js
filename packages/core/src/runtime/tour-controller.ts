@@ -432,8 +432,9 @@ export class TourController<T> {
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
     const signal = this.signalFor(operation);
-    const strategy = step.behavior?.missingTarget?.strategy ?? "error";
-    const timeout = step.behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
+    const missingTarget = step.props.get().behavior?.missingTarget;
+    const strategy = missingTarget?.strategy ?? "error";
+    const timeout = missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
     const startedAt = Date.now();
     while (true) {
       const target = await step.resolveTarget(signal);
@@ -504,7 +505,7 @@ export class TourController<T> {
         return;
       }
 
-      const strategy = step.behavior?.missingTarget?.strategy ?? "error";
+      const strategy = step.props.get().behavior?.missingTarget?.strategy ?? "error";
       if (strategy === "skip") {
         await this.navigate(index + (direction === "advance" ? 1 : -1), direction, operation, step);
         return;
@@ -514,7 +515,7 @@ export class TourController<T> {
       // The grace period counts against the "wait" budget rather than
       // extending it — a longer configured timeout is the only way to wait
       // longer overall, `missingTarget.timeout` is never silently doubled.
-      const timeout = step.behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
+      const timeout = step.props.get().behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
       const recoveredAfterWait = await this.pollForTarget(
         step,
         operation,
