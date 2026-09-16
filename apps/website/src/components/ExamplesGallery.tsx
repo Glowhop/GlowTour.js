@@ -31,12 +31,13 @@ export function ExamplesGallery({ codeHtml, labels }: ExamplesGalleryProps) {
             role="tab"
             aria-selected={index === activeIndex}
             onClick={() => setActiveIndex(index)}
-            className={`rounded-glow border px-4 py-2 text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-2 rounded-glow border px-4 py-2 text-sm font-medium transition-colors ${
               index === activeIndex
                 ? "border-accent bg-accent text-on-accent"
                 : "border-border bg-surface text-text hover:bg-surface-muted"
             }`}
           >
+            <example.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
             {example.label}
           </button>
         ))}
