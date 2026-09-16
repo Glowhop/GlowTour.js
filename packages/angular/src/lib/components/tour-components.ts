@@ -414,7 +414,7 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
 }
 
 @Component({
-  selector: "glow-tour-back-trigger",
+  selector: "glow-tour-previous-trigger",
   standalone: true,
   template: `
     @if (step()?.popover?.controls?.previous !== "hidden") {
@@ -431,16 +431,16 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   `,
 })
 /** Button component for navigating to the previous step in the tour. */
-export class GlowTourBackTrigger extends GlowTourTrigger {
-  private readonly backLabelValue = signal<string | undefined>(undefined);
+export class GlowTourPreviousTrigger extends GlowTourTrigger {
+  private readonly previousLabelValue = signal<string | undefined>(undefined);
 
   /** Optional aria-label for the back button. */
   @Input() set ariaLabel(value: string | undefined) {
     this.setAriaLabel(value);
   }
   /** Optional label text for the back button. */
-  @Input() set backLabel(value: string | undefined) {
-    this.backLabelValue.set(value);
+  @Input() set previousLabel(value: string | undefined) {
+    this.previousLabelValue.set(value);
   }
   /** Whether the button is disabled. */
   @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
@@ -453,7 +453,7 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
       this.unavailableWhileActive(!this.snapshot()?.canPrevious) ||
       this.step()?.popover?.controls?.previous === "disabled",
   );
-  readonly label = computed(() => this.backLabelValue() ?? "Back step");
+  readonly label = computed(() => this.previousLabelValue() ?? "Previous step");
 }
 
 @Component({

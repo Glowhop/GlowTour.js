@@ -92,7 +92,7 @@ describe("angular adapter browser behavior", () => {
     });
   });
 
-  test("renders the idle presentation into the DefaultTour markup before a tour runs", async () => {
+  test("renders the idle presentation into the GlowTourDefault markup before a tour runs", async () => {
     // The bug this guards: overlay/pointer/popover markup used to depend
     // entirely on core's initializeProps() (only reachable once an adapter
     // binds an element) for its idle, out-of-flow, invisible presentation.
@@ -202,7 +202,7 @@ describe("angular adapter browser behavior", () => {
         runtime.GlowTourHeader,
         runtime.GlowTourContent,
         runtime.GlowTourFooter,
-        runtime.GlowTourBackTrigger,
+        runtime.GlowTourPreviousTrigger,
         runtime.GlowTourAdvanceTrigger,
         runtime.GlowTourCancelTrigger,
         runtime.GlowTourOverlay,
@@ -216,7 +216,7 @@ describe("angular adapter browser behavior", () => {
             <glow-tour-header />
             <glow-tour-content />
             <glow-tour-footer>
-              <glow-tour-back-trigger />
+              <glow-tour-previous-trigger />
               <glow-tour-advance-trigger />
               <glow-tour-cancel-trigger />
             </glow-tour-footer>
@@ -667,14 +667,14 @@ describe("angular adapter browser behavior", () => {
       imports: [
         runtime.GlowTourRoot,
         runtime.GlowTourPopover,
-        runtime.GlowTourBackTrigger,
+        runtime.GlowTourPreviousTrigger,
         runtime.GlowTourAdvanceTrigger,
         runtime.GlowTourCancelTrigger,
       ],
       template: `
         <glow-tour-root [tour]="tour">
           <glow-tour-popover />
-          <glow-tour-back-trigger [backLabel]="backLabel" [disabled]="disabled" />
+          <glow-tour-previous-trigger [previousLabel]="previousLabel" [disabled]="disabled" />
           <glow-tour-advance-trigger [finishLabel]="finishLabel" [advanceLabel]="advanceLabel" [disabled]="disabled" (click)="onAdvanceClick($event)" />
           <glow-tour-cancel-trigger [ariaLabel]="cancelAria" [disabled]="disabled" />
           <glow-tour-cancel-trigger ariaLabel="Static cancel" data-static-cancel disabled />
@@ -683,7 +683,7 @@ describe("angular adapter browser behavior", () => {
     })
     class TriggerInputsHarness {
       readonly tour = tour;
-      backLabel = "Back one";
+      previousLabel = "Back one";
       cancelAria = "Cancel one";
       disabled = true;
       finishLabel = "Finish one";
@@ -729,7 +729,7 @@ describe("angular adapter browser behavior", () => {
 
     const harness = app.components[0]?.instance;
     assert.ok(harness instanceof TriggerInputsHarness);
-    harness.backLabel = "Back two";
+    harness.previousLabel = "Back two";
     harness.cancelAria = "Cancel two";
     harness.disabled = false;
     harness.advanceLabel = "Advance two";

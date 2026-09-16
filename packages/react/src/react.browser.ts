@@ -43,7 +43,7 @@ async function waitForCondition(condition: () => boolean, description: string, t
 }
 
 describe("react adapter browser behavior", () => {
-  test("hydrates server-rendered DefaultTour markup without console errors and stays interactive", async () => {
+  test("hydrates server-rendered GlowTourDefault markup without console errors and stays interactive", async () => {
     // The SSR markup has to come from a real `react-dom/server` pass, produced
     // out-of-process (like the SSR string test in react.test.ts) so this exercises
     // an actual server-render -> client-hydrate handoff instead of only mounting
@@ -53,7 +53,7 @@ describe("react adapter browser behavior", () => {
       "const React = await import('react');",
       "const runtime = await import('./index.ts');",
       "const tour = runtime.createGlowTour();",
-      "const html = renderToString(React.createElement(runtime.DefaultTour, { idPrefix: 'react-hydrate', tour }));",
+      "const html = renderToString(React.createElement(runtime.GlowTourDefault, { idPrefix: 'react-hydrate', tour }));",
       "process.stdout.write(html);",
     ].join("\n");
     const result = Bun.spawnSync({
@@ -65,7 +65,7 @@ describe("react adapter browser behavior", () => {
     assert.equal(result.exitCode, 0, new TextDecoder().decode(result.stderr));
     const html = new TextDecoder().decode(result.stdout);
 
-    const [React, { hydrateRoot }, { createGlowTour, DefaultTour }] = await Promise.all([
+    const [React, { hydrateRoot }, { createGlowTour, GlowTourDefault }] = await Promise.all([
       import("react"),
       import("react-dom/client"),
       import("./index"),
@@ -85,7 +85,7 @@ describe("react adapter browser behavior", () => {
       await React.act(async () => {
         root = hydrateRoot(
           container,
-          React.createElement(DefaultTour, { idPrefix: "react-hydrate", tour }),
+          React.createElement(GlowTourDefault, { idPrefix: "react-hydrate", tour }),
         );
       });
     } finally {
@@ -117,7 +117,7 @@ describe("react adapter browser behavior", () => {
   });
 
   test("passes the shared default-tour acceptance contract", async () => {
-    const [React, { createRoot }, { createGlowTour, DefaultTour }] = await Promise.all([
+    const [React, { createRoot }, { createGlowTour, GlowTourDefault }] = await Promise.all([
       import("react"),
       import("react-dom/client"),
       import("./index"),
@@ -136,7 +136,7 @@ describe("react adapter browser behavior", () => {
     };
 
     await React.act(async () => {
-      root.render(React.createElement(DefaultTour, { idPrefix: "react-default", tour }));
+      root.render(React.createElement(GlowTourDefault, { idPrefix: "react-default", tour }));
     });
     const tourRoot = container.querySelector<HTMLElement>("[data-glow-tour-root]");
     assert.ok(tourRoot);
@@ -164,11 +164,8 @@ describe("react adapter browser behavior", () => {
   });
 
   test("exposes reactive tour state to descendants", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour, useTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [React, { createRoot }, { createGlowTour, GlowTourPopover, GlowTourRoot, useTour }] =
+      await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -186,9 +183,9 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       root.render(
         React.createElement(
-          GlowTour.Root,
+          GlowTourRoot,
           { tour },
-          React.createElement(GlowTour.Popover),
+          React.createElement(GlowTourPopover),
           React.createElement(Observer),
         ),
       );
@@ -203,11 +200,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("keeps nested tour controls isolated from the outer root", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const outerTarget = document.createElement("button");
     const innerTarget = document.createElement("button");
@@ -241,15 +238,15 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       root.render(
         React.createElement(
-          GlowTour.Root,
+          GlowTourRoot,
           { idPrefix: "outer", tour: outer },
-          React.createElement(GlowTour.Popover),
-          React.createElement(GlowTour.AdvanceTrigger),
+          React.createElement(GlowTourPopover),
+          React.createElement(GlowTourAdvanceTrigger),
           React.createElement(
-            GlowTour.Root,
+            GlowTourRoot,
             { idPrefix: "inner", tour: inner },
-            React.createElement(GlowTour.Popover),
-            React.createElement(GlowTour.AdvanceTrigger),
+            React.createElement(GlowTourPopover),
+            React.createElement(GlowTourAdvanceTrigger),
           ),
         ),
       );
@@ -275,11 +272,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("uses controller keyboard permission despite consumer-disabled advance trigger order", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -294,12 +291,12 @@ describe("react adapter browser behavior", () => {
     function Harness() {
       const [disabledFirst, updateDisabledFirst] = React.useState(true);
       setDisabledFirst = updateDisabledFirst;
-      const disabled = React.createElement(GlowTour.AdvanceTrigger, { disabled: true });
-      const enabled = React.createElement(GlowTour.AdvanceTrigger);
+      const disabled = React.createElement(GlowTourAdvanceTrigger, { disabled: true });
+      const enabled = React.createElement(GlowTourAdvanceTrigger);
       return React.createElement(
-        GlowTour.Root,
+        GlowTourRoot,
         { tour },
-        React.createElement(GlowTour.Popover),
+        React.createElement(GlowTourPopover),
         disabledFirst ? disabled : enabled,
         disabledFirst ? enabled : disabled,
       );
@@ -335,11 +332,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("synchronizes custom keyboard shortcuts on a late advance trigger", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -360,10 +357,10 @@ describe("react adapter browser behavior", () => {
       const [visible, setVisible] = React.useState(false);
       show = () => setVisible(true);
       return React.createElement(
-        GlowTour.Root,
+        GlowTourRoot,
         { tour },
-        React.createElement(GlowTour.Popover),
-        visible ? React.createElement(GlowTour.AdvanceTrigger) : null,
+        React.createElement(GlowTourPopover),
+        visible ? React.createElement(GlowTourAdvanceTrigger) : null,
       );
     }
     const root = createRoot(container);
@@ -386,11 +383,18 @@ describe("react adapter browser behavior", () => {
   });
 
   test("delegates cancel, back, and advance commands while a tour is active", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      {
+        createGlowTour,
+        GlowTourAdvanceTrigger,
+        GlowTourCancelTrigger,
+        GlowTourPopover,
+        GlowTourPreviousTrigger,
+        GlowTourRoot,
+      },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -402,12 +406,12 @@ describe("react adapter browser behavior", () => {
       .build();
     function Harness() {
       return React.createElement(
-        GlowTour.Root,
+        GlowTourRoot,
         { tour },
-        React.createElement(GlowTour.Popover),
-        React.createElement(GlowTour.CancelTrigger),
-        React.createElement(GlowTour.BackTrigger),
-        React.createElement(GlowTour.AdvanceTrigger),
+        React.createElement(GlowTourPopover),
+        React.createElement(GlowTourCancelTrigger),
+        React.createElement(GlowTourPreviousTrigger),
+        React.createElement(GlowTourAdvanceTrigger),
       );
     }
 
@@ -465,11 +469,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("composes custom child and wrapper click handlers before navigation", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -486,11 +490,11 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       root.render(
         React.createElement(
-          GlowTour.Root,
+          GlowTourRoot,
           { tour },
-          React.createElement(GlowTour.Popover),
+          React.createElement(GlowTourPopover),
           React.createElement(
-            GlowTour.AdvanceTrigger,
+            GlowTourAdvanceTrigger,
             { onClick: () => (wrapperClicks += 1) },
             React.createElement("button", { onClick: () => (childClicks += 1) }),
           ),
@@ -513,11 +517,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("lets a consumer prevent a delegated advance click without navigation", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -532,10 +536,10 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       root.render(
         React.createElement(
-          GlowTour.Root,
+          GlowTourRoot,
           { tour },
-          React.createElement(GlowTour.Popover),
-          React.createElement(GlowTour.AdvanceTrigger, {
+          React.createElement(GlowTourPopover),
+          React.createElement(GlowTourAdvanceTrigger, {
             onClick: (event) => event.preventDefault(),
           }),
         ),
@@ -553,11 +557,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("advances exactly once when a consumer does not prevent a delegated advance click", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -576,10 +580,10 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       root.render(
         React.createElement(
-          GlowTour.Root,
+          GlowTourRoot,
           { tour },
-          React.createElement(GlowTour.Popover),
-          React.createElement(GlowTour.AdvanceTrigger),
+          React.createElement(GlowTourPopover),
+          React.createElement(GlowTourAdvanceTrigger),
         ),
       );
     });
@@ -598,11 +602,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("defers an advance click and abandons it after the consumer replaces the workflow", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -622,10 +626,10 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       root.render(
         React.createElement(
-          GlowTour.Root,
+          GlowTourRoot,
           { tour },
-          React.createElement(GlowTour.Popover),
-          React.createElement(GlowTour.AdvanceTrigger, { onClick: () => tour.run(replacement) }),
+          React.createElement(GlowTourPopover),
+          React.createElement(GlowTourAdvanceTrigger, { onClick: () => tour.run(replacement) }),
         ),
       );
     });
@@ -644,11 +648,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("keeps native disabled, consumer marker, and aria-disabled coherent when disabled toggles", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -664,10 +668,10 @@ describe("react adapter browser behavior", () => {
       const [disabled, updateDisabled] = React.useState(true);
       setDisabled = updateDisabled;
       return React.createElement(
-        GlowTour.Root,
+        GlowTourRoot,
         { tour },
-        React.createElement(GlowTour.Popover),
-        React.createElement(GlowTour.AdvanceTrigger, { disabled }),
+        React.createElement(GlowTourPopover),
+        React.createElement(GlowTourAdvanceTrigger, { disabled }),
       );
     }
 
@@ -697,11 +701,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("treats a custom child button's disabled prop as consumer disabled", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -716,11 +720,11 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => {
       root.render(
         React.createElement(
-          GlowTour.Root,
+          GlowTourRoot,
           { tour },
-          React.createElement(GlowTour.Popover),
+          React.createElement(GlowTourPopover),
           React.createElement(
-            GlowTour.AdvanceTrigger,
+            GlowTourAdvanceTrigger,
             null,
             React.createElement("button", {
               disabled: true,
@@ -745,11 +749,18 @@ describe("react adapter browser behavior", () => {
   });
 
   test("keeps consumer-disabled advance triggers disabled after the tour becomes active", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      {
+        createGlowTour,
+        GlowTourAdvanceTrigger,
+        GlowTourContent,
+        GlowTourHeader,
+        GlowTourPopover,
+        GlowTourRoot,
+      },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     document.body.append(container);
     const target = document.createElement("button");
@@ -768,15 +779,15 @@ describe("react adapter browser behavior", () => {
           React.StrictMode,
           null,
           React.createElement(
-            GlowTour.Root,
+            GlowTourRoot,
             { tour },
             React.createElement(
               React.Fragment,
               null,
-              React.createElement(GlowTour.Popover, null),
-              React.createElement(GlowTour.Header, null),
-              React.createElement(GlowTour.Content, null),
-              React.createElement(GlowTour.AdvanceTrigger, {
+              React.createElement(GlowTourPopover, null),
+              React.createElement(GlowTourHeader, null),
+              React.createElement(GlowTourContent, null),
+              React.createElement(GlowTourAdvanceTrigger, {
                 disabled: true,
                 finishLabel: "Complete",
                 advanceLabel: "Continue",
@@ -817,11 +828,11 @@ describe("react adapter browser behavior", () => {
   });
 
   test("replaces the root tour and renders the replacement snapshot", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourContent, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     document.body.append(container);
     const target = document.createElement("button");
@@ -842,10 +853,10 @@ describe("react adapter browser behavior", () => {
       const [tour, setTour] = React.useState(first);
       replaceTour = setTour;
       return React.createElement(
-        GlowTour.Root,
+        GlowTourRoot,
         { tour },
-        React.createElement(GlowTour.Popover),
-        React.createElement(GlowTour.Content, null),
+        React.createElement(GlowTourPopover),
+        React.createElement(GlowTourContent, null),
       );
     }
 
@@ -872,11 +883,18 @@ describe("react adapter browser behavior", () => {
   });
 
   test("passes the shared adapter acceptance contract with sibling roots", async () => {
-    const [React, { createRoot }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./index"),
-    ]);
+    const [
+      React,
+      { createRoot },
+      {
+        createGlowTour,
+        GlowTourAdvanceTrigger,
+        GlowTourContent,
+        GlowTourHeader,
+        GlowTourPopover,
+        GlowTourRoot,
+      },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const primaryTarget = document.createElement("button");
     const secondaryTarget = document.createElement("button");
@@ -913,20 +931,20 @@ describe("react adapter browser behavior", () => {
           React.Fragment,
           null,
           React.createElement(
-            GlowTour.Root,
+            GlowTourRoot,
             { idPrefix: "react-primary", tour: primaryTour },
-            React.createElement(GlowTour.Popover),
-            React.createElement(GlowTour.Header),
-            React.createElement(GlowTour.Content),
-            React.createElement(GlowTour.AdvanceTrigger),
+            React.createElement(GlowTourPopover),
+            React.createElement(GlowTourHeader),
+            React.createElement(GlowTourContent),
+            React.createElement(GlowTourAdvanceTrigger),
           ),
           React.createElement(
-            GlowTour.Root,
+            GlowTourRoot,
             { idPrefix: "react-secondary", tour: secondaryTour },
-            React.createElement(GlowTour.Popover),
-            React.createElement(GlowTour.Header),
-            React.createElement(GlowTour.Content),
-            React.createElement(GlowTour.AdvanceTrigger),
+            React.createElement(GlowTourPopover),
+            React.createElement(GlowTourHeader),
+            React.createElement(GlowTourContent),
+            React.createElement(GlowTourAdvanceTrigger),
           ),
         ),
       );
@@ -951,12 +969,12 @@ describe("react adapter browser behavior", () => {
           await React.act(async () => {
             duplicateRoot.render(
               React.createElement(
-                GlowTour.Root,
+                GlowTourRoot,
                 { idPrefix: "react-duplicate", tour: primaryTour },
-                React.createElement(GlowTour.Popover),
-                React.createElement(GlowTour.Header),
-                React.createElement(GlowTour.Content),
-                React.createElement(GlowTour.AdvanceTrigger),
+                React.createElement(GlowTourPopover),
+                React.createElement(GlowTourHeader),
+                React.createElement(GlowTourContent),
+                React.createElement(GlowTourAdvanceTrigger),
               ),
             );
           });

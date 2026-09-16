@@ -32,7 +32,6 @@ describe("vue adapter contract", () => {
   test("exports an instance factory and named native components without legacy runtime values", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
       "GlowTourAdvanceTrigger",
-      "GlowTourBackTrigger",
       "GlowTourCancelTrigger",
       "GlowTourContent",
       "GlowTourDefault",
@@ -41,6 +40,7 @@ describe("vue adapter contract", () => {
       "GlowTourOverlay",
       "GlowTourPointer",
       "GlowTourPopover",
+      "GlowTourPreviousTrigger",
       "GlowTourRoot",
       "createGlowTour",
       "useTour",
@@ -58,7 +58,7 @@ describe("vue adapter contract", () => {
       runtime.GlowTourPopover,
       runtime.GlowTourOverlay,
       runtime.GlowTourPointer,
-      runtime.GlowTourBackTrigger,
+      runtime.GlowTourPreviousTrigger,
       runtime.GlowTourAdvanceTrigger,
       runtime.GlowTourCancelTrigger,
     ]) {
@@ -159,8 +159,8 @@ describe("vue adapter contract", () => {
     assert.doesNotMatch(html, /aria-describedby/);
   });
 
-  test("renders the idle presentation into the DefaultTour markup before any binding runs", async () => {
-    // The bug this guards: DefaultTour renders overlay/pointer/popover
+  test("renders the idle presentation into the GlowTourDefault markup before any binding runs", async () => {
+    // The bug this guards: GlowTourDefault renders overlay/pointer/popover
     // unconditionally, and the idle (out-of-flow, invisible) presentation used
     // to be applied only imperatively by each core element's initializeProps()
     // once an adapter binds it, leaving server-rendered markup fully visible.
@@ -195,8 +195,8 @@ describe("vue adapter contract", () => {
   });
 
   test("exposes label overrides without legacy previous props", () => {
-    assert.equal("backLabel" in (runtime.GlowTourBackTrigger.props ?? {}), true);
-    assert.equal("previousLabel" in (runtime.GlowTourBackTrigger.props ?? {}), false);
+    assert.equal("previousLabel" in (runtime.GlowTourPreviousTrigger.props ?? {}), true);
+    assert.equal("backLabel" in (runtime.GlowTourPreviousTrigger.props ?? {}), false);
     assert.equal("advanceLabel" in (runtime.GlowTourAdvanceTrigger.props ?? {}), true);
     assert.equal("finishLabel" in (runtime.GlowTourAdvanceTrigger.props ?? {}), true);
     assert.equal("cancelLabel" in (runtime.GlowTourCancelTrigger.props ?? {}), false);

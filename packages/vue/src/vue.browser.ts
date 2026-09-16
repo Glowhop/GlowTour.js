@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 describe("vue adapter browser behavior", () => {
-  test("hydrates server-rendered DefaultTour markup without a mismatch and stays interactive", async () => {
+  test("hydrates server-rendered GlowTourDefault markup without a mismatch and stays interactive", async () => {
     const [{ createSSRApp, h }, { renderToString }, runtime] = await Promise.all([
       import("vue"),
       import("@vue/server-renderer"),
@@ -441,7 +441,7 @@ describe("vue adapter browser behavior", () => {
         h(runtime.GlowTourRoot, { tour }, () => [
           h(runtime.GlowTourPopover),
           h(runtime.GlowTourCancelTrigger),
-          h(runtime.GlowTourBackTrigger),
+          h(runtime.GlowTourPreviousTrigger),
           showAdvance.value
             ? h(runtime.GlowTourAdvanceTrigger, {
                 disabled: blockAdvance.value,

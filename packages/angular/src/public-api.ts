@@ -6,7 +6,6 @@ export type {
 } from "./lib/components/tour-components";
 export {
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
@@ -14,6 +13,7 @@ export {
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
+  GlowTourPreviousTrigger,
   GlowTourRoot,
   injectGlowTour,
 } from "./lib/components/tour-components";

@@ -1,6 +1,6 @@
 "use client";
 
-import { createGlowTour, DefaultTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
 import { useState } from "react";
 
 export default function Page() {
@@ -46,7 +46,7 @@ export default function Page() {
           Target two
         </div>
       </div>
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </main>
   );
 }

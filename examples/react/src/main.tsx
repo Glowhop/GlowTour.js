@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, DefaultTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 const workflow = tour
@@ -23,7 +23,7 @@ if (root) {
           Start tour
         </button>
       </div>
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </>,
   );
 }

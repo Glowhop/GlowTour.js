@@ -19,13 +19,13 @@ Open `http://localhost:5173` in your browser.
 - Using `createGlowTour()` to initialize a tour instance
 - Building a workflow with `.create()` and `.step()`
 - Registering custom elements with `registerGlowTourElements()`
-- Creating a tour component with `createDefaultTourElement()`
+- Adding the complete tour UI with the `<glow-tour-default>` element
 - Triggering the tour with `tour.run(workflow)`
 
 ## API Used
 
 - `createGlowTour()` from `@glowhop/vanilla-tour`
 - `registerGlowTourElements()` to register custom elements
-- `createDefaultTourElement()` to create the tour root element
+- `<glow-tour-default>` to render the complete tour UI
 - Tour workflow builder
 - DOM APIs (createElement, addEventListener, etc.)

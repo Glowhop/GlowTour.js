@@ -40,7 +40,7 @@ GlowTour.js is in `dev`. The versions listed are the current peer contracts and 
 
 ### React
 
-**Server rendering**: `DefaultTour` renders via `react-dom/server`'s `renderToString` with no DOM globals present.
+**Server rendering**: `GlowTourDefault` renders via `react-dom/server`'s `renderToString` with no DOM globals present.
 
 **Hydration**: `react-dom/client`'s `hydrateRoot` hydrates the server-rendered markup with zero console errors and an interactive tour.
 
@@ -62,7 +62,7 @@ GlowTour.js is in `dev`. The versions listed are the current peer contracts and 
 
 **Real-world verified**: A production SolidStart app hydrates cleanly and is interactive end-to-end.
 
-**Hydration-key constraint**: A package-level test deliberately invokes components as plain functions on both server and client, making it sensitive to Solid's internal hydration key numbering. This is an artificial scenario to document the constraint, not a real-world risk: `DefaultTour` (which invokes every child consistently via `createComponent(...)`) used in a normal SolidStart app (whose JSX compiler invokes components consistently on both sides) hydrates without issues. The production SolidStart app confirms this.
+**Hydration-key constraint**: A package-level test deliberately invokes components as plain functions on both server and client, making it sensitive to Solid's internal hydration key numbering. This is an artificial scenario to document the constraint, not a real-world risk: `GlowTourDefault` (which invokes every child consistently via `createComponent(...)`) used in a normal SolidStart app (whose JSX compiler invokes components consistently on both sides) hydrates without issues. The production SolidStart app confirms this.
 
 ### Angular
 

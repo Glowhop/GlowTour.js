@@ -142,7 +142,7 @@ import {
   GlowTourContent,
   GlowTourFooter,
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
+  GlowTourPreviousTrigger,
   GlowTourCancelTrigger,
   createGlowTour,
 } from "@glowhop/angular-tour";
@@ -158,7 +158,7 @@ import {
     GlowTourContent,
     GlowTourFooter,
     GlowTourAdvanceTrigger,
-    GlowTourBackTrigger,
+    GlowTourPreviousTrigger,
     GlowTourCancelTrigger,
   ],
   template: `
@@ -170,7 +170,7 @@ import {
         <glow-tour-content />
         <glow-tour-footer>
           <glow-tour-cancel-trigger />
-          <glow-tour-back-trigger />
+          <glow-tour-previous-trigger />
           <glow-tour-advance-trigger />
         </glow-tour-footer>
       </glow-tour-popover>

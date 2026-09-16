@@ -46,10 +46,10 @@ Composition primitives for custom layouts:
 - `GlowTourContent` - Description area
 - `GlowTourFooter` - Navigation button container
 - `GlowTourAdvanceTrigger` - Next step button
-- `GlowTourBackTrigger` - Previous step button
+- `GlowTourPreviousTrigger` - Previous step button
 - `GlowTourCancelTrigger` - Dismiss button
 
-These components are exported with both the `GlowTour*` naming convention shown above and as flat named exports: `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, `GlowTourAdvanceTrigger`, `GlowTourBackTrigger`, `GlowTourCancelTrigger`.
+These components are exported with both the `GlowTour*` naming convention shown above and as flat named exports: `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, `GlowTourAdvanceTrigger`, `GlowTourPreviousTrigger`, `GlowTourCancelTrigger`.
 
 **Props** (GlowTourRoot):
 ```typescript
@@ -186,7 +186,7 @@ export type { GlowTourOptions, StartOptions } from "@glowhop/core-tour";
 export { GlowTourDefault } from "./components/default-tour.js";
 export {
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
+  GlowTourPreviousTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,

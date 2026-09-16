@@ -3,7 +3,6 @@ import type { GlowTour } from "@glowhop/core-tour";
 import type { AngularTourContent } from "../glow-tour";
 import {
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
@@ -11,6 +10,7 @@ import {
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
+  GlowTourPreviousTrigger,
   GlowTourReactiveComponent,
   GlowTourRoot,
 } from "./tour-components";
@@ -45,7 +45,7 @@ class GlowTourDefaultFooter extends GlowTourReactiveComponent {
     GlowTourFooter,
     GlowTourDefaultFooter,
     GlowTourCancelTrigger,
-    GlowTourBackTrigger,
+    GlowTourPreviousTrigger,
     GlowTourAdvanceTrigger,
   ],
   template: `
@@ -57,7 +57,7 @@ class GlowTourDefaultFooter extends GlowTourReactiveComponent {
         <glow-tour-content />
         <glow-tour-footer glowTourDefaultFooter>
           <glow-tour-cancel-trigger />
-          <glow-tour-back-trigger />
+          <glow-tour-previous-trigger />
           <glow-tour-advance-trigger />
         </glow-tour-footer>
       </glow-tour-popover>

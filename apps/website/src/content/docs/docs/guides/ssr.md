@@ -11,18 +11,18 @@ React's adapter fully supports server-side rendering.
 
 ### Server rendering
 
-The `DefaultTour` component renders as an inert container via `react-dom/server`:
+The `GlowTourDefault` component renders as an inert container via `react-dom/server`:
 
 ```typescript
 import { renderToString } from "react-dom/server";
-import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
 const html = renderToString(
   <>
     <YourApp />
-    <DefaultTour tour={tour} />
+    <GlowTourDefault tour={tour} />
   </>
 );
 
@@ -35,7 +35,7 @@ On the client, `hydrateRoot` hydrates the server-rendered markup:
 
 ```typescript
 import { hydrateRoot } from "react-dom/client";
-import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
@@ -43,7 +43,7 @@ hydrateRoot(
   document.getElementById("root")!,
   <>
     <YourApp />
-    <DefaultTour tour={tour} />
+    <GlowTourDefault tour={tour} />
   </>
 );
 
@@ -74,7 +74,7 @@ The tour reacts to clicks, so it lives in a client component. Client components 
 ```tsx title="app/onboarding.tsx"
 "use client";
 
-import { createGlowTour, DefaultTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
 import { useState } from "react";
 
 export function Onboarding() {
@@ -92,7 +92,7 @@ export function Onboarding() {
       <button type="button" onClick={() => void tour.run(workflow)}>
         Start tour
       </button>
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </>
   );
 }
@@ -160,14 +160,14 @@ Solid's adapter fully supports server-side rendering.
 
 ```typescript
 import { renderToString } from "solid-js/web";
-import { DefaultTour, createGlowTour } from "@glowhop/solid-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
 
 const tour = createGlowTour();
 
 const html = await renderToString(() => (
   <>
     <YourApp />
-    <DefaultTour tour={tour} />
+    <GlowTourDefault tour={tour} />
   </>
 ));
 ```
@@ -178,7 +178,7 @@ On the client, use `hydrate`:
 
 ```typescript
 import { hydrate } from "solid-js/web";
-import { DefaultTour, createGlowTour } from "@glowhop/solid-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
 
 const tour = createGlowTour();
 
@@ -186,7 +186,7 @@ hydrate(
   () => (
     <>
       <YourApp />
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </>
   ),
   document.getElementById("app")!
@@ -216,10 +216,10 @@ export default function App() {
 }
 ```
 
-Then render `DefaultTour` in any route. Solid components run once, so creating the tour inside the component gives each request its own instance on the server:
+Then render `GlowTourDefault` in any route. Solid components run once, so creating the tour inside the component gives each request its own instance on the server:
 
 ```tsx title="src/routes/index.tsx"
-import { createGlowTour, DefaultTour } from "@glowhop/solid-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/solid-tour";
 
 export default function Home() {
   const tour = createGlowTour();
@@ -234,7 +234,7 @@ export default function Home() {
       <button type="button" onClick={() => void tour.run(workflow)}>
         Start tour
       </button>
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </main>
   );
 }
@@ -242,7 +242,7 @@ export default function Home() {
 
 ### Hydration key constraint
 
-A package-level test deliberately invokes components as plain functions on both server and client, which is sensitive to Solid's hydration key numbering. This is an artificial test scenario, not a real-world risk: `DefaultTour` (which invokes children consistently via `createComponent()`) combined with normal SolidStart usage (where your JSX compiler invokes components consistently on both sides) hydrates without issues.
+A package-level test deliberately invokes components as plain functions on both server and client, which is sensitive to Solid's hydration key numbering. This is an artificial test scenario, not a real-world risk: `GlowTourDefault` (which invokes children consistently via `createComponent()`) combined with normal SolidStart usage (where your JSX compiler invokes components consistently on both sides) hydrates without issues.
 
 ## Angular SSR
 

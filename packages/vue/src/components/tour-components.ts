@@ -347,18 +347,20 @@ function trigger(
 }
 
 /** Button component for navigating to the previous step in the tour. */
-export const GlowTourBackTrigger = /* @__PURE__ */ defineComponent({
-  name: componentName("BackTrigger"),
+export const GlowTourPreviousTrigger = /* @__PURE__ */ defineComponent({
+  name: componentName("PreviousTrigger"),
   inheritAttrs: false,
-  props: { ariaLabel: { type: String }, backLabel: { type: String } },
+  props: { ariaLabel: { type: String }, previousLabel: { type: String } },
   setup(props, { attrs, slots }) {
     const context = useTourContext();
     const snapshot = useTourSnapshot(context.tour);
     const step = useStep();
     const renderTrigger = trigger(
       "previous",
-      () => !snapshot.value.canPrevious || step()?.popover?.controls?.previous === "disabled",
-      () => props.backLabel ?? "Back step",
+      () =>
+        (snapshot.value.status !== "transitioning" && !snapshot.value.canPrevious) ||
+        step()?.popover?.controls?.previous === "disabled",
+      () => props.previousLabel ?? "Previous step",
       () => props.ariaLabel,
       attrs,
       slots,
@@ -382,7 +384,9 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
     const step = useStep();
     const renderTrigger = trigger(
       "advance",
-      () => !snapshot.value.canAdvance || step()?.popover?.controls?.advance === "disabled",
+      () =>
+        (snapshot.value.status !== "transitioning" && !snapshot.value.canAdvance) ||
+        step()?.popover?.controls?.advance === "disabled",
       () => {
         return snapshot.value.isLastStep
           ? (props.finishLabel ?? "Finish tour")

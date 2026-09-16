@@ -7,13 +7,13 @@ Compatibility: modern browsers with custom elements and Shadow DOM (Chrome 77+, 
 <!-- glow-tour:snippet vanilla-quick-start -->
 ```ts
 import "@glowhop/styles-tour/default.css";
-import { createDefaultTourElement, createGlowTour, registerGlowTourElements } from "@glowhop/vanilla-tour";
+import { createGlowTour, registerGlowTourElements } from "@glowhop/vanilla-tour";
 
 registerGlowTourElements();
 const tour = createGlowTour();
 const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
 document.body.innerHTML = '<button id="welcome">Welcome</button>';
-const root = createDefaultTourElement(tour); document.body.append(root);
+const root = document.createElement("glow-tour-default"); root.tour = tour; document.body.append(root);
 const startButton = document.createElement("button"); startButton.type = "button"; startButton.textContent = "Start tour"; document.body.append(startButton);
 startButton.addEventListener("click", () => void tour.run(workflow));
 ```
