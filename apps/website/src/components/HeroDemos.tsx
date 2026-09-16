@@ -1,4 +1,3 @@
-import "@glowhop/styles-tour/default.css";
 import {
   createGlowTour,
   GlowTourAdvanceTrigger,
