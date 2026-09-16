@@ -183,4 +183,26 @@ describe("step props store", () => {
     assert.deepEqual(failures, ["store failure", "store failure"]);
     assert.equal(laterCalls, 1);
   });
+
+  test("update replaces the classes of the named components and keeps the others", () => {
+    const store = createStepPropsStore(
+      { content: "content", classNames: { popover: ["workflow", "step"], header: "title" } },
+      () => {},
+    );
+
+    store.update((props) => {
+      const popover = props.classNames?.popover;
+      return {
+        classNames: {
+          popover: [
+            ...(typeof popover === "string" ? [popover] : (popover ?? [])),
+            "active",
+          ].filter((name) => name !== "step"),
+        },
+      };
+    });
+
+    assert.deepEqual(store.get().classNames, { popover: ["workflow", "active"], header: "title" });
+    assert.equal(Object.isFrozen(store.get().classNames), true);
+  });
 });

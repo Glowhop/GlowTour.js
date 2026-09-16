@@ -3234,6 +3234,45 @@ describe("instance-first TourController", () => {
   });
 });
 
+describe("step classNames", () => {
+  test("adds each step's classes to the workflow ones and lets the step update them", async () => {
+    const tour = createGlowTour<string>();
+    let context: StepContext<string> | undefined;
+    const workflow = tour
+      .create("class-names", { classNames: { popover: "tour", header: "tour-header" } })
+      .step({
+        id: "first",
+        content: "content",
+        target: targetResolver,
+        classNames: { popover: "first" },
+      })
+      .do((stepContext) => {
+        context = stepContext;
+      })
+      .step({ id: "second", content: "content", target: targetResolver })
+      .build();
+
+    await tour.run(workflow);
+    assert.deepEqual(tour.state.get().currentStep?.currentProps.classNames, {
+      popover: ["tour", "first"],
+      header: "tour-header",
+    });
+
+    context?.props.update({ classNames: { popover: "highlighted" } });
+    assert.deepEqual(tour.state.get().currentStep?.currentProps.classNames, {
+      popover: "highlighted",
+      header: "tour-header",
+    });
+
+    await tour.advance();
+    assert.deepEqual(tour.state.get().currentStep?.currentProps.classNames, {
+      popover: "tour",
+      header: "tour-header",
+    });
+    await tour.dispose();
+  });
+});
+
 describe("step ids and startAt", () => {
   function threeSteps() {
     return createGlowTour<string>();

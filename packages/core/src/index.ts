@@ -9,6 +9,7 @@ export { createGlowTour } from "./runtime/tour-controller";
 export type {
   AnimationOptions,
   BaseOptions,
+  ClassValue,
   GlowTour,
   GlowTourOptions,
   IndicatorOptions,
@@ -39,6 +40,7 @@ export type {
   TargetEventHandler,
   TargetResolver,
   TargetResolverContext,
+  TourClassNames,
   TourControlState,
   TourCurrentStep,
   TourDirection,

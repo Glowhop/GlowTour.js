@@ -6,7 +6,7 @@ import type {
   StepParameters,
   TargetEventHandler,
 } from "../types";
-import { cloneStepProps, freezeStepProps } from "./step-props";
+import { cloneClassNames, cloneStepProps, freezeStepProps } from "./step-props";
 import type {
   ReadonlyStartOptions,
   StepProps,
@@ -84,6 +84,7 @@ function freezeOptions<T>(options: StartOptions<T>): ReadonlyStartOptions<T> {
     overlay: freezeOverlay(options.overlay),
     popover: freezePopover(options.popover),
     indicator: freezeIndicator(options.indicator),
+    classNames: cloneClassNames(options.classNames),
     behavior:
       options.behavior &&
       freezeRecord({

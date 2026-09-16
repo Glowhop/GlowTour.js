@@ -11,6 +11,7 @@ const TOP_LEVEL_KEYS = [
   "indicator",
   "animated",
   "behavior",
+  "classNames",
   "onStart",
   "onCancel",
   "onFinish",
@@ -24,6 +25,7 @@ const STEP_KEYS = [
   "popover",
   "indicator",
   "behavior",
+  "classNames",
   "title",
   "content",
   "data",
@@ -47,6 +49,15 @@ const POPOVER_KEYS = [
   "gap",
 ] as const;
 const CONTROL_KEYS = ["advance", "previous", "cancel"] as const;
+const CLASS_NAME_KEYS = [
+  "overlay",
+  "popover",
+  "pointer",
+  "header",
+  "content",
+  "footer",
+  ...CONTROL_KEYS,
+] as const;
 const POPOVER_ARROW_KEYS = [
   "hidden",
   "color",
@@ -168,6 +179,7 @@ function validateWorkflowConfigShape(
   validatePopoverShape("popover", value.popover, issues);
   validateIndicatorShape("indicator", value.indicator, issues);
   validateBehaviorShape("behavior", value.behavior, issues);
+  validateClassNamesShape("classNames", value.classNames, issues);
   validateLifecycleActionRefShape("onStart", value.onStart, issues);
   validateLifecycleActionRefShape("onCancel", value.onCancel, issues);
   validateLifecycleActionRefShape("onFinish", value.onFinish, issues);
@@ -233,6 +245,7 @@ function validateStepConfigShape(
   validatePopoverShape(`${path}.popover`, value.popover, issues);
   validateIndicatorShape(`${path}.indicator`, value.indicator, issues);
   validateBehaviorShape(`${path}.behavior`, value.behavior, issues);
+  validateClassNamesShape(`${path}.classNames`, value.classNames, issues);
   validateDataShape(`${path}.data`, value.data, issues);
 
   if (value.actions !== undefined) {
@@ -581,6 +594,25 @@ function validatePopoverShape(path: string, value: unknown, issues: ConfigValida
   validatePopoverArrowShape(`${path}.arrow`, value.arrow, issues);
   validateControlsShape(`${path}.controls`, value.controls, issues);
   validateOptionalFiniteNonNegative(`${path}.gap`, value.gap, issues);
+}
+
+function validateClassNamesShape(
+  path: string,
+  value: unknown,
+  issues: ConfigValidationIssue[],
+): void {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    issues.push({ path, message: "must be an object" });
+    return;
+  }
+  assertNoUnknownKeys(value, CLASS_NAME_KEYS, path, issues);
+  for (const key of CLASS_NAME_KEYS) {
+    // A string is accepted as is; anything else must be an array of strings.
+    if (typeof value[key] !== "string") {
+      validateOptionalStringArray(`${path}.${key}`, value[key], issues);
+    }
+  }
 }
 
 function validateControlsShape(

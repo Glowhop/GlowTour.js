@@ -1,3 +1,4 @@
+import type { TourClassNames } from "../types";
 import type { ReadonlyStepProps, StepProps } from "./types";
 
 /**
@@ -38,7 +39,18 @@ export function cloneStepProps<T>(props: ReadonlyStepProps<T>): StepProps<T> {
       missingTarget: props.behavior.missingTarget && { ...props.behavior.missingTarget },
       scroll: props.behavior.scroll && { ...props.behavior.scroll },
     },
+    classNames: cloneClassNames(props.classNames),
   };
+}
+
+/**
+ * Copies `classNames` into a frozen record. Its class arrays are shared rather than copied: they are
+ * typed readonly and nothing in the tour writes to them, and copying them costs bundle size.
+ */
+export function cloneClassNames(
+  classNames: TourClassNames | undefined,
+): TourClassNames | undefined {
+  return classNames && Object.freeze({ ...classNames });
 }
 
 /**

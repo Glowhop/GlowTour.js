@@ -81,6 +81,28 @@ export type TryOrderOptions = "top" | "bottom" | "left" | "right";
 /** A resolved placement direction, including `"center"` for centered positioning. */
 export type ResolvedPlacement = TryOrderOptions | "center";
 
+/** One CSS class, or several. A string may hold several space-separated classes. */
+export type ClassValue = string | readonly string[];
+
+/**
+ * Classes added to the tour components while a step is shown, one entry per component.
+ *
+ * They are always added to the classes the component already has: the ones passed to the component
+ * itself and, for a step, the workflow's `classNames`. The step's classes join the workflow's ones
+ * for the same component rather than replacing them.
+ */
+export interface TourClassNames {
+  overlay?: ClassValue;
+  popover?: ClassValue;
+  pointer?: ClassValue;
+  header?: ClassValue;
+  content?: ClassValue;
+  footer?: ClassValue;
+  advance?: ClassValue;
+  previous?: ClassValue;
+  cancel?: ClassValue;
+}
+
 /** Base configuration for animated elements. */
 export interface BaseOptions {
   /** Enable or disable animations. */
@@ -248,6 +270,8 @@ export interface StartOptions<T> {
   animated?: boolean;
   /** Default step behavior for all steps. */
   behavior?: StepBehavior;
+  /** Classes added to the tour components on every step. See `TourClassNames`. */
+  classNames?: TourClassNames;
 
   /** Lifecycle hook called when the tour starts. */
   onStart?: (context: LifecycleHookContext<T>) => void | Promise<void>;
@@ -273,7 +297,10 @@ export type StepPropsUpdate<T> =
 /**
  * Partial change to step properties, for `StepPropsStore.update`. Fields it leaves out are kept.
  * `data` is merged key by key; `overlay`, `popover` and `indicator` are merged the way step options
- * merge over workflow defaults; arrays such as `placementTryOrder` are replaced.
+ * merge over workflow defaults; arrays such as `placementTryOrder` are replaced. `classNames` is merged
+ * per component, and a component it names gets exactly the classes given, which replace the current
+ * ones (workflow classes included): read `current.classNames` in the function form to add or remove
+ * a single class.
  */
 export type StepPropsPatch<T> = Partial<ReadonlyStepProps<T>>;
 
@@ -573,6 +600,8 @@ export type StepParameters<T> = {
   indicator?: IndicatorOptions;
   /** Step behavior (overrides workflow defaults). */
   behavior?: StepBehavior;
+  /** Classes added to the tour components on this step, on top of the workflow ones. See `TourClassNames`. */
+  classNames?: TourClassNames;
   /** The title content for this step. Without a title, the popover is named by its content. */
   title?: T;
   /** The body content for this step. */
