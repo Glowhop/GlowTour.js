@@ -297,7 +297,7 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 | `popover` | PopoverOptions | - | Popover appearance (see [Popover options](#popover-options)) |
 | `indicator` | IndicatorOptions | - | Indicator appearance (see [Indicator options](#indicator-options)) |
 | `behavior` | StepBehavior | - | Step behavior (see [Behavior options](#behavior-options)) |
-| `classNames` | TourClassNames | - | Classes added to the tour components on every step (see [Class name options](#class-name-options)) |
+| `classNames` | TourClassNames | - | Classes added to the tour components on every step, unless a step sets its own for the same component (see [Class name options](#class-name-options)) |
 | `allowScroll` | boolean | `true` | The page stays scrollable during the tour; set `false` to lock page scroll while the tour is active (restored on finish/cancel/error/dispose) |
 | `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour starts |
 | `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour is cancelled |
@@ -459,10 +459,10 @@ string or an array of strings.
 | `cancel` | The cancel button |
 
 The classes land on the element that carries the matching `data-glow-tour-*` attribute, the one the
-default theme styles. They are always added, never replaced:
+default theme styles:
 
-- A step's classes come after the workflow classes for the same component.
-- Both come after the classes you give the component itself, such as `<GlowTourPopover className="...">`.
+- They are added after the classes you give the component itself, such as `<GlowTourFooter className="p-2">`, which are never replaced.
+- A step's entry overrides the workflow entry for the same component, like the other step options. A component the step leaves out keeps the workflow classes.
 - They are removed when the next step shows without them.
 
 **Usage**:
@@ -473,7 +473,7 @@ tour
     id: "billing",
     target: "#billing",
     content: "Plans changed this month.",
-    // The popover gets both "onboarding-popover" and "popover-warning" on this step.
+    // On this step the popover gets "popover-warning" instead of "onboarding-popover".
     classNames: { popover: "popover-warning", advance: ["button", "button-danger"] },
   })
   .build();

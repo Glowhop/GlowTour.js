@@ -28,7 +28,7 @@ export class ActiveStep<T> {
     private readonly rootDocument?: Document,
   ) {
     // The workflow options go in whole: freezeStepProps keeps only the step prop keys.
-    this.initialProps = freezeStepProps(mergeStepProps(defaults, definition.props, true));
+    this.initialProps = freezeStepProps(mergeStepProps(defaults, definition.props));
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
     this.animated = defaults.animated;
     this.allowScroll = defaults.allowScroll !== false;

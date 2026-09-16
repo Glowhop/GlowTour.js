@@ -241,7 +241,7 @@ describe("react adapter browser behavior", () => {
     });
     const popover = container.querySelector("[data-glow-tour-popover]");
     const advance = container.querySelector("[data-glow-tour-advance-trigger]");
-    assert.equal(popover?.className, "own tour step");
+    assert.equal(popover?.className, "own step");
     assert.equal(advance?.className, "child step-advance");
     await React.act(async () => root.unmount());
   });

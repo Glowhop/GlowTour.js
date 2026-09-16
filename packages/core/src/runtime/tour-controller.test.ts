@@ -3235,7 +3235,7 @@ describe("instance-first TourController", () => {
 });
 
 describe("step classNames", () => {
-  test("adds each step's classes to the workflow ones and lets the step update them", async () => {
+  test("overrides the workflow classes per component and lets the step update them", async () => {
     const tour = createGlowTour<string>();
     let context: StepContext<string> | undefined;
     const workflow = tour
@@ -3254,7 +3254,7 @@ describe("step classNames", () => {
 
     await tour.run(workflow);
     assert.deepEqual(tour.state.get().currentStep?.currentProps.classNames, {
-      popover: ["tour", "first"],
+      popover: "first",
       header: "tour-header",
     });
 

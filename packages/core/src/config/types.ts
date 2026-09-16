@@ -94,7 +94,7 @@ export interface StepConfig<T = string> {
   readonly popover?: PopoverOptions;
   readonly indicator?: IndicatorOptions;
   readonly behavior?: StepBehavior;
-  /** Classes added to the tour components on this step, on top of the workflow ones. */
+  /** Classes added to the tour components on this step, overriding the workflow ones per component. */
   readonly classNames?: TourClassNames;
   readonly title?: T;
   readonly content: T;

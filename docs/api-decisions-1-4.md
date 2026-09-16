@@ -105,16 +105,16 @@ rediscovered. The user-facing changes are listed in the migration guide
 
 - **Chosen:** one `classNames` record, on the workflow and on each step, with an entry per rendered
   component (`overlay`, `popover`, `pointer`, `header`, `content`, `footer`, `previous`, `advance`,
-  `cancel`). A step's classes are added after the workflow ones; `props.update()` replaces the
-  classes of the components it names. The adapters apply the classes; the core only merges them.
+  `cancel`). The classes are added after the component's own classes. A step's entry overrides the
+  workflow entry for the same component, and `props.update()` replaces the classes of the components
+  it names. The adapters apply the classes; the core only merges them.
 - **Rejected:** a `className` inside `overlay`, `popover` and `indicator`; a name such as
-  `additionalClassNames`; replacing the workflow classes with the step ones; applying the classes
-  from the core.
+  `additionalClassNames`; adding a step's classes to the workflow ones; applying the classes from the
+  core.
 - **Why:** the header, content, footer and buttons have no option object, and one record covers every
-  component the same way. `classNames` already means added classes in component libraries. Replacing
-  would force each step to repeat the workflow classes. Adding them in `update()` as well would leave
-  no way to remove a class during a step. The core cannot apply them: it does not know the header,
+  component the same way. `classNames` already means added classes in component libraries. Overriding
+  per component matches how the other step options merge over the workflow defaults, and lets a step
+  drop a workflow class without a separate removal syntax. The core cannot apply them: it does not know the header,
   content, footer and buttons, and the frameworks own the `class` attribute of what they render, so a
-  class set from outside would be erased on the next render. To stay within the size budgets, duplicate
-  classes are not removed (the browser ignores them) and the class arrays are shared with the
-  definition instead of being copied and frozen.
+  class set from outside would be erased on the next render. To stay within the size budgets, the class arrays are
+  shared with the definition instead of being copied and frozen.
