@@ -1228,6 +1228,23 @@ describe("DomTourViewDriver", () => {
     window.dispatchEvent(new MockEvent("click", { target: document.body }));
     assert.deepEqual(calls, ["cancel"]);
   });
+  test("presents a detached step modally, centered, over a backdrop without a cutout", async () => {
+    const { calls, driver, elements } = installDriver(),
+      step = createStep({ allowInteraction: true, overlayClick: "cancel" });
+    step.target = step.detach();
+    await driver.show(step, "advance", new AbortController().signal);
+
+    assert.equal(elements.popover.getAttribute("data-glow-tour-placement"), "center");
+    assert.equal(elements.overlay.getAttribute("data-glow-tour-allow-interaction"), "false");
+    // The cutout collapses to a point: nothing of the page shows through the backdrop.
+    assert.match(
+      elements.overlay.querySelector("path")?.style.getPropertyValue("d") ?? "",
+      /M([\d.]+),([\d.]+) Q\1,\2 \1,\2 H\1 /,
+    );
+    // The body is on every click path: it must not count as a click on the target.
+    window.dispatchEvent(new MockEvent("click", { target: document.body }));
+    assert.deepEqual(calls, ["cancel"]);
+  });
   test("ignores an overlay click landing on the target element", async () => {
     const { calls, driver } = installDriver(),
       target = createTarget(),
@@ -3476,6 +3493,28 @@ describe("DomTourViewDriver", () => {
         createdAnimations.filter((animation) => animation.target === overlayPath).length,
         1,
       );
+    });
+
+    test("detaches a frozen step: centers the popover, blocks the page and pulls focus back in", async () => {
+      const { driver, elements } = installDriver();
+      const step = createStep({ allowInteraction: true });
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      target.focus();
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+
+      step.target = step.detach();
+      await driver.retarget(step, new AbortController().signal);
+
+      assert.equal(elements.popover.getAttribute("data-glow-tour-placement"), "center");
+      assert.equal(elements.overlay.getAttribute("data-glow-tour-allow-interaction"), "false");
+      assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+      assert.equal(elements.popover.contains(document.activeElement as never), true);
     });
 
     test("moves the cutout without animating when the step is not animated", async () => {
