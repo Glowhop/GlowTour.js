@@ -146,7 +146,7 @@ export const examples: readonly Example[] = [
   {
     Demo: CustomStyledIndicatorDemo,
     description:
-      "overlay/popover overrides and a custom <Pointer> glyph, composed directly with Root/Overlay/Popover.",
+      "overlay/popover overrides, a custom <Pointer> glyph and step classNames, composed directly with Root/Overlay/Popover.",
     label: "Custom look",
     source: customStyledIndicatorSource,
     title: "Custom look",

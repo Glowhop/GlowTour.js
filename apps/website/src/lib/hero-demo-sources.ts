@@ -224,6 +224,18 @@ const workflow = tour
     popover: { arrow: { hidden: true } },
     behavior: { allowInteraction: true },
   })
+  .step({
+    id: "second-member",
+    target: "#second-member",
+    title: "Tailwind classes, for one step",
+    content: "classNames restyles this step's popover, header and advance button only.",
+    // Import the theme with layer(components) so these utilities win over it.
+    classNames: {
+      popover: ["border-2", "shadow-lg", "shadow-sky-500/25", "[--glow-tour-color-accent:#0ea5e9]"],
+      header: "text-sky-500",
+      advance: "rounded-full",
+    },
+  })
   .build();
 
 // Instead of <GlowTourDefault tour={tour} />, compose the pieces directly. Pointer takes

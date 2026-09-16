@@ -20,6 +20,7 @@ const CITED_OPTIONS = [
   "autoFocus",
   "autoScroll",
   "cancellable",
+  "classNames",
   "controls",
   "missingTarget",
   "overlayClick",
