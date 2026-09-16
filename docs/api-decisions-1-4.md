@@ -89,3 +89,14 @@ rediscovered. The user-facing changes are listed in the migration guide
 - **Why:** short hints do not need a title, and an empty labelled header would give the dialog an
   empty accessible name. Outside a step the header stays rendered, so server and client markup
   still match.
+
+## Detached steps
+
+- **Chosen:** `missingTarget.strategy: "detached"` shows the step centered over a backdrop without a
+  cutout, as soon as the target is missing. `context.target` stays typed `HTMLElement` and is the
+  document's `<body>`; `targetEvents` are not bound.
+- **Rejected:** typing `context.target` as `HTMLElement | null`, and waiting for `timeout` before
+  detaching.
+- **Why:** a nullable target would force a check in every action and hook, including the many
+  workflows that never detach. Waiting first would give `timeout` a second meaning; `wait` already
+  covers late targets, and `skip` and `error` also apply at once.

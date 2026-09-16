@@ -66,9 +66,34 @@ function goTo(
   };
 }
 
+/**
+ * The greeting shown by the first step. No title: the image is the whole message, and its
+ * alternative text gives the popover its accessible name.
+ */
+function welcomeImage(): HTMLImageElement {
+  const image = document.createElement("img");
+  image.src = "/welcome-image.png";
+  image.alt = "Welcome! A wizard bunny waves hello before the tour of GlowTour.js begins.";
+  // The intrinsic size reserves the box before the file loads, so the popover is centered on its
+  // final height instead of growing under the user once the image arrives.
+  image.width = 1218;
+  image.height = 1292;
+  image.decoding = "async";
+  image.style.cssText = "display:block;width:100%;height:auto;max-height:50vh;object-fit:contain";
+  return image;
+}
+
 export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
   return tour
     .create(SITE_TOUR_NAME)
+    .step({
+      // Nothing on the page to point at yet: resolving to nothing lets the "detached" strategy
+      // show the greeting centered, over a backdrop that covers the whole page.
+      behavior: { missingTarget: { strategy: "detached" } },
+      content: welcomeImage(),
+      id: "intro",
+      target: () => null,
+    })
     .step({
       content:
         "You are in one right now. Everything you see for the next few steps is the same library this page documents, running against this page.",
