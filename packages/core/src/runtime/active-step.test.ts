@@ -69,9 +69,9 @@ describe("ActiveStep presentation options", () => {
     const workflow = definition({});
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
-    assert.equal(step.indicator?.gap, 22);
-    assert.equal(step.popover?.gap, 18);
-    assert.deepEqual(step.popover?.arrow, {
+    assert.equal(step.props.get().indicator?.gap, 22);
+    assert.equal(step.props.get().popover?.gap, 18);
+    assert.deepEqual(step.props.get().popover?.arrow, {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "var(--workflow-arrow)",
@@ -90,9 +90,9 @@ describe("ActiveStep presentation options", () => {
     });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
-    assert.equal(step.indicator?.gap, 8);
-    assert.equal(step.popover?.gap, 6);
-    assert.deepEqual(step.popover?.arrow, {
+    assert.equal(step.props.get().indicator?.gap, 8);
+    assert.equal(step.props.get().popover?.gap, 6);
+    assert.deepEqual(step.props.get().popover?.arrow, {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "#4c35fd",

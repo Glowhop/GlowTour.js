@@ -2755,7 +2755,7 @@ describe("DomTourViewDriver", () => {
     target.dispatchEvent(new MockEvent("click"));
     await flushMicrotasks();
 
-    assert.equal(step.allowInteraction, false);
+    assert.equal(step.allowsInteraction(), false);
     assert.equal(elements.popover.getAttribute("aria-modal"), "true");
     assert.equal(target.hasAttribute("inert"), true);
   });
