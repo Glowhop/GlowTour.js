@@ -184,7 +184,11 @@ export const GlowTourHeader = /* @__PURE__ */ defineComponent({
       if (current && current.title == null) return null;
       return h(
         "header",
-        mergeProps(attrs, { "data-glow-tour-header": "", id: context.binding.value?.ids.title }),
+        mergeProps(attrs, {
+          class: current?.classNames?.header,
+          "data-glow-tour-header": "",
+          id: context.binding.value?.ids.title,
+        }),
         [current?.title ?? null],
       );
     };
@@ -204,6 +208,7 @@ export const GlowTourContent = /* @__PURE__ */ defineComponent({
         "div",
         mergeProps(attrs, {
           "aria-live": props.ariaLive,
+          class: step()?.classNames?.content,
           "data-glow-tour-content": "",
           id: context.binding.value?.ids.description,
         }),
@@ -217,7 +222,13 @@ export const GlowTourFooter = /* @__PURE__ */ defineComponent({
   name: componentName("Footer"),
   inheritAttrs: false,
   setup(_props, { attrs, slots }) {
-    return () => h("footer", mergeProps(attrs, { "data-glow-tour-footer": "" }), slots.default?.());
+    const step = useStep();
+    return () =>
+      h(
+        "footer",
+        mergeProps(attrs, { class: step()?.classNames?.footer, "data-glow-tour-footer": "" }),
+        slots.default?.(),
+      );
   },
 });
 
@@ -243,6 +254,7 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
           "aria-describedby": titled ? ids?.description : undefined,
           "aria-hidden": POPOVER_IDLE_ATTRIBUTES["aria-hidden"],
           "aria-labelledby": titled ? ids?.title : ids?.description,
+          class: current?.classNames?.popover,
           "data-glow-tour-popover": "",
           id: context.binding.value?.ids.popover,
           inert: POPOVER_IDLE_ATTRIBUTES.inert,
@@ -267,12 +279,14 @@ export const GlowTourPointer = /* @__PURE__ */ defineComponent({
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPointer(activeElement),
     );
+    const step = useStep();
     return () => {
       const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...props.directionContent };
       return h(
         "div",
         mergeProps({ style: POINTER_IDLE_STYLE }, attrs, {
           "aria-hidden": POINTER_IDLE_ATTRIBUTES["aria-hidden"],
+          class: step()?.classNames?.pointer,
           "data-glow-tour-pointer": "",
           ref: element,
         }),
@@ -299,11 +313,13 @@ export const GlowTourOverlay = /* @__PURE__ */ defineComponent({
     const element = useBoundElement<SVGSVGElement>((binding, activeElement) =>
       binding.bindOverlay(activeElement),
     );
+    const step = useStep();
     return () =>
       h(
         "svg",
         mergeProps({ style: OVERLAY_IDLE_STYLE }, attrs, {
           "aria-hidden": props.ariaHidden,
+          class: step()?.classNames?.overlay,
           "data-glow-tour-allow-interaction":
             OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"],
           "data-glow-tour-overlay": "",
@@ -337,6 +353,7 @@ function trigger(
   slots: { default?: (props: Record<string, unknown>) => VNodeChild[] },
 ) {
   const context = useTourContext();
+  const step = useStep();
   return () => {
     const consumerDisabled = isConsumerDisabled(attrs);
     const disabled = capabilityDisabled() || consumerDisabled;
@@ -344,6 +361,7 @@ function trigger(
       "aria-controls": context.binding.value?.ids.popover,
       "aria-disabled": disabled ? "true" : "false",
       "aria-label": attrs["aria-label"] ?? ariaLabel() ?? label(),
+      class: step()?.classNames?.[marker],
       "data-glow-tour-cancel-trigger": marker === "cancel" ? "" : undefined,
       "data-glow-tour-consumer-disabled": consumerDisabled ? "true" : undefined,
       "data-glow-tour-advance-trigger": marker === "advance" ? "" : undefined,

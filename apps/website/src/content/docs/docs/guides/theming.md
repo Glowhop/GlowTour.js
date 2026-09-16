@@ -181,6 +181,33 @@ your own tokens, or place the tour over a busy background, check the contrast of
 [accessibility notes](/docs/guides/accessibility) for what the library does and does
 not guarantee.
 
+## Styling a step
+
+To style a component on some steps only, give those steps `classNames`. The classes are added to
+the element the default theme styles, and removed when a step shows without them:
+
+```typescript
+tour
+  .create("onboarding")
+  .step({
+    id: "danger-zone",
+    target: "#delete-account",
+    content: "This cannot be undone.",
+    classNames: { popover: "tour-danger", advance: "tour-danger-button" },
+  })
+  .build();
+```
+
+```css
+[data-glow-tour-popover].tour-danger {
+  --glow-tour-color-surface: #fff1f2;
+  --glow-tour-color-border: #e11d48;
+}
+```
+
+The same option works on the workflow, for every step, and in the JSON config. See
+[Class name options](/docs/reference/builder#class-name-options).
+
 ## Advanced customization
 
 For complete control over the popover layout, header styling, or footer layout, you can use custom composition and write your own styles:

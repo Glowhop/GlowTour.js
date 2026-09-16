@@ -1,4 +1,9 @@
-import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import type {
+  ClassValue,
+  GlowTour as CoreGlowTour,
+  TourClassNames,
+  TourState,
+} from "@glowhop/core-tour";
 import {
   type AdapterRootBinding,
   connectGlowTourRoot,
@@ -122,6 +127,20 @@ function currentStep(snapshot: TourState<SolidTourContent>) {
   return snapshot.currentStep?.currentProps ?? null;
 }
 
+/** Joins the component's own classes with the ones the current step adds to it. */
+function joinClassNames(...values: (ClassValue | undefined)[]) {
+  return values.flat().filter(Boolean).join(" ") || undefined;
+}
+
+/** Reads the component's `class` followed by the current step's `classNames[slot]`. */
+function stepClass(
+  snapshot: Accessor<TourState<SolidTourContent>>,
+  slot: keyof TourClassNames,
+  className: string | undefined,
+) {
+  return joinClassNames(className, currentStep(snapshot())?.classNames?.[slot]);
+}
+
 /**
  * GlowTourRoot component that must wrap all other tour components.
  *
@@ -204,6 +223,9 @@ export function GlowTourPopover(props: ElementProps): JSX.Element {
         const ids = context.binding()?.ids;
         return titled() ? ids?.title : ids?.description;
       },
+      get class() {
+        return stepClass(snapshot, "popover", other.class);
+      },
       get component() {
         return local.as ?? "section";
       },
@@ -242,6 +264,9 @@ export function GlowTourHeader(props: ContentProps): JSX.Element {
       return createComponent(
         Dynamic,
         mergeProps(props, {
+          get class() {
+            return stepClass(snapshot, "header", props.class);
+          },
           component: "header",
           "data-glow-tour-header": "",
           get id() {
@@ -268,6 +293,9 @@ export function GlowTourContent(props: ContentProps): JSX.Element {
     Dynamic,
     mergeProps(props, {
       "aria-live": "polite",
+      get class() {
+        return stepClass(snapshot, "content", props.class);
+      },
       component: "div",
       "data-glow-tour-content": "",
       get id() {
@@ -286,10 +314,13 @@ export function GlowTourContent(props: ContentProps): JSX.Element {
  * @returns The footer container.
  */
 export function GlowTourFooter(props: ElementProps): JSX.Element {
-  useTourContext();
+  const snapshot = useTourSnapshot(useTourContext().tour);
   return createComponent(
     Dynamic,
     mergeProps(props, {
+      get class() {
+        return stepClass(snapshot, "footer", props.class);
+      },
       component: "footer",
       "data-glow-tour-footer": "",
     }),
@@ -304,6 +335,7 @@ export function GlowTourFooter(props: ElementProps): JSX.Element {
  */
 export function GlowTourOverlay(props: OverlayProps): JSX.Element {
   const [local, other] = splitProps(props, ["children", "viewBox"]);
+  const snapshot = useTourSnapshot(useTourContext().tour);
   const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
   const path = createComponent(Dynamic, {
     component: "path",
@@ -318,6 +350,9 @@ export function GlowTourOverlay(props: OverlayProps): JSX.Element {
     Dynamic,
     mergeProps(other, {
       "aria-hidden": true,
+      get class() {
+        return stepClass(snapshot, "overlay", other.class);
+      },
       component: "svg",
       "data-glow-tour-allow-interaction":
         OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"],
@@ -349,6 +384,7 @@ export function GlowTourOverlay(props: OverlayProps): JSX.Element {
  */
 export function GlowTourPointer(props: PointerProps): JSX.Element {
   const [local, other] = splitProps(props, ["as", "directionContent"]);
+  const snapshot = useTourSnapshot(useTourContext().tour);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const directions = (
     Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
@@ -366,6 +402,9 @@ export function GlowTourPointer(props: PointerProps): JSX.Element {
     Dynamic,
     mergeProps(other, {
       "aria-hidden": POINTER_IDLE_ATTRIBUTES["aria-hidden"],
+      get class() {
+        return stepClass(snapshot, "pointer", other.class);
+      },
       get component() {
         return local.as ?? "div";
       },
@@ -455,6 +494,9 @@ export function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Elemen
             );
           },
           label: props.previousLabel ?? "Previous step",
+          get class() {
+            return stepClass(snapshot, "previous", props.class);
+          },
           marker: "previous" as const,
         }),
       );
@@ -489,6 +531,9 @@ export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element 
               ? (props.finishLabel ?? "Finish tour")
               : (props.advanceLabel ?? "Advance step");
           },
+          get class() {
+            return stepClass(snapshot, "advance", props.class);
+          },
           marker: "advance" as const,
         }),
       );
@@ -521,6 +566,9 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
             );
           },
           label: "Skip",
+          get class() {
+            return stepClass(snapshot, "cancel", props.class);
+          },
           marker: "cancel" as const,
         }),
       );

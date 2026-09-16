@@ -20,7 +20,7 @@ import {
   TemplateRef,
   ViewChild,
 } from "@angular/core";
-import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import type { GlowTour as CoreGlowTour, TourClassNames, TourState } from "@glowhop/core-tour";
 import {
   type AdapterRootBinding,
   connectGlowTourRoot,
@@ -34,6 +34,11 @@ import {
   styleRecordToCssText,
 } from "@glowhop/core-tour/adapter";
 import type { AngularTourContent } from "../glow-tour";
+
+/** The classes the current step adds to the `slot` component, as one class string. */
+function joinStepClass(state: TourState<AngularTourContent> | null, slot: keyof TourClassNames) {
+  return [state?.currentStep?.currentProps.classNames?.[slot] ?? []].flat().join(" ");
+}
 
 const OVERLAY_IDLE_STYLE_TEXT = styleRecordToCssText(OVERLAY_IDLE_STYLE);
 const POINTER_IDLE_STYLE_TEXT = styleRecordToCssText(POINTER_IDLE_STYLE);
@@ -115,6 +120,10 @@ export abstract class GlowTourReactiveComponent {
   protected readonly scope = useTourScope();
   protected readonly snapshot = this.scope.state;
   protected readonly step = computed(() => this.snapshot()?.currentStep?.currentProps ?? null);
+  /** The classes the current step adds to the `slot` component. */
+  protected stepClass(slot: keyof TourClassNames) {
+    return joinStepClass(this.snapshot(), slot);
+  }
 }
 
 @Component({
@@ -192,7 +201,7 @@ export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
   imports: [NgTemplateOutlet],
   template: `
     @if (titled()) {
-      <header data-glow-tour-header [id]="scope.binding()?.ids?.title">
+      <header data-glow-tour-header [class]="stepClass('header')" [id]="scope.binding()?.ids?.title">
         @if (titleTemplate()) {
           <ng-container [ngTemplateOutlet]="titleTemplate()" />
         } @else {
@@ -223,7 +232,7 @@ export class GlowTourHeader extends GlowTourReactiveComponent {
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <div aria-live="polite" data-glow-tour-content [id]="scope.binding()?.ids?.description">
+    <div aria-live="polite" data-glow-tour-content [class]="stepClass('content')" [id]="scope.binding()?.ids?.description">
       @if (contentTemplate()) {
         <ng-container [ngTemplateOutlet]="contentTemplate()" />
       } @else {
@@ -247,7 +256,7 @@ export class GlowTourContent extends GlowTourReactiveComponent {
 @Component({
   selector: "glow-tour-footer",
   standalone: true,
-  template: "<footer data-glow-tour-footer><ng-content /></footer>",
+  template: `<footer data-glow-tour-footer [class]="stepClass('footer')"><ng-content /></footer>`,
 })
 /** Footer component containing action buttons. */
 export class GlowTourFooter extends GlowTourReactiveComponent {}
@@ -255,6 +264,10 @@ export class GlowTourFooter extends GlowTourReactiveComponent {}
 @Directive()
 abstract class GlowTourBoundElement<T extends Element> {
   protected readonly scope = useTourScope();
+  /** The classes the current step adds to the `slot` component. */
+  protected stepClass(slot: keyof TourClassNames) {
+    return joinStepClass(this.scope.state(), slot);
+  }
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
@@ -282,6 +295,7 @@ abstract class GlowTourBoundElement<T extends Element> {
     <section #tourElement
       [attr.aria-hidden]="idleAriaHidden"
       data-glow-tour-popover
+      [class]="stepClass('popover')"
       [attr.aria-describedby]="titled() ? scope.binding()?.ids?.description : null"
       [attr.aria-labelledby]="titled() ? scope.binding()?.ids?.title : scope.binding()?.ids?.description"
       [id]="scope.binding()?.ids?.popover"
@@ -314,7 +328,7 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <div #tourElement data-glow-tour-pointer [attr.aria-hidden]="idleAriaHidden" [style]="idleStyle">
+    <div #tourElement data-glow-tour-pointer [class]="stepClass('pointer')" [attr.aria-hidden]="idleAriaHidden" [style]="idleStyle">
       @for (direction of directions; track direction) {
         <div [attr.data-glow-tour-pointer-direction]="direction">
           @if (asTemplate(content()[direction]); as template) {
@@ -362,6 +376,7 @@ export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implement
       [attr.aria-hidden]="idleAriaHidden"
       [attr.data-glow-tour-allow-interaction]="idleAllowInteraction"
       data-glow-tour-overlay
+      [class]="stepClass('overlay')"
       focusable="false"
       [attr.inert]="idleInert"
       [attr.preserveAspectRatio]="idlePreserveAspectRatio"
@@ -431,6 +446,7 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
     @if (step()?.popover?.controls?.previous !== "hidden") {
       <button
         data-glow-tour-previous-trigger
+        [class]="stepClass('previous')"
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
         [attr.aria-label]="ariaLabelText() ?? label()"
@@ -474,6 +490,7 @@ export class GlowTourPreviousTrigger extends GlowTourTrigger {
     @if (step()?.popover?.controls?.advance !== "hidden") {
       <button
         data-glow-tour-advance-trigger
+        [class]="stepClass('advance')"
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
         [attr.aria-label]="ariaLabelText() ?? label()"
@@ -526,6 +543,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
     @if (snapshot()?.canCancel && step()?.popover?.controls?.cancel !== "hidden") {
       <button
         data-glow-tour-cancel-trigger
+        [class]="stepClass('cancel')"
         [attr.aria-controls]="ariaControls()"
         [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
         [attr.aria-label]="ariaLabelText() ?? label()"

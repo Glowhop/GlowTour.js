@@ -41,6 +41,7 @@ interface StepConfig<T = string> {
     readonly popover?: PopoverOptions;
     readonly indicator?: IndicatorOptions;
     readonly behavior?: StepBehavior;
+    readonly classNames?: TourClassNames;
     readonly title?: T;
     readonly content: T;
     readonly data?: Record<string, PrimitiveValue>;
@@ -73,6 +74,7 @@ interface WorkflowConfig<T = string> {
     readonly indicator?: IndicatorOptions;
     readonly animated?: boolean;
     readonly behavior?: StepBehavior;
+    readonly classNames?: TourClassNames;
     readonly onStart?: LifecycleActionRef<T>;
     readonly onCancel?: LifecycleActionRef<T>;
     readonly onFinish?: LifecycleActionRef<T>;

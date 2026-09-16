@@ -13,6 +13,8 @@ interface BaseOptions {
     animation?: AnimationOptions;
 }
 
+type ClassValue = string | readonly string[];
+
 function createGlowTour<T>(options?: GlowTourOptions): GlowTour<T>;
 
 type EventName = keyof HTMLElementEventMap;
@@ -98,6 +100,7 @@ type ReadonlyStepProps<T> = {
     readonly popover?: DeepReadonly<PopoverOptions>;
     readonly indicator?: DeepReadonly<IndicatorOptions>;
     readonly behavior?: DeepReadonly<StepBehavior>;
+    readonly classNames?: DeepReadonly<TourClassNames>;
 };
 
 interface ReadonlyTourState<T> {
@@ -121,6 +124,7 @@ interface StartOptions<T> {
     indicator?: IndicatorOptions;
     animated?: boolean;
     behavior?: StepBehavior;
+    classNames?: TourClassNames;
     onStart?: (context: LifecycleHookContext<T>) => void | Promise<void>;
     onCancel?: (context: LifecycleHookContext<T>) => void | Promise<void>;
     onFinish?: (context: LifecycleHookContext<T>) => void | Promise<void>;
@@ -170,6 +174,7 @@ type StepParameters<T> = {
     popover?: PopoverOptions;
     indicator?: IndicatorOptions;
     behavior?: StepBehavior;
+    classNames?: TourClassNames;
     title?: T;
     content: T;
     data?: Record<string, PrimitiveValue>;
@@ -195,6 +200,18 @@ type TargetResolver = string | HTMLElement | ((context: TargetResolverContext) =
 
 interface TargetResolverContext {
     signal: AbortSignal;
+}
+
+interface TourClassNames {
+    overlay?: ClassValue;
+    popover?: ClassValue;
+    pointer?: ClassValue;
+    header?: ClassValue;
+    content?: ClassValue;
+    footer?: ClassValue;
+    advance?: ClassValue;
+    previous?: ClassValue;
+    cancel?: ClassValue;
 }
 
 type TourControlState = "visible" | "hidden" | "disabled";

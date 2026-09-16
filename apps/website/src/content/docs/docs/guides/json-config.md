@@ -62,7 +62,7 @@ await createGlowTour().run(workflow);
 - Every step requires `id`, `target`, and `content`; `title` is optional. Step ids must be unique within the workflow; they are what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
 - `target` is a CSS selector. Function and `HTMLElement` targets remain builder-only.
 - `title` and `content` are strings for JSON loaded from a CMS or API.
-- `overlay`, `popover`, `indicator`, and `behavior` use the same options as the builder, globally or per step.
+- `overlay`, `popover`, `indicator`, `behavior`, and `classNames` use the same options as the builder, globally or per step. A step's `classNames` are added to the global ones, as described in [Class name options](/docs/reference/builder#class-name-options).
 - `data` accepts `string`, `number`, `boolean`, and `null` values.
 
 Unknown keys, invalid nested options, and unsupported values are rejected rather than silently ignored.

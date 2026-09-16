@@ -86,6 +86,7 @@ export function createLabWorkflow<TContent>(
       title: content.title("clickTarget() + waitUntilElement()"),
       content: content.paragraph(copy.reveal),
       popover: { controls: { advance: "disabled" } },
+      classNames: { popover: "lab-popover-waiting", advance: ["lab-control-waiting"] },
       data: { api: "waitUntilElement" },
     })
     .beforeEnter(({ direction, props, initialProps }) => {
@@ -99,10 +100,18 @@ export function createLabWorkflow<TContent>(
     })
     .do((context) => {
       actions.log("waitUntilElement - cible révélée détectée");
-      context.props.update({
+      context.props.update((current) => ({
         popover: { controls: { advance: "visible" } },
         overlay: { color: "red", opacity: 0.68 },
-      });
+        // Swaps the waiting class for the revealed one and keeps the workflow's "lab-popover".
+        classNames: {
+          popover: [current.classNames?.popover ?? []]
+            .flat()
+            .filter((name) => name !== "lab-popover-waiting")
+            .concat("lab-popover-revealed"),
+          advance: [],
+        },
+      }));
 
       setTimeout(() => {
         context.props.update({
