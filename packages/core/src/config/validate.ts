@@ -610,7 +610,12 @@ function validateMissingTargetShape(
     return;
   }
   assertNoUnknownKeys(value, MISSING_TARGET_KEYS, path, issues);
-  validateOptionalEnum(`${path}.strategy`, value.strategy, ["wait", "skip", "error"], issues);
+  validateOptionalEnum(
+    `${path}.strategy`,
+    value.strategy,
+    ["wait", "skip", "error", "detached"],
+    issues,
+  );
   validateOptionalFiniteNonNegative(`${path}.timeout`, value.timeout, issues);
 }
 
