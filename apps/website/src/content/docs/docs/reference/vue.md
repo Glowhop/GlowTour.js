@@ -18,9 +18,38 @@ function createGlowTour(options?: GlowTourOptions): Tour
 
 ## Components
 
-### `GlowTourDefault`
+### `GlowTour*` and `GlowTour.*`
 
-Pre-composed tour with overlay, popover, pointer, and all navigation buttons.
+Composition primitives for custom layouts:
+
+- `GlowTourRoot` - Root container
+- `GlowTourOverlay` - Backdrop overlay
+- `GlowTourPointer` - Decorative indicator/arrow
+- `GlowTourPopover` - Dialog container
+- `GlowTourHeader` - Title area
+- `GlowTourContent` - Description area
+- `GlowTourFooter` - Navigation button container
+- `GlowTourAdvanceTrigger` - Next step button
+- `GlowTourPreviousTrigger` - Previous step button
+- `GlowTourCancelTrigger` - Dismiss button
+
+The same components are grouped under the `GlowTour` object without their prefix (`Root`, `Overlay`, `Pointer`, `Popover`, `Header`, `Content`, `Footer`, `AdvanceTrigger`, `PreviousTrigger`, `CancelTrigger`), for compound markup:
+
+```vue
+<script setup>
+import { GlowTour } from "@glowhop/vue-tour";
+</script>
+
+<template>
+  <GlowTour.Root :tour="tour">
+    <GlowTour.Popover>
+      <GlowTour.Content />
+    </GlowTour.Popover>
+  </GlowTour.Root>
+</template>
+```
+
+`GlowTourDefault` is not part of the `GlowTour` object. The named exports stay the tree-shakeable choice: using `GlowTour` includes every composition component in your bundle.
 
 **Props**:
 ```typescript
