@@ -12,30 +12,9 @@ import {
   GlowTourPopover,
   GlowTourPreviousTrigger,
   GlowTourRoot,
-  useTour,
 } from "./tour-components.js";
 
 type Tour = CoreGlowTour<VueTourContent>;
-
-/** The footer of the default tour, omitted when every control is hidden. */
-const DefaultFooter = /* @__PURE__ */ defineComponent({
-  name: "GlowTourDefaultFooter",
-  setup() {
-    const state = useTour();
-    return () => {
-      const controls = state.value.currentStep?.currentProps.popover?.controls;
-      return controls?.advance === "hidden" &&
-        controls.previous === "hidden" &&
-        (controls.cancel === "hidden" || !state.value.canCancel)
-        ? null
-        : h(GlowTourFooter, null, () => [
-            h(GlowTourCancelTrigger),
-            h(GlowTourPreviousTrigger),
-            h(GlowTourAdvanceTrigger),
-          ]);
-    };
-  },
-});
 
 /** Default GlowTour.js component that renders all tour UI elements in a standard layout. */
 export const GlowTourDefault = /* @__PURE__ */ defineComponent({
@@ -49,7 +28,15 @@ export const GlowTourDefault = /* @__PURE__ */ defineComponent({
       h(GlowTourRoot, { idPrefix: props.idPrefix, tour: props.tour }, () => [
         h(GlowTourOverlay),
         h(GlowTourPointer),
-        h(GlowTourPopover, null, () => [h(GlowTourHeader), h(GlowTourContent), h(DefaultFooter)]),
+        h(GlowTourPopover, null, () => [
+          h(GlowTourHeader),
+          h(GlowTourContent),
+          h(GlowTourFooter, null, () => [
+            h(GlowTourCancelTrigger),
+            h(GlowTourPreviousTrigger),
+            h(GlowTourAdvanceTrigger),
+          ]),
+        ]),
       ]);
   },
 });
