@@ -357,7 +357,7 @@ export async function runDefaultTourAcceptance<TContent>(
   );
   assert.equal(popover.hasAttribute("aria-describedby"), false, `${name}: untitled description`);
 
-  // A step adds its classNames to the workflow ones on each component, and they leave with it.
+  // A step's classNames override the workflow ones per component, and they leave with the step.
   const classTargets = {
     overlay: "[data-glow-tour-overlay]",
     pointer: "[data-glow-tour-pointer]",
@@ -375,7 +375,12 @@ export async function runDefaultTourAcceptance<TContent>(
   await tour.run(
     tour
       .create(`${name} classNames`, {
-        classNames: { popover: "tour-popover", advance: ["tour-control"], header: "tour-header" },
+        classNames: {
+          popover: "tour-popover",
+          advance: ["tour-control"],
+          header: "tour-header",
+          footer: "tour-footer",
+        },
       })
       .step({
         id: "step-8",
@@ -385,10 +390,9 @@ export async function runDefaultTourAcceptance<TContent>(
         classNames: {
           overlay: "step-overlay",
           pointer: ["step-pointer"],
-          popover: ["step-popover", "tour-popover"],
+          popover: ["step-popover"],
           header: "step-header",
           content: "step-content step-content-extra",
-          footer: ["step-footer"],
           previous: "step-previous",
           advance: "step-advance",
           cancel: "step-cancel",
@@ -404,12 +408,12 @@ export async function runDefaultTourAcceptance<TContent>(
   const expectedClasses = {
     overlay: ["step-overlay"],
     pointer: ["step-pointer"],
-    popover: ["step-popover", "tour-popover"],
-    header: ["step-header", "tour-header"],
+    popover: ["step-popover"],
+    header: ["step-header"],
     content: ["step-content", "step-content-extra"],
-    footer: ["step-footer"],
+    footer: ["tour-footer"],
     previous: ["step-previous"],
-    advance: ["step-advance", "tour-control"],
+    advance: ["step-advance"],
     cancel: ["step-cancel"],
   };
   for (const slot of Object.keys(classTargets) as (keyof typeof classTargets)[]) {
@@ -418,7 +422,7 @@ export async function runDefaultTourAcceptance<TContent>(
   classProps?.update({ classNames: { popover: "updated-popover" } });
   await settle();
   assert.deepEqual(classesOf("popover"), ["updated-popover"], `${name}: updated popover classes`);
-  assert.deepEqual(classesOf("header"), ["step-header", "tour-header"], `${name}: other classes kept`);
+  assert.deepEqual(classesOf("header"), ["step-header"], `${name}: other classes kept`);
   requiredOwnedElement(root, "[data-glow-tour-advance-trigger]", name).dispatchEvent(
     new MouseEvent("click", { bubbles: true, cancelable: true }),
   );
@@ -426,7 +430,9 @@ export async function runDefaultTourAcceptance<TContent>(
   assert.match(root.textContent ?? "", /Plain title/, `${name}: step without classNames renders`);
   assert.deepEqual(classesOf("popover"), ["tour-popover"], `${name}: workflow classes only`);
   assert.deepEqual(classesOf("advance"), ["tour-control"], `${name}: workflow control classes`);
-  for (const slot of ["overlay", "pointer", "content", "footer", "previous", "cancel"] as const) {
+  assert.deepEqual(classesOf("header"), ["tour-header"], `${name}: workflow header classes`);
+  assert.deepEqual(classesOf("footer"), ["tour-footer"], `${name}: workflow footer classes`);
+  for (const slot of ["overlay", "pointer", "content", "previous", "cancel"] as const) {
     assert.deepEqual(classesOf(slot), [], `${name}: ${slot} step classes removed`);
   }
   requiredOwnedElement(root, "[data-glow-tour-cancel-trigger]", name).dispatchEvent(

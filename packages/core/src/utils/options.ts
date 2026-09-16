@@ -14,16 +14,13 @@ import type {
 
 /**
  * Merges a partial change into step props: fields it leaves out are kept, `data` is merged key by
- * key, `overlay` / `popover` / `indicator` / `behavior` go through their option merges, and arrays
- * are replaced.
+ * key, `overlay` / `popover` / `indicator` / `behavior` go through their option merges, `classNames` is
+ * merged per component, and arrays are replaced.
  * Builds a step's initial props over the workflow defaults, and backs `StepPropsStore.update`.
- * @param joinClasses Adds the patch's classes to the base ones for each component, as a step does
- *   over the workflow defaults, instead of replacing them, as `StepPropsStore.update` does.
  */
 export function mergeStepProps<T>(
   base: StepPropsPatch<T>,
   patch: StepPropsPatch<T>,
-  joinClasses = false,
 ): ReadonlyStepProps<T> {
   return {
     ...base,
@@ -33,23 +30,18 @@ export function mergeStepProps<T>(
     popover: mergePopoverOptions(base.popover, patch.popover),
     indicator: mergeIndicatorOptions(base.indicator, patch.indicator),
     behavior: mergeStepBehavior(base.behavior, patch.behavior),
-    classNames: mergeClassNames(base.classNames, patch.classNames, joinClasses),
+    classNames: mergeClassNames(base.classNames, patch.classNames),
   } as ReadonlyStepProps<T>;
 }
 
-/** Merges `classNames` per component; `join` keeps the base classes before the patch ones. */
-function mergeClassNames(
-  base: TourClassNames | undefined,
-  patch: TourClassNames | undefined,
-  join: boolean,
-): TourClassNames | undefined {
-  if (!base || !patch) return base ?? patch;
-  const merged: TourClassNames = { ...base, ...patch };
-  if (join)
-    for (const slot in patch) {
-      const key = slot as keyof TourClassNames;
-      merged[key] = [base[key] ?? [], patch[key] ?? []].flat();
-    }
+/** Merges `classNames` per component: a component the patch leaves out or sets to `undefined` keeps its classes. */
+function mergeClassNames(base?: TourClassNames, patch?: TourClassNames) {
+  if (!patch) return base;
+  const merged: TourClassNames = { ...base };
+  for (const slot in patch) {
+    const key = slot as keyof TourClassNames;
+    merged[key] = patch[key] ?? merged[key];
+  }
   return merged;
 }
 

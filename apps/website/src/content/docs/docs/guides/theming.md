@@ -205,7 +205,8 @@ tour
 }
 ```
 
-The same option works on the workflow, for every step, and in the JSON config. See
+The same option works on the workflow, for every step that does not set its own classes for the
+component, and in the JSON config. See
 [Class name options](/docs/reference/builder#class-name-options).
 
 ## Advanced customization

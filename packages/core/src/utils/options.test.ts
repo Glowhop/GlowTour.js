@@ -48,48 +48,35 @@ describe("mergePopoverOptions", () => {
 });
 
 describe("mergeStepProps classNames", () => {
-  test("adds the step classes after the workflow ones per component", () => {
+  test("overrides the workflow classes per component and keeps the others", () => {
     const props = mergeStepProps(
-      { classNames: { popover: "tour-popover shared", footer: ["tour-footer"] } },
-      {
-        content: "content",
-        classNames: { popover: ["shared", "step-popover"], header: "step-header" },
-      },
-      true,
+      { classNames: { popover: "tour-popover", footer: ["tour-footer"] } },
+      { content: "content", classNames: { popover: ["step-popover"], header: "step-header" } },
     );
 
     assert.deepEqual(props.classNames, {
-      popover: ["tour-popover shared", "shared", "step-popover"],
+      popover: ["step-popover"],
       footer: ["tour-footer"],
-      header: ["step-header"],
+      header: "step-header",
     });
   });
 
   test("keeps the workflow classes when the step has none", () => {
-    const props = mergeStepProps(
-      { classNames: { overlay: "tour-overlay" } },
-      { content: "c" },
-      true,
-    );
+    const props = mergeStepProps({ classNames: { overlay: "tour-overlay" } }, { content: "c" });
     assert.deepEqual(props.classNames, { overlay: "tour-overlay" });
   });
 
-  test("replaces the classes of the components a patch names when not joining", () => {
-    const props = mergeStepProps(
-      { content: "c", classNames: { popover: ["a", "b"], pointer: "p" } },
-      { classNames: { popover: "c" } },
-    );
-    assert.deepEqual(props.classNames, { popover: "c", pointer: "p" });
-  });
-
-  test("ignores components set to undefined", () => {
+  test("keeps the classes of components set to undefined", () => {
     const props = freezeStepProps(
       mergeStepProps(
-        { classNames: { popover: undefined, header: "tour" } },
+        { classNames: { popover: "tour", header: "tour-header" } },
         { content: "c", classNames: { header: undefined, footer: ["step"] } },
-        true,
       ),
     );
-    assert.deepEqual(props.classNames, { popover: undefined, header: ["tour"], footer: ["step"] });
+    assert.deepEqual(props.classNames, {
+      popover: "tour",
+      header: "tour-header",
+      footer: ["step"],
+    });
   });
 });
