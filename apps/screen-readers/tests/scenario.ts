@@ -163,16 +163,17 @@ export async function runTourScenario(
     await expectSpoken(driver, "Start tour");
     await checkpoint("tabbed to Start tour");
 
-    // Opening: focus enters the dialog, which is announced with its role and title. NVDA also
-    // reads the description; VoiceOver leaves it to the reading cursor, checked further down.
+    // Opening: focus lands on the dialog itself, which is announced with its role, title and
+    // description.
     await driver.press("Enter");
     await expect(dialog(STEP_TEXT.welcome)).toBeVisible();
+    await expect(dialog(STEP_TEXT.welcome)).toBeFocused();
     await expectSpoken(driver, STEP_TEXT.welcome.title);
     await expectSpoken(driver, "dialog");
-    if (options.strictRepetition) await expectSpoken(driver, STEP_TEXT.welcome.content);
+    await expectSpoken(driver, STEP_TEXT.welcome.content);
     await checkpoint("tour opened");
 
-    // Advancing announces the new title, then its content.
+    // Advancing with Enter on the dialog keeps focus there and announces the new content.
     await driver.press("Enter");
     await expect(dialog(STEP_TEXT.field)).toBeVisible();
     await expectStepAnnounced(page, driver, STEP_TEXT.field, STEP_TEXT.welcome, options);

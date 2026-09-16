@@ -180,10 +180,31 @@ describe("FocusGuard", () => {
     assert.equal(isFocusable(element as unknown as HTMLElement), false);
   });
 
-  test("focuses advance when entering a step in the advance direction", () => {
+  test("focuses the dialog itself when the tour opens", () => {
     const guard = new FocusGuard();
-    const { advance, popover } = createScope();
+    const { popover } = createScope();
 
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+
+    assert.equal(mockDocument.activeElement, popover);
+  });
+
+  test("keeps focus on the dialog when the next step is entered from it", () => {
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+    guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
+
+    assert.equal(mockDocument.activeElement, popover);
+  });
+
+  test("focuses advance when entering a step in the advance direction from a button", () => {
+    const guard = new FocusGuard();
+    const { advance, back, popover } = createScope();
+
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+    back.focus();
     guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
 
     assert.equal(mockDocument.activeElement, advance);
@@ -216,8 +237,10 @@ describe("FocusGuard", () => {
 
   test("focuses the previous trigger when entering in the previous direction", () => {
     const guard = new FocusGuard();
-    const { back, popover } = createScope();
+    const { advance, back, popover } = createScope();
 
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+    advance.focus();
     guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
 
     assert.equal(mockDocument.activeElement, back);
@@ -255,6 +278,8 @@ describe("FocusGuard", () => {
     const { advance, backHost, popover } = createScope();
     backHost.attributes.set("hidden", "");
 
+    guard.activate({ direction: "advance", popover: popover as unknown as HTMLElement });
+    advance.focus();
     guard.activate({ direction: "previous", popover: popover as unknown as HTMLElement });
 
     assert.equal(mockDocument.activeElement, advance);
@@ -413,7 +438,7 @@ describe("FocusGuard", () => {
     const launcher = new MockElement("custom-button");
     mockDocument.activeElement = launcher;
     const guard = new FocusGuard();
-    const { advance, popover } = createScope();
+    const { popover } = createScope();
 
     guard.activate({
       autoFocus: false,
@@ -421,7 +446,7 @@ describe("FocusGuard", () => {
       popover: popover as unknown as HTMLElement,
     });
 
-    assert.equal(mockDocument.activeElement, advance);
+    assert.equal(mockDocument.activeElement, popover);
   });
 
   test("restores an authored fallback tabindex when deactivated", () => {

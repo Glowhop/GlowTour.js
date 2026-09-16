@@ -20,7 +20,7 @@ Every adapter renders the same semantic structure for consistent assistive techn
 
 When a step disallows target interaction, the popover's `aria-modal` is set to `true` and the rest of the document is made `inert` as focus moves into the popover, so neither focus nor a screen reader's reading cursor can leave the dialog.
 
-Between two steps the popover fades out and back in, but stays exposed to assistive technology the whole time: the description's live region announces the new step, and focus stays on the popover's button.
+Between two steps the popover fades out and back in, but stays exposed to assistive technology the whole time: the description's live region announces the new step, and focus stays where it was, on the popover or on its button.
 
 ## Keyboard shortcuts
 
@@ -77,7 +77,9 @@ While a step is active, focus is trapped inside the popover. Pressing `Tab` cycl
 
 ### Focus between steps
 
-When a step opens, focus goes to its Advance button, or to its Back button when the user went back. If Back is unavailable on that step, as on the first one, focus goes to Advance instead of an unavailable button.
+When the tour opens, focus goes to the popover itself, so screen readers announce its title and content. `Tab` then reaches its buttons, and the keyboard shortcuts work from the popover.
+
+When the next step opens while focus is on the popover, focus stays there. When it was on a button, focus goes to the step's Advance button, or to its Back button when the user went back. If Back is unavailable on that step, as on the first one, focus goes to Advance instead of an unavailable button.
 
 ### Focus restoration
 
@@ -106,7 +108,7 @@ GlowTour.js is tested with real screen readers, not only with accessibility-tree
 For each adapter and each pairing, the tests check that:
 
 - the user can reach the button that starts the tour with `Tab` and open it with `Enter`
-- opening the tour moves focus into the dialog, and the screen reader announces its role and title
+- opening the tour moves focus onto the dialog, and the screen reader announces its role, title and content
 - moving to the next step with `Enter` announces the new step's content
 - the Back button, reached with `Shift+Tab`, goes back to the previous step with `Enter`
 - on a modal step, the reading cursor reaches the step's title and content and never leaves the dialog
@@ -120,7 +122,6 @@ The browsers are the engines Playwright ships: WebKit stands in for Safari. The 
 These come from how screen readers handle live regions and focus, which the ARIA specification leaves partly undefined. They are what the tests observe, not bugs to work around in your tour:
 
 - **The step title is not announced when the step changes; the content is.** The title is the dialog's name: it is announced when the tour opens and stays reachable with the reading cursor. Announcing both as separate live regions does not work with VoiceOver, which reads only one of two regions updated together ([w3c/aria#1689](https://github.com/w3c/aria/issues/1689)). If a step's title matters on its own, repeat it in the content.
-- **VoiceOver does not read the step content when the tour opens.** It announces the dialog's title and the focused button; the content is next with the reading cursor.
 - **NVDA reads the dialog's title and content twice when the tour opens** ([nvaccess/nvda#10003](https://github.com/nvaccess/nvda/issues/10003)).
 - **Going back to the first step:** Back is unavailable there, so focus moves to Advance. NVDA can read the step content twice while the Back button changes state ([nvaccess/nvda#6265](https://github.com/nvaccess/nvda/issues/6265)), and VoiceOver can skip announcing the content while it describes the focus move; the content stays reachable with the reading cursor.
 

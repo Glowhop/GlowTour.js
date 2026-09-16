@@ -1985,7 +1985,7 @@ describe("DomTourViewDriver", () => {
 
     assert.equal(observer?.disconnected, true);
   });
-  test("loops modal Tab focus, starts directionally, restores focus, and toggles aria-modal", async () => {
+  test("loops modal Tab focus, starts on the dialog, restores focus, and toggles aria-modal", async () => {
     const initial = document.createElement("button");
     document.body.append(initial);
     initial.focus();
@@ -1994,8 +1994,18 @@ describe("DomTourViewDriver", () => {
       step = createStep();
     step.target = target as unknown as HTMLElement;
     await driver.show(step, "previous", new AbortController().signal);
-    assert.equal(document.activeElement, elements.back);
+    assert.equal(document.activeElement, elements.popover);
     assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+    // Tab from the dialog itself enters its controls, even where Tab skips buttons (Safari).
+    window.dispatchEvent(
+      new MockKeyboardEvent("keydown", { key: "Tab", shiftKey: true, target: elements.popover }),
+    );
+    assert.equal(document.activeElement, elements.advance);
+    elements.popover.focus();
+    window.dispatchEvent(
+      new MockKeyboardEvent("keydown", { key: "Tab", target: elements.popover }),
+    );
+    assert.equal(document.activeElement, elements.back);
     elements.advance.focus();
     window.dispatchEvent(
       new MockKeyboardEvent("keydown", { key: "Tab", target: elements.advance }),
@@ -2033,7 +2043,7 @@ describe("DomTourViewDriver", () => {
     await driver.show(step, "advance", new AbortController().signal);
 
     assert.equal(shell.getAttribute("inert"), "");
-    assert.equal(document.activeElement, elements.advance);
+    assert.equal(document.activeElement, elements.popover);
     await driver.clear(new AbortController().signal);
     assert.equal(document.activeElement, trigger);
   });
@@ -2239,9 +2249,11 @@ describe("DomTourViewDriver", () => {
         .build();
 
     await tour.run(workflow);
-    assert.equal(document.activeElement, elements.advance);
+    // Opening lands on the dialog, and a step entered from it keeps focus there.
+    assert.equal(document.activeElement, elements.popover);
     await tour.advance();
-    assert.equal(document.activeElement, elements.advance);
+    assert.equal(document.activeElement, elements.popover);
+    elements.advance.focus();
     await tour.previous();
     // Back is unavailable on the first step, so focus lands on Advance rather than the popover.
     assert.equal(document.activeElement, elements.advance);
@@ -2287,7 +2299,7 @@ describe("DomTourViewDriver", () => {
 
     resolveAnimations(animationStart);
     await showing;
-    assert.equal(document.activeElement, elements.advance);
+    assert.equal(document.activeElement, elements.popover);
     animationMode = "resolved";
     await driver.clear(new AbortController().signal);
     assert.equal(document.activeElement, launcher);
@@ -2604,6 +2616,8 @@ describe("DomTourViewDriver", () => {
     elements.root.append(replacement);
     driver.registerPopover(replacement as unknown as HTMLElement);
     await new Promise<void>((resolve) => setTimeout(resolve));
+    assert.equal(document.activeElement, replacement);
+    replacementAdvance.focus();
     outside.focus();
     assert.equal(document.activeElement, replacementAdvance);
   });
@@ -3226,7 +3240,7 @@ describe("DomTourViewDriver", () => {
     resolveAnimations(0, bStart);
     await assert.rejects(() => shownA, { name: "AbortError" });
     await assert.rejects(() => clearA, { name: "AbortError" });
-    assert.equal(document.activeElement, elements.advance);
+    assert.equal(document.activeElement, elements.popover);
     assert.equal(TestResizeObserver.instances.length, 0);
     assert.equal(elements.popover.style.values.get("opacity"), "1");
   });

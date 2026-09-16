@@ -58,13 +58,14 @@ for (const adapter of ADAPTERS) {
       expect(errors).toEqual([]);
     });
 
-    test("opens a named, described modal dialog and moves focus into it", async ({ page }) => {
+    test("opens a named, described modal dialog and moves focus onto it", async ({ page }) => {
       const errors = await openFixture(page, adapter);
       const dialog = await startTour(page);
 
       await expect(dialog).toHaveAccessibleDescription(STEP_TEXT.welcome.content);
       await expect(dialog).toHaveAttribute("aria-modal", "true");
-      await expectFocusInside(dialog);
+      // Focus lands on the dialog itself, so screen readers announce its name and description.
+      await expect(dialog).toBeFocused();
 
       // The rest of the page leaves the accessibility tree while the step is modal. Checked on the
       // DOM because Playwright's role queries ignore `inert`; the native tree is checked below.
@@ -86,6 +87,11 @@ for (const adapter of ADAPTERS) {
       for (const trigger of await dialog.getByRole("button").all()) {
         await expect(trigger).toHaveAccessibleName(/\S/);
       }
+
+      // Tab moves from the dialog to its buttons.
+      await page.keyboard.press("Tab");
+      await expect(dialog).not.toBeFocused();
+      await expect(page.locator("[data-glow-tour-popover] button:focus")).toHaveCount(1);
       expect(errors).toEqual([]);
     });
 
@@ -215,7 +221,7 @@ for (const adapter of ADAPTERS) {
       await page.keyboard.press("ArrowLeft");
       await expect(page.getByRole("dialog", { name: STEP_TEXT.welcome.title })).toBeVisible();
 
-      // Enter on the focused Advance trigger must move exactly one step.
+      // Enter on the focused dialog must move exactly one step.
       await page.keyboard.press("ArrowRight");
       const fieldDialog = page.getByRole("dialog", { name: STEP_TEXT.field.title });
       await expect(fieldDialog).toBeVisible();

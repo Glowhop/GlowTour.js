@@ -171,7 +171,7 @@ describe("core browser realm isolation", () => {
     await tour.run(workflow);
 
     assert.equal(tour.state.get().currentStep?.target, target);
-    assert.equal(document.activeElement, advance);
+    assert.equal(document.activeElement, popover);
     assert.equal(overlay.getAttribute("viewBox"), "0 0 640 360");
     assert.match(path.style.getPropertyValue("d"), /H640 V360/);
 

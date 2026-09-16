@@ -42,8 +42,10 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // target comes back instead of tearing the presentation down, then from
     // 21 KiB for presenting a step while its scroll is still travelling, then
     // from 21.5 KiB for applying a `behavior.allowInteraction` changed through
-    // the step props live (modality, focus, pointer fade) on the step.
-    gzipBudget: 21.75 * KIB,
+    // the step props live (modality, focus, pointer fade) on the step, then
+    // from 21.75 KiB for focusing the dialog itself when the tour opens so
+    // screen readers announce the step content.
+    gzipBudget: 22 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

@@ -93,10 +93,17 @@ keyboard actually does.
    was first activated (the tour's trigger element) - but only if that element is still connected
    to the document.
 
-Entering a step focuses its Advance trigger, or its Previous trigger when navigating back. When
-that Previous trigger is unavailable, the guard falls back to Advance (`findFocusable()` in
-`focus-guard.ts`): focus left on an unavailable control is a dead end, and NVDA re-reads the whole
-dialog when the focused control changes state.
+Opening the tour focuses the popover itself (`tabindex="-1"`), as the ARIA APG dialog pattern
+recommends when the content has to be read before the actions: screen readers announce the
+dialog's name and description there, and `Tab` then reaches the buttons. Keyboard shortcuts still
+apply, since the popover is not a focusable control for `activationCommand`. When focus is still
+on the popover as the next step enters, it stays there: moving it to a button would make VoiceOver
+drop the live region announcing the new step.
+
+Otherwise, entering a step focuses its Advance trigger, or its Previous trigger when navigating
+back. When that Previous trigger is unavailable, the guard falls back to Advance
+(`findFocusable()` in `focus-guard.ts`): focus left on an unavailable control is a dead end, and
+NVDA re-reads the whole dialog when the focused control changes state.
 
 The guard is activated once per tour (the first `show()` call marks `initialFocus`) and stays
 active across step transitions; it is only deactivated - restoring focus - when the tour view is

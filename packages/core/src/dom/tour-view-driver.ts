@@ -939,11 +939,12 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     }
     const current = popover.ownerDocument.activeElement;
+    // Focus outside the controls, on the popover itself included, wraps like focus on either end.
     const index = isHTMLElement(current, popover) ? focusable.indexOf(current) : -1;
-    if (event.shiftKey && (index <= 0 || !popover.contains(current))) {
+    if (event.shiftKey && index <= 0) {
       event.preventDefault();
       focusable.at(-1)?.focus();
-    } else if (!event.shiftKey && (index === focusable.length - 1 || !popover.contains(current))) {
+    } else if (!event.shiftKey && (index < 0 || index === focusable.length - 1)) {
       event.preventDefault();
       focusable[0]?.focus();
     }

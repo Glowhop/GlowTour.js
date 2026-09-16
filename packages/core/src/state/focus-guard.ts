@@ -42,7 +42,8 @@ export class FocusGuard {
     const document = ownerDocument(scope.popover);
     if (!document) return;
     if (this.active && this.document !== document) this.deactivate();
-    if (!this.active) {
+    const opening = !this.active;
+    if (opening) {
       this.document = document;
       this.captureInitialFocus(scope.popover);
       this.document.addEventListener("focusin", this.handleFocusIn, true);
@@ -56,7 +57,7 @@ export class FocusGuard {
       !isNode(currentFocus, scope.popover) ||
       !this.isAllowed(currentFocus)
     ) {
-      this.focusFallback();
+      this.focusFallback(opening);
     }
   }
 
@@ -124,19 +125,21 @@ export class FocusGuard {
     );
   }
 
-  private focusFallback() {
+  private focusFallback(opening?: boolean) {
     const popover = this.popover;
     if (!popover?.isConnected) {
       return;
     }
 
+    const dialog = isFocusable(popover) && popover;
+    // Opening lands on the dialog itself: screen readers announce its name and description there,
+    // then Tab reaches the buttons. Focus already on the dialog stays there, since moving it to a
+    // button would make VoiceOver drop the live region announcing the new step.
     const nextFocus =
-      this.findFocusable(popover, this.direction) ??
-      (isFocusable(popover)
-        ? popover
-        : this.fallback?.isConnected && isFocusable(this.fallback)
-          ? this.fallback
-          : null);
+      ((opening || this.document?.activeElement === popover) && dialog) ||
+      this.findFocusable(popover, this.direction) ||
+      dialog ||
+      (this.fallback?.isConnected && isFocusable(this.fallback) && this.fallback);
     if (!nextFocus) return;
 
     this.redirecting = true;
