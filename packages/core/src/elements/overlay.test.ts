@@ -101,6 +101,16 @@ describe("OverlayElement animation fallbacks", () => {
     assert.equal(element.path.styles.get("opacity"), "0.5");
   });
 
+  test("collapses the cutout of a detached step so the backdrop covers the screen", async () => {
+    const element = new MockOverlay();
+    const overlay = new OverlayElement(element as unknown as SVGSVGElement);
+    const step = { detached: true, overlay: { padding: 20, radius: 12 } } satisfies TourElementStep;
+
+    await overlay.moveToTarget(rect(400, 300, 0, 0), step);
+
+    assert.match(element.path.styles.get("d") ?? "", /M400,300 Q400,300 400,300 H400 /);
+  });
+
   test("writes the computed default fill inline when Web Animations are unavailable", async () => {
     const element = new MockOverlay();
     Object.defineProperty(globalThis, "window", {
