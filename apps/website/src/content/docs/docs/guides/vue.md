@@ -143,6 +143,32 @@ import {
 </template>
 ```
 
+The same layout can use the `GlowTour` object, which groups the composition components without their prefix:
+
+```vue
+<script setup>
+import { GlowTour } from "@glowhop/vue-tour";
+</script>
+
+<template>
+  <GlowTour.Root :tour="tour">
+    <GlowTour.Overlay />
+    <GlowTour.Pointer />
+    <GlowTour.Popover>
+      <GlowTour.Header />
+      <GlowTour.Content />
+      <GlowTour.Footer>
+        <GlowTour.CancelTrigger />
+        <GlowTour.PreviousTrigger />
+        <GlowTour.AdvanceTrigger />
+      </GlowTour.Footer>
+    </GlowTour.Popover>
+  </GlowTour.Root>
+</template>
+```
+
+The object brings every composition component into your bundle. Import components by name to keep only the ones you use.
+
 ### Add a custom step counter
 
 Components rendered inside `GlowTourRoot` can read its reactive state with `useTour()`. Create the counter as a child component so the root context is available:

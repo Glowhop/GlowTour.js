@@ -149,6 +149,32 @@ export function CustomTour() {
 }
 ```
 
+The same layout can use the `GlowTour` object, which groups the composition components without their prefix:
+
+```tsx
+import { GlowTour } from "@glowhop/react-tour";
+
+export function CustomTour() {
+  return (
+    <GlowTour.Root tour={tour}>
+      <GlowTour.Overlay />
+      <GlowTour.Pointer />
+      <GlowTour.Popover>
+        <GlowTour.Header />
+        <GlowTour.Content />
+        <GlowTour.Footer>
+          <GlowTour.CancelTrigger />
+          <GlowTour.PreviousTrigger />
+          <GlowTour.AdvanceTrigger />
+        </GlowTour.Footer>
+      </GlowTour.Popover>
+    </GlowTour.Root>
+  );
+}
+```
+
+The object brings every composition component into your bundle. Import components by name to keep only the ones you use.
+
 ### Add a custom step counter
 
 Components rendered inside `GlowTourRoot` can read its reactive state with `useTour()`. Add this small component to the popover from the previous example:
