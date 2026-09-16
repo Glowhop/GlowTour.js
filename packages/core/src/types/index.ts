@@ -63,9 +63,16 @@ export interface KeyboardShortcuts {
 
 /** How a step handles a target that cannot be found. */
 export interface MissingTargetOptions {
-  /** `"wait"` retries until `timeout`, `"skip"` moves past the step, `"error"` fails the tour. @default "error" */
-  strategy?: "wait" | "skip" | "error";
-  /** How long to look for the target, in milliseconds, before applying `strategy`. @default 3000 */
+  /**
+   * `"wait"` retries until `timeout`, `"skip"` moves past the step, `"error"` fails the tour,
+   * `"detached"` shows the popover centered in the viewport over a backdrop that covers the whole
+   * screen. A detached step has no pointer and no cutout, does not scroll, keeps the page blocked
+   * even when `allowInteraction` is `true`, and binds no `targetEvents`; its `context.target` is the
+   * document's `<body>`.
+   * @default "error"
+   */
+  strategy?: "wait" | "skip" | "error" | "detached";
+  /** How long to look for the target with the `"wait"` strategy, in milliseconds. @default 3000 */
   timeout?: number;
 }
 

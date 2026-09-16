@@ -302,6 +302,15 @@ describe("PopoverElement positioning", () => {
     });
   });
 
+  test("centers a detached step even when a placement fits", () => {
+    const popover = new PopoverElement(new MockElement(100, 50) as unknown as HTMLElement);
+
+    assert.deepEqual(
+      popover.resolvePosition(rect(10, 10, 20, 20), { ...createStep(["bottom"]), detached: true }),
+      { arrowOffset: null, placement: "center", x: 100, y: 75 },
+    );
+  });
+
   test("publishes placement, arrow offset and hidden state with the transform", () => {
     const element = new MockElement(100, 60);
     const popover = new TestPopoverElement(element as unknown as HTMLElement);

@@ -1,6 +1,8 @@
 import type { IndicatorOptions, OverlayOptions, PopoverOptions } from "../types";
 
 export interface TourElementStep {
+  /** No target: the popover is centered and the backdrop has no cutout. */
+  readonly detached?: boolean;
   readonly indicator?: IndicatorOptions;
   readonly overlay?: OverlayOptions;
   readonly popover?: PopoverOptions;

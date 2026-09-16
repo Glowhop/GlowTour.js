@@ -418,7 +418,7 @@ Control step interaction and scrolling behavior.
 | `keyboard.advance` | Array | `["Enter", "ArrowRight"]` | Keys to advance to next step |
 | `keyboard.previous` | Array | `["ArrowLeft", "Backspace"]` | Keys to go to previous step |
 | `keyboard.cancel` | Array | `["Escape"]` | Keys to cancel the tour |
-| `missingTarget.strategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found - see [Handling errors](/docs/guides/handling-errors) |
+| `missingTarget.strategy` | `"error" \| "wait" \| "skip" \| "detached"` | `"error"` | What to do if target isn't found: `"detached"` shows the popover centered over a backdrop covering the whole screen - see [Handling errors](/docs/guides/handling-errors) |
 | `missingTarget.timeout` | number | `3000` | Time to wait for target with the `"wait"` strategy (in milliseconds) |
 | `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
 | `scroll` | ScrollOptions | - | Scroll behavior (see [Scroll options](#scroll-options)) |
@@ -437,7 +437,7 @@ behavior: {
 }
 ```
 
-**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTarget.strategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `missingTarget.timeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
+**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTarget.strategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, `detached` moves the popover to the center of the screen over a backdrop without a cutout, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `missingTarget.timeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
 
 ### Lifecycle hook context
 

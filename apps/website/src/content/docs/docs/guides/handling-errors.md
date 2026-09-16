@@ -192,3 +192,18 @@ await tour.run(workflow);
 ```
 
 Here, the cart step waits up to 5 seconds for its element - useful if you navigate to it from another page. The checkout step is marked `skip`, so even if the element is gone when we reach it, the tour continues or finishes gracefully without noise.
+
+When a step's message still matters without its element, use `detached` instead of `skip`: the step is shown anyway, with the popover centered in the viewport and a backdrop that covers the whole screen.
+
+```typescript
+.step({
+  id: "promo",
+  target: "#promo-banner",
+  title: "New this month",
+  content: "Discounts are back on every plan.",
+  // The banner is hidden on some plans: show the message on its own.
+  behavior: { missingTarget: { strategy: "detached" } },
+})
+```
+
+A detached step is shown as soon as its target is not found (`timeout` only applies to `wait`). It has no cutout and no pointer, doesn't scroll, and keeps the page blocked even when `allowInteraction` is `true`. `targetEvents` are not bound, and `context.target` in its actions and hooks is the document's `<body>`. A target that disappears for good while its step is on screen detaches the same way.

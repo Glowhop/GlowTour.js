@@ -222,6 +222,14 @@ export function createLabWorkflow<TContent>(
       data: { api: "step:skip" },
     })
     .step({
+      id: "step-detached",
+      target: selectors.missingTarget,
+      title: content.title("missingTarget: { strategy: 'detached' }"),
+      content: content.paragraph(copy.detached),
+      behavior: { missingTarget: { strategy: "detached" }, overlayClick: "advance" },
+      data: { api: "missingTarget", strategy: "detached" },
+    })
+    .step({
       id: "step-10",
       target: selectors.return,
       title: content.title("action() + advance()"),
