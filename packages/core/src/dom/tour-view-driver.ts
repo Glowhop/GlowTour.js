@@ -142,6 +142,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private pendingFocusGeneration: number | null = null;
   private popover: PopoverElement | null = null;
   private presentationDirty = false;
+  /**
+   * The focus a clear gives back once the popover has faded out. Kept past a clear that a new show
+   * supersedes, so that tour returns focus there instead of to the fading popover.
+   */
+  private focusToRestore: HTMLElement | null = null;
   /** The `allowInteraction` value the overlay, the page modality and the focus guard reflect. */
   private appliedAllowInteraction = false;
   /** Set when a live `allowInteraction` change started the pointer fade; the next frame clears it. */
@@ -246,7 +251,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
       // Before inerting the page: inert blurs the trigger that started the tour, and focus
       // could no longer be restored to it.
-      this.focusGuard.captureInitialFocus(target);
+      this.focusGuard.captureInitialFocus(target, this.focusToRestore);
       const scrolling = this.beginTargetScroll(step, target, signal);
       this.throwIfStale(generation, signal);
       this.initializeElements(step, replaceVisiblePopover);
@@ -293,11 +298,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const removeAbort = this.cancelAnimationsOnAbort(signal);
     // Focus goes back once the popover has faded out, not in the task that lifts `inert` from the
     // page: screen readers ignore focus moved onto content that just rejoined their tree.
-    let focusToRestore: HTMLElement | null = null;
     try {
       this.cleanupStepResources();
       this.releaseModality();
-      focusToRestore = this.focusGuard.release();
+      this.focusToRestore = this.focusGuard.release() ?? this.focusToRestore;
       this.scrollLock.deactivate();
       this.throwIfStale(generation, signal);
       this.active = false;
@@ -315,8 +319,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         this.pointer?.disappear() ?? Promise.resolve(),
       ]);
     } finally {
-      if (focusToRestore?.isConnected && this.isCurrentGeneration(generation)) {
-        focusToRestore.focus();
+      // Superseded, the focus stays pending for the show or clear that replaced this one.
+      if (this.isCurrentGeneration(generation)) {
+        this.focusToRestore?.focus();
+        this.focusToRestore = null;
       }
       removeAbort();
     }

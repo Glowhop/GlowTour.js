@@ -2133,6 +2133,31 @@ describe("DomTourViewDriver", () => {
     assert.equal(document.activeElement, initial);
     animationMode = "resolved";
   });
+
+  test("keeps the focus to restore when a show supersedes a clear still fading out", async () => {
+    const initial = document.createElement("button");
+    document.body.append(initial);
+    initial.focus();
+    const { driver } = installDriver(),
+      first = createStep(),
+      second = createStep();
+    first.target = createTarget() as unknown as HTMLElement;
+    second.target = createTarget() as unknown as HTMLElement;
+    await driver.show(first, "advance", new AbortController().signal);
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+
+    const clearing = driver.clear(new AbortController().signal);
+    await flushMicrotasks();
+    animationMode = "resolved";
+    await driver.show(second, "advance", new AbortController().signal);
+    resolveAnimations(animationStart);
+    await assert.rejects(clearing, { name: "AbortError" });
+
+    // Focus sits in the popover here: the second tour must still return it to the first trigger.
+    await driver.clear(new AbortController().signal);
+    assert.equal(document.activeElement, initial);
+  });
   test("keeps the popover exposed to assistive technology while replacing a visible step", async () => {
     const { driver, elements } = installDriver(),
       target = createTarget(),
