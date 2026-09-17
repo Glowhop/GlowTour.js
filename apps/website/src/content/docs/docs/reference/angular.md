@@ -7,15 +7,6 @@ The Angular adapter (`@glowhop/angular-tour`) exports components and utility fun
 
 ## Functions
 
-### `createGlowTour(options?)`
-
-Creates a tour controller instance. Inherited from Core.
-
-**Signature**:
-```typescript
-function createGlowTour(options?: GlowTourOptions): Tour
-```
-
 ### `injectGlowTour(source?)`
 
 Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and one signal per state field. Call it in an injection context, such as a field initializer.
@@ -60,7 +51,7 @@ export class Onboarding {
 }
 ```
 
-See the [guide](/docs/guides/angular#run-a-tour-from-a-component) for sharing a tour and choosing step targets.
+See the guide to [choose step targets](/docs/guides/angular#step-targets) and [share one tour between components](/docs/guides/angular#share-one-tour-between-components).
 
 ### `injectTourContext()`
 
@@ -88,6 +79,15 @@ import { injectTourContext } from "@glowhop/angular-tour";
 export class MyComponent {
   protected tourState = injectTourContext();
 }
+```
+
+### `createGlowTour(options?)`
+
+Creates a tour instance to share between components, passed to `injectGlowTour(tour)`, or to drive outside components. Inherited from Core.
+
+**Signature**:
+```typescript
+function createGlowTour(options?: GlowTourOptions): Tour
 ```
 
 ## Components

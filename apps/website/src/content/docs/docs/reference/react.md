@@ -5,11 +5,95 @@ description: API reference for @glowhop/react-tour.
 
 The React adapter (`@glowhop/react-tour`) exports components, hooks, and utility functions.
 
+## Hooks
+
+### `useGlowTour(source?)`
+
+Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and the current value of each state field.
+
+**Signature**:
+```typescript
+function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
+
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> &
+  TourState & { readonly tour: Tour }
+```
+
+**Parameters**:
+- `source` - Options for a new tour, or an existing tour created with `createGlowTour()` to share it.
+
+With options, the tour is created once, on the first render, and released with its root when the component unmounts; call `tour.dispose()` to end it explicitly. With a tour, the hook only reads it.
+
+**Usage**:
+```tsx
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
+
+function Onboarding() {
+  const { tour, create, run, status } = useGlowTour();
+
+  function start() {
+    void run(create("welcome").step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." }).build());
+  }
+
+  return (
+    <>
+      <button disabled={status === "active"} onClick={start}>Start tour</button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+```
+
+See the guide to [choose step targets](/docs/guides/react#step-targets) and [share one tour between components](/docs/guides/react#share-one-tour-between-components).
+
+### `useTourContext()`
+
+Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
+
+Returns reactive tour state. Must be called inside `<GlowTourRoot tour={...}>`.
+
+**Signature**:
+```typescript
+function useTourContext(): TourState<ReactTourContent>
+```
+
+**Returns**:
+```typescript
+{
+  name: string
+  totalSteps: number
+  currentStepIndex: number
+  currentStep: TourCurrentStep<ReactTourContent> | null
+  direction: "advance" | "previous"
+  canAdvance: boolean
+  canPrevious: boolean
+  canCancel: boolean
+  isFirstStep: boolean
+  isLastStep: boolean
+  status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
+  error: Error | null
+}
+```
+
+**Usage**:
+```tsx
+const state = useTourContext();
+
+return (
+  <div>
+    <p>Status: {state.status}</p>
+    <button disabled={!state.canAdvance} onClick={() => tour.advance()}>
+      Next
+    </button>
+  </div>
+);
+```
+
 ## Functions
 
 ### `createGlowTour(options?)`
 
-Creates a tour controller instance. Inherited from Core.
+Creates a tour instance to share between components, passed to `useGlowTour(tour)`, or to drive outside components. Inherited from Core.
 
 **Signature**:
 ```typescript
@@ -143,90 +227,6 @@ interface PointerProps extends ComponentProps {
     </GlowTourFooter>
   </GlowTourPopover>
 </GlowTourRoot>
-```
-
-## Hooks
-
-### `useGlowTour(source?)`
-
-Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and the current value of each state field.
-
-**Signature**:
-```typescript
-function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
-
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> &
-  TourState & { readonly tour: Tour }
-```
-
-**Parameters**:
-- `source` - Options for a new tour, or an existing tour created with `createGlowTour()` to share it.
-
-With options, the tour is created once, on the first render, and released with its root when the component unmounts; call `tour.dispose()` to end it explicitly. With a tour, the hook only reads it.
-
-**Usage**:
-```tsx
-import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
-
-function Onboarding() {
-  const { tour, create, run, status } = useGlowTour();
-
-  function start() {
-    void run(create("welcome").step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." }).build());
-  }
-
-  return (
-    <>
-      <button disabled={status === "active"} onClick={start}>Start tour</button>
-      <GlowTourDefault tour={tour} />
-    </>
-  );
-}
-```
-
-See the [guide](/docs/guides/react#run-a-tour-from-a-component) for sharing a tour and choosing step targets.
-
-### `useTourContext()`
-
-Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
-
-Returns reactive tour state. Must be called inside `<GlowTourRoot tour={...}>`.
-
-**Signature**:
-```typescript
-function useTourContext(): TourState<ReactTourContent>
-```
-
-**Returns**:
-```typescript
-{
-  name: string
-  totalSteps: number
-  currentStepIndex: number
-  currentStep: TourCurrentStep<ReactTourContent> | null
-  direction: "advance" | "previous"
-  canAdvance: boolean
-  canPrevious: boolean
-  canCancel: boolean
-  isFirstStep: boolean
-  isLastStep: boolean
-  status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
-  error: Error | null
-}
-```
-
-**Usage**:
-```tsx
-const state = useTourContext();
-
-return (
-  <div>
-    <p>Status: {state.status}</p>
-    <button disabled={!state.canAdvance} onClick={() => tour.advance()}>
-      Next
-    </button>
-  </div>
-);
 ```
 
 ## Types

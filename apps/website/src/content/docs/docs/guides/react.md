@@ -74,37 +74,7 @@ export function TourApp() {
 
 The tour is created once, on the first render. When the component unmounts, the tour is released with its root; call `tour.dispose()` if you need to end it explicitly.
 
-## Share a tour with `createGlowTour`
-
-When several components drive the same tour, or code outside React needs it, create the tour yourself and pass it to `useGlowTour`:
-
-```tsx
-// tour.ts
-import { createGlowTour } from "@glowhop/react-tour";
-
-export const tour = createGlowTour();
-```
-
-```tsx
-import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
-import { tour } from "./tour";
-
-export function App() {
-  return (
-    <>
-      <HelpButton />
-      <GlowTourDefault tour={tour} />
-    </>
-  );
-}
-
-function HelpButton() {
-  const { status } = useGlowTour(tour);
-  return <button disabled={status === "active"}>Help</button>;
-}
-```
-
-`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
+To drive the same tour from several components, see [Share one tour between components](#share-one-tour-between-components).
 
 ## Step targets
 
@@ -305,6 +275,38 @@ function StepCounter() {
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
 See the runnable [Live step counter example](/examples).
+
+## Share one tour between components
+
+When several components drive the same tour, for example a layout that renders it and pages that start it, create the tour once with `createGlowTour()` and pass it to `useGlowTour`:
+
+```tsx
+// tour.ts
+import { createGlowTour } from "@glowhop/react-tour";
+
+export const tour = createGlowTour();
+```
+
+```tsx
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
+import { tour } from "./tour";
+
+export function App() {
+  return (
+    <>
+      <HelpButton />
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+
+function HelpButton() {
+  const { status } = useGlowTour(tour);
+  return <button disabled={status === "active"}>Help</button>;
+}
+```
+
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
 
 ## React 18 vs 19
 
