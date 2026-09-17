@@ -609,4 +609,36 @@ describe("PopoverElement animation fallbacks", () => {
     assert.equal(element.styles.get("opacity"), "1");
     assert.equal(element.styles.has("pointer-events"), false);
   });
+
+  test("drops a finished fade-out's fill before presenting again without animation", async () => {
+    const element = new MockElement(100, 60);
+    const animations: { cancelled: boolean }[] = [];
+    element.animate = () => {
+      const animation = {
+        cancel() {
+          animation.cancelled = true;
+        },
+        cancelled: false,
+        finished: Promise.resolve(),
+      };
+      animations.push(animation);
+      return animation as unknown as Animation;
+    };
+    const popover = new PopoverElement(element as unknown as HTMLElement);
+
+    await popover.present(rect(20, 80, 20, 20), createStep(["bottom"]));
+    await popover.disappear();
+
+    // A second tour with `animated: false` writes `opacity: 1` without animating, so nothing would
+    // otherwise supersede the fade-out's `fill: "forwards"` and the popover would stay invisible.
+    popover.setAnimationOptions({ disabled: true });
+    await popover.present(rect(20, 80, 20, 20), createStep(["bottom"]));
+
+    assert.equal(animations.length, 2);
+    assert.deepEqual(
+      animations.map((animation) => animation.cancelled),
+      [true, true],
+    );
+    assert.equal(element.styles.get("opacity"), "1");
+  });
 });

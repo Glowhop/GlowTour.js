@@ -340,6 +340,8 @@ export default class PopoverElement extends GlowTourElement {
   }
 
   async _appear(position: DOMRect, step: TourElementStep) {
+    // The fade-out this appearance replaces has finished: its fill would outrank the styles below.
+    this._releaseFilledAnimations();
     const defaultStyles = this._getNextStyles(position, step);
 
     for (const [key, value] of Object.entries(defaultStyles)) {
@@ -360,6 +362,7 @@ export default class PopoverElement extends GlowTourElement {
   }
 
   async _disappear(hideFromAssistiveTechnology = true) {
+    this._releaseFilledAnimations();
     const animation = this._startAnimation(
       {
         opacity: 0,

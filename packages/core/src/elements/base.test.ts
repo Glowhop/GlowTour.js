@@ -11,6 +11,10 @@ class TestElement extends GlowTourElement {
     return this._waitForAnimation(animation);
   }
 
+  releaseFilled() {
+    this._releaseFilledAnimations();
+  }
+
   protected _disappear(): Promise<void> {
     return Promise.resolve();
   }
@@ -211,5 +215,33 @@ describe("GlowTourElement animation support", () => {
 
     animation.finish();
     await waiting;
+  });
+
+  test("cancels the fill an animation keeps applying after it finished", async () => {
+    const element = new TestElement(createElement());
+    const animation = createAnimation(Promise.resolve()) as Animation & {
+      readonly cancelled: boolean;
+    };
+
+    assert.equal(await element.wait(animation), true);
+    assert.equal(animation.cancelled, false);
+
+    element.releaseFilled();
+
+    assert.equal(animation.cancelled, true);
+  });
+
+  test("leaves a cancelled animation out of the fills to release", async () => {
+    const element = new TestElement(createElement());
+    const animation = createAnimation(Promise.resolve()) as Animation & {
+      readonly cancelled: boolean;
+    };
+
+    const waiting = element.wait(animation);
+    element.cancelAnimations();
+    assert.equal(await waiting, false);
+
+    // Already cancelled by `cancelAnimations`; releasing the fills must not need a second pass.
+    assert.equal(animation.cancelled, true);
   });
 });
