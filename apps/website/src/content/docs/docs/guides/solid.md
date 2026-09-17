@@ -311,4 +311,4 @@ GlowTour.js requires Solid 1.8 or later. The adapter uses Solid's Context API an
 
 ## SSR
 
-`GlowTourDefault` supports server-side rendering. The component renders as an inert container on the server and hydrates correctly on the client. See the SSR guide for details.
+`GlowTourDefault` supports server-side rendering. The component renders as an inert container on the server and hydrates correctly on the client. With SolidStart, see [With SolidStart](/docs/guides/ssr#with-solidstart) in the SSR guide.

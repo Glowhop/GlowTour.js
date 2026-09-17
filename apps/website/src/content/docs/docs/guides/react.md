@@ -312,4 +312,4 @@ GlowTour.js supports both React 18 and 19. The adapter uses `useSyncExternalStor
 
 ## SSR
 
-`GlowTourDefault` supports static server-side rendering. The component renders as an inert container on the server and hydrates without errors on the client. See the SSR guide for details.
+`GlowTourDefault` supports static server-side rendering. The component renders as an inert container on the server and hydrates without errors on the client. With Next.js, see [With Next.js (App Router)](/docs/guides/ssr#with-nextjs-app-router) in the SSR guide.
