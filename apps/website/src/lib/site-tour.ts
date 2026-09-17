@@ -343,12 +343,6 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
     .beforeLeave(goTo("previous", "adapter-quickstart", "/react"))
     .step({
       content: content(
-        element(
-          "p",
-          "m-0 flex items-center gap-2 rounded-lg bg-(--glow-tour-color-accent) px-3 py-2 text-sm font-semibold text-(--glow-tour-color-on-accent)",
-          emoji("🏁"),
-          "9 steps, 3 pages, 0 reloads",
-        ),
         "It was about sixty lines of workflow. The documentation covers the rest:",
         pills(
           ["📐", "Placement"],
