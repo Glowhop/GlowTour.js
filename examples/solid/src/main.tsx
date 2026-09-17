@@ -5,7 +5,7 @@ import { createGlowTour, GlowTourDefault } from "@glowhop/solid-tour";
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello world!" })
+  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello world!" })
   .build();
 
 const appRoot = document.getElementById("root");

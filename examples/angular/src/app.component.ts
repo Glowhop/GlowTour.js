@@ -25,7 +25,7 @@ export class AppComponent {
   readonly tour = createGlowTour();
   readonly workflow = this.tour
     .create("welcome")
-    .step({ target: "#welcome", title: "Welcome", content: "Hello world!" })
+    .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello world!" })
     .build();
 
   start() {
