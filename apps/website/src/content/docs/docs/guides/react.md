@@ -7,15 +7,10 @@ The GlowTour.js React adapter provides native React components and a Context-sco
 
 ## Setup
 
-Install the package and import the default theme:
+Install the adapter and the default theme. The theme is imported once, as shown in the example below.
 
 ```bash
 npm i @glowhop/react-tour @glowhop/styles-tour
-```
-
-```tsx
-import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 ```
 
 ## Run a tour from a component

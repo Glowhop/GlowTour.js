@@ -1,23 +1,16 @@
-# Release process
+# Release policy
+
+This document records the versioning policy of GlowTour.js. The release procedure itself
+(Changesets, version PR, GitHub Release, npm trusted publishing, recovery from a defective
+version) is described once, in [`RELEASING.md`](../RELEASING.md).
 
 GlowTour.js is released only from a stable GitHub Release. Local commands build and validate release
 artifacts, but they must not publish to npm.
 
-## Versioning
-
-Changesets keeps these seven packages in one fixed version group:
-
-1. `@glowhop/core-tour`
-2. `@glowhop/styles-tour`
-3. `@glowhop/react-tour`
-4. `@glowhop/vue-tour`
-5. `@glowhop/angular-tour`
-6. `@glowhop/solid-tour`
-7. `@glowhop/vanilla-tour`
-
-The private `@glowhop/playground` is ignored by Changesets and is never published.
-
 ## Versioning policy
+
+Changesets keeps the seven public packages in one fixed version group: a release always gives them
+the same version. The private apps are never published.
 
 The public API of every package entry point is recorded under `api/`, generated from the sources
 with `bun run api:report`. `bun test` fails when the committed reports and the sources disagree, so
@@ -30,22 +23,9 @@ every public API change shows up in review as a diff under `api/`.
   After 1.4.0, removing or renaming an export, an option, a component, or a union member requires
   a major release.
 
-## Validation
+## Documentation of an unreleased version
 
-Before a release, CI runs the checks, typecheck, unit and browser tests, seven-package build and
-pack steps, external tarball smoke tests, and the separate playground build. Release preparation
-also verifies matching versions and internal dependencies.
-
-## Publication
-
-The release workflow accepts only a published, stable GitHub Release with a `vX.Y.Z` tag whose
-commit is on `main`. It uses npm trusted publishing/OIDC with `id-token: write`; no permanent npm
-token is required. Packages are published in the order listed above, and a rerun can resume after
-packages already present in the registry.
-
-Do not run a real `npm publish` locally. Use the repository's release preparation and publish
-dry-run commands when inspecting the process.
-
-If a published version is defective, deprecate that exact version in npm with a concise reason,
-prepare a corrective Changeset, and publish a new patch release through the same stable GitHub
-Release workflow. Never overwrite or reuse an existing npm version.
+The website and the READMEs are built from `main`, so they can describe a version that npm does not
+have yet. Until that version is published, say so in one form only: "the upcoming 1.4". The
+migration guide and the getting started page carry that note. Remove every such marker in the
+version PR that releases it.

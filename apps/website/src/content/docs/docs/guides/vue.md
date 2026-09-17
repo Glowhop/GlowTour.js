@@ -7,17 +7,10 @@ The GlowTour.js Vue adapter provides components and a provide/inject instance sc
 
 ## Setup
 
-Install the package and import the default theme:
+Install the adapter and the default theme. The theme is imported once, as shown in the example below.
 
 ```bash
 npm i @glowhop/vue-tour @glowhop/styles-tour
-```
-
-```vue
-<script setup>
-import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
-</script>
 ```
 
 ## Run a tour from a component

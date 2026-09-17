@@ -7,13 +7,12 @@ GlowTour.js provides a complete programmatic API for controlling tours, observin
 
 ## Tour instance
 
-Every adapter's `createGlowTour()` function returns a tour controller. Keep this instance alive for your app's lifetime; it holds state, manages workflows, and dispatches events.
+Every adapter's `createGlowTour()` function returns a tour controller. It holds state, manages workflows, and dispatches events. In a component, the adapter's `useGlowTour()` (Angular: `injectGlowTour()`) returns the same controller; the examples below use the instance directly so they work in any framework.
 
 ```typescript
 import { createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
-// Reuse the same instance across your app
 ```
 
 ## Tour state
@@ -30,20 +29,7 @@ console.log(state.currentStep);   // Current step info (or null if not active)
 console.log(state.error);         // Error if status === "error"
 ```
 
-State includes:
-
-- `name` - Name of the running workflow
-- `totalSteps` - Total number of steps in the workflow
-- `currentStepIndex` - Index of the active step (0-based), or -1 if none
-- `status` - Current tour state
-- `currentStep` - Current step data
-- `direction` - Direction of the last navigation ("advance" or "previous")
-- `canAdvance` - Whether advancing is allowed
-- `canPrevious` - Whether going back is allowed
-- `canCancel` - Whether cancelling is allowed
-- `isFirstStep` - Whether the tour is on the first step
-- `isLastStep` - Whether the tour is on the last step
-- `error` - Error if the tour failed
+See [`tour.state.get()`](/docs/reference/tour#tourstateget) for every state field.
 
 ### Subscribing to changes
 
@@ -66,10 +52,10 @@ unsubscribe();
 ```typescript
 const workflow = tour.create("intro").step({ id: "step-1", /* ... */ }).build();
 await tour.run(workflow);
-console.log("Tour completed");
+console.log("First step is on screen");
 ```
 
-The `run()` method is async and resolves when the tour completes, is cancelled, or errors.
+`run()` resolves once the first step is on screen, not when the tour ends. It rejects if that first step fails. To react to the end of the tour, use the workflow's `onFinish` and `onCancel` callbacks, an `onEvent` listener for `tour:complete` and `tour:cancel`, or a `subscribe` listener that checks `status`. See [The promise trap](/docs/guides/handling-errors#the-promise-trap).
 
 ### Navigation commands
 
@@ -346,20 +332,7 @@ Pass an array to bind the same handler to several events at once:
 
 ## Error handling
 
-Handle subscriber errors that don't crash the tour:
-
-```typescript
-const tour = createGlowTour({
-  onSubscriberError(error) {
-    console.error("A subscriber threw an error:", error);
-    // Log it, report it, but the tour continues
-  },
-});
-```
-
-State subscriber functions or step callback functions that throw are caught, normalized to `Error`, and reported to `onSubscriberError`. They do not fail the tour transition.
-
-A fatal error from the rendering layer (e.g., the popover component throws) will reject the command and set the tour state to `status === "error"` with the error details.
+A subscriber or step callback that throws is reported to `onSubscriberError` and does not fail the tour. A fatal error rejects the command and sets `status` to `"error"`. See [Handling errors](/docs/guides/handling-errors) for how to observe and recover from both.
 
 ## Example: complex tour
 

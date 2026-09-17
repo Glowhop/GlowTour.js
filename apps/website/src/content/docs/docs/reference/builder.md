@@ -69,89 +69,98 @@ step(params: StepParameters): WorkflowStepBuilder
 })
 ```
 
+### Step actions
+
+`.do()`, `.wait()`, `.waitUntil()`, `.waitUntilElement()`, `.clickTarget()`, and `.focusTarget()` add actions to the step they are chained after. Once that step is on screen, its actions run in order. Leaving the step, or cancelling the tour, aborts the remaining actions through `context.signal`.
+
 ### `.do(callback)`
 
-Executes a function between steps. Can be async. Returning `false` stops the rest of the step's action sequence; any other value continues it.
+Adds a custom action. Can be async. Returning `false` stops the rest of the step's action sequence; any other value continues it.
 
 **Signature**:
 ```typescript
-do(callback: StepAction<T>): WorkflowStepBuilder
+do(callback: StepAction<T>): WorkflowStepBuilder<T>
 
 type StepAction<T> = (
   context: StepContext<T>,
 ) => Promise<boolean | void> | boolean | void
 ```
 
+`StepContext<T>` exposes `target`, `props`, `initialProps`, `direction`, `signal`, and the navigation methods `advance()`, `previous()`, `goTo(id)`, and `cancel()`.
+
 **Usage**:
 ```typescript
-.do(async () => {
-  // Wait for data to load
-  await fetchData();
-})
 .step({
-  id: "results",
+  id: "loading",
   target: "#results",
-  title: "Results loaded",
-  content: "Data is now available"
+  title: "Loading results",
+  content: "Fetching your data..."
+})
+.do(async ({ props, signal }) => {
+  await fetchData({ signal });
+  props.update({ content: "Data is now available" });
 })
 ```
 
 ### `.wait(ms)`
 
-Pauses for a fixed duration.
+Adds a fixed delay to the step's actions.
 
 **Signature**:
 ```typescript
-wait(ms: number): WorkflowStepBuilder
+wait(ms: number): WorkflowStepBuilder<T>
 ```
+
+Throws a `TypeError` when `ms` is not a finite, non-negative number.
 
 **Usage**:
 ```typescript
 .step({ id: "step-4", /* ... */ })
-.wait(2000)  // Wait 2 seconds
-.step({ id: "step-5", /* ... */ })
+.wait(2000)  // Wait 2 seconds, then run the next action
+.do(({ advance }) => advance())
 ```
 
-### `.waitUntil(fn, options?)`
+### `.waitUntil(predicate, options?)`
 
-Waits until a condition returns true.
+Adds an action that waits until a condition is met. The predicate can be async and receives the step context. The action rejects with a timeout error when the condition is still not met after `timeout`.
 
 **Signature**:
 ```typescript
 waitUntil(
-  fn: () => boolean,
+  predicate: (context: StepContext<T>) => Promise<boolean> | boolean,
   options?: WaitUntilOptions
-): WorkflowStepBuilder
+): WorkflowStepBuilder<T>
 ```
 
 **Parameters**:
-- `fn` - Condition function that returns true when ready
+- `predicate` - Condition that returns (or resolves to) `true` when ready
 - `options` - Wait options (see [Wait options](#wait-options))
 
 **Usage**:
 ```typescript
-.waitUntil(() => document.querySelector("#data") !== null, {
-  interval: 100,
-  timeout: 5000
-})
 .step({
-  id: "data",
-  target: "#data",
-  title: "Here's your data",
-  content: "The data has loaded"
+  id: "upload",
+  target: "#upload",
+  title: "Upload a file",
+  content: "Drop a file here to continue"
 })
+.waitUntil(({ target }) => target.classList.contains("is-complete"), {
+  interval: 100,
+  timeout: 30000
+})
+.do(({ advance }) => advance())
 ```
 
 ### `.waitUntilElement(selector, options?)`
 
-Waits until an element enters the DOM.
+Adds an action that waits until an element matching `selector` exists in the target's document. Throws a `TypeError` when `selector` is empty.
 
 **Signature**:
 ```typescript
 waitUntilElement(
   selector: string,
   options?: WaitUntilOptions
-): WorkflowStepBuilder
+): WorkflowStepBuilder<T>
 ```
 
 **Parameters**:
@@ -160,7 +169,14 @@ waitUntilElement(
 
 **Usage**:
 ```typescript
-.waitUntilElement("#modal", { timeout: 3000 })
+.step({
+  id: "open-modal",
+  target: "#open-modal",
+  title: "Open the modal",
+  content: "Click this button"
+})
+.waitUntilElement("#modal", { timeout: 10000 })
+.do(({ advance }) => advance())
 .step({
   id: "modal",
   target: "#modal",
@@ -168,6 +184,58 @@ waitUntilElement(
   content: "The modal is now visible"
 })
 ```
+
+### `.clickTarget()`
+
+Adds an action that calls `click()` on the step's target.
+
+**Signature**:
+```typescript
+clickTarget(): WorkflowStepBuilder<T>
+```
+
+**Usage**:
+```typescript
+.step({ id: "menu", target: "#menu-button", title: "Menu", content: "The menu opens for you" })
+.clickTarget()
+```
+
+### `.focusTarget()`
+
+Adds an action that calls `focus()` on the step's target.
+
+**Signature**:
+```typescript
+focusTarget(): WorkflowStepBuilder<T>
+```
+
+**Usage**:
+```typescript
+.step({ id: "search", target: "#search", title: "Search", content: "Type a query" })
+.focusTarget()
+```
+
+### `.append(workflow)`
+
+Copies every step of another workflow, with its actions, hooks, and target events, after the current step. The appended workflow's start options (`onStart`, `cancellable`, …) are not copied. Returns the builder of the last appended step, so it can be configured further. Throws when `workflow` has no steps.
+
+**Signature**:
+```typescript
+append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T>
+```
+
+**Usage**:
+```typescript
+const intro = tour.create("intro").step({ id: "welcome", /* ... */ }).build();
+
+const workflow = tour
+  .create("onboarding")
+  .append(intro)
+  .step({ id: "settings", /* ... */ })
+  .build();
+```
+
+Step ids must stay unique in the resulting workflow.
 
 ### `.onTargetEvent(event, callback)`
 
@@ -343,7 +411,7 @@ Control the information box that displays step title and content.
 | `controls.cancel` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the cancel button, with `Escape` and `overlayClick: "cancel"`. The button is never shown when the tour is not cancellable |
 | `animated` | boolean | `true` | Enable/disable animation |
 | `animation` | AnimationOptions | - | Custom animation (duration and easing) |
-| `arrow` | PopoverArrowOptions | - | Arrow/pointer styling (see [Arrow options](#arrow-options)) |
+| `arrow` | PopoverArrowOptions | - | Popover arrow, the small triangle attached to the popover (see [Arrow options](#arrow-options)). The pointer indicator is configured with `indicator` |
 
 **Usage**:
 ```typescript

@@ -7,20 +7,15 @@ The GlowTour.js Angular adapter provides components and a DI-scoped tour instanc
 
 ## Setup
 
-Install the package and import the default theme:
+Install the adapter and the default theme. The theme is imported once, as shown in the example below.
 
 ```bash
 npm i @glowhop/angular-tour @glowhop/styles-tour
 ```
 
-```typescript
-import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
-```
-
 ## Run a tour from a component
 
-`injectTourContext()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and one signal per state field. Call it in an injection context, such as a field initializer.
+`injectGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and one signal per state field. Call it in an injection context, such as a field initializer.
 
 ```typescript
 import { Component } from "@angular/core";
@@ -53,7 +48,7 @@ import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
   `,
 })
 export class TourComponent {
-  readonly glow = injectTourContext();
+  readonly glow = injectGlowTour();
 
   private readonly workflow = this.glow
     .create("product-tour")
@@ -128,7 +123,7 @@ import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
   `,
 })
 export class Checkout {
-  readonly glow = injectTourContext();
+  readonly glow = injectGlowTour();
   private readonly payButton = viewChild<ElementRef<HTMLButtonElement>>("payButton");
 
   private readonly workflow = this.glow

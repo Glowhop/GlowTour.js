@@ -7,7 +7,7 @@ describe("solid config entry point", () => {
   test("createWorkflowFromConfig needs no generic or cast to run through createGlowTour", async () => {
     // Compile-level regression test: `createWorkflowFromConfig(json)` must be directly assignable
     // to what `createGlowTour().run(...)` expects, with no `<JSX.Element>` type argument and no
-    // cast. See HANDOFF-serializable-config.md.
+    // cast. See docs/json-config-design.md.
     const definition = createWorkflowFromConfig({
       name: "onboarding",
       version: "1.1",

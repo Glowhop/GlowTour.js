@@ -7,15 +7,10 @@ The GlowTour.js Solid adapter provides components and a Context-scoped tour inst
 
 ## Setup
 
-Install the package and import the default theme:
+Install the adapter and the default theme. The theme is imported once, as shown in the example below.
 
 ```bash
 npm i @glowhop/solid-tour @glowhop/styles-tour
-```
-
-```tsx
-import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 ```
 
 ## Run a tour from a component

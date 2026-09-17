@@ -82,12 +82,7 @@ const state = useTourContext();
 </script>
 
 <template>
-  <div>
-    <p>Status: {{ state.status }}</p>
-    <button :disabled="!state.canAdvance" @click="tour.advance()">
-      Next
-    </button>
-  </div>
+  <p>Step {{ state.currentStepIndex + 1 }} of {{ state.totalSteps }}</p>
 </template>
 ```
 
@@ -104,20 +99,37 @@ function createGlowTour(options?: GlowTourOptions): Tour
 
 ## Components
 
-### `GlowTour*` and `GlowTour.*`
+### `GlowTourDefault`
 
-Composition primitives for custom layouts:
+Complete tour: overlay, pointer, popover, header, content, and the three navigation controls.
+
+**Props**:
+```typescript
+interface GlowTourDefaultProps {
+  tour: Tour
+  idPrefix?: string // Prefix for internal element IDs
+}
+```
+
+**Usage**:
+```vue
+<GlowTourDefault :tour="tour" />
+```
+
+### Composition components
+
+Primitives for custom layouts:
 
 - `GlowTourRoot` - Root container
 - `GlowTourOverlay` - Backdrop overlay
-- `GlowTourPointer` - Decorative indicator/arrow
+- `GlowTourPointer` - Decorative pointer indicator (not the popover arrow)
 - `GlowTourPopover` - Dialog container
 - `GlowTourHeader` - Title area
 - `GlowTourContent` - Description area
 - `GlowTourFooter` - Navigation button container
 - `GlowTourAdvanceTrigger` - Next step button
 - `GlowTourPreviousTrigger` - Previous step button
-- `GlowTourCancelTrigger` - Dismiss button
+- `GlowTourCancelTrigger` - Cancel button, labelled "Skip"
 
 The same components are grouped under the `GlowTour` object without their prefix (`Root`, `Overlay`, `Pointer`, `Popover`, `Header`, `Content`, `Footer`, `AdvanceTrigger`, `PreviousTrigger`, `CancelTrigger`), for compound markup:
 
@@ -137,59 +149,45 @@ import { GlowTour } from "@glowhop/vue-tour";
 
 `GlowTourDefault` is not part of the `GlowTour` object. The named exports stay the tree-shakeable choice: using `GlowTour` includes every composition component in your bundle.
 
-**Props**:
-```typescript
-interface GlowTourDefaultProps {
-  tour: Tour
-}
-```
+### Component props
 
-**Usage**:
+Every composition component must be rendered inside `GlowTourRoot`, which is the only one that receives the tour. Attributes that are not props (`class`, `style`, `data-*`, listeners, …) are forwarded to the rendered element, except the attributes each component manages itself, such as `id` and its ARIA relationships.
+
+| Component | Renders | Props | Slot |
+| --- | --- | --- | --- |
+| `GlowTourRoot` | `<section>` | `tour: Tour` (required), `idPrefix?: string` | default |
+| `GlowTourOverlay` | `<svg>` | `ariaHidden?: boolean` (default `true`), `focusable?: string` (default `"false"`), `viewBox?: string` (default `"0 0 0 0"`) | default, extra SVG content |
+| `GlowTourPointer` | `<div>` | `directionContent?: PointerDirectionContent` | - |
+| `GlowTourPopover` | `<section>` | `role?: string` (default `"dialog"`) | default |
+| `GlowTourHeader` | `<header>` | - | - (renders the step `title`, and nothing when the step has no title) |
+| `GlowTourContent` | `<div>` | `ariaLive?: string` (default `"polite"`) | - (renders the step `content`) |
+| `GlowTourFooter` | `<footer>` | - | default |
+| `GlowTourPreviousTrigger` | `<button>` | `previousLabel?: string` (default `"Previous step"`), `ariaLabel?: string` | default, trigger slot |
+| `GlowTourAdvanceTrigger` | `<button>` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), `ariaLabel?: string` | default, trigger slot |
+| `GlowTourCancelTrigger` | `<button>` | `ariaLabel?: string` | default, trigger slot. Its label is `"Skip"`; it is not rendered when the tour cannot be cancelled |
+
+`idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
+
+**Triggers**: the label is the button text and, without `ariaLabel` or an `aria-label` attribute, its accessible name. The default slot replaces the button text and receives the trigger's button props (`disabled`, `aria-label`, …):
+
 ```vue
-<GlowTourDefault :tour="tour" />
+<GlowTourAdvanceTrigger advance-label="Next" finish-label="Done" v-slot="{ 'aria-label': label }">
+  <span class="icon-arrow" aria-hidden="true" /> {{ label }}
+</GlowTourAdvanceTrigger>
 ```
 
-### `GlowTour*`
+A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. A control set to `"hidden"` is not rendered.
 
-Composition primitives for custom layouts:
-
-- `GlowTourRoot` - Root container
-- `GlowTourOverlay` - Backdrop overlay
-- `GlowTourPointer` - Decorative indicator/arrow
-- `GlowTourPopover` - Dialog container
-- `GlowTourHeader` - Title area
-- `GlowTourContent` - Description area
-- `GlowTourFooter` - Navigation button container
-- `GlowTourAdvanceTrigger` - Next step button
-- `GlowTourPreviousTrigger` - Previous step button
-- `GlowTourCancelTrigger` - Dismiss button
-
-These components are exported with both the `GlowTour*` naming convention shown above and as flat named exports: `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, `GlowTourAdvanceTrigger`, `GlowTourPreviousTrigger`, `GlowTourCancelTrigger`.
-
-**Props** (GlowTourRoot):
-```typescript
-interface GlowTourRootProps {
-  tour: Tour
-  class?: string
-  style?: CSSProperties
-}
-```
-
-### `GlowTourPointer` (detailed)
+### `GlowTourPointer`
 
 Customizes the directional content (emoji or custom content) of the pointer indicator.
 
-**Props**:
 ```typescript
-interface GlowTourPointerProps {
-  directionContent?: {
-    top?: VNodeChild
-    bottom?: VNodeChild
-    left?: VNodeChild
-    right?: VNodeChild
-  }
-  class?: string
-  style?: CSSProperties
+interface PointerDirectionContent {
+  top?: VNodeChild
+  bottom?: VNodeChild
+  left?: VNodeChild
+  right?: VNodeChild
 }
 ```
 
@@ -220,20 +218,9 @@ interface GlowTourPointerProps {
 />
 ```
 
-**Usage** (default pointers):
+**Usage** (default glyphs):
 ```vue
-<GlowTourRoot :tour="tour">
-  <GlowTourOverlay />
-  <GlowTourPointer />
-  <GlowTourPopover>
-    <GlowTourHeader />
-    <GlowTourContent />
-    <GlowTourFooter>
-      <GlowTourCancelTrigger />
-      <GlowTourAdvanceTrigger />
-    </GlowTourFooter>
-  </GlowTourPopover>
-</GlowTourRoot>
+<GlowTourPointer />
 ```
 
 ## Types
@@ -247,32 +234,3 @@ interface GlowTourPointerProps {
 - `PointerDirectionContent` - Content configuration for `GlowTourPointer` component directions
 - `GlowTourOptions` - Options for `createGlowTour`
 - `StartOptions` - Options for `tour.create`
-
-## Exports
-
-```typescript
-export type { GlowTourOptions, StartOptions } from "@glowhop/core-tour";
-export { GlowTourDefault } from "./components/default-tour.js";
-export {
-  GlowTourAdvanceTrigger,
-  GlowTourPreviousTrigger,
-  GlowTourCancelTrigger,
-  GlowTourContent,
-  GlowTourFooter,
-  GlowTourHeader,
-  GlowTourOverlay,
-  GlowTourPointer,
-  GlowTourPopover,
-  GlowTourRoot,
-  useTourContext,
-} from "./components/tour-components.js";
-export type {
-  StepPropsStore,
-  Tour,
-  TourState,
-  VueTourContent,
-  WorkflowDefinition,
-} from "./glow-tour.js";
-export { createGlowTour } from "./glow-tour.js";
-export { type UseGlowTourResult, useGlowTour } from "./use-glow-tour.js";
-```

@@ -19,7 +19,7 @@ string only.
 lifecycle hooks use it contravariantly). A non-generic, `string`-only format would produce
 `WorkflowDefinition<string>`, which is neither assignable to nor from `WorkflowDefinition<ReactNode>`
 - even though `string` is a valid `ReactNode` - locking every framework adapter out of the config
-path (see decision #3 in `HANDOFF-serializable-config.md`). Instantiating with the adapter's
+path. Instantiating with the adapter's
 content type (`createWorkflowFromConfig<ReactNode>(...)`) fixes this with no cast.
 
 Runtime validation of `title`/`content` cannot know what `T` is, so it stays strict by default -

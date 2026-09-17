@@ -80,12 +80,9 @@ function useTourContext(): TourState<ReactTourContent>
 const state = useTourContext();
 
 return (
-  <div>
-    <p>Status: {state.status}</p>
-    <button disabled={!state.canAdvance} onClick={() => tour.advance()}>
-      Next
-    </button>
-  </div>
+  <p>
+    Step {state.currentStepIndex + 1} of {state.totalSteps}
+  </p>
 );
 ```
 
@@ -102,20 +99,37 @@ function createGlowTour(options?: GlowTourOptions): Tour
 
 ## Components
 
-### `GlowTour*` and `GlowTour.*`
+### `GlowTourDefault`
 
-Composition primitives for custom layouts:
+Complete tour: overlay, pointer, popover, header, content, and the three navigation controls.
+
+**Props**:
+```typescript
+interface GlowTourDefaultProps {
+  tour: Tour
+  idPrefix?: string // Prefix for internal element IDs
+}
+```
+
+**Usage**:
+```tsx
+<GlowTourDefault tour={tour} />
+```
+
+### Composition components
+
+Primitives for custom layouts:
 
 - `GlowTourRoot` - Root container
 - `GlowTourOverlay` - Backdrop overlay
-- `GlowTourPointer` - Decorative indicator/arrow
+- `GlowTourPointer` - Decorative pointer indicator (not the popover arrow)
 - `GlowTourPopover` - Dialog container
 - `GlowTourHeader` - Title area
 - `GlowTourContent` - Description area
 - `GlowTourFooter` - Navigation button container
 - `GlowTourAdvanceTrigger` - Next step button
 - `GlowTourPreviousTrigger` - Previous step button
-- `GlowTourCancelTrigger` - Dismiss button
+- `GlowTourCancelTrigger` - Cancel button, labelled "Skip"
 
 The same components are grouped under the `GlowTour` object without their prefix (`Root`, `Overlay`, `Pointer`, `Popover`, `Header`, `Content`, `Footer`, `AdvanceTrigger`, `PreviousTrigger`, `CancelTrigger`), for compound markup:
 
@@ -131,58 +145,48 @@ import { GlowTour } from "@glowhop/react-tour";
 
 `GlowTourDefault` is not part of the `GlowTour` object. The named exports stay the tree-shakeable choice: using `GlowTour` includes every composition component in your bundle.
 
-**Props**:
-```typescript
-interface GlowTourDefaultProps {
-  tour: Tour
-}
-```
+### Component props
 
-**Usage**:
+Every composition component must be rendered inside `GlowTourRoot`, which is the only one that receives the tour. Each component also accepts the standard attributes of the element it renders (`className`, `style`, `data-*`, event handlers, …), except the attributes it manages itself, such as `id`, `ref`, `role`, and its ARIA attributes.
+
+| Component | Renders | Props |
+| --- | --- | --- |
+| `GlowTourRoot` | `<div>` | `tour: Tour` (required), `idPrefix?: string`, `children?: ReactNode` |
+| `GlowTourOverlay` | `<svg>` | `children?: ReactNode` (extra SVG content), SVG attributes |
+| `GlowTourPointer` | `<div>` | `as?: ElementType`, `directionContent?: PointerDirectionContent` |
+| `GlowTourPopover` | `<section>` | `as?: ElementType`, `children?: ReactNode` |
+| `GlowTourHeader` | `<header>` | No children: renders the step `title`, and nothing when the step has no title |
+| `GlowTourContent` | `<div>` | No children: renders the step `content` in a polite live region |
+| `GlowTourFooter` | `<footer>` | `children?: ReactNode` |
+| `GlowTourPreviousTrigger` | `<button>` | `previousLabel?: string` (default `"Previous step"`), trigger props |
+| `GlowTourAdvanceTrigger` | `<button>` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), trigger props |
+| `GlowTourCancelTrigger` | `<button>` | Trigger props. Its label is `"Skip"`; it is not rendered when the tour cannot be cancelled |
+
+`idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
+
+**Trigger props**: every button attribute except `type`, plus `children`. The label is used as the button text and as its default `aria-label`. `children` replaces the default `<button>`:
+
+- a single element, such as `<MyButton />`, receives the trigger's props through `cloneElement` and keeps its own `onClick`, `className`, and `disabled`;
+- a function receives the trigger's props and returns the element to render.
+
 ```tsx
-<GlowTourDefault tour={tour} />
+<GlowTourAdvanceTrigger advanceLabel="Next" finishLabel="Done">
+  {(props) => <MyButton {...props}>{props["aria-label"]}</MyButton>}
+</GlowTourAdvanceTrigger>
 ```
 
-### `GlowTour.*`
+`disabled` adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. A control set to `"hidden"` is not rendered.
 
-Composition primitives for custom layouts:
-
-- `GlowTourRoot` - Root container (wraps the entire tour)
-- `GlowTourOverlay` - Backdrop overlay
-- `GlowTourPointer` - Decorative indicator/arrow
-- `GlowTourPopover` - Dialog container
-- `GlowTourHeader` - Title area
-- `GlowTourContent` - Description area
-- `GlowTourFooter` - Navigation button container
-- `GlowTourAdvanceTrigger` - Next step button
-- `GlowTourPreviousTrigger` - Previous step button
-- `GlowTourCancelTrigger` - Dismiss button
-
-These components are also available as flat named exports: `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, `GlowTourAdvanceTrigger`, `GlowTourPreviousTrigger`, `GlowTourCancelTrigger`.
-
-**Props** (all components):
-```typescript
-interface ComponentProps {
-  tour?: Tour
-  className?: string
-  style?: React.CSSProperties
-}
-```
-
-### `GlowTourPointer` (detailed)
+### `GlowTourPointer`
 
 Customizes the directional content (emoji or custom content) of the pointer indicator.
 
-**Props**:
 ```typescript
-interface PointerProps extends ComponentProps {
-  as?: React.ElementType
-  directionContent?: {
-    top?: React.ReactNode
-    bottom?: React.ReactNode
-    left?: React.ReactNode
-    right?: React.ReactNode
-  }
+interface PointerDirectionContent {
+  top?: React.ReactNode
+  bottom?: React.ReactNode
+  left?: React.ReactNode
+  right?: React.ReactNode
 }
 ```
 
@@ -213,20 +217,9 @@ interface PointerProps extends ComponentProps {
 />
 ```
 
-**Usage** (default pointers):
+**Usage** (default glyphs):
 ```tsx
-<GlowTourRoot tour={tour}>
-  <GlowTourOverlay />
-  <GlowTourPointer />
-  <GlowTourPopover>
-    <GlowTourHeader />
-    <GlowTourContent />
-    <GlowTourFooter>
-      <GlowTourCancelTrigger />
-      <GlowTourAdvanceTrigger />
-    </GlowTourFooter>
-  </GlowTourPopover>
-</GlowTourRoot>
+<GlowTourPointer />
 ```
 
 ## Types
@@ -240,33 +233,3 @@ interface PointerProps extends ComponentProps {
 - `PointerDirectionContent` - Content configuration for `GlowTourPointer` component directions
 - `GlowTourOptions` - Options for `createGlowTour`
 - `StartOptions` - Options for `tour.create`
-
-## Exports
-
-```typescript
-export type { GlowTourOptions, StartOptions } from "@glowhop/core-tour";
-export { GlowTourDefault, type GlowTourDefaultProps } from "./components/default-tour";
-export {
-  AdvanceTrigger,
-  GlowTourPreviousTrigger,
-  CancelTrigger,
-  Content,
-  Footer,
-  GlowTour,
-  Header,
-  Overlay,
-  Pointer,
-  Popover,
-  Root,
-  useTourContext,
-} from "./components/tour-components";
-export type {
-  ReactTourContent,
-  StepPropsStore,
-  Tour,
-  TourState,
-  WorkflowDefinition,
-} from "./glow-tour";
-export { createGlowTour } from "./glow-tour";
-export { type UseGlowTourResult, useGlowTour } from "./use-glow-tour";
-```
