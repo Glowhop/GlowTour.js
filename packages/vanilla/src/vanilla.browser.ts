@@ -680,6 +680,60 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(button.disabled, false);
   });
 
+  test("disables triggers from the entering step's controls before the transition ends", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    const element = root(tour, "control-disabled");
+    element.innerHTML =
+      "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-previous-trigger></glow-tour-previous-trigger><glow-tour-advance-trigger></glow-tour-advance-trigger></glow-tour-popover>";
+    document.body.append(target, element);
+    await settle();
+    const header = element.querySelector<HTMLElement>("[data-glow-tour-header]");
+    const advance = element.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    const previous = element.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
+    assert.ok(header && advance && previous);
+    await tour.start(
+      tour
+        .create("controls")
+        .step({ id: "controls-1", content: "One", target, title: "One" })
+        .step({
+          id: "controls-2",
+          content: "Two",
+          popover: { controls: { advance: "disabled", previous: "disabled" } },
+          target,
+          title: "Two",
+        })
+        .build(),
+    );
+    await settle();
+    assert.equal(advance.disabled, false);
+
+    // The component renders from its own state subscription, so a later subscriber reads the DOM
+    // each render leaves behind.
+    const renders: { advance: boolean; previous: boolean; status: string; title: string }[] = [];
+    const unsubscribe = tour.state.subscribe((state) =>
+      renders.push({
+        advance: advance.disabled,
+        previous: previous.disabled,
+        status: state.status,
+        title: header.textContent ?? "",
+      }),
+    );
+    await tour.advance();
+    await settle();
+    unsubscribe();
+
+    assert.equal(advance.disabled, true);
+    assert.equal(previous.disabled, true);
+    const entering = renders.filter((render) => render.title === "Two");
+    assert.ok(entering.length > 0);
+    assert.ok(entering.some((render) => render.status === "transitioning"));
+    assert.deepEqual(
+      entering.filter((render) => !render.advance || !render.previous),
+      [],
+    );
+  });
+
   test("restores trigger ownership and keeps generated last-step labels dynamic after reconnect", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");
