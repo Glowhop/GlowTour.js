@@ -120,13 +120,13 @@ Vue's adapter fully supports server-side rendering.
 
 ```typescript
 import { renderToString } from "@vue/server-renderer";
-import { createApp, h } from "vue";
+import { createSSRApp, h } from "vue";
 import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
 
 const tour = createGlowTour();
 
 const html = await renderToString(
-  createApp({
+  createSSRApp({
     render: () => [h(YourApp), h(GlowTourDefault, { tour })],
   })
 );
@@ -134,7 +134,7 @@ const html = await renderToString(
 
 ### Hydration
 
-On the client, use `createSSRApp` for hydration:
+On the client, mount the same tree with `createSSRApp` to hydrate it:
 
 ```typescript
 import { createSSRApp, h } from "vue";

@@ -23,13 +23,16 @@ Every step can declare how to handle a missing target:
 | --- | --- | --- |
 | `"error"` | No | Throw immediately, halting the tour. The error is reported on all three channels. |
 | `"wait"` | Yes, default 3000ms | Poll for the target, waiting up to `missingTarget.timeout` before falling back to `"error"` |
-| `"skip"` | No | Resolve to `null` and advance past the step without showing it. No error is thrown. |
+| `"skip"` | No | Pass over the step without showing it, in the direction of the navigation. No error is thrown. |
+| `"detached"` | No | Show the step anyway, with the popover centered in the viewport. No error is thrown. |
 
 The default is `"error"` because missing targets are usually bugs: the app changed, the selector is stale, or a dynamic element never rendered. Catching them loudly keeps tours working.
 
 `"wait"` suits async scenarios where a target might appear after navigation or a fetch. Set `missingTarget.timeout` to match your app's worst case, or leave it at 3000ms and override per step if needed.
 
-`"skip"` is for optional steps that some users may never see. If skipped forward past the last step, the tour finishes. If skipped backward past the first, the tour cancels (unless it is not cancellable, then it stays on the first step).
+`"skip"` is for optional steps that some users may never see. A skipped step is passed over in the direction of the navigation, and a `step:skip` event is emitted for it. If skipping forward goes past the last step, the tour finishes. If `previous()` or `goTo()` skips backward past the first step, the tour stays on the current step.
+
+When the target of the step on screen disappears and does not come back, the tour moves on from that `"skip"` step in the direction of the last navigation. If that goes backward past the first step, there is no step left to show: the tour is cancelled, or fails with a missing-target error when it is not cancellable.
 
 ## Three channels
 

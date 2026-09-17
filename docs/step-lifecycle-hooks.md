@@ -1,7 +1,7 @@
 # Step lifecycle hooks
 
 Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetPropsOnEnter`,
-`beforeAdvance`, `beforePrevious`, and `beforeCancel` (released in 1.4.0).
+`beforeAdvance`, `beforePrevious`, and `beforeCancel` (part of the upcoming 1.4.0).
 
 ## What shipped
 

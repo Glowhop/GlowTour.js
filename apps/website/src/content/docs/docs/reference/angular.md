@@ -96,9 +96,10 @@ function createGlowTour(options?: GlowTourOptions): Tour
 
 Pre-composed tour with overlay, popover, pointer, and all navigation buttons. Selector: `glow-tour-default`.
 
-**Input**:
+**Inputs**:
 ```typescript
-@Input() tour: Tour
+@Input({ required: true }) tour: Tour
+@Input() idPrefix?: string // Prefix for internal element IDs
 ```
 
 **Usage**:
@@ -108,12 +109,15 @@ Pre-composed tour with overlay, popover, pointer, and all navigation buttons. Se
 
 ### `GlowTourRoot`
 
-Root container. Selector: `glow-tour-root`.
+Root container. Selector: `glow-tour-root`. Every other composition component must be rendered inside it.
 
-**Input**:
+**Inputs**:
 ```typescript
-@Input() tour: Tour
+@Input({ required: true }) tour: Tour
+@Input() idPrefix?: string // Prefix for internal element IDs
 ```
+
+`idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
 
 **Usage**:
 ```html
@@ -133,7 +137,7 @@ Backdrop overlay component. Selector: `glow-tour-overlay`.
 
 ### `GlowTourPointer`
 
-Decorative indicator/arrow pointing to the target. Selector: `glow-tour-pointer`.
+Decorative pointer indicator next to the target (not the popover arrow). Selector: `glow-tour-pointer`.
 
 **Input**:
 ```typescript
@@ -181,11 +185,11 @@ Dialog container for tour content. Selector: `glow-tour-popover`.
 
 ### `GlowTourHeader`
 
-Title/header area inside the popover. Selector: `glow-tour-header`.
+Title/header area inside the popover. Selector: `glow-tour-header`. Renders the step `title`, and nothing when the step has no title.
 
 ### `GlowTourContent`
 
-Description content area inside the popover. Selector: `glow-tour-content`.
+Description content area inside the popover. Selector: `glow-tour-content`. Renders the step `content` in a polite live region.
 
 ### `GlowTourFooter`
 
@@ -198,31 +202,23 @@ Navigation button container. Selector: `glow-tour-footer`.
 </glow-tour-footer>
 ```
 
-### `GlowTourAdvanceTrigger`
+### Triggers
 
-Next step button. Selector: `glow-tour-advance-trigger`.
+| Component | Selector | Inputs |
+| --- | --- | --- |
+| `GlowTourPreviousTrigger` | `glow-tour-previous-trigger` | `previousLabel?: string` (default `"Previous step"`), `ariaLabel?: string`, `disabled: boolean` |
+| `GlowTourAdvanceTrigger` | `glow-tour-advance-trigger` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), `ariaLabel?: string`, `disabled: boolean` |
+| `GlowTourCancelTrigger` | `glow-tour-cancel-trigger` | `ariaLabel?: string`, `disabled: boolean`. Its label is `"Skip"`; it is not rendered when the tour cannot be cancelled |
 
-**Usage**:
-```html
-<glow-tour-advance-trigger />
-```
-
-### `GlowTourPreviousTrigger`
-
-Previous step button. Selector: `glow-tour-previous-trigger`.
+Each trigger renders a `<button>`. The label is the button text and, without `ariaLabel`, its accessible name. Projected content replaces the button text. `disabled` accepts a boolean attribute and adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. A control set to `"hidden"` is not rendered.
 
 **Usage**:
 ```html
-<glow-tour-previous-trigger />
-```
-
-### `GlowTourCancelTrigger`
-
-Dismiss button. Selector: `glow-tour-cancel-trigger`.
-
-**Usage**:
-```html
-<glow-tour-cancel-trigger />
+<glow-tour-footer>
+  <glow-tour-cancel-trigger />
+  <glow-tour-previous-trigger previousLabel="Previous" />
+  <glow-tour-advance-trigger advanceLabel="Next" finishLabel="Done" />
+</glow-tour-footer>
 ```
 
 ## DI

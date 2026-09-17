@@ -9,7 +9,7 @@
 
 <p align="center">
   A guided-tour library for <b>React</b>, <b>Vue</b>, <b>Solid</b>, <b>Angular</b> and <b>vanilla JavaScript</b>.<br>
-  Accessible by default, SSR-verified, zero runtime dependencies, ESM-only, written in TypeScript.
+  Accessible by default, SSR-verified, no third-party runtime dependencies, ESM-only, written in TypeScript.
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
   <a href="https://github.com/Glowhop/GlowTour.js/issues"><b>Issues</b></a>
 </p>
 
-<p align="center">Upgrading from 1.3? Follow the <a href="https://glowtour.dev/docs/migration/1-4">migration guide to 1.4</a>.</p>
+<p align="center">The documentation describes the upcoming 1.4. Upgrading from 1.3? Follow the <a href="https://glowtour.dev/docs/migration/1-4">migration guide to 1.4</a>.</p>
 
 <p align="center"><img src="assets/demo.gif" alt="A GlowTour.js walkthrough highlighting controls in an analytics dashboard" width="820"></p>
 
@@ -43,7 +43,7 @@ Most tour libraries are a single DOM script with framework wrappers bolted on, o
 | **Five native adapters**     | React, Vue 3, Solid, Angular 18, and native custom elements - not one wrapper reskinned five times.                      |
 | **Accessible by default**    | `role="dialog"`, `aria-live` step description, focus trap, focus restoration, Escape and arrow-key shortcuts, everywhere. |
 | **SSR-verified**             | `renderToString` + hydration coverage, plus real Next.js, Nuxt, SolidStart and Angular apps tested with Playwright.      |
-| **Zero runtime dependencies**| The core ships no dependencies and touches no browser global you did not hand it, which is what keeps SSR safe.          |
+| **No third-party runtime deps** | The core depends on no other package and touches no browser global you did not hand it, which is what keeps SSR safe. |
 | **Themeable from CSS alone** | Every color, radius, spacing, size and transition is a `--glow-tour-*` token; the popover inherits your font.            |
 | **Analytics-ready**          | One `onEvent` callback reports every start, step and exit - with the step id, its duration, and how the user left.       |
 | **Steps that wait**          | `.do()`, `.wait()`, `.waitUntil()`, `.waitUntilElement()` and `.onTargetEvent()` sequence real work between steps.       |
@@ -134,7 +134,7 @@ Light and dark ship together; `data-glow-tour-theme="dark"` on a wrapper pins on
 | [`@glowhop/angular-tour`](https://www.npmjs.com/package/@glowhop/angular-tour)               | Angular 18 adapter                                               |
 | [`@glowhop/vanilla-tour`](https://www.npmjs.com/package/@glowhop/vanilla-tour)               | Native custom elements, no framework                             |
 | [`@glowhop/styles-tour`](https://www.npmjs.com/package/@glowhop/styles-tour)                 | Default theme, light and dark                                    |
-| [`@glowhop/core-tour`](https://www.npmjs.com/package/@glowhop/core-tour)                     | Workflow controller and DOM driver; never used standalone        |
+| [`@glowhop/core-tour`](https://www.npmjs.com/package/@glowhop/core-tour)                     | Workflow controller and DOM driver, with no UI of its own        |
 
 Writing an adapter for another framework? [`@glowhop/core-tour/adapter`](https://github.com/Glowhop/GlowTour.js/blob/main/packages/core/README.md) is the entry point.
 

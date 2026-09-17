@@ -5,6 +5,10 @@ description: Install GlowTour.js and build your first guided tour.
 
 GlowTour.js is a cross-framework guided-tour library with a shared core engine and framework-specific adapters. Choose the adapter for your framework, import the default theme, and build your first workflow.
 
+:::note
+This documentation describes the upcoming 1.4. If you use 1.3, the [migration guide](/docs/migration/1-4) lists what changes.
+:::
+
 ## Installation
 
 Install the adapter and default theme for your framework:
@@ -213,11 +217,11 @@ A step pairs a target (an element to highlight) with content (a title and descri
 
 ### Popover
 
-The popover is the info box that appears during a step. It contains the title, description, and navigation buttons (Advance, Previous, Cancel). Every adapter renders the same structure with the same ARIA semantics and keyboard shortcuts.
+The popover is the info box that appears during a step. It contains the title, description, and navigation buttons: advance, previous, and cancel (labelled Skip). Every adapter renders the same structure with the same ARIA semantics and keyboard shortcuts.
 
 ### Pointer
 
-The pointer (or indicator) is the visual indicator that highlights or points to the target element. It follows the target and responds to placement changes. The default styles include a semi-transparent backdrop and an arrow or shape.
+The pointer is a decorative indicator shown next to the target, with a glyph for each direction. It follows the target, and its placement is configured with the `indicator` options. It is distinct from the popover arrow, the small triangle attached to the popover and configured with `popover.arrow`.
 
 ## Next steps
 

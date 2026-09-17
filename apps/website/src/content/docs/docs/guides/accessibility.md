@@ -3,7 +3,7 @@ title: Accessibility guide
 description: Understand accessibility and keyboard support in GlowTour.js.
 ---
 
-GlowTour.js is built with accessibility as a core principle. Every adapter renders the same ARIA semantics, keyboard shortcuts, and focus-restoration behavior. Tours are fully usable with keyboard navigation and screen readers.
+GlowTour.js is designed for keyboard and screen reader use. Every adapter renders the same ARIA semantics, keyboard shortcuts, and focus-restoration behavior, and these are tested with real screen readers, within the [known limitations](#known-limitations) listed below.
 
 ## ARIA semantics
 
@@ -40,7 +40,7 @@ Shortcuts are disabled while:
 - Focus is in an editable field (for Advance/Previous only; Escape always works)
 - The event has already been handled
 
-When a tour button has focus, `Enter` activates that button rather than advancing: on Back it goes to the previous step, on Skip it closes the tour. `Enter` on any other control inside the popover content, such as a link or your own button, is left to that control.
+When a tour button has focus, `Enter` activates that button rather than advancing: on Previous it goes to the previous step, on Skip it cancels the tour. `Enter` on any other control inside the popover content, such as a link or your own button, is left to that control.
 
 The `aria-keyshortcuts` attribute on each button is automatically kept in sync with the active shortcuts, so screen readers and visible labels always match the actual keyboard behavior.
 
@@ -77,7 +77,7 @@ While a step is active, focus is trapped inside the popover. Pressing `Tab` cycl
 
 ### Focus between steps
 
-When a step opens, focus goes to its Advance button, or to its Back button when the user went back. If Back is unavailable on that step, as on the first one, focus goes to Advance instead of an unavailable button.
+When a step opens, focus goes to its Advance button, or to its Previous button when the user went back. If Previous is unavailable on that step, as on the first one, focus goes to Advance instead of an unavailable button.
 
 ### Focus restoration
 
@@ -108,7 +108,7 @@ For each adapter and each pairing, the tests check that:
 - the user can reach the button that starts the tour with `Tab` and open it with `Enter`
 - opening the tour moves focus into the dialog, and the screen reader announces its role and title
 - moving to the next step with `Enter` announces the new step's content
-- the Back button, reached with `Shift+Tab`, goes back to the previous step with `Enter`
+- the Previous button, reached with `Shift+Tab`, goes back to the previous step with `Enter`
 - on a modal step, the reading cursor reaches the step's title and content and never leaves the dialog
 - `Escape` closes the tour, focus returns to the button that started it, and the screen reader announces that button
 - the tour can be opened again and finished with `Enter` on the last step, with the same focus return
@@ -122,7 +122,7 @@ These come from how screen readers handle live regions and focus, which the ARIA
 - **The step title is not announced when the step changes; the content is.** The title is the dialog's name: it is announced when the tour opens and stays reachable with the reading cursor. Announcing both as separate live regions does not work with VoiceOver, which reads only one of two regions updated together ([w3c/aria#1689](https://github.com/w3c/aria/issues/1689)). If a step's title matters on its own, repeat it in the content.
 - **VoiceOver does not read the step content when the tour opens.** It announces the dialog's title and the focused button; the content is next with the reading cursor.
 - **NVDA reads the dialog's title and content twice when the tour opens** ([nvaccess/nvda#10003](https://github.com/nvaccess/nvda/issues/10003)).
-- **Going back to the first step:** Back is unavailable there, so focus moves to Advance. NVDA can read the step content twice while the Back button changes state ([nvaccess/nvda#6265](https://github.com/nvaccess/nvda/issues/6265)), and VoiceOver can skip announcing the content while it describes the focus move; the content stays reachable with the reading cursor.
+- **Going back to the first step:** Previous is unavailable there, so focus moves to Advance. NVDA can read the step content twice while the Previous button changes state ([nvaccess/nvda#6265](https://github.com/nvaccess/nvda/issues/6265)), and VoiceOver can skip announcing the content while it describes the focus move; the content stays reachable with the reading cursor.
 
 ## Testing accessibility
 
@@ -135,7 +135,7 @@ To verify your tour's accessibility:
 
 ## Compliance notes
 
-GlowTour.js follows the WCAG 2.1 AA standard for the dialog and its keyboard navigation.
+The dialog semantics and keyboard navigation are designed against the WCAG 2.1 AA success criteria and tested as described above. No complete WCAG audit has been performed, so conformance of a page that uses GlowTour.js still has to be evaluated for that page.
 
 Colour contrast is a different matter. The default palettes - light and dark - are a sensible
 default, not a certified one: contrast depends on the surface you place the tour over and on any

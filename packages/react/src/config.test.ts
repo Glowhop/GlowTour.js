@@ -8,7 +8,7 @@ describe("react config entry point", () => {
     // This is a compile-level regression test: `createWorkflowFromConfig(json)` must be directly
     // assignable to what `createGlowTour().run(...)` expects, with no `<ReactNode>` type argument
     // and no cast. That was broken before the config module gained per-adapter pre-bound entry
-    // points (see HANDOFF-serializable-config.md).
+    // points (see docs/json-config-design.md).
     const definition = createWorkflowFromConfig({
       name: "onboarding",
       version: "1.1",

@@ -46,7 +46,7 @@ create(name: string, options?: StartOptions): WorkflowBuilder
 
 ### `tour.run(workflow, options?)`
 
-Runs a workflow built with `.build()`. Any previous run or navigation on this controller is cancelled first.
+Runs a workflow built with `.build()`. Any previous run or navigation on this controller is cancelled first. The returned promise resolves once the first step is on screen, not when the tour ends, and rejects if that first step fails.
 
 **Signature**:
 ```typescript
@@ -91,7 +91,7 @@ previous(): Promise<void>
 **Usage**:
 ```typescript
 <button disabled={!state.canPrevious} onClick={() => tour.previous()}>
-  Back
+  Previous
 </button>
 ```
 

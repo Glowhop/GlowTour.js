@@ -2,6 +2,8 @@
 
 Le projet utilise [Changesets](https://github.com/changesets/changesets) pour gérer les versions et GitHub Actions pour publier sur npm. Une publication réelle doit toujours partir d'une GitHub Release stable : elle ne doit pas être lancée en local.
 
+Ce document est la référence pour la procédure de publication. La politique de versioning (ce qui relève d'une version mineure ou majeure, rapports d'API publique) est décrite dans [`docs/release.md`](docs/release.md).
+
 Sept packages publics sont publiés ensemble sous le scope npm `@glowhop` :
 
 1. `@glowhop/core-tour`
@@ -68,6 +70,7 @@ Vérifier que la PR de version :
 - applique la même version aux sept packages publics ;
 - met à jour les changelogs attendus ;
 - consomme les fichiers Changesets concernés ;
+- retire les mentions de version à venir (« the upcoming 1.4 ») de la documentation et des README, comme le prévoit [`docs/release.md`](docs/release.md#documentation-of-an-unreleased-version) ;
 - passe toute la CI.
 
 Fusionner ensuite cette PR dans `main`.
@@ -98,6 +101,7 @@ bun run build
 bun run pack
 bun run test:tarballs
 bun run --cwd apps/playground build
+bun run --cwd apps/website build
 bun run release:prepare
 bun run release:publish -- --dry-run
 ```
