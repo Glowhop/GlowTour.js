@@ -1,0 +1,30 @@
+---
+import Button from "../components/Button.astro";
+import MarketingLayout from "../layouts/MarketingLayout.astro";
+---
+
+{/*
+  The site's only 404 page, for the marketing pages and the docs alike: Starlight's own 404 route is
+  disabled in astro.config.mjs, because it looks for a `docs/404` entry that this site has no reason
+  to keep in the docs collection.
+*/}
+<MarketingLayout
+  title="Page not found - GlowTour.js"
+  description="This page does not exist or has moved."
+>
+  <section class="mx-auto max-w-3xl px-6 py-24 text-center sm:py-32">
+    <p class="text-sm font-semibold text-accent">404</p>
+    <h1
+      class="font-heading mt-2 text-4xl leading-[1.1] font-semibold tracking-tight text-balance text-text sm:text-5xl"
+    >
+      Page not found
+    </h1>
+    <p class="mt-6 text-lg leading-relaxed text-pretty text-text-muted">
+      This page does not exist or has moved.
+    </p>
+    <div class="mt-10 flex flex-wrap justify-center gap-4">
+      <Button href="/docs">Documentation</Button>
+      <Button href="/" variant="secondary">Home</Button>
+    </div>
+  </section>
+</MarketingLayout>
