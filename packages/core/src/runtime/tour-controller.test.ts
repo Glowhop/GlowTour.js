@@ -373,6 +373,77 @@ describe("instance-first TourController", () => {
       assert.equal(tour.state.get().status, "finished");
     });
 
+    describe("an aborted start over an active tour", () => {
+      async function runOverActiveTour(
+        build: (tour: TourController<string>) => {
+          build(): Parameters<TourController<string>["run"]>[0];
+        },
+      ) {
+        const driver = new RecordingDriver();
+        const tour = new TourController<string>(driver);
+        await tour.run(
+          tour
+            .create("replaced")
+            .step({ id: "replaced-step", content: "one", target: targetResolver, title: "one" })
+            .build(),
+        );
+        assert.equal(tour.state.get().status, "active");
+        assert.equal(driver.clearCalls, 0);
+        await tour.run(build(tour).build());
+        return { driver, tour };
+      }
+
+      test("clears the replaced tour when onStart aborts", async () => {
+        const { driver, tour } = await runOverActiveTour((tour) =>
+          tour
+            .create("aborted", { onStart: (context) => context.abort() })
+            .step({ id: "aborted-step", content: "two", target: targetResolver, title: "two" }),
+        );
+
+        assert.equal(driver.clearCalls, 1);
+        assert.equal(tour.state.get().status, "idle");
+        assert.equal(tour.state.get().currentStep, null);
+      });
+
+      test("clears the replaced tour when beforeEnter aborts the first step", async () => {
+        const { driver, tour } = await runOverActiveTour((tour) =>
+          tour
+            .create("aborted")
+            .step({ id: "aborted-step", content: "two", target: targetResolver, title: "two" })
+            .beforeEnter(({ abort }) => abort()),
+        );
+
+        assert.equal(driver.clearCalls, 1);
+        assert.equal(driver.showCalls, 1);
+        assert.equal(tour.state.get().status, "idle");
+        assert.equal(tour.state.get().currentStep, null);
+      });
+
+      test("clears the replaced tour when onFinish aborts an empty workflow", async () => {
+        const { driver, tour } = await runOverActiveTour((tour) =>
+          tour.create("aborted", { onFinish: (context) => context.abort() }),
+        );
+
+        assert.equal(driver.clearCalls, 1);
+        assert.equal(tour.state.get().status, "idle");
+        assert.equal(tour.state.get().currentStep, null);
+      });
+
+      test("does not clear when nothing was presented", async () => {
+        const driver = new RecordingDriver();
+        const tour = new TourController<string>(driver);
+        await tour.run(
+          tour
+            .create("aborted", { onStart: (context) => context.abort() })
+            .step({ id: "aborted-step", content: "two", target: targetResolver, title: "two" })
+            .build(),
+        );
+
+        assert.equal(driver.clearCalls, 0);
+        assert.equal(tour.state.get().status, "idle");
+      });
+    });
+
     test("aborting onStart asynchronously (before the returned promise resolves) also blocks the start", async () => {
       const tour = createGlowTour<string>();
       const workflow = tour
