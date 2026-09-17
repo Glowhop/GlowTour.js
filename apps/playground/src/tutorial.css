@@ -12,14 +12,14 @@
 }
 
 .tutorial-lead {
-  color: #4b5563;
+  color: var(--pg-text-muted);
   margin: 0;
 }
 
 .tutorial-status {
   align-items: center;
-  background: #fff;
-  border: 1px solid #d9ded5;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
   border-radius: 10px;
   display: flex;
   flex-wrap: wrap;
@@ -39,10 +39,10 @@
 
 .tutorial-actions button,
 .tutorial-card button {
-  background: #1e2428;
+  background: var(--pg-invert-bg);
   border: 0;
   border-radius: 8px;
-  color: #fff;
+  color: var(--pg-invert-text);
   cursor: pointer;
   font: inherit;
   padding: 8px 14px;
@@ -60,8 +60,8 @@
 }
 
 .tutorial-card {
-  background: #fff;
-  border: 1px solid #d9ded5;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
   border-radius: 10px;
   display: grid;
   gap: 8px;
@@ -74,11 +74,11 @@
 }
 
 .tutorial-card p {
-  color: #4b5563;
+  color: var(--pg-text-muted);
   margin: 0;
 }
 
 .tutorial-card small {
-  color: #6b7280;
+  color: var(--pg-text-faint);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }

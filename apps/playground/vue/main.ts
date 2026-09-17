@@ -5,6 +5,7 @@ import { type LabContentFactory, mountLab } from "../lab";
 import PlaygroundTour from "./PlaygroundTour.vue";
 import "../lab/lab.css";
 import "../src/styles.css";
+import "../src/theme";
 
 const root = document.querySelector<HTMLElement>("#vue-root");
 if (!root) throw new Error("Missing #vue-root");

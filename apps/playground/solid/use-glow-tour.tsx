@@ -1,9 +1,10 @@
 /** @jsxImportSource solid-js */
 
-import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
+import { GlowTour, GlowTourDefault, useGlowTour, useGlowTourContext } from "@glowhop/solid-tour";
 import "@glowhop/styles-tour/default.css";
 import { render } from "solid-js/web";
 import "../src/styles.css";
+import "../src/theme";
 import "../src/tutorial.css";
 
 function Tutorial() {
@@ -69,8 +70,38 @@ function Tutorial() {
           <small>target: '[data-tour="help"]'</small>
         </article>
       </div>
-      <GlowTourDefault tour={tour} />
+      <GlowTour.Root tour={tour}>
+        <GlowTour.Overlay />
+        <GlowTour.Pointer />
+        <GlowTour.Popover>
+          <StepCounter />
+          <GlowTour.Header />
+          <GlowTour.Content />
+          <GlowTour.Footer>
+            <GlowTour.PreviousTrigger />
+            <GlowTour.AdvanceTrigger />
+            <GlowTour.CancelTrigger />
+          </GlowTour.Footer>
+        </GlowTour.Popover>
+      </GlowTour.Root>
     </main>
+  );
+}
+
+function StepCounter() {
+  const context = useGlowTourContext();
+
+  const status = () => context().status;
+  const currentStepIndex = () => context().currentStepIndex;
+  const totalSteps = () => context().totalSteps;
+
+  return (
+    <div class="tutorial-status">
+      <output data-testid="tour-status">
+        {status()}
+        {status() === "active" ? ` · step ${currentStepIndex() + 1} / ${totalSteps()}` : ""}
+      </output>
+    </div>
   );
 }
 
