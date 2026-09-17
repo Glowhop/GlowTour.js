@@ -11,7 +11,7 @@ Designate steps by id when jumping to them.
 
 **Breaking changes**
 
-- `tour.goToStep(index)` is removed. Use `tour.goTo(id)` with the step's `id`, like `startAt` in `run()`: an index breaks as soon as steps are reordered or inserted.
+- `tour.goToStep(index)` is removed. Use `tour.goTo(id)` with the step's `id`, like `startAt` in `start()`: an index breaks as soon as steps are reordered or inserted.
 
 **Added**
 

@@ -15,7 +15,7 @@ Runs a tour from a component. This is the main entry point: it returns the tour 
 ```typescript
 function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
   readonly tour: Tour
 } & { readonly [K in keyof TourState]: Accessor<TourState[K]> }
 ```
@@ -30,14 +30,14 @@ With options, the tour is disposed when the owning scope is cleaned up. With a t
 import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 
 function Onboarding() {
-  const { tour, create, run, status } = useGlowTour();
+  const { tour, create, start, status } = useGlowTour();
   const workflow = create("welcome")
     .step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." })
     .build();
 
   return (
     <>
-      <button disabled={status() === "active"} onClick={() => void run(workflow)}>Start tour</button>
+      <button disabled={status() === "active"} onClick={() => void start(workflow)}>Start tour</button>
       <GlowTourDefault tour={tour} />
     </>
   );

@@ -15,7 +15,7 @@ npm i @glowhop/solid-tour @glowhop/styles-tour
 
 ## Run a tour from a component
 
-`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and one accessor per state field.
+`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `start`, `advance`, `previous`, `goTo`, `cancel`), and one accessor per state field.
 
 ```tsx
 import { Show } from "solid-js";
@@ -24,7 +24,7 @@ import "@glowhop/styles-tour/default.css";
 import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 
 function TourApp() {
-  const { tour, create, run, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
+  const { tour, create, start, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
 
   const workflow = create("product-tour")
     .step({
@@ -54,7 +54,7 @@ function TourApp() {
         </section>
         <Show
           when={status() === "active"}
-          fallback={<button onClick={() => void run(workflow)}>Start tour</button>}
+          fallback={<button onClick={() => void start(workflow)}>Start tour</button>}
         >
           <p>
             Step {currentStepIndex() + 1} of {totalSteps()} <button onClick={() => void cancel()}>Stop</button>
@@ -110,7 +110,7 @@ import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 
 export function Checkout() {
   let payButton: HTMLButtonElement | undefined;
-  const { tour, create, run } = useGlowTour();
+  const { tour, create, start } = useGlowTour();
 
   const workflow = create("checkout")
     .step({
@@ -124,7 +124,7 @@ export function Checkout() {
   return (
     <>
       <button ref={payButton}>Pay</button>
-      <button onClick={() => void run(workflow)}>Show me</button>
+      <button onClick={() => void start(workflow)}>Show me</button>
       <GlowTourDefault tour={tour} />
     </>
   );
@@ -300,7 +300,7 @@ function HelpButton() {
 }
 ```
 
-`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.start(workflow)`, `tour.cancel()`, and `tour.state`.
 
 ## Solid 1.8+
 

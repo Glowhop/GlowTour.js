@@ -15,14 +15,14 @@ npm i @glowhop/vue-tour @glowhop/styles-tour
 
 ## Run a tour from a component
 
-`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and one readonly ref per state field.
+`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `start`, `advance`, `previous`, `goTo`, `cancel`), and one readonly ref per state field.
 
 ```vue
 <script setup lang="ts">
 import "@glowhop/styles-tour/default.css";
 import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
 
-const { tour, create, run, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
+const { tour, create, start, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
 
 const workflow = create("product-tour")
   .step({
@@ -54,7 +54,7 @@ const workflow = create("product-tour")
       Step {{ currentStepIndex + 1 }} of {{ totalSteps }}
       <button @click="cancel()">Stop</button>
     </p>
-    <button v-else @click="run(workflow)">Start tour</button>
+    <button v-else @click="start(workflow)">Start tour</button>
   </main>
   <GlowTourDefault :tour="tour" />
 </template>
@@ -102,7 +102,7 @@ import { useTemplateRef } from "vue";
 import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
 
 const payButton = useTemplateRef<HTMLButtonElement>("payButton");
-const { tour, create, run } = useGlowTour();
+const { tour, create, start } = useGlowTour();
 
 const workflow = create("checkout")
   .step({
@@ -116,7 +116,7 @@ const workflow = create("checkout")
 
 <template>
   <button ref="payButton">Pay</button>
-  <button @click="run(workflow)">Show me</button>
+  <button @click="start(workflow)">Show me</button>
   <GlowTourDefault :tour="tour" />
 </template>
 ```
@@ -301,7 +301,7 @@ const { status } = useGlowTour(tour);
 </template>
 ```
 
-`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`. In Nuxt, a plugin can provide the shared tour: see [With Nuxt](/docs/guides/ssr#with-nuxt).
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.start(workflow)`, `tour.cancel()`, and `tour.state`. In Nuxt, a plugin can provide the shared tour: see [With Nuxt](/docs/guides/ssr#with-nuxt).
 
 ## Vue 3.3+
 

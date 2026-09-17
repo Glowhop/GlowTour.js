@@ -98,7 +98,7 @@ The promise from the method that triggered the failure is rejected:
 
 ```typescript
 try {
-  await tour.run(workflow);
+  await tour.start(workflow);
 } catch (error) {
   console.error("Tour failed on first step:", error);
 }
@@ -108,14 +108,14 @@ This is a local convenience for simple patterns, but it has a hard limit.
 
 ## The promise trap
 
-`run()` resolves once the **first step is on screen**, not after the whole tour:
+`start()` resolves once the **first step is on screen**, not after the whole tour:
 
 ```typescript
-await tour.run(workflow);
+await tour.start(workflow);
 // ← The first step is now visible. Any other step may still fail later.
 ```
 
-So a `try/catch` around `run()` only catches failures on that first step. A target missing on step 2, 3, or later is not caught there - it rejects the `advance()`, `previous()`, or `goTo()` call that caused it:
+So a `try/catch` around `start()` only catches failures on that first step. A target missing on step 2, 3, or later is not caught there - it rejects the `advance()`, `previous()`, or `goTo()` call that caused it:
 
 ```typescript
 try {
@@ -191,7 +191,7 @@ tour.state.subscribe((state) => {
   }
 });
 
-await tour.run(workflow);
+await tour.start(workflow);
 ```
 
 Here, the cart step waits up to 5 seconds for its element - useful if you navigate to it from another page. The checkout step is marked `skip`, so even if the element is gone when we reach it, the tour continues or finishes gracefully without noise.

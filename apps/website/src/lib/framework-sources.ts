@@ -20,7 +20,7 @@ if (root) {
         <button
           id="welcome"
           type="button"
-          onClick={() => void tour.run(workflow)}
+          onClick={() => void tour.start(workflow)}
           style={{ padding: "10px 20px", fontSize: "16px" }}
         >
           Start tour
@@ -42,7 +42,7 @@ const workflow = tour
   .build();
 
 function start() {
-  void tour.run(workflow);
+  void tour.start(workflow);
 }
 </script>
 
@@ -77,7 +77,7 @@ if (appRoot) {
           <button
             id="welcome"
             type="button"
-            onClick={() => void tour.run(workflow)}
+            onClick={() => void tour.start(workflow)}
             style={{ padding: "10px 20px", "font-size": "16px" }}
           >
             Start tour
@@ -121,7 +121,7 @@ export class AppComponent {
     .build();
 
   start() {
-    void this.tour.run(this.workflow);
+    void this.tour.start(this.workflow);
   }
 }`;
 
@@ -143,7 +143,7 @@ const button = document.createElement("button");
 button.id = "welcome";
 button.type = "button";
 button.textContent = "Start tour";
-button.addEventListener("click", () => void tour.run(workflow));
+button.addEventListener("click", () => void tour.start(workflow));
 document.body.append(button);
 
 const root = document.createElement("glow-tour-default");

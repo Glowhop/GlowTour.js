@@ -89,7 +89,7 @@ export function App() {
     <>
       <input id="workspace-name" />
       <button id="save">Save</button>
-      <button type="button" onClick={() => void tour.run(workflow)}>Start tour</button>
+      <button type="button" onClick={() => void tour.start(workflow)}>Start tour</button>
       <GlowTourDefault tour={tour} />
     </>
   );

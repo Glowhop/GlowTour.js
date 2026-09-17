@@ -8,5 +8,5 @@ export const mount: MountFixture = async (host) => {
   const element = document.createElement("glow-tour-default");
   element.tour = tour;
   host.append(element);
-  return () => tour.run(workflow);
+  return () => tour.start(workflow);
 };

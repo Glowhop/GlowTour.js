@@ -177,7 +177,7 @@ describe("angular adapter browser behavior", () => {
       .step({ id: "step-1", content: "First", target, title: "First" })
       .step({ id: "step-2", content: "Second", target, title: "Second" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
@@ -215,7 +215,7 @@ describe("angular adapter browser behavior", () => {
       .step({ id: "first", content: "First", target, title: "First" })
       .step({ id: "second", content: "Second", target, title: "Second" })
       .build();
-    await glow.run(workflow);
+    await glow.start(workflow);
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
@@ -311,7 +311,7 @@ describe("angular adapter browser behavior", () => {
       })
       .step({ id: "step-4", content: "Second content", target, title: "Second title" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     await settle();
     app.tick();
     assert.match(document.body.textContent ?? "", /First title/);
@@ -349,7 +349,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 1);
 
     await app.destroy();
-    await assert.rejects(() => tour.run(tour.create("released").build()), /connected root/i);
+    await assert.rejects(() => tour.start(tour.create("released").build()), /connected root/i);
   });
 
   test("reconnects only the latest Angular input pair and isolates nearest nested roots", async () => {
@@ -395,7 +395,7 @@ describe("angular adapter browser behavior", () => {
     await settle();
     assert.equal(document.querySelector("[data-glow-tour-root]")?.id, "second-root");
     await assert.rejects(
-      () => first.run(first.create("first released").build()),
+      () => first.start(first.create("first released").build()),
       /connected root/i,
     );
 
@@ -422,8 +422,8 @@ describe("angular adapter browser behavior", () => {
           title: "Two",
         })
         .build();
-    await second.run(workflow(second, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner", true));
+    await second.start(workflow(second, outerTarget, "outer"));
+    await inner.start(workflow(inner, innerTarget, "inner", true));
     const [outerAdvance, innerAdvance] = Array.from(
       document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
@@ -491,8 +491,8 @@ describe("angular adapter browser behavior", () => {
           title: `${name} two`,
         })
         .build();
-    await first.run(workflow(first, firstTarget, "first"));
-    await second.run(workflow(second, secondTarget, "second", true));
+    await first.start(workflow(first, firstTarget, "first"));
+    await second.start(workflow(second, secondTarget, "second", true));
     await settle();
     app.tick();
 
@@ -535,7 +535,7 @@ describe("angular adapter browser behavior", () => {
     @Component({ selector: "angular-descendant-runner", standalone: true, template: "" })
     class DescendantRunner implements OnInit {
       ngOnInit() {
-        started = tour.run(tour.create("descendant initialization").build());
+        started = tour.start(tour.create("descendant initialization").build());
       }
     }
 
@@ -646,7 +646,7 @@ describe("angular adapter browser behavior", () => {
       })
       .step({ id: "step-10", content: "Two", target, title: "Two" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     const harness = app.components[0]?.instance;
     assert.ok(harness instanceof LateTriggerHarness);
     harness.showAdvance = true;
@@ -764,7 +764,7 @@ describe("angular adapter browser behavior", () => {
       .step({ id: "step-11", content: "One", target, title: "One" })
       .step({ id: "step-12", content: "Two", target, title: "Two" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     await settle();
     app.tick();
 

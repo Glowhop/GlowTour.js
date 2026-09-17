@@ -20,7 +20,7 @@ Open `http://localhost:5173` in your browser.
 - Building a workflow with `.create()` and `.step()`
 - Registering custom elements with `registerGlowTourElements()`
 - Adding the complete tour UI with the `<glow-tour-default>` element
-- Triggering the tour with `tour.run(workflow)`
+- Triggering the tour with `tour.start(workflow)`
 
 ## API Used
 

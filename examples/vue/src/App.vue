@@ -11,7 +11,7 @@ const workflow = tour
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function start() {
-  void tour.run(workflow);
+  void tour.start(workflow);
 }
 </script>
 

@@ -286,7 +286,7 @@ describe("createWorkflowFromConfig", () => {
         version: "1.1",
         steps: [{ id: "s9", target: "#a", title: "T", content: "C" }],
       });
-      await assert.rejects(() => tour.run(workflow), /connected root/i);
+      await assert.rejects(() => tour.start(workflow), /connected root/i);
     });
 
     test("createWorkflowFromConfig<T>() is accepted by GlowTour<T> for a non-string content type (structural stand-in for a framework adapter's ReactNode/VNode/JSX.Element)", async () => {
@@ -300,7 +300,7 @@ describe("createWorkflowFromConfig", () => {
         },
         { validateContent: () => null },
       );
-      await assert.rejects(() => tour.run(workflow), /connected root/i);
+      await assert.rejects(() => tour.start(workflow), /connected root/i);
     });
   });
 });

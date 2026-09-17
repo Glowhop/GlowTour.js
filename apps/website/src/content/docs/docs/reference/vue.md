@@ -15,7 +15,7 @@ Runs a tour from a component. This is the main entry point: it returns the tour 
 ```typescript
 function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
   readonly tour: Tour
 } & { readonly [K in keyof TourState]: Readonly<Ref<TourState[K]>> }
 ```
@@ -30,14 +30,14 @@ With options, the tour is disposed when the calling effect scope is disposed. Wi
 <script setup lang="ts">
 import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
 
-const { tour, create, run, status } = useGlowTour();
+const { tour, create, start, status } = useGlowTour();
 const workflow = create("welcome")
   .step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." })
   .build();
 </script>
 
 <template>
-  <button :disabled="status === 'active'" @click="run(workflow)">Start tour</button>
+  <button :disabled="status === 'active'" @click="start(workflow)">Start tour</button>
   <GlowTourDefault :tour="tour" />
 </template>
 ```

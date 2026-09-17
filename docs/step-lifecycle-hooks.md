@@ -5,7 +5,7 @@ Decision record for `beforeEnter` / `beforeLeave` and the removal of `resetProps
 
 ## What shipped
 
-- Step props persist across re-entries within a run. A new `run()` creates fresh step state, so
+- Step props persist across re-entries within a run. A new `start()` creates fresh step state, so
   nothing leaks from one run to the next.
 - `beforeEnter(callback)` runs after the step's target is resolved and before `driver.show()`. The
   step is not committed yet, so the controller does not publish and the view has not subscribed to

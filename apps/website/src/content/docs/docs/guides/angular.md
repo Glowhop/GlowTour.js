@@ -15,7 +15,7 @@ npm i @glowhop/angular-tour @glowhop/styles-tour
 
 ## Run a tour from a component
 
-`injectGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and one signal per state field. Call it in an injection context, such as a field initializer.
+`injectGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `start`, `advance`, `previous`, `goTo`, `cancel`), and one signal per state field. Call it in an injection context, such as a field initializer.
 
 ```typescript
 import { Component } from "@angular/core";
@@ -67,7 +67,7 @@ export class TourComponent {
     .build();
 
   startTour() {
-    void this.glow.run(this.workflow);
+    void this.glow.start(this.workflow);
   }
 }
 ```
@@ -137,7 +137,7 @@ export class Checkout {
     .build();
 
   startTour() {
-    void this.glow.run(this.workflow);
+    void this.glow.start(this.workflow);
   }
 }
 ```
@@ -309,7 +309,7 @@ export class HelpButton {
 }
 ```
 
-Render `<glow-tour-default [tour]="tour" />` once, with the service's tour. `injectGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
+Render `<glow-tour-default [tour]="tour" />` once, with the service's tour. `injectGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.start(workflow)`, `tour.cancel()`, and `tour.state`.
 
 ## Angular 18+
 

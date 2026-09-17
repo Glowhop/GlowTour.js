@@ -44,13 +44,13 @@ Starts building a new workflow on this controller. See the [Builder reference](/
 create(name: string, options?: StartOptions): WorkflowBuilder
 ```
 
-### `tour.run(workflow, options?)`
+### `tour.start(workflow, options?)`
 
 Runs a workflow built with `.build()`. Any previous run or navigation on this controller is cancelled first. The returned promise resolves once the first step is on screen, not when the tour ends, and rejects if that first step fails.
 
 **Signature**:
 ```typescript
-run(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
+start(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
 ```
 
 **Options**:
@@ -60,7 +60,7 @@ run(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
 ```typescript
 const workflow = tour.create("welcome").step({ id: "save-button", target: "#save-button", title: "Save", content: "Click here to save." }).build();
 
-await tour.run(workflow);
+await tour.start(workflow);
 ```
 
 ### `tour.advance()`
@@ -99,7 +99,7 @@ previous(): Promise<void>
 
 Goes to the step with this `id`, skipping the steps in between. The direction (`"advance"` or `"previous"`) follows the position of that step. It does nothing while a transition is in progress or when that step is already shown, and it throws when no step has this `id`.
 
-Steps are designated by `id`, like `startAt` in `run()`: an index would break as soon as steps are reordered or inserted.
+Steps are designated by `id`, like `startAt` in `start()`: an index would break as soon as steps are reordered or inserted.
 
 **Signature**:
 ```typescript

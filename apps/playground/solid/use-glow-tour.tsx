@@ -8,7 +8,7 @@ import "../src/tutorial.css";
 
 function Tutorial() {
   let saveButton: HTMLButtonElement | undefined;
-  const { tour, create, run, cancel, status, canCancel, currentStepIndex, totalSteps } =
+  const { tour, create, start, cancel, status, canCancel, currentStepIndex, totalSteps } =
     useGlowTour();
 
   const workflow = create("solid-use-glow-tour")
@@ -42,7 +42,7 @@ function Tutorial() {
           {status() === "active" ? ` · step ${currentStepIndex() + 1} / ${totalSteps()}` : ""}
         </output>
         <div class="tutorial-actions">
-          <button type="button" onClick={() => void run(workflow)}>
+          <button type="button" onClick={() => void start(workflow)}>
             Start tutorial
           </button>
           <button type="button" disabled={!canCancel()} onClick={() => void cancel()}>

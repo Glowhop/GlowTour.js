@@ -51,7 +51,7 @@ document.body.append(tourRoot);
 
 // Create and wire up a start button
 const startButton = document.querySelector("#start-tour") as HTMLButtonElement;
-startButton.addEventListener("click", () => void tour.run(workflow));
+startButton.addEventListener("click", () => void tour.start(workflow));
 ```
 
 In your `index.html`, loaded by a bundler such as Vite that compiles `main.ts` and resolves the package imports:

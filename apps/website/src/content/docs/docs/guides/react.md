@@ -15,14 +15,14 @@ npm i @glowhop/react-tour @glowhop/styles-tour
 
 ## Run a tour from a component
 
-`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and every field of its state. The component re-renders when the state changes.
+`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `start`, `advance`, `previous`, `goTo`, `cancel`), and every field of its state. The component re-renders when the state changes.
 
 ```tsx
 import "@glowhop/styles-tour/default.css";
 import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 
 export function TourApp() {
-  const { tour, create, run, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
+  const { tour, create, start, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
 
   function startTour() {
     const workflow = create("product-tour")
@@ -39,7 +39,7 @@ export function TourApp() {
         content: "See plans that fit your needs.",
       })
       .build();
-    void run(workflow);
+    void start(workflow);
   }
 
   return (
@@ -109,7 +109,7 @@ import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 
 export function Checkout() {
   const payButton = useRef<HTMLButtonElement>(null);
-  const { tour, create, run } = useGlowTour();
+  const { tour, create, start } = useGlowTour();
 
   function startTour() {
     const workflow = create("checkout")
@@ -120,7 +120,7 @@ export function Checkout() {
         content: "Confirm your order here.",
       })
       .build();
-    void run(workflow);
+    void start(workflow);
   }
 
   return (
@@ -301,7 +301,7 @@ function HelpButton() {
 }
 ```
 
-`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.start(workflow)`, `tour.cancel()`, and `tour.state`.
 
 ## React 18 vs 19
 

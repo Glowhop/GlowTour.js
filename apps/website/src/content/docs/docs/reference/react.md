@@ -15,7 +15,7 @@ Runs a tour from a component. This is the main entry point: it returns the tour 
 ```typescript
 function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> &
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> &
   TourState & { readonly tour: Tour }
 ```
 
@@ -29,15 +29,15 @@ With options, the tour is created once, on the first render, and released with i
 import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 
 function Onboarding() {
-  const { tour, create, run, status } = useGlowTour();
+  const { tour, create, start, status } = useGlowTour();
 
-  function start() {
-    void run(create("welcome").step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." }).build());
+  function startTour() {
+    void start(create("welcome").step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." }).build());
   }
 
   return (
     <>
-      <button disabled={status === "active"} onClick={start}>Start tour</button>
+      <button disabled={status === "active"} onClick={startTour}>Start tour</button>
       <GlowTourDefault tour={tour} />
     </>
   );

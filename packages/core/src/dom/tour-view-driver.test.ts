@@ -1301,7 +1301,7 @@ describe("DomTourViewDriver", () => {
         title: "title",
       })
       .build();
-    await tour.run(denied);
+    await tour.start(denied);
 
     window.dispatchEvent(new MockEvent("click", { target: document.body }));
     await new Promise<void>((resolve) => setTimeout(resolve));
@@ -1809,7 +1809,7 @@ describe("DomTourViewDriver", () => {
         title: "title",
       })
       .build();
-    await tour.run(denied);
+    await tour.start(denied);
     const escapeEvent = new MockKeyboardEvent("keydown", {
       key: "Escape",
       target: elements.popover,
@@ -1836,7 +1836,7 @@ describe("DomTourViewDriver", () => {
         title: "title",
       })
       .build();
-    await tour.run(allowed);
+    await tour.start(allowed);
     window.dispatchEvent(
       new MockKeyboardEvent("keydown", { key: "Escape", target: elements.popover }),
     );
@@ -2255,7 +2255,7 @@ describe("DomTourViewDriver", () => {
         })
         .build();
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     assert.equal(document.activeElement, elements.advance);
     await tour.advance();
     assert.equal(document.activeElement, elements.advance);

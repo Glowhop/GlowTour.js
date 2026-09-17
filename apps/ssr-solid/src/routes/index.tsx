@@ -24,7 +24,7 @@ export default function Home() {
   return (
     <main style={{ padding: "24px" }}>
       <h1 id="tour-target">GlowTour.js SSR (SolidStart) verification</h1>
-      <button id="tour-trigger" type="button" onClick={() => void tour.run(workflow)}>
+      <button id="tour-trigger" type="button" onClick={() => void tour.start(workflow)}>
         Start tour
       </button>
       <GlowTourDefault tour={tour} />
