@@ -28,7 +28,6 @@ import {
   Show,
   splitProps,
   useContext,
-  type ValidComponent,
 } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import type { SolidTourContent } from "../glow-tour";
@@ -40,8 +39,7 @@ type RootProps = ParentProps<
     tour: Tour;
   }
 >;
-type FooterProps = ParentProps<Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref">>;
-type PopoverProps = FooterProps & { as?: ValidComponent };
+type ElementProps = ParentProps<Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref">>;
 type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = ParentProps<Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "ref">>;
 /** Content displayed in the pointer indicator for each direction. */
@@ -60,7 +58,6 @@ const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
 };
 
 type PointerProps = Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
-  as?: ValidComponent;
   directionContent?: PointerDirectionContent;
 };
 type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
@@ -196,12 +193,12 @@ export function GlowTourRoot(props: RootProps): JSX.Element {
 /**
  * The popover container that displays step content.
  *
- * Renders as a `<section>` by default, but can be customized via the `as` prop.
+ * Renders as a `<section>`.
  * Should contain GlowTourHeader, GlowTourContent, and GlowTourFooter components.
- * @param props HTML attributes and the `as` prop for customizing the container element.
+ * @param props HTML attributes and children.
  * @returns The popover container.
  */
-export function GlowTourPopover(props: PopoverProps): JSX.Element {
+export function GlowTourPopover(props: ElementProps): JSX.Element {
   const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   // Without a title, the content names the dialog instead of describing it.
@@ -209,7 +206,7 @@ export function GlowTourPopover(props: PopoverProps): JSX.Element {
     const step = currentStep(snapshot());
     return !step || step.title != null;
   };
-  const [local, other] = splitProps(props, ["as", "children"]);
+  const [local, other] = splitProps(props, ["children"]);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPopover(element));
 
   return createComponent(
@@ -226,9 +223,7 @@ export function GlowTourPopover(props: PopoverProps): JSX.Element {
       get class() {
         return stepClass(snapshot, "popover", other.class);
       },
-      get component() {
-        return local.as ?? "section";
-      },
+      component: "section",
       "data-glow-tour-popover": "",
       get id() {
         return context.binding()?.ids.popover;
@@ -313,7 +308,7 @@ export function GlowTourContent(props: ContentProps): JSX.Element {
  * @param props HTML attributes and children.
  * @returns The footer container.
  */
-export function GlowTourFooter(props: FooterProps): JSX.Element {
+export function GlowTourFooter(props: ElementProps): JSX.Element {
   const snapshot = useTourSnapshot(useTourScope().tour);
   return createComponent(
     Dynamic,
@@ -378,12 +373,12 @@ export function GlowTourOverlay(props: OverlayProps): JSX.Element {
 /**
  * A pointer/indicator that visually highlights the target element.
  * Displays directional content (emoji or custom content) based on pointer position.
- * Renders as a `<div>` by default, but can be customized via the `as` prop.
- * @param props HTML attributes, the `as` prop for customizing the container, and `directionContent`.
+ * Renders as a `<div>`.
+ * @param props HTML attributes and `directionContent`.
  * @returns The pointer indicator element.
  */
 export function GlowTourPointer(props: PointerProps): JSX.Element {
-  const [local, other] = splitProps(props, ["as", "directionContent"]);
+  const [local, other] = splitProps(props, ["directionContent"]);
   const snapshot = useTourSnapshot(useTourScope().tour);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const directions = (
@@ -405,9 +400,7 @@ export function GlowTourPointer(props: PointerProps): JSX.Element {
       get class() {
         return stepClass(snapshot, "pointer", other.class);
       },
-      get component() {
-        return local.as ?? "div";
-      },
+      component: "div",
       "data-glow-tour-pointer": "",
       ref,
       get style() {

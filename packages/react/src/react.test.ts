@@ -23,13 +23,20 @@ const glowTourOptions: GlowTourOptions = {
 };
 void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTourOptions];
 
-// The footer always renders a <footer>. Only the popover and the pointer take an `as` element.
+// Components render a fixed element that core binds to: none of them takes an `as` prop.
 type FooterProps = Parameters<typeof runtime.GlowTourFooter>[0];
+type PopoverProps = Parameters<typeof runtime.GlowTourPopover>[0];
+type PointerProps = Parameters<typeof runtime.GlowTourPointer>[0];
 const footerProps: FooterProps = { className: "tour-footer" };
+const popoverProps: PopoverProps = { className: "tour-popover" };
+const pointerProps: PointerProps = { className: "tour-pointer", directionContent: { top: "^" } };
 // @ts-expect-error GlowTourFooter has no `as` prop.
 const footerWithAs: FooterProps = { as: "div" };
-const popoverWithAs: Parameters<typeof runtime.GlowTourPopover>[0] = { as: "div" };
-void [footerProps, footerWithAs, popoverWithAs];
+// @ts-expect-error GlowTourPopover has no `as` prop.
+const popoverWithAs: PopoverProps = { as: "div" };
+// @ts-expect-error GlowTourPointer has no `as` prop.
+const pointerWithAs: PointerProps = { as: "span" };
+void [footerProps, popoverProps, pointerProps, footerWithAs, popoverWithAs, pointerWithAs];
 
 describe("react adapter contract", () => {
   test("exports an instance factory and component namespace without legacy runtime values", () => {

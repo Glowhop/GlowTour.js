@@ -155,8 +155,8 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 | --- | --- | --- |
 | `GlowTourRoot` | `<div>` | `tour: Tour` (required), `idPrefix?: string`, `children?: JSX.Element` |
 | `GlowTourOverlay` | `<svg>` | `children?: JSX.Element` (extra SVG content), SVG attributes |
-| `GlowTourPointer` | `<div>` | `as?: ValidComponent`, `directionContent?: PointerDirectionContent` |
-| `GlowTourPopover` | `<section>` | `as?: ValidComponent`, `children?: JSX.Element` |
+| `GlowTourPointer` | `<div>` | `directionContent?: PointerDirectionContent` |
+| `GlowTourPopover` | `<section>` | `children?: JSX.Element` |
 | `GlowTourHeader` | `<header>` | No children: renders the step `title`, and nothing when the step has no title |
 | `GlowTourContent` | `<div>` | No children: renders the step `content` in a polite live region |
 | `GlowTourFooter` | `<footer>` | `children?: JSX.Element` |

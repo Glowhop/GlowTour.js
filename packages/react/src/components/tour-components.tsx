@@ -24,10 +24,7 @@ type RootProps = Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "id" | 
   idPrefix?: string;
   tour: Tour;
 };
-type FooterProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref">;
-type PopoverProps = FooterProps & {
-  as?: React.ElementType;
-};
+type ElementProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref">;
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = Omit<React.SVGAttributes<SVGSVGElement>, "ref">;
 /** Content displayed in the pointer indicator for each direction. */
@@ -50,7 +47,6 @@ const POINTER_IDLE_STYLE_REACT = styleRecordToCamelCase(POINTER_IDLE_STYLE) as R
 const POPOVER_IDLE_STYLE_REACT = styleRecordToCamelCase(POPOVER_IDLE_STYLE) as React.CSSProperties;
 
 type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
-  as?: React.ElementType;
   directionContent?: PointerDirectionContent;
 };
 type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
@@ -182,17 +178,12 @@ export function GlowTourRoot({ children, idPrefix, tour, ...props }: RootProps) 
 /**
  * The popover container that displays step content.
  *
- * Renders as a `<section>` by default, but can be customized via the `as` prop.
+ * Renders as a `<section>`.
  * Should contain GlowTourHeader, GlowTourContent, and GlowTourFooter components.
- * @param props HTML attributes and the `as` prop for customizing the container element.
+ * @param props HTML attributes and children.
  * @returns The popover container.
  */
-export function GlowTourPopover({
-  as: Component = "section",
-  className,
-  style,
-  ...props
-}: PopoverProps) {
+export function GlowTourPopover({ className, style, ...props }: ElementProps) {
   const { binding, tour } = useTourScope();
   const step = useStep(useTourSnapshot(tour));
   // Without a title, the content names the dialog instead of describing it.
@@ -202,7 +193,7 @@ export function GlowTourPopover({
   );
 
   return (
-    <Component
+    <section
       {...props}
       aria-describedby={titled ? binding?.ids.description : undefined}
       aria-hidden={POPOVER_IDLE_ATTRIBUTES["aria-hidden"]}
@@ -268,7 +259,7 @@ export function GlowTourContent({ className, ...props }: ContentProps) {
  * @param props HTML attributes and children.
  * @returns The footer container.
  */
-export function GlowTourFooter({ children, className, ...props }: FooterProps) {
+export function GlowTourFooter({ children, className, ...props }: ElementProps) {
   return (
     <footer {...props} className={useStepClassName("footer", className)} data-glow-tour-footer>
       {children}
@@ -329,23 +320,17 @@ export function GlowTourOverlay({
 /**
  * A pointer/indicator that visually highlights the target element.
  * Displays directional content (emoji or custom content) based on pointer position.
- * Renders as a `<div>` by default, but can be customized via the `as` prop.
- * @param props HTML attributes, the `as` prop for customizing the container, and `directionContent`.
+ * Renders as a `<div>`.
+ * @param props HTML attributes and `directionContent`.
  * @returns The pointer indicator element.
  */
-export function GlowTourPointer({
-  as: Component = "div",
-  className,
-  directionContent,
-  style,
-  ...props
-}: PointerProps) {
+export function GlowTourPointer({ className, directionContent, style, ...props }: PointerProps) {
   const stepClassName = useStepClassName("pointer", className);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...directionContent };
 
   return (
-    <Component
+    <div
       {...props}
       aria-hidden="true"
       className={stepClassName}
@@ -360,7 +345,7 @@ export function GlowTourPointer({
           </div>
         ),
       )}
-    </Component>
+    </div>
   );
 }
 
