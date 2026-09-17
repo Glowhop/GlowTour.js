@@ -6,7 +6,7 @@ registerGlowTourElements();
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello world!" })
+  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello world!" })
   .build();
 
 // Create a container
@@ -25,7 +25,7 @@ button.type = "button";
 button.textContent = "Start tour";
 button.style.padding = "10px 20px";
 button.style.fontSize = "16px";
-button.addEventListener("click", () => void tour.run(workflow));
+button.addEventListener("click", () => void tour.start(workflow));
 container.append(button);
 
 document.body.append(container);

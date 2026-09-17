@@ -1,7 +1,12 @@
 import { expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { compareApiReports, generateApiReports, reportPath } from "./api-report";
+import {
+  compareApiReports,
+  findInvalidReportReferences,
+  generateApiReports,
+  reportPath,
+} from "./api-report";
 
 const root = process.cwd();
 let reports: Map<string, string> | undefined;
@@ -41,3 +46,7 @@ test("names report files after the package and its subpath", () => {
   expect(reportPath("@glowhop/vanilla-tour/auto")).toBe("api/vanilla-tour/auto.api.md");
   expect(() => reportPath("react")).toThrow("Unexpected package entry specifier");
 });
+
+test("names only types that each report imports, exports, or declares", () => {
+  expect(findInvalidReportReferences(root, currentReports())).toEqual([]);
+}, 60_000);

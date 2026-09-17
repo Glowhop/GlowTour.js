@@ -5,7 +5,7 @@ import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello world!" })
+  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello world!" })
   .build();
 
 const root = document.getElementById("root");
@@ -17,7 +17,7 @@ if (root) {
         <button
           id="welcome"
           type="button"
-          onClick={() => void tour.run(workflow)}
+          onClick={() => void tour.start(workflow)}
           style={{ padding: "10px 20px", fontSize: "16px" }}
         >
           Start tour

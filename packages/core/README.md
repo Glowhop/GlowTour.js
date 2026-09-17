@@ -11,7 +11,7 @@ import { createGlowTour } from "@glowhop/core-tour";
 const tour = createGlowTour();
 const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
 // Pass tour to a mounted adapter/default composition, then call:
-// await tour.run(workflow);
+// await tour.start(workflow);
 ```
 
 ## Builder and controller
@@ -27,7 +27,7 @@ const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", 
 | Actions | `.do(fn)`, `.wait(ms)`, `.waitUntil(fn)`, `.waitUntilElement(selector)` | `waitUntil` defaults to a 16 ms interval and 3000 ms timeout. |
 | Target events | `.onTargetEvent("click", fn)` | Handlers receive the event and step context. |
 
-`tour.state.get()` returns status, current step, navigation capabilities, and errors; `tour.state.subscribe(listener)` observes changes. The controller exposes `run`, `advance`, `previous`, `goTo`, and `cancel`. A new run or navigation cancels the previous operation; `dispose()` cancels pending work, releases the root, and makes the controller unusable.
+`tour.state.get()` returns status, current step, navigation capabilities, and errors; `tour.state.subscribe(listener)` observes changes. The controller exposes `start`, `advance`, `previous`, `goTo`, and `cancel`. A new run or navigation cancels the previous operation; `dispose()` cancels pending work, releases the root, and makes the controller unusable.
 
 ## Errors and rendering fallbacks
 

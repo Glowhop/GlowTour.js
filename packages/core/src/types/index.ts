@@ -225,7 +225,7 @@ export interface AnimationOptions {
 export interface LifecycleHookContext<T> {
   /**
    * The step associated with this lifecycle transition:
-   * - `onStart`: the step `run()` starts on (the `startAt` step, or the first
+   * - `onStart`: the step `start()` starts on (the `startAt` step, or the first
    *   step), or `null` if the workflow has no steps.
    * - `onCancel`: the step the tour is currently on when cancellation is
    *   requested. Always non-null in practice, since a step is always active
@@ -351,7 +351,7 @@ export interface StepHookContext<T>
   /**
    * Call it synchronously, or before the hook's returned promise resolves, to stop the navigation.
    * The tour stays on the step it was on and emits nothing: `beforeLeave` keeps the step, and
-   * `beforeEnter` does not show the next one. When `beforeEnter` aborts the first step of `run()`,
+   * `beforeEnter` does not show the next one. When `beforeEnter` aborts the first step of `start()`,
    * the tour goes back to `idle`, like an `onStart` abort.
    */
   abort(): void;
@@ -458,7 +458,7 @@ export interface GlowTour<T> {
   /** Create a new workflow builder with the given name. */
   create(name: string, options?: StartOptions<T>): WorkflowBuilder<T>;
   /** Run a workflow, optionally starting at a specific step. */
-  run(workflow: WorkflowDefinition<T>, options?: RunOptions): Promise<void>;
+  start(workflow: WorkflowDefinition<T>, options?: RunOptions): Promise<void>;
   /** Advance to the next step. */
   advance(): Promise<void>;
   /** Go to the previous step. */
@@ -477,7 +477,7 @@ export interface GlowTour<T> {
 }
 
 /**
- * Per-run options. Unlike `StartOptions`, these belong to one `run()` call and
+ * Per-run options. Unlike `StartOptions`, these belong to one `start()` call and
  * are never baked into the reusable workflow definition.
  */
 export interface RunOptions {
@@ -545,7 +545,7 @@ export interface TourEvent {
    * How long the thing this event names had been running, in milliseconds.
    *
    * For `step:leave`, the time spent on that step. For `tour:complete`,
-   * `tour:cancel` and `tour:error`, the time since `run()` was called. For
+   * `tour:cancel` and `tour:error`, the time since `start()` was called. For
    * `tour:start` and `step:enter` — the beginnings — always `0`.
    */
   readonly durationMs: number;

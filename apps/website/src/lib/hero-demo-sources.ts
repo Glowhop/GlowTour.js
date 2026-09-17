@@ -26,7 +26,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const advanceOnClickSource = `const tour = createGlowTour();
 
@@ -55,7 +55,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const placementOrderSource = `const tour = createGlowTour();
 
@@ -91,7 +91,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const waitForAsyncSource = `const tour = createGlowTour();
 
@@ -129,7 +129,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const cancellableSource = `const tour = createGlowTour();
 
@@ -151,7 +151,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const confirmCancelSource = `const tour = createGlowTour();
 
@@ -179,7 +179,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const overlayClickSource = `const tour = createGlowTour();
 
@@ -201,7 +201,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const customStyledIndicatorSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger } from "@glowhop/react-tour";
 
@@ -254,9 +254,9 @@ const workflow = tour
   </GlowTourPopover>
 </GlowTourRoot>;
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
-export const liveProgressSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger, createGlowTour, useTour } from "@glowhop/react-tour";
+export const liveProgressSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger, createGlowTour, useTourContext } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
@@ -270,7 +270,7 @@ const workflow = tour
 
 // A custom popover subcomponent, wired to real tour state:
 function StepCounter() {
-  const state = useTour();
+  const state = useTourContext();
 
   if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
 
@@ -296,7 +296,7 @@ function StepCounter() {
   </GlowTourPopover>
 </GlowTourRoot>;
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const themeSource = `const tour = createGlowTour();
 
@@ -322,7 +322,7 @@ const workflow = tour
   <GlowTourDefault tour={tour} />
 </div>;
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const longContentSource = `const tour = createGlowTour();
 
@@ -345,7 +345,7 @@ const workflow = tour
   <GlowTourDefault tour={tour} />
 </div>;
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const customThemeSource = `const tour = createGlowTour();
 
@@ -398,7 +398,7 @@ const workflow = tour
   margin-inline-end: 0;
 }
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const relocateTargetSource = `const tour = createGlowTour();
 
@@ -443,4 +443,4 @@ function Board() {
   ));
 }
 
-tour.run(workflow);`;
+tour.start(workflow);`;

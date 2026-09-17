@@ -7,86 +7,145 @@ The GlowTour.js Vue adapter provides components and a provide/inject instance sc
 
 ## Setup
 
-Install the package and import the default theme:
+Install the adapter and the default theme. The theme is imported once, as shown in the example below.
 
 ```bash
 npm i @glowhop/vue-tour @glowhop/styles-tour
 ```
 
-```vue
-<script setup>
-import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
-</script>
-```
+## Run a tour from a component
 
-## Instance scoping
-
-Create the tour instance and inject it into the component tree using Vue's provide/inject:
-
-```vue
-<script setup>
-import { createGlowTour } from "@glowhop/vue-tour";
-
-const tour = createGlowTour();
-</script>
-
-<template>
-  <div>
-    <!-- Your app content -->
-    <GlowTourDefault :tour="tour" />
-  </div>
-</template>
-```
-
-## Complete example
+`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `start`, `advance`, `previous`, `goTo`, `cancel`), and one readonly ref per state field.
 
 ```vue
 <script setup lang="ts">
 import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
 
-const tour = createGlowTour();
+const { tour, create, start, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
 
-const workflow = tour
-  .create("product-tour")
+const workflow = create("product-tour")
   .step({
     id: "features",
-    target: "#features",
+    target: '[data-tour="features"]',
     title: "Explore features",
     content: "Learn about all the capabilities.",
   })
   .step({
     id: "pricing",
-    target: "#pricing",
+    target: '[data-tour="pricing"]',
     title: "Check pricing",
     content: "See plans that fit your needs.",
   })
   .build();
-
-function startTour() {
-  void tour.run(workflow);
-}
 </script>
 
 <template>
-  <header>
-    <h1>Welcome</h1>
-  </header>
   <main>
-    <section id="features">
+    <section data-tour="features">
       <h2>Features</h2>
       <p>We offer guided tours, SSR support, and full keyboard navigation.</p>
     </section>
-    <section id="pricing">
+    <section data-tour="pricing">
       <h2>Pricing</h2>
       <p>Open source and free.</p>
     </section>
-    <button @click="startTour">Start tour</button>
+    <p v-if="status === 'active'">
+      Step {{ currentStepIndex + 1 }} of {{ totalSteps }}
+      <button @click="cancel()">Stop</button>
+    </p>
+    <button v-else @click="start(workflow)">Start tour</button>
   </main>
   <GlowTourDefault :tour="tour" />
 </template>
 ```
+
+The tour is disposed when the component's effect scope is disposed. Destructured refs stay reactive, so templates read `status` directly and scripts read `status.value`.
+
+To drive the same tour from several components, see [Share one tour between components](#share-one-tour-between-components).
+
+## Step targets
+
+A step's `target` is the element the tour highlights. It accepts three forms:
+
+| Form | Example | Use it for |
+|---|---|---|
+| CSS selector | `'[data-tour="pricing"]'`, `"#pricing"` | Markup you render yourself |
+| Function | `() => element` | A template ref, or an element that appears later |
+| `HTMLElement` | `document.body` | An element that already exists when the workflow is built |
+
+Selectors and functions are resolved each time the step is entered, not when the workflow is built.
+
+### Mark elements with `data-tour`
+
+Ids break as soon as a component renders twice, and classes change with styling. A dedicated attribute states the intent and survives both:
+
+```html
+<section data-tour="pricing">
+  <h2>Pricing</h2>
+</section>
+```
+
+```ts
+.step({ id: "pricing", target: '[data-tour="pricing"]', title: "Pricing", content: "Pick a plan." })
+```
+
+A selector matches the first element in the document, wherever it is rendered, so it keeps working with `Teleport`. When a component renders several times, target the one you mean through a ref.
+
+### Target a template ref through a function
+
+Wrap the ref in a function. The function runs when the step is entered, after the component has mounted, so it reads the rendered element:
+
+```vue
+<script setup lang="ts">
+import { useTemplateRef } from "vue";
+import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
+
+const payButton = useTemplateRef<HTMLButtonElement>("payButton");
+const { tour, create, start } = useGlowTour();
+
+const workflow = create("checkout")
+  .step({
+    id: "pay",
+    target: () => payButton.value,
+    title: "Pay",
+    content: "Confirm your order here.",
+  })
+  .build();
+</script>
+
+<template>
+  <button ref="payButton">Pay</button>
+  <button @click="start(workflow)">Show me</button>
+  <GlowTourDefault :tour="tour" />
+</template>
+```
+
+`useTemplateRef` needs Vue 3.5. On Vue 3.3 and 3.4, declare `const payButton = ref<HTMLButtonElement | null>(null)` instead. For a child component, target its root element with `() => child.value?.$el`.
+
+Do not read the ref while building the workflow (`target: payButton.value`): the element is not rendered yet, so the step would get nothing.
+
+### Wait for an element that appears later
+
+The function can return a promise, for content that loads or opens after the tour has started. It receives a `signal` that aborts when the tour is cancelled or disposed, so a pending wait can stop:
+
+```ts
+.step({
+  id: "results",
+  target: async ({ signal }) => {
+    await loadResults({ signal }); // your own async work
+    return document.querySelector<HTMLElement>('[data-tour="results"]');
+  },
+  title: "Results",
+  content: "Your matches appear here.",
+})
+```
+
+### When no element is found
+
+A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors#missing-target-strategies).
+
+The target must be an HTML element of the page: an SVG element makes the tour fail with a `TypeError`. To highlight an SVG graphic, target its HTML container.
 
 ## Customize progressively
 
@@ -171,14 +230,14 @@ The object brings every composition component into your bundle. Import component
 
 ### Add a custom step counter
 
-Components rendered inside `GlowTourRoot` can read its reactive state with `useTour()`. Create the counter as a child component so the root context is available:
+`useGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `useTourContext()`, without receiving the tour. Create the counter as a child component so the root context is available:
 
 ```vue
 <!-- StepCounter.vue -->
 <script setup lang="ts">
-import { useTour } from "@glowhop/vue-tour";
+import { useTourContext } from "@glowhop/vue-tour";
 
-const state = useTour();
+const state = useTourContext();
 </script>
 
 <template>
@@ -203,27 +262,46 @@ To have assistive technologies announce the complete counter when it changes, yo
 
 See the runnable [Live step counter example](/examples).
 
-### Subscribe outside the composition
+## Share one tour between components
 
-`useTour()` is intended for descendants of `GlowTourRoot`. Elsewhere in a Vue application, adapt the store to a ref and dispose the listener with the current effect scope:
+When several components drive the same tour, for example a layout that renders it and pages that start it, create the tour once with `createGlowTour()` and pass it to `useGlowTour`:
+
+```ts
+// tour.ts
+import { createGlowTour } from "@glowhop/vue-tour";
+
+export const tour = createGlowTour();
+```
 
 ```vue
+<!-- App.vue -->
 <script setup lang="ts">
-import { onScopeDispose, shallowRef } from "vue";
-
-const state = shallowRef(tour.state.get());
-const unsubscribe = tour.state.subscribe((nextState) => {
-  state.value = nextState;
-});
-onScopeDispose(unsubscribe);
+import { GlowTourDefault } from "@glowhop/vue-tour";
+import HelpButton from "./HelpButton.vue";
+import { tour } from "./tour";
 </script>
 
 <template>
-  <p>Tour status: {{ state.status }}</p>
+  <HelpButton />
+  <GlowTourDefault :tour="tour" />
 </template>
 ```
 
-`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the cleanup function passed to `onScopeDispose`. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
+```vue
+<!-- HelpButton.vue -->
+<script setup lang="ts">
+import { useGlowTour } from "@glowhop/vue-tour";
+import { tour } from "./tour";
+
+const { status } = useGlowTour(tour);
+</script>
+
+<template>
+  <button :disabled="status === 'active'">Help</button>
+</template>
+```
+
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.start(workflow)`, `tour.cancel()`, and `tour.state`. In Nuxt, a plugin can provide the shared tour: see [With Nuxt](/docs/guides/ssr#with-nuxt).
 
 ## Vue 3.3+
 
@@ -231,4 +309,4 @@ GlowTour.js requires Vue 3.3 or later. The adapter uses provide/inject and refs 
 
 ## SSR
 
-`GlowTourDefault` supports server-side rendering in SSR mode. The component renders as an inert container on the server and hydrates without warnings on the client. See the SSR guide for details.
+`GlowTourDefault` supports server-side rendering in SSR mode. The component renders as an inert container on the server and hydrates without warnings on the client. With Nuxt, see [With Nuxt](/docs/guides/ssr#with-nuxt) in the SSR guide.

@@ -23,13 +23,16 @@ Every step can declare how to handle a missing target:
 | --- | --- | --- |
 | `"error"` | No | Throw immediately, halting the tour. The error is reported on all three channels. |
 | `"wait"` | Yes, default 3000ms | Poll for the target, waiting up to `missingTarget.timeout` before falling back to `"error"` |
-| `"skip"` | No | Resolve to `null` and advance past the step without showing it. No error is thrown. |
+| `"skip"` | No | Pass over the step without showing it, in the direction of the navigation. No error is thrown. |
+| `"detached"` | No | Show the step anyway, with the popover centered in the viewport. No error is thrown. |
 
 The default is `"error"` because missing targets are usually bugs: the app changed, the selector is stale, or a dynamic element never rendered. Catching them loudly keeps tours working.
 
 `"wait"` suits async scenarios where a target might appear after navigation or a fetch. Set `missingTarget.timeout` to match your app's worst case, or leave it at 3000ms and override per step if needed.
 
-`"skip"` is for optional steps that some users may never see. If skipped forward past the last step, the tour finishes. If skipped backward past the first, the tour cancels (unless it is not cancellable, then it stays on the first step).
+`"skip"` is for optional steps that some users may never see. A skipped step is passed over in the direction of the navigation, and a `step:skip` event is emitted for it. If skipping forward goes past the last step, the tour finishes. If `previous()` or `goTo()` skips backward past the first step, the tour stays on the current step.
+
+When the target of the step on screen disappears and does not come back, the tour moves on from that `"skip"` step in the direction of the last navigation. If that goes backward past the first step, there is no step left to show: the tour is cancelled, or fails with a missing-target error when it is not cancellable.
 
 ## Three channels
 
@@ -87,7 +90,7 @@ if (state.status === "error") {
 }
 ```
 
-In React, use the `useTour` hook, which exposes the same state; every adapter follows the same pattern.
+In a component, `useGlowTour()` (Angular: `injectGlowTour()`) exposes the same fields as reactive state, including `status` and `error`.
 
 ### 3. Rejected promise
 
@@ -95,7 +98,7 @@ The promise from the method that triggered the failure is rejected:
 
 ```typescript
 try {
-  await tour.run(workflow);
+  await tour.start(workflow);
 } catch (error) {
   console.error("Tour failed on first step:", error);
 }
@@ -105,14 +108,14 @@ This is a local convenience for simple patterns, but it has a hard limit.
 
 ## The promise trap
 
-`run()` resolves once the **first step is on screen**, not after the whole tour:
+`start()` resolves once the **first step is on screen**, not after the whole tour:
 
 ```typescript
-await tour.run(workflow);
+await tour.start(workflow);
 // ← The first step is now visible. Any other step may still fail later.
 ```
 
-So a `try/catch` around `run()` only catches failures on that first step. A target missing on step 2, 3, or later is not caught there - it rejects the `advance()`, `previous()`, or `goTo()` call that caused it:
+So a `try/catch` around `start()` only catches failures on that first step. A target missing on step 2, 3, or later is not caught there - it rejects the `advance()`, `previous()`, or `goTo()` call that caused it:
 
 ```typescript
 try {
@@ -188,7 +191,7 @@ tour.state.subscribe((state) => {
   }
 });
 
-await tour.run(workflow);
+await tour.start(workflow);
 ```
 
 Here, the cart step waits up to 5 seconds for its element - useful if you navigate to it from another page. The checkout step is marked `skip`, so even if the element is gone when we reach it, the tour continues or finishes gracefully without noise.

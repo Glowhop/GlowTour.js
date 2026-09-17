@@ -7,107 +7,166 @@ The GlowTour.js Angular adapter provides components and a DI-scoped tour instanc
 
 ## Setup
 
-Install the package and import the default theme:
+Install the adapter and the default theme. The theme is imported once, as shown in the example below.
 
 ```bash
 npm i @glowhop/angular-tour @glowhop/styles-tour
 ```
 
-```typescript
-import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/angular-tour";
-```
+## Run a tour from a component
 
-## Instance scoping
-
-Create the tour instance in a component or service, then inject it into other components via Angular's Dependency Injection:
-
-```typescript
-import { Injectable } from "@angular/core";
-import { createGlowTour } from "@glowhop/angular-tour";
-
-@Injectable({ providedIn: "root" })
-export class TourService {
-  readonly tour = createGlowTour();
-}
-```
-
-Then inject it into your components:
+`injectGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `start`, `advance`, `previous`, `goTo`, `cancel`), and one signal per state field. Call it in an injection context, such as a field initializer.
 
 ```typescript
 import { Component } from "@angular/core";
-import { GlowTourDefault } from "@glowhop/angular-tour";
-import { TourService } from "./tour.service";
+import "@glowhop/styles-tour/default.css";
+import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
 
 @Component({
   standalone: true,
   imports: [GlowTourDefault],
   template: `
-    <div>
-      <!-- Your app content -->
-      <glow-tour-default [tour]="tour" />
-    </div>
-  `,
-})
-export class AppComponent {
-  tour = this.tourService.tour;
-
-  constructor(private tourService: TourService) {}
-}
-```
-
-## Complete example
-
-```typescript
-import { Component } from "@angular/core";
-import "@glowhop/styles-tour/default.css";
-import { createGlowTour, GlowTourDefault } from "@glowhop/angular-tour";
-
-@Component({
-  standalone: true,
-  imports: [GlowTourDefault],
-  template: `
-    <header>
-      <h1>Welcome</h1>
-    </header>
     <main>
-      <section id="features">
+      <section data-tour="features">
         <h2>Features</h2>
         <p>We offer guided tours, SSR support, and full keyboard navigation.</p>
       </section>
-      <section id="pricing">
+      <section data-tour="pricing">
         <h2>Pricing</h2>
         <p>Open source and free.</p>
       </section>
-      <button (click)="startTour()">Start tour</button>
+      @if (glow.status() === "active") {
+        <p>
+          Step {{ glow.currentStepIndex() + 1 }} of {{ glow.totalSteps() }}
+          <button (click)="glow.cancel()">Stop</button>
+        </p>
+      } @else {
+        <button (click)="startTour()">Start tour</button>
+      }
     </main>
-    <glow-tour-default [tour]="tour" />
+    <glow-tour-default [tour]="glow.tour" />
   `,
 })
 export class TourComponent {
-  readonly tour = createGlowTour();
+  readonly glow = injectGlowTour();
 
-  readonly workflow = this.tour
+  private readonly workflow = this.glow
     .create("product-tour")
     .step({
       id: "features",
-      target: "#features",
+      target: '[data-tour="features"]',
       title: "Explore features",
       content: "Learn about all the capabilities.",
     })
     .step({
       id: "pricing",
-      target: "#pricing",
+      target: '[data-tour="pricing"]',
       title: "Check pricing",
       content: "See plans that fit your needs.",
     })
     .build();
 
   startTour() {
-    void this.tour.run(this.workflow);
+    void this.glow.start(this.workflow);
   }
 }
 ```
+
+The tour is disposed when the component's injector is destroyed.
+
+To drive the same tour from several components, see [Share one tour between components](#share-one-tour-between-components).
+
+## Step targets
+
+A step's `target` is the element the tour highlights. It accepts three forms:
+
+| Form | Example | Use it for |
+|---|---|---|
+| CSS selector | `'[data-tour="pricing"]'`, `"#pricing"` | Markup you render yourself |
+| Function | `() => element` | A `viewChild` query, or an element that appears later |
+| `HTMLElement` | `document.body` | An element that already exists when the workflow is built |
+
+Selectors and functions are resolved each time the step is entered, not when the workflow is built.
+
+### Mark elements with `data-tour`
+
+Ids break as soon as a component renders twice, and classes change with styling. A dedicated attribute states the intent and survives both:
+
+```html
+<section data-tour="pricing">
+  <h2>Pricing</h2>
+</section>
+```
+
+```ts
+.step({ id: "pricing", target: '[data-tour="pricing"]', title: "Pricing", content: "Pick a plan." })
+```
+
+A selector matches the first element in the document, wherever it is rendered, so it keeps working with CDK overlays. When a component renders several times, target the one you mean through a ref.
+
+### Target a `viewChild` query through a function
+
+Wrap the ref in a function. The function runs when the step is entered, after the component has mounted, so it reads the rendered element:
+
+```typescript
+import { Component, type ElementRef, viewChild } from "@angular/core";
+import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
+
+@Component({
+  selector: "app-checkout",
+  standalone: true,
+  imports: [GlowTourDefault],
+  template: `
+    <button #payButton>Pay</button>
+    <button (click)="startTour()">Show me</button>
+    <glow-tour-default [tour]="glow.tour" />
+  `,
+})
+export class Checkout {
+  readonly glow = injectGlowTour();
+  private readonly payButton = viewChild<ElementRef<HTMLButtonElement>>("payButton");
+
+  private readonly workflow = this.glow
+    .create("checkout")
+    .step({
+      id: "pay",
+      target: () => this.payButton()?.nativeElement ?? null,
+      title: "Pay",
+      content: "Confirm your order here.",
+    })
+    .build();
+
+  startTour() {
+    void this.glow.start(this.workflow);
+  }
+}
+```
+
+With a decorator query, `@ViewChild("payButton") payButton?: ElementRef<HTMLButtonElement>`, the target is `() => this.payButton?.nativeElement ?? null`.
+
+Do not read the ref while building the workflow (`target: this.payButton()?.nativeElement`): the element is not rendered yet, so the step would get nothing.
+
+### Wait for an element that appears later
+
+The function can return a promise, for content that loads or opens after the tour has started. It receives a `signal` that aborts when the tour is cancelled or disposed, so a pending wait can stop:
+
+```ts
+.step({
+  id: "results",
+  target: async ({ signal }) => {
+    await loadResults({ signal }); // your own async work
+    return document.querySelector<HTMLElement>('[data-tour="results"]');
+  },
+  title: "Results",
+  content: "Your matches appear here.",
+})
+```
+
+### When no element is found
+
+A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors#missing-target-strategies).
+
+The target must be an HTML element of the page: an SVG element makes the tour fail with a `TypeError`. To highlight an SVG graphic, target its HTML container.
 
 ## Customize progressively
 
@@ -184,11 +243,11 @@ export class CustomTour {
 
 ### Add a custom step counter
 
-Components rendered inside `GlowTourRoot` can read its reactive state with `injectGlowTour()`. Create the counter as a child component so the root's injector is available:
+`injectGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `injectTourContext()`, without receiving the tour. Create the counter as a child component so the root's injector is available:
 
 ```typescript
 import { Component } from "@angular/core";
-import { injectGlowTour } from "@glowhop/angular-tour";
+import { injectTourContext } from "@glowhop/angular-tour";
 
 @Component({
   selector: "app-step-counter",
@@ -202,7 +261,7 @@ import { injectGlowTour } from "@glowhop/angular-tour";
   `,
 })
 export class StepCounter {
-  protected readonly state = injectGlowTour();
+  protected readonly state = injectTourContext();
 }
 ```
 
@@ -221,34 +280,36 @@ To have assistive technologies announce the complete counter when it changes, yo
 
 See the runnable [Live step counter example](/examples).
 
-### Subscribe outside the composition
+## Share one tour between components
 
-`injectGlowTour()` is intended for descendants of `GlowTourRoot`. Elsewhere in an Angular application, adapt the store to a signal and unsubscribe when the component is destroyed:
+When several components drive the same tour, for example a layout that renders it and pages that start it, create the tour once in a service with `createGlowTour()` and pass it to `injectGlowTour`:
 
 ```typescript
-import { Component, DestroyRef, inject, signal } from "@angular/core";
-import { TourService } from "./tour.service";
+import { Injectable } from "@angular/core";
+import { createGlowTour } from "@glowhop/angular-tour";
 
-@Component({
-  selector: "app-tour-status",
-  standalone: true,
-  template: `<p>Tour status: {{ state().status }}</p>`,
-})
-export class TourStatus {
-  private readonly tourService = inject(TourService);
-  private readonly destroyRef = inject(DestroyRef);
-  protected readonly state = signal(this.tourService.tour.state.get());
-
-  constructor() {
-    const unsubscribe = this.tourService.tour.state.subscribe((nextState) => {
-      this.state.set(nextState);
-    });
-    this.destroyRef.onDestroy(unsubscribe);
-  }
+@Injectable({ providedIn: "root" })
+export class TourService {
+  readonly tour = createGlowTour();
 }
 ```
 
-`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the cleanup function registered with `DestroyRef`. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
+```typescript
+import { Component, inject } from "@angular/core";
+import { injectGlowTour } from "@glowhop/angular-tour";
+import { TourService } from "./tour.service";
+
+@Component({
+  selector: "app-help-button",
+  standalone: true,
+  template: `<button [disabled]="glow.status() === 'active'">Help</button>`,
+})
+export class HelpButton {
+  readonly glow = injectGlowTour(inject(TourService).tour);
+}
+```
+
+Render `<glow-tour-default [tour]="tour" />` once, with the service's tour. `injectGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.start(workflow)`, `tour.cancel()`, and `tour.state`.
 
 ## Angular 18+
 
@@ -256,4 +317,4 @@ GlowTour.js requires Angular 18 or later. The adapter uses Angular's new control
 
 ## SSR
 
-The adapter packages are DOM-free for import. Server-side rendering is not actively verified. See the compatibility table for details.
+`GlowTourDefault` supports server-side rendering with `@angular/ssr`. The component renders as an inert container on the server and hydrates without errors on the client. See [Angular SSR](/docs/guides/ssr#angular-ssr) in the SSR guide for the setup.

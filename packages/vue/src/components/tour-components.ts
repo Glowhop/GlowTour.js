@@ -23,6 +23,8 @@ import {
   type Ref,
   type ShallowRef,
   shallowRef,
+  toValue,
+  type WatchSource,
   watch,
 } from "vue";
 import type { VueTourContent } from "../glow-tour.js";
@@ -55,7 +57,7 @@ function componentName(name: string) {
   return `GlowTour${name}`;
 }
 
-function useTourContext() {
+function useTourScope() {
   const context = inject(TOUR_CONTEXT);
   if (!context) {
     throw new Error("GlowTour components must be rendered inside <GlowTourRoot tour={...}>.");
@@ -63,8 +65,9 @@ function useTourContext() {
   return context;
 }
 
-function useTourSnapshot(tour: Ref<Tour>) {
-  const snapshot = shallowRef<TourState<VueTourContent>>(tour.value.state.get());
+/** @internal Reactive snapshot of a tour's state, shared with `useGlowTour`. */
+export function useTourSnapshot(tour: WatchSource<Tour>) {
+  const snapshot = shallowRef<TourState<VueTourContent>>(toValue(tour).state.get());
   watch(
     tour,
     (activeTour, _previousTour, onCleanup) => {
@@ -77,17 +80,17 @@ function useTourSnapshot(tour: Ref<Tour>) {
 }
 
 /**
- * Retrieves the current tour state snapshot.
- * Must be called within a GlowTourRoot component context.
+ * Reads the state of the tour rendered by the enclosing `GlowTourRoot`.
+ * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns A reactive shallow ref containing the current tour state.
  */
-export function useTour(): ShallowRef<TourState<VueTourContent>> {
-  const { tour } = useTourContext();
+export function useTourContext(): ShallowRef<TourState<VueTourContent>> {
+  const { tour } = useTourScope();
   return useTourSnapshot(tour);
 }
 
 function useStep() {
-  const context = useTourContext();
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   return () => snapshot.value.currentStep?.currentProps ?? null;
 }
@@ -95,7 +98,7 @@ function useStep() {
 function useBoundElement<T extends Element>(
   bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
-  const context = useTourContext();
+  const context = useTourScope();
   const element = shallowRef<T | null>(null);
   watch(
     [context.binding, element],
@@ -177,7 +180,7 @@ export const GlowTourHeader = /* @__PURE__ */ defineComponent({
   name: componentName("Header"),
   inheritAttrs: false,
   setup(_props, { attrs }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const step = useStep();
     return () => {
       const current = step();
@@ -201,7 +204,7 @@ export const GlowTourContent = /* @__PURE__ */ defineComponent({
   inheritAttrs: false,
   props: { ariaLive: { default: "polite", type: String } },
   setup(props, { attrs }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const step = useStep();
     return () =>
       h(
@@ -238,7 +241,7 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
   inheritAttrs: false,
   props: { role: { default: "dialog", type: String } },
   setup(props, { attrs, slots }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPopover(activeElement),
     );
@@ -352,7 +355,7 @@ function trigger(
   attrs: Record<string, unknown>,
   slots: { default?: (props: Record<string, unknown>) => VNodeChild[] },
 ) {
-  const context = useTourContext();
+  const context = useTourScope();
   const step = useStep();
   return () => {
     const consumerDisabled = isConsumerDisabled(attrs);
@@ -379,7 +382,7 @@ export const GlowTourPreviousTrigger = /* @__PURE__ */ defineComponent({
   inheritAttrs: false,
   props: { ariaLabel: { type: String }, previousLabel: { type: String } },
   setup(props, { attrs, slots }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const snapshot = useTourSnapshot(context.tour);
     const step = useStep();
     const renderTrigger = trigger(
@@ -406,7 +409,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
     advanceLabel: { type: String },
   },
   setup(props, { attrs, slots }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const snapshot = useTourSnapshot(context.tour);
     const step = useStep();
     const renderTrigger = trigger(
@@ -433,7 +436,7 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
   inheritAttrs: false,
   props: { ariaLabel: { type: String } },
   setup(props, { attrs, slots }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const snapshot = useTourSnapshot(context.tour);
     const step = useStep();
     const renderTrigger = trigger(

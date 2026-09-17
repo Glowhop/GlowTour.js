@@ -24,9 +24,7 @@ type RootProps = Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "id" | 
   idPrefix?: string;
   tour: Tour;
 };
-type ElementProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref"> & {
-  as?: React.ElementType;
-};
+type ElementProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref">;
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = Omit<React.SVGAttributes<SVGSVGElement>, "ref">;
 /** Content displayed in the pointer indicator for each direction. */
@@ -49,7 +47,6 @@ const POINTER_IDLE_STYLE_REACT = styleRecordToCamelCase(POINTER_IDLE_STYLE) as R
 const POPOVER_IDLE_STYLE_REACT = styleRecordToCamelCase(POPOVER_IDLE_STYLE) as React.CSSProperties;
 
 type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
-  as?: React.ElementType;
   directionContent?: PointerDirectionContent;
 };
 type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
@@ -68,7 +65,7 @@ interface TourContextValue {
 
 const TourContext = React.createContext<TourContextValue | null>(null);
 
-function useTourContext() {
+function useTourScope() {
   const context = React.useContext(TourContext);
   if (!context) {
     throw new Error("GlowTour components must be rendered inside <GlowTourRoot tour={...}>.");
@@ -76,7 +73,8 @@ function useTourContext() {
   return context;
 }
 
-function useTourSnapshot(tour: Tour): TourState<ReactTourContent> {
+/** @internal Subscribes to a tour's state, shared with `useGlowTour`. */
+export function useTourSnapshot(tour: Tour): TourState<ReactTourContent> {
   return React.useSyncExternalStore(tour.state.subscribe, tour.state.get, tour.state.get);
 }
 
@@ -103,7 +101,7 @@ function useEffectEvent<T extends (...args: never[]) => unknown>(fn: T): T {
 function useBoundElement<T extends Element>(
   bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
-  const { binding } = useTourContext();
+  const { binding } = useTourScope();
   const [element, setElement] = React.useState<T | null>(null);
 
   const binder = useEffectEvent(bind);
@@ -127,7 +125,7 @@ function joinClassNames(...values: (ClassValue | undefined)[]) {
 
 /** The component's `className` followed by the current step's `classNames[slot]`. */
 function useStepClassName(slot: keyof TourClassNames, className: string | undefined) {
-  const { tour } = useTourContext();
+  const { tour } = useTourScope();
   return joinClassNames(className, useStep(useTourSnapshot(tour))?.classNames?.[slot]);
 }
 
@@ -180,18 +178,13 @@ export function GlowTourRoot({ children, idPrefix, tour, ...props }: RootProps) 
 /**
  * The popover container that displays step content.
  *
- * Renders as a `<section>` by default, but can be customized via the `as` prop.
+ * Renders as a `<section>`.
  * Should contain GlowTourHeader, GlowTourContent, and GlowTourFooter components.
- * @param props HTML attributes and the `as` prop for customizing the container element.
+ * @param props HTML attributes and children.
  * @returns The popover container.
  */
-export function GlowTourPopover({
-  as: Component = "section",
-  className,
-  style,
-  ...props
-}: ElementProps) {
-  const { binding, tour } = useTourContext();
+export function GlowTourPopover({ className, style, ...props }: ElementProps) {
+  const { binding, tour } = useTourScope();
   const step = useStep(useTourSnapshot(tour));
   // Without a title, the content names the dialog instead of describing it.
   const titled = !step || step.title != null;
@@ -200,7 +193,7 @@ export function GlowTourPopover({
   );
 
   return (
-    <Component
+    <section
       {...props}
       aria-describedby={titled ? binding?.ids.description : undefined}
       aria-hidden={POPOVER_IDLE_ATTRIBUTES["aria-hidden"]}
@@ -223,7 +216,7 @@ export function GlowTourPopover({
  * @returns The step title header.
  */
 export function GlowTourHeader({ className, ...props }: ContentProps) {
-  const { binding, tour } = useTourContext();
+  const { binding, tour } = useTourScope();
   const step = useStep(useTourSnapshot(tour));
   if (step && step.title == null) return null;
 
@@ -245,7 +238,7 @@ export function GlowTourHeader({ className, ...props }: ContentProps) {
  * @returns The step content area.
  */
 export function GlowTourContent({ className, ...props }: ContentProps) {
-  const { binding, tour } = useTourContext();
+  const { binding, tour } = useTourScope();
   const step = useStep(useTourSnapshot(tour));
 
   return (
@@ -327,23 +320,17 @@ export function GlowTourOverlay({
 /**
  * A pointer/indicator that visually highlights the target element.
  * Displays directional content (emoji or custom content) based on pointer position.
- * Renders as a `<div>` by default, but can be customized via the `as` prop.
- * @param props HTML attributes, the `as` prop for customizing the container, and `directionContent`.
+ * Renders as a `<div>`.
+ * @param props HTML attributes and `directionContent`.
  * @returns The pointer indicator element.
  */
-export function GlowTourPointer({
-  as: Component = "div",
-  className,
-  directionContent,
-  style,
-  ...props
-}: PointerProps) {
+export function GlowTourPointer({ className, directionContent, style, ...props }: PointerProps) {
   const stepClassName = useStepClassName("pointer", className);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...directionContent };
 
   return (
-    <Component
+    <div
       {...props}
       aria-hidden="true"
       className={stepClassName}
@@ -358,7 +345,7 @@ export function GlowTourPointer({
           </div>
         ),
       )}
-    </Component>
+    </div>
   );
 }
 
@@ -376,7 +363,7 @@ function Trigger({
   label: string;
   marker: "cancel" | "advance" | "previous";
 }) {
-  const { binding } = useTourContext();
+  const { binding } = useTourScope();
   const child = typeof children === "function" ? null : children;
   const childProps: React.ButtonHTMLAttributes<HTMLButtonElement> = child?.props ?? {};
   const stepClassName = useStepClassName(marker, className ?? childProps.className);
@@ -418,7 +405,7 @@ function Trigger({
  * @returns The back button, or null if hidden.
  */
 export function GlowTourPreviousTrigger({ previousLabel, ...props }: PreviousTriggerProps) {
-  const { tour } = useTourContext();
+  const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
 
   const step = useStep(snapshot);
@@ -448,7 +435,7 @@ export function GlowTourAdvanceTrigger({
   advanceLabel,
   ...props
 }: AdvanceTriggerProps) {
-  const { tour } = useTourContext();
+  const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
   const step = useStep(snapshot);
   const control = step?.popover?.controls?.advance;
@@ -475,7 +462,7 @@ export function GlowTourAdvanceTrigger({
  * @returns The cancel button, or null if the tour cannot be cancelled.
  */
 export function GlowTourCancelTrigger(props: CancelTriggerProps) {
-  const { tour } = useTourContext();
+  const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
   const control = useStep(snapshot)?.popover?.controls?.cancel;
   if (!snapshot.canCancel || control === "hidden") return null;
@@ -485,12 +472,12 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps) {
 }
 
 /**
- * React hook that returns the current tour state.
+ * Reads the state of the tour rendered by the enclosing `<GlowTourRoot>`.
  *
- * Must be called inside a component rendered within `<GlowTourRoot>`.
+ * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns The current tour state.
  */
-export function useTour(): TourState<ReactTourContent> {
-  const { tour } = useTourContext();
+export function useTourContext(): TourState<ReactTourContent> {
+  const { tour } = useTourScope();
   return useTourSnapshot(tour);
 }

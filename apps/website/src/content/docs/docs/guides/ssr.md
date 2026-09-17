@@ -74,22 +74,21 @@ The tour reacts to clicks, so it lives in a client component. Client components 
 ```tsx title="app/onboarding.tsx"
 "use client";
 
-import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 import { useState } from "react";
 
 export function Onboarding() {
-  // Lazy state creates the tour once per mounted component, never once per render.
-  const [tour] = useState(() => createGlowTour());
+  // useGlowTour creates the tour once per mounted component, never once per render.
+  const { tour, create, start } = useGlowTour();
   const [workflow] = useState(() =>
-    tour
-      .create("welcome")
+    create("welcome")
       .step({ id: "search", target: "#search", title: "Search", content: "Find anything here." })
       .build(),
   );
 
   return (
     <>
-      <button type="button" onClick={() => void tour.run(workflow)}>
+      <button type="button" onClick={() => void start(workflow)}>
         Start tour
       </button>
       <GlowTourDefault tour={tour} />
@@ -121,13 +120,13 @@ Vue's adapter fully supports server-side rendering.
 
 ```typescript
 import { renderToString } from "@vue/server-renderer";
-import { createApp, h } from "vue";
+import { createSSRApp, h } from "vue";
 import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
 
 const tour = createGlowTour();
 
 const html = await renderToString(
-  createApp({
+  createSSRApp({
     render: () => [h(YourApp), h(GlowTourDefault, { tour })],
   })
 );
@@ -135,7 +134,7 @@ const html = await renderToString(
 
 ### Hydration
 
-On the client, use `createSSRApp` for hydration:
+On the client, mount the same tree with `createSSRApp` to hydrate it:
 
 ```typescript
 import { createSSRApp, h } from "vue";
@@ -151,6 +150,70 @@ createSSRApp({
 ```
 
 **Real-world verified**: Nuxt production builds (tested with Playwright) work end-to-end with zero hydration mismatches.
+
+### With Nuxt
+
+The Nuxt app in this repository (`apps/ssr-vue`) follows this setup and is tested end to end.
+
+Import the theme and auto-import the composables in `nuxt.config.ts`. `useTourContext` is left out on purpose: it is only needed inside a custom `GlowTourRoot`, and an auto-imported name that close to other libraries' `useTour` is easy to mix up.
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  css: ["@glowhop/styles-tour/default.css"],
+  imports: {
+    presets: [{ from: "@glowhop/vue-tour", imports: ["createGlowTour", "useGlowTour"] }],
+  },
+});
+```
+
+To share one tour between pages and layouts, provide it from a plugin. Nuxt runs plugins once per request on the server and once in the browser, so each visitor gets their own tour:
+
+```ts title="plugins/glow-tour.ts"
+export default defineNuxtPlugin(() => ({
+  provide: { glowTour: createGlowTour() },
+}));
+```
+
+Render the tour once, in `app.vue` or a layout. `GlowTourDefault` renders an inert container on the server and hydrates without warnings:
+
+```vue title="app.vue"
+<script setup lang="ts">
+import { GlowTourDefault } from "@glowhop/vue-tour";
+
+const { $glowTour } = useNuxtApp();
+</script>
+
+<template>
+  <NuxtPage />
+  <GlowTourDefault :tour="$glowTour" />
+</template>
+```
+
+Any page reads and drives the shared tour with `useGlowTour($glowTour)`, which never disposes a tour it is given:
+
+```vue title="pages/index.vue"
+<script setup lang="ts">
+const { $glowTour } = useNuxtApp();
+const { create, start, status } = useGlowTour($glowTour);
+
+const workflow = create("welcome")
+  .step({ id: "search", target: '[data-tour="search"]', title: "Search", content: "Find anything here." })
+  .build();
+
+onMounted(() => {
+  if (!localStorage.getItem("welcome-tour-seen")) void start(workflow);
+});
+</script>
+
+<template>
+  <input data-tour="search" type="search" placeholder="Search" />
+  <button type="button" :disabled="status === 'active'" @click="start(workflow)">Start tour</button>
+</template>
+```
+
+A tour runs only in the browser: it measures and highlights elements of the page. Start it from `onMounted` or from an event handler, never from the top level of `setup`, a plugin, or `useAsyncData`, which also run on the server.
+
+`status` is `idle` on the server and in the browser, so a template that displays it hydrates without `<ClientOnly>`, even when `onMounted` starts the tour right away. Keep `<ClientOnly>` for components that read `window` or `localStorage` while rendering.
 
 ## Solid SSR
 
@@ -231,7 +294,7 @@ export default function Home() {
   return (
     <main>
       <input id="search" type="search" placeholder="Search" />
-      <button type="button" onClick={() => void tour.run(workflow)}>
+      <button type="button" onClick={() => void tour.start(workflow)}>
         Start tour
       </button>
       <GlowTourDefault tour={tour} />
@@ -295,7 +358,7 @@ export class AppComponent {
     .build();
 
   start(): void {
-    void this.tour.run(this.workflow);
+    void this.tour.start(this.workflow);
   }
 }
 ```

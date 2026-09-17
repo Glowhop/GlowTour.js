@@ -129,12 +129,12 @@ const reloadWorkflow = tour
 
 document.querySelector("#run-spa")?.addEventListener("click", () => {
   navigate("dashboard");
-  void tour.run(spaWorkflow);
+  void tour.start(spaWorkflow);
 });
 
 document.querySelector("#run-reload")?.addEventListener("click", () => {
   navigate("dashboard");
-  void tour.run(reloadWorkflow);
+  void tour.start(reloadWorkflow);
 });
 
 document.querySelector("#clear-log")?.addEventListener("click", () => {

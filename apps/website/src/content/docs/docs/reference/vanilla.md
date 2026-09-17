@@ -33,6 +33,8 @@ registerGlowTourElements();
 // Elements are now available: glow-tour-root, glow-tour-overlay, etc.
 ```
 
+## Custom elements
+
 ### `glow-tour-default`
 
 A complete tour: a `glow-tour-root` with the overlay, pointer, popover, header, content, footer and the three controls. The structure is built the first time the element is connected.
@@ -47,8 +49,6 @@ const element = document.createElement("glow-tour-default");
 element.tour = tour;
 document.body.append(element);
 ```
-
-## Custom elements
 
 ### `glow-tour-root`
 
@@ -97,7 +97,7 @@ Footer area containing navigation buttons.
 
 ### `glow-tour-pointer`
 
-Decorative indicator/arrow pointing to the target.
+Decorative pointer indicator next to the target (not the popover arrow).
 
 **Properties**:
 - `directionContent: PointerDirectionContent` - Custom content for pointer directions
@@ -206,41 +206,6 @@ All custom elements follow standard DOM patterns:
 - Events: Listen with `element.addEventListener()`
 - Attributes: Standard HTML attributes for styling (class, style, data-*)
 - Children: Append/append child elements normally
-
-## Complete example
-
-```typescript
-import { registerGlowTourElements, createGlowTour } from "@glowhop/vanilla-tour";
-
-registerGlowTourElements();
-
-const tour = createGlowTour();
-
-// Create elements
-const root = document.createElement("glow-tour-root");
-root.tour = tour;
-
-const overlay = document.createElement("glow-tour-overlay");
-const popover = document.createElement("glow-tour-popover");
-
-const header = document.createElement("glow-tour-header");
-const content = document.createElement("glow-tour-content");
-const footer = document.createElement("glow-tour-footer");
-
-const advanceBtn = document.createElement("glow-tour-advance-trigger");
-const cancelBtn = document.createElement("glow-tour-cancel-trigger");
-
-// Compose the tree
-footer.append(cancelBtn, advanceBtn);
-popover.append(header, content, footer);
-root.append(overlay, popover);
-
-document.body.append(root);
-
-// Now you can run tours
-const workflow = tour.create("demo").step({ id: "step-1", /* ... */ }).build();
-await tour.run(workflow);
-```
 
 ## Types
 

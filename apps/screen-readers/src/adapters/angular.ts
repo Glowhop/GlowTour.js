@@ -21,5 +21,5 @@ export const mount: MountFixture = async (host) => {
   const workflow = buildWorkflow(tour, (value) => value);
   host.append(document.createElement("screen-reader-tour"));
   await bootstrapApplication(ScreenReaderTour);
-  return () => tour.run(workflow);
+  return () => tour.start(workflow);
 };
