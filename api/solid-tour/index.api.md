@@ -8,7 +8,7 @@ import type { Accessor, JSX, ParentProps, ValidComponent } from "solid-js";
 
 function createGlowTour(options?: GlowTourOptions): Tour;
 
-const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => JSX.Element; CancelTrigger: (props: ButtonProps) => JSX.Element; Content: (props: ContentProps) => JSX.Element; Footer: (props: ElementProps) => JSX.Element; Header: (props: ContentProps) => JSX.Element; Overlay: (props: OverlayProps) => JSX.Element; Pointer: (props: PointerProps) => JSX.Element; Popover: (props: ElementProps) => JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => JSX.Element; Root: (props: RootProps) => JSX.Element; };
+const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => JSX.Element; CancelTrigger: (props: ButtonProps) => JSX.Element; Content: (props: ContentProps) => JSX.Element; Footer: (props: FooterProps) => JSX.Element; Header: (props: ContentProps) => JSX.Element; Overlay: (props: OverlayProps) => JSX.Element; Pointer: (props: PointerProps) => JSX.Element; Popover: (props: PopoverProps) => JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => JSX.Element; Root: (props: RootProps) => JSX.Element; };
 
 function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element;
 
@@ -23,7 +23,7 @@ interface GlowTourDefaultProps {
     readonly tour: CoreGlowTour<SolidTourContent>;
 }
 
-function GlowTourFooter(props: ElementProps): JSX.Element;
+function GlowTourFooter(props: FooterProps): JSX.Element;
 
 function GlowTourHeader(props: ContentProps): JSX.Element;
 
@@ -33,7 +33,7 @@ function GlowTourOverlay(props: OverlayProps): JSX.Element;
 
 function GlowTourPointer(props: PointerProps): JSX.Element;
 
-function GlowTourPopover(props: ElementProps): JSX.Element;
+function GlowTourPopover(props: PopoverProps): JSX.Element;
 
 function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Element;
 
@@ -84,15 +84,17 @@ type CancelTriggerProps = ButtonProps;
 
 type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 
-type ElementProps = ParentProps<Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref"> & {
-    as?: ValidComponent;
-}>;
+type FooterProps = ParentProps<Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref">>;
 
 type OverlayProps = ParentProps<Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "ref">>;
 
 type PointerProps = Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
     as?: ValidComponent;
     directionContent?: PointerDirectionContent;
+};
+
+type PopoverProps = FooterProps & {
+    as?: ValidComponent;
 };
 
 type PreviousTriggerProps = ButtonProps & {

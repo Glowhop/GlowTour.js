@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 
 function createGlowTour(options?: GlowTourOptions): Tour;
 
-const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => React.JSX.Element | null; CancelTrigger: (props: ButtonProps) => React.JSX.Element | null; Content: (props: ContentProps) => React.JSX.Element; Footer: (props: ElementProps) => React.JSX.Element; Header: (props: ContentProps) => React.JSX.Element | null; Overlay: (props: OverlayProps) => React.JSX.Element; Pointer: (props: PointerProps) => React.JSX.Element; Popover: (props: ElementProps) => React.JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => React.JSX.Element | null; Root: (props: RootProps) => React.JSX.Element; };
+const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => React.JSX.Element | null; CancelTrigger: (props: ButtonProps) => React.JSX.Element | null; Content: (props: ContentProps) => React.JSX.Element; Footer: (props: FooterProps) => React.JSX.Element; Header: (props: ContentProps) => React.JSX.Element | null; Overlay: (props: OverlayProps) => React.JSX.Element; Pointer: (props: PointerProps) => React.JSX.Element; Popover: (props: PopoverProps) => React.JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => React.JSX.Element | null; Root: (props: RootProps) => React.JSX.Element; };
 
 function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): React.JSX.Element | null;
 
@@ -23,7 +23,7 @@ interface GlowTourDefaultProps {
     readonly tour: CoreGlowTour<ReactTourContent>;
 }
 
-function GlowTourFooter(props: ElementProps): React.JSX.Element;
+function GlowTourFooter(props: FooterProps): React.JSX.Element;
 
 function GlowTourHeader(props: ContentProps): React.JSX.Element | null;
 
@@ -33,7 +33,7 @@ function GlowTourOverlay(props: OverlayProps): React.JSX.Element;
 
 function GlowTourPointer(props: PointerProps): React.JSX.Element;
 
-function GlowTourPopover(props: ElementProps): React.JSX.Element;
+function GlowTourPopover(props: PopoverProps): React.JSX.Element;
 
 function GlowTourPreviousTrigger(props: PreviousTriggerProps): React.JSX.Element | null;
 
@@ -81,15 +81,17 @@ type CancelTriggerProps = ButtonProps;
 
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "id">;
 
-type ElementProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref"> & {
-    as?: React.ElementType;
-};
+type FooterProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref">;
 
 type OverlayProps = Omit<React.SVGAttributes<SVGSVGElement>, "ref">;
 
 type PointerProps = Omit<React.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
     as?: React.ElementType;
     directionContent?: PointerDirectionContent;
+};
+
+type PopoverProps = FooterProps & {
+    as?: React.ElementType;
 };
 
 type PreviousTriggerProps = ButtonProps & {
