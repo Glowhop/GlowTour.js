@@ -3542,6 +3542,35 @@ describe("monitoring events", () => {
     );
   });
 
+  test("reports the navigation that finishes the tour past skipped steps, not the previous one", async () => {
+    const { events, onEvent } = recorder();
+    const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+    let lastPresent = true;
+    const workflow = tour
+      .create("skip-to-finish")
+      .step({ id: "first", content: "1", target: targetResolver, title: "1" })
+      .step({
+        id: "last",
+        behavior: { missingTarget: { strategy: "skip" } },
+        content: "2",
+        target: () => (lastPresent ? targetResolver() : null),
+        title: "2",
+      })
+      .build();
+
+    await tour.start(workflow);
+    await tour.advance();
+    await tour.previous();
+    lastPresent = false;
+    events.length = 0;
+    await tour.advance();
+
+    assert.deepEqual(
+      events.map((event) => `${event.type}:${event.stepId}:${event.direction}`),
+      ["step:skip:last:advance", "step:leave:first:advance", "tour:complete:first:advance"],
+    );
+  });
+
   test("emits nothing and returns to idle when beforeEnter aborts the first step", async () => {
     const { events, onEvent } = recorder();
     const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });

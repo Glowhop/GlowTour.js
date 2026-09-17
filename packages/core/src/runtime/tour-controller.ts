@@ -315,6 +315,8 @@ export class TourController<T> {
       step = this.steps[index];
     }
     if (!step || !target) {
+      // Leaving the step reports this navigation; staying on it keeps the direction that brought it.
+      if (index >= this.steps.length || lostStep) this.direction = direction;
       if (index >= this.steps.length) await this.finish(operation, skipped);
       else if (!lostStep) this.setStatus("active");
       else if (this.canCancel()) await this.cancelCurrent(operation);
