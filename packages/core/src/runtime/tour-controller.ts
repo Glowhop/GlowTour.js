@@ -195,7 +195,7 @@ export class TourController<T> {
       await workflow.options.onStart?.(startContext);
       this.assertCurrent(operation);
       if (isStartAborted()) {
-        this.resetToIdle();
+        await this.resetToIdle(operation);
         return;
       }
       this.tourStartedAt = Date.now();
@@ -327,7 +327,7 @@ export class TourController<T> {
     if (await this.runStepHook(step.definition.beforeEnter, step, operation, direction)) {
       if (lostStep) throw this.missingTargetError(lostStep);
       if (from) this.setStatus("active");
-      else this.resetToIdle();
+      else await this.resetToIdle(operation);
       return;
     }
     // Committed before `step:leave`: that event reports the navigation that causes the departure,
@@ -555,7 +555,7 @@ export class TourController<T> {
     this.assertCurrent(operation);
     if (isAborted()) {
       if (step) this.setStatus("active");
-      else this.resetToIdle();
+      else await this.resetToIdle(operation);
       return;
     }
     this.flushTourStart();
@@ -604,10 +604,15 @@ export class TourController<T> {
 
   /**
    * Restores the controller to its pre-`run()` idle state. Used when an
-   * aborted lifecycle hook prevents the tour from ever becoming active
-   * (`onStart` abort, and the zero-step `onFinish` abort edge case).
+   * aborted hook prevents the tour from ever becoming active (`onStart`, the
+   * first step's `beforeEnter`, and the zero-step `onFinish` edge case). A
+   * tour this `run()` replaced is still on screen, so it is cleared first.
    */
-  private resetToIdle() {
+  private async resetToIdle(operation: number) {
+    if (this.retainedPresentation) {
+      await this.driver.clear(this.signalFor(operation));
+      this.assertCurrent(operation);
+    }
     this.workflow = null;
     this.releaseStepPropsSubscriptions();
     this.steps = [];

@@ -29,7 +29,7 @@ type ElementProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref"> & {
 };
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = Omit<React.SVGAttributes<SVGSVGElement>, "ref">;
-/** GlowTourContent displayed in the pointer indicator for each direction. */
+/** Content displayed in the pointer indicator for each direction. */
 export interface PointerDirectionContent {
   readonly top?: React.ReactNode;
   readonly bottom?: React.ReactNode;
@@ -132,7 +132,7 @@ function useStepClassName(slot: keyof TourClassNames, className: string | undefi
 }
 
 /**
- * GlowTourRoot component that must wrap all other tour components.
+ * Root component that must wrap all other tour components.
  *
  * Manages tour initialization and connects the tour instance to the DOM.
  * All other tour components (GlowTourOverlay, GlowTourPointer, GlowTourPopover, etc.) must be rendered inside this root.
