@@ -44,8 +44,9 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // from 21.5 KiB for applying a `behavior.allowInteraction` changed through
     // the step props live (modality, focus, pointer fade) on the step, then
     // from 21.75 KiB for the `"detached"` missing-target strategy (a centered
-    // popover over a backdrop without a cutout).
-    gzipBudget: 22 * KIB,
+    // popover over a backdrop without a cutout), then from 22 KiB for keeping
+    // the focus to restore when a new tour replaces one still fading out.
+    gzipBudget: 22.25 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

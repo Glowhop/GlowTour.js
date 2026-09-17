@@ -75,11 +75,12 @@ export class FocusGuard {
   /**
    * Remembers the element focus returns to when the guard deactivates. The driver calls it before
    * making the rest of the page inert, because inerting an ancestor blurs the focused element.
-   * Does nothing once a focus is remembered or the guard is active.
+   * Does nothing once a focus is remembered or the guard is active. `pending` is a focus a clear
+   * could not give back before this show replaced it, and wins over the current focus.
    */
-  captureInitialFocus(reference: HTMLElement) {
+  captureInitialFocus(reference: HTMLElement, pending?: HTMLElement | null) {
     if (this.active || this.initialFocus) return;
-    const activeElement = ownerDocument(reference)?.activeElement;
+    const activeElement = pending ?? ownerDocument(reference)?.activeElement;
     this.initialFocus = isHTMLElement(activeElement, reference) ? activeElement : null;
   }
 
