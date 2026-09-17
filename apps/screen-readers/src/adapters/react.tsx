@@ -6,5 +6,5 @@ export const mount: MountFixture = async (host) => {
   const tour = createGlowTour();
   const workflow = buildWorkflow(tour, (value) => value);
   createRoot(host).render(<GlowTourDefault tour={tour} />);
-  return () => tour.run(workflow);
+  return () => tour.start(workflow);
 };

@@ -170,11 +170,13 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(root.id, "pre-upgrade-root");
     assert.equal(root.idPrefix, "pre-upgrade");
     assert.equal(root.tour, preUpgradeTour);
-    await assert.doesNotReject(() => preUpgradeTour.run(preUpgradeTour.create("upgrade").build()));
+    await assert.doesNotReject(() =>
+      preUpgradeTour.start(preUpgradeTour.create("upgrade").build()),
+    );
     root.tour = null;
     await settle();
     await assert.rejects(
-      () => preUpgradeTour.run(preUpgradeTour.create("upgrade released").build()),
+      () => preUpgradeTour.start(preUpgradeTour.create("upgrade released").build()),
       /connected root/i,
     );
   });
@@ -262,11 +264,11 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(afterConnect.id, "glow-tour-root");
     beforeConnect.tour = null;
     await settle();
-    await assert.rejects(() => first.run(first.create("released").build()), /connected root/i);
+    await assert.rejects(() => first.start(first.create("released").build()), /connected root/i);
     beforeConnect.tour = first;
-    await assert.doesNotReject(() => first.run(first.create("remounted").build()));
+    await assert.doesNotReject(() => first.start(first.create("remounted").build()));
     beforeConnect.remove();
-    await assert.rejects(() => first.run(first.create("removed").build()), /connected root/i);
+    await assert.rejects(() => first.start(first.create("removed").build()), /connected root/i);
   });
 
   test("batches root tour and ID-prefix replacement into one scoped lease", async () => {
@@ -327,9 +329,9 @@ describe("vanilla adapter browser behavior", () => {
     outerRoot.append(innerRoot);
     document.body.append(outerTarget, innerTarget, siblingTarget, outerRoot, siblingRoot);
     await settle();
-    await outer.run(workflow(outer, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner", undefined, true));
-    await sibling.run(workflow(sibling, siblingTarget, "sibling", undefined, true));
+    await outer.start(workflow(outer, outerTarget, "outer"));
+    await inner.start(workflow(inner, innerTarget, "inner", undefined, true));
+    await sibling.start(workflow(sibling, siblingTarget, "sibling", undefined, true));
     const [outerAdvance, innerAdvance, siblingAdvance] = Array.from(
       document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
@@ -359,7 +361,7 @@ describe("vanilla adapter browser behavior", () => {
     document.body.append(target, element);
     await settle();
     let activeProps!: StepContext<VanillaTourContent>["props"];
-    await tour.run(
+    await tour.start(
       tour
         .create("unchanged-text")
         .step({ id: "step-unchanged", content: "Same content", target, title: "Same title" })
@@ -404,7 +406,7 @@ describe("vanilla adapter browser behavior", () => {
     document.body.append(target, element);
     await settle();
     let activeProps!: StepContext<VanillaTourContent>["props"];
-    await tour.run(
+    await tour.start(
       tour
         .create("dynamic")
         .step({ id: "step-3", content: "One", target, title: "Title" })
@@ -431,7 +433,7 @@ describe("vanilla adapter browser behavior", () => {
     const replacement = runtime.createGlowTour();
     element.tour = replacement;
     await settle();
-    await assert.rejects(() => tour.run(tour.create("stale").build()), /connected root/i);
+    await assert.rejects(() => tour.start(tour.create("stale").build()), /connected root/i);
     assert.doesNotThrow(() => element.remove());
   });
 
@@ -446,7 +448,7 @@ describe("vanilla adapter browser behavior", () => {
     const popover = element.querySelector<HTMLElement>("glow-tour-popover");
     const button = element.querySelector<HTMLElement>("button");
     assert.ok(popover && button);
-    await tour.run(
+    await tour.start(
       tour
         .create("step-classes")
         .step({
@@ -487,7 +489,7 @@ describe("vanilla adapter browser behavior", () => {
     const image = document.createElement("img");
     image.alt = "Export screen";
     content.append(image, "Media description");
-    await tour.run(
+    await tour.start(
       tour
         .create("node-content")
         .step({ id: "media", content, target, title })
@@ -564,7 +566,7 @@ describe("vanilla adapter browser behavior", () => {
       "<glow-tour-popover><glow-tour-header></glow-tour-header><glow-tour-content></glow-tour-content></glow-tour-popover><glow-tour-advance-trigger><button></button></glow-tour-advance-trigger>";
     document.body.append(target, rootElement);
     let activeProps!: StepContext<VanillaTourContent>["props"];
-    await tour.run(
+    await tour.start(
       workflow(tour, target, "consumer attrs", (props) => {
         activeProps = props;
       }),
@@ -700,7 +702,7 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(button.textContent, "Authored text");
     element.append(trigger);
     element.append(generatedTrigger);
-    await tour.run(
+    await tour.start(
       tour.create("reconnect").step({ id: "step-4", content: "One", target, title: "One" }).build(),
     );
     await settle();
@@ -723,7 +725,7 @@ describe("vanilla adapter browser behavior", () => {
       .step({ id: "step-5", content: "One", target, title: "One" })
       .step({ id: "step-6", content: "Two", target, title: "Two" })
       .build();
-    await tour.run(tourWorkflow);
+    await tour.start(tourWorkflow);
     const firstBack = element.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
     assert.equal(firstBack?.disabled, true);
     assert.equal(firstBack?.getAttribute("aria-disabled"), "true");
@@ -731,7 +733,7 @@ describe("vanilla adapter browser behavior", () => {
     cancel?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     await settle();
     assert.equal(tour.state.get().status, "cancelled");
-    await tour.run(tourWorkflow);
+    await tour.start(tourWorkflow);
     const advance = document.createElement("glow-tour-advance-trigger");
     const advanceButton = document.createElement("button");
     advance.append(advanceButton);

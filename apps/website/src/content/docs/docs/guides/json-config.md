@@ -17,11 +17,11 @@ import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 import { createWorkflowFromConfig } from "@glowhop/react-tour/config";
 
 export function OnboardingTour() {
-  const { tour, run } = useGlowTour();
+  const { tour, start } = useGlowTour();
 
   async function startTour() {
     const config = await fetch("/tours/onboarding.json").then((response) => response.json());
-    await run(createWorkflowFromConfig(config));
+    await start(createWorkflowFromConfig(config));
   }
 
   return (
@@ -71,7 +71,7 @@ export function OnboardingTour() {
 ```
 
 - `version`, `name`, and `steps` are required. `version` is the version of the config format, currently `"1.1"`.
-- Every step requires `id`, `target`, and `content`; `title` is optional. Step ids must be unique within the workflow; they are what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
+- Every step requires `id`, `target`, and `content`; `title` is optional. Step ids must be unique within the workflow; they are what [`start(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
 - `target` is a CSS selector. Function and `HTMLElement` targets remain builder-only.
 - `title` and `content` are strings for JSON loaded from a CMS or API.
 - `overlay`, `popover`, `indicator`, `behavior`, and `classNames` use the same options as the builder, globally or per step. A step's `classNames` entry overrides the global one for the same component, as described in [Class name options](/docs/reference/builder#class-name-options).

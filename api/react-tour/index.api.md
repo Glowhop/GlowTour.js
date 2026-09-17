@@ -58,7 +58,7 @@ type TourState = CoreTourState<ReactTourContent>;
 
 function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & TourState & {
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & TourState & {
     readonly tour: Tour;
 };
 

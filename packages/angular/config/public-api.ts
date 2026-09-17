@@ -43,7 +43,7 @@ export type WorkflowDefinitionFromConfig = CoreWorkflowDefinitionFromConfig<Angu
 
 /**
  * Builds an Angular `WorkflowDefinition` from a JSON-serializable config, pre-bound to
- * `AngularTourContent` so the result is accepted by `createGlowTour().run(...)` with no generic
+ * `AngularTourContent` so the result is accepted by `createGlowTour().start(...)` with no generic
  * and no cast.
  * @param config The parsed JSON (or equivalent plain object) to build from.
  * @param options Options; see `CreateWorkflowFromConfigOptions`.

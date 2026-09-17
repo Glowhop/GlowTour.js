@@ -47,7 +47,7 @@ page. */}
       if (!trigger) return;
       event.preventDefault();
       event.stopPropagation();
-      void tour.run(workflow);
+      void tour.start(workflow);
     },
     true,
   );
@@ -60,7 +60,7 @@ page. */}
     mount();
     const stepId = takePendingStep();
     if (!stepId) return;
-    void tour.run(workflow, { startAt: stepId });
+    void tour.start(workflow, { startAt: stepId });
   });
 
   if (new URLSearchParams(location.search).get(TOUR_QUERY_PARAM) === "1") {
@@ -69,6 +69,6 @@ page. */}
     const url = new URL(location.href);
     url.searchParams.delete(TOUR_QUERY_PARAM);
     history.replaceState(history.state, "", url);
-    void tour.run(workflow);
+    void tour.start(workflow);
   }
 </script>

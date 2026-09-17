@@ -79,7 +79,7 @@ import { useState } from "react";
 
 export function Onboarding() {
   // useGlowTour creates the tour once per mounted component, never once per render.
-  const { tour, create, run } = useGlowTour();
+  const { tour, create, start } = useGlowTour();
   const [workflow] = useState(() =>
     create("welcome")
       .step({ id: "search", target: "#search", title: "Search", content: "Find anything here." })
@@ -88,7 +88,7 @@ export function Onboarding() {
 
   return (
     <>
-      <button type="button" onClick={() => void run(workflow)}>
+      <button type="button" onClick={() => void start(workflow)}>
         Start tour
       </button>
       <GlowTourDefault tour={tour} />
@@ -194,20 +194,20 @@ Any page reads and drives the shared tour with `useGlowTour($glowTour)`, which n
 ```vue title="pages/index.vue"
 <script setup lang="ts">
 const { $glowTour } = useNuxtApp();
-const { create, run, status } = useGlowTour($glowTour);
+const { create, start, status } = useGlowTour($glowTour);
 
 const workflow = create("welcome")
   .step({ id: "search", target: '[data-tour="search"]', title: "Search", content: "Find anything here." })
   .build();
 
 onMounted(() => {
-  if (!localStorage.getItem("welcome-tour-seen")) void run(workflow);
+  if (!localStorage.getItem("welcome-tour-seen")) void start(workflow);
 });
 </script>
 
 <template>
   <input data-tour="search" type="search" placeholder="Search" />
-  <button type="button" :disabled="status === 'active'" @click="run(workflow)">Start tour</button>
+  <button type="button" :disabled="status === 'active'" @click="start(workflow)">Start tour</button>
 </template>
 ```
 
@@ -294,7 +294,7 @@ export default function Home() {
   return (
     <main>
       <input id="search" type="search" placeholder="Search" />
-      <button type="button" onClick={() => void tour.run(workflow)}>
+      <button type="button" onClick={() => void tour.start(workflow)}>
         Start tour
       </button>
       <GlowTourDefault tour={tour} />
@@ -358,7 +358,7 @@ export class AppComponent {
     .build();
 
   start(): void {
-    void this.tour.run(this.workflow);
+    void this.tour.start(this.workflow);
   }
 }
 ```

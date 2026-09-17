@@ -3,7 +3,7 @@ title: Builder API reference
 description: Complete reference for the GlowTour.js workflow/step builder and all available options with their defaults.
 ---
 
-`tour.create()` returns a workflow builder: chain `.step()`, `.do()`, `.wait()`, and the other methods below to describe a tour, then call `.build()` to get an immutable `WorkflowDefinition`. For the controller that runs the resulting workflow (`createGlowTour`, `tour.run`, `tour.advance`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).
+`tour.create()` returns a workflow builder: chain `.step()`, `.do()`, `.wait()`, and the other methods below to describe a tour, then call `.build()` to get an immutable `WorkflowDefinition`. For the controller that runs the resulting workflow (`createGlowTour`, `tour.start`, `tour.advance`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).
 
 For framework-specific integration and components, see [React](/docs/reference/react), [Vue](/docs/reference/vue), [Solid](/docs/reference/solid), [Angular](/docs/reference/angular), or [Vanilla](/docs/reference/vanilla).
 
@@ -46,7 +46,7 @@ step(params: StepParameters): WorkflowStepBuilder
 ```
 
 **Parameters**:
-- `id` - Stable identifier, unique within the workflow (required). Validated at `.build()` time. It is what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour, so prefer a name that survives reordering.
+- `id` - Stable identifier, unique within the workflow (required). Validated at `.build()` time. It is what [`start(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour, so prefer a name that survives reordering.
 - `target` - CSS selector, HTMLElement, or resolver function (required)
 - `title` - Step title displayed in the popover header (optional: without a title, the header is omitted and the content names the dialog)
 - `content` - Step description displayed in popover (required)
@@ -307,7 +307,7 @@ const workflow = tour
 
 ### `.beforeEnter(callback)`
 
-Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTarget: { strategy: "skip" }` never runs it; a step shown with `"detached"` runs it with the document's `<body>` as `context.target`. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `run()`, the tour goes back to `idle`.
+Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTarget: { strategy: "skip" }` never runs it; a step shown with `"detached"` runs it with the document's `<body>` as `context.target`. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `start()`, the tour goes back to `idle`.
 
 Step props are not reset automatically: a value set with `context.props.set()` is still there when the tour comes back to the step, until the workflow runs again. `beforeEnter` is where to reset them, because what it sets is what the step renders first.
 

@@ -6,7 +6,7 @@ import { useTemplateRef } from "vue";
 // biome-ignore lint/correctness/useHookAtTopLevel: Vue composables run in script setup.
 const saveButton = useTemplateRef<HTMLButtonElement>("saveButton");
 // biome-ignore lint/correctness/noUnusedVariables: used in the template.
-const { tour, create, run, cancel, status, canCancel, currentStepIndex, totalSteps } =
+const { tour, create, start, cancel, status, canCancel, currentStepIndex, totalSteps } =
   // biome-ignore lint/correctness/useHookAtTopLevel: Vue composables run in script setup.
   useGlowTour();
 
@@ -42,7 +42,7 @@ const workflow = create("vue-use-glow-tour")
         {{ status }}{{ status === 'active' ? ` · step ${currentStepIndex + 1} / ${totalSteps}` : "" }}
       </output>
       <div class="tutorial-actions">
-        <button type="button" @click="run(workflow)">
+        <button type="button" @click="start(workflow)">
           Start tutorial
         </button>
         <button type="button" :disabled="!canCancel" @click="cancel()">Cancel</button>

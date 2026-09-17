@@ -69,19 +69,19 @@ import "@glowhop/styles-tour/default.css";
 import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 
 function App() {
-  const { tour, create, run } = useGlowTour();
+  const { tour, create, start } = useGlowTour();
 
-  function start() {
+  function startTour() {
     const workflow = create("welcome")
       .step({ id: "welcome", target: '[data-tour="welcome"]', title: "Welcome", content: "Hello." })
       .build();
-    void run(workflow);
+    void start(workflow);
   }
 
   return (
     <>
       <button data-tour="welcome">Welcome</button>
-      <button type="button" onClick={start}>
+      <button type="button" onClick={startTour}>
         Start tour
       </button>
       <GlowTourDefault tour={tour} />
@@ -99,7 +99,7 @@ createRoot(document.getElementById("app")!).render(<App />);
 import "@glowhop/styles-tour/default.css";
 import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
 
-const { tour, create, run } = useGlowTour();
+const { tour, create, start } = useGlowTour();
 const workflow = create("welcome")
   .step({ id: "welcome-2", target: '[data-tour="welcome"]', title: "Welcome", content: "Hello." })
   .build();
@@ -107,7 +107,7 @@ const workflow = create("welcome")
 
 <template>
   <button data-tour="welcome">Welcome</button>
-  <button type="button" @click="run(workflow)">Start tour</button>
+  <button type="button" @click="start(workflow)">Start tour</button>
   <GlowTourDefault :tour="tour" />
 </template>
 ```
@@ -120,7 +120,7 @@ import "@glowhop/styles-tour/default.css";
 import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 
 function App() {
-  const { tour, create, run } = useGlowTour();
+  const { tour, create, start } = useGlowTour();
   const workflow = create("welcome")
     .step({ id: "welcome-3", target: '[data-tour="welcome"]', title: "Welcome", content: "Hello." })
     .build();
@@ -128,7 +128,7 @@ function App() {
   return (
     <>
       <button data-tour="welcome">Welcome</button>
-      <button type="button" onClick={() => void run(workflow)}>
+      <button type="button" onClick={() => void start(workflow)}>
         Start tour
       </button>
       <GlowTourDefault tour={tour} />
@@ -163,7 +163,7 @@ export class TourComponent {
     .build();
 
   start() {
-    void this.glow.run(this.workflow);
+    void this.glow.start(this.workflow);
   }
 }
 ```
@@ -193,7 +193,7 @@ document.body.append(button);
 const startButton = document.createElement("button");
 startButton.type = "button";
 startButton.textContent = "Start tour";
-startButton.addEventListener("click", () => void tour.run(workflow));
+startButton.addEventListener("click", () => void tour.start(workflow));
 document.body.append(startButton);
 
 const root = document.createElement("glow-tour-default");

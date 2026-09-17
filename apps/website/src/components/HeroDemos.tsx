@@ -75,7 +75,7 @@ export function NonInteractiveDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void nonInteractiveTour.run(nonInteractiveWorkflow)}
+        onClick={() => void nonInteractiveTour.start(nonInteractiveWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -133,7 +133,7 @@ export function AdvanceOnClickDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void advanceOnClickTour.run(advanceOnClickWorkflow)}
+        onClick={() => void advanceOnClickTour.start(advanceOnClickWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -204,7 +204,7 @@ export function PlacementOrderDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void placementOrderTour.run(placementOrderWorkflow)}
+        onClick={() => void placementOrderTour.start(placementOrderWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -297,7 +297,7 @@ export function WaitForAsyncDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void waitForAsyncTour.run(waitForAsyncWorkflow)}
+        onClick={() => void waitForAsyncTour.start(waitForAsyncWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -351,7 +351,7 @@ export function CancellableDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void cancellableTour.run(cancellableWorkflow)}
+        onClick={() => void cancellableTour.start(cancellableWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -407,7 +407,7 @@ export function ConfirmCancelDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void confirmCancelTour.run(confirmCancelWorkflow)}
+        onClick={() => void confirmCancelTour.start(confirmCancelWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -464,7 +464,7 @@ export function OverlayClickDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void overlayClickTour.run(overlayClickWorkflow)}
+        onClick={() => void overlayClickTour.start(overlayClickWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -556,7 +556,7 @@ export function CustomStyledIndicatorDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void customStyledIndicatorTour.run(customStyledIndicatorWorkflow)}
+        onClick={() => void customStyledIndicatorTour.start(customStyledIndicatorWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -641,7 +641,7 @@ export function LiveProgressDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void liveProgressTour.run(liveProgressWorkflow)}
+        onClick={() => void liveProgressTour.start(liveProgressWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -729,7 +729,7 @@ export function ThemeDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void themeTour.run(themeWorkflow)}
+        onClick={() => void themeTour.start(themeWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -774,7 +774,7 @@ export function LongContentDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void longContentTour.run(longContentWorkflow)}
+        onClick={() => void longContentTour.start(longContentWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -835,7 +835,7 @@ export function CustomThemeDemo() {
       </div>
       <button
         type="button"
-        onClick={() => void customThemeTour.run(customThemeWorkflow)}
+        onClick={() => void customThemeTour.start(customThemeWorkflow)}
         className={runButtonClass}
       >
         Run this demo
@@ -905,7 +905,7 @@ export function RelocateTargetDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void relocateTargetTour.run(relocateTargetWorkflow)}
+        onClick={() => void relocateTargetTour.start(relocateTargetWorkflow)}
         className={runButtonClass}
       >
         Run this demo

@@ -45,17 +45,17 @@ const unsubscribe = tour.state.subscribe((newState) => {
 unsubscribe();
 ```
 
-## Running tours
+## Starting and navigating
 
-### Basic run
+### Starting a tour
 
 ```typescript
 const workflow = tour.create("intro").step({ id: "step-1", /* ... */ }).build();
-await tour.run(workflow);
+await tour.start(workflow);
 console.log("First step is on screen");
 ```
 
-`run()` resolves once the first step is on screen, not when the tour ends. It rejects if that first step fails. To react to the end of the tour, use the workflow's `onFinish` and `onCancel` callbacks, an `onEvent` listener for `tour:complete` and `tour:cancel`, or a `subscribe` listener that checks `status`. See [The promise trap](/docs/guides/handling-errors#the-promise-trap).
+`start()` resolves once the first step is on screen, not when the tour ends. It rejects if that first step fails. To react to the end of the tour, use the workflow's `onFinish` and `onCancel` callbacks, an `onEvent` listener for `tour:complete` and `tour:cancel`, or a `subscribe` listener that checks `status`. See [The promise trap](/docs/guides/handling-errors#the-promise-trap).
 
 ### Navigation commands
 
@@ -390,9 +390,9 @@ const workflow = tour
   .build();
 
 // Run the tour
-await tour.run(workflow);
+await tour.start(workflow);
 ```
 
 ---
 
-For the full workflow/step-building API and every option's default value, see the [Builder reference](/docs/reference/builder); for the controller API (`createGlowTour`, `tour.run`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).
+For the full workflow/step-building API and every option's default value, see the [Builder reference](/docs/reference/builder); for the controller API (`createGlowTour`, `tour.start`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).

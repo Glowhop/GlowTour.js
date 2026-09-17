@@ -75,7 +75,7 @@ class UseGlowTourTutorial {
     .build();
 
   start() {
-    void this.glow.run(this.workflow);
+    void this.glow.start(this.workflow);
   }
 }
 

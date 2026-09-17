@@ -58,7 +58,7 @@ type TourState = CoreTourState<SolidTourContent>;
 
 function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
     readonly tour: Tour;
 } & {
     readonly [K in keyof TourState]: Accessor<TourState[K]>;

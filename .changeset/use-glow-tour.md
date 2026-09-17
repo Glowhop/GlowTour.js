@@ -14,5 +14,5 @@ Run a tour from a component with `useGlowTour()`.
 
 **Added**
 
-- `useGlowTour(source?)` in React, Vue, and Solid, and `injectGlowTour(source?)` in Angular. They return the tour, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and each state field in the framework's reactive form: values in React, refs in Vue, accessors in Solid, signals in Angular. Called with options, they create a tour; Vue, Solid, and Angular dispose it with the component. Called with an existing tour, they share it and never dispose it.
+- `useGlowTour(source?)` in React, Vue, and Solid, and `injectGlowTour(source?)` in Angular. They return the tour, its methods (`create`, `start`, `advance`, `previous`, `goTo`, `cancel`), and each state field in the framework's reactive form: values in React, refs in Vue, accessors in Solid, signals in Angular. Called with options, they create a tour; Vue, Solid, and Angular dispose it with the component. Called with an existing tour, they share it and never dispose it.
 - `UseGlowTourResult` and `InjectGlowTourResult` types.

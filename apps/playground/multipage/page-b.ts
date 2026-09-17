@@ -57,7 +57,7 @@ async function main(): Promise<void> {
 
   // The whole resume: one option. No goTo(), no skippable prefix steps.
   try {
-    await tour.run(workflow, { startAt: persisted.stepId });
+    await tour.start(workflow, { startAt: persisted.stepId });
     const state = tour.state.get();
     log(`resumed: status=${state.status} step=${state.currentStep?.id}`);
   } catch (error) {

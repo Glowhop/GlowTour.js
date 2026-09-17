@@ -11,7 +11,7 @@ import "@glowhop/styles-tour/default.css";
 import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
 const tour = createGlowTour();
 const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
-function start() { void tour.run(workflow); }
+function start() { void tour.start(workflow); }
 </script>
 <template><button id="welcome">Welcome</button><button type="button" @click="start">Start tour</button><GlowTourDefault :tour="tour" /></template>
 ```
@@ -20,7 +20,7 @@ function start() { void tour.run(workflow); }
 ```vue
 <script setup lang="ts">
 import { GlowTourRoot, GlowTourOverlay, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, createGlowTour } from "@glowhop/vue-tour";
-const tour = createGlowTour(); const workflow = tour.create("custom").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build(); const start = () => void tour.run(workflow);
+const tour = createGlowTour(); const workflow = tour.create("custom").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build(); const start = () => void tour.start(workflow);
 </script>
 <template><button id="welcome" type="button" @click="start">Start</button><GlowTourRoot :tour="tour"><GlowTourOverlay /><GlowTourPopover><GlowTourHeader /><GlowTourContent /><GlowTourFooter><GlowTourAdvanceTrigger /></GlowTourFooter></GlowTourPopover></GlowTourRoot></template>
 ```

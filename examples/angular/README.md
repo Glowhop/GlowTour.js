@@ -19,7 +19,7 @@ Open `http://localhost:5173` in your browser.
 - Using `createGlowTour()` to initialize a tour instance
 - Building a workflow with `.create()` and `.step()`
 - Rendering the `GlowTourDefault` component
-- Triggering the tour with `tour.run(workflow)`
+- Triggering the tour with `tour.start(workflow)`
 
 ## API Used
 

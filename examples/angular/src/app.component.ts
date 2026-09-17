@@ -29,6 +29,6 @@ export class AppComponent {
     .build();
 
   start() {
-    void this.tour.run(this.workflow);
+    void this.tour.start(this.workflow);
   }
 }

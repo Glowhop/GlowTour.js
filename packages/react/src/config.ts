@@ -43,7 +43,7 @@ export type WorkflowDefinitionFromConfig = CoreWorkflowDefinitionFromConfig<Reac
 
 /**
  * Builds a React `WorkflowDefinition` from a JSON-serializable config, pre-bound to
- * `ReactTourContent` so the result is accepted by `createGlowTour().run(...)` with no generic
+ * `ReactTourContent` so the result is accepted by `createGlowTour().start(...)` with no generic
  * and no cast.
  * @param config The parsed JSON (or equivalent plain object) to build from.
  * @param options Options; see `CreateWorkflowFromConfigOptions`.

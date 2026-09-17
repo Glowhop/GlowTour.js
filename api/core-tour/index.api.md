@@ -21,7 +21,7 @@ type EventName = keyof HTMLElementEventMap;
 
 interface GlowTour<T> {
     create(name: string, options?: StartOptions<T>): WorkflowBuilder<T>;
-    run(workflow: WorkflowDefinition<T>, options?: RunOptions): Promise<void>;
+    start(workflow: WorkflowDefinition<T>, options?: RunOptions): Promise<void>;
     advance(): Promise<void>;
     previous(): Promise<void>;
     goTo(id: string): Promise<void>;

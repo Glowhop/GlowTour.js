@@ -78,7 +78,7 @@ class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
 
 function injectGlowTour(source?: GlowTourOptions | Tour): InjectGlowTourResult;
 
-type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
     readonly tour: Tour;
 } & {
     readonly [K in keyof TourState]: Signal<TourState[K]>;

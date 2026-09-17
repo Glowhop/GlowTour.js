@@ -7,7 +7,7 @@ import "../src/tutorial.css";
 
 function Tutorial() {
   const saveButton = useRef<HTMLButtonElement>(null);
-  const { tour, create, run, cancel, status, canCancel, currentStepIndex, totalSteps } =
+  const { tour, create, start, cancel, status, canCancel, currentStepIndex, totalSteps } =
     useGlowTour();
 
   function startTutorial() {
@@ -31,7 +31,7 @@ function Tutorial() {
         content: "The status bar above updates from useGlowTour, outside the tour root.",
       })
       .build();
-    void run(workflow);
+    void start(workflow);
   }
 
   return (
