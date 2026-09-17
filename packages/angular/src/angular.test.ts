@@ -58,11 +58,11 @@ describe("angular adapter contract", () => {
       "GlowTourRoot",
       "createGlowTour",
       "injectGlowTour",
-      "injectTourContext",
+      "injectGlowTourContext",
     ]);
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.injectGlowTour, "function");
-    assert.equal(typeof runtime.injectTourContext, "function");
+    assert.equal(typeof runtime.injectGlowTourContext, "function");
     assert.equal(typeof runtime.GlowTourDefault, "function");
 
     for (const component of [

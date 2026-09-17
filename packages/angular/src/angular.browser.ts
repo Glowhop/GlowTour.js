@@ -152,7 +152,7 @@ describe("angular adapter browser behavior", () => {
       template: `<output>{{ state()?.status }}:{{ state()?.currentStepIndex }}</output>`,
     })
     class TourStateObserver {
-      readonly state = runtime.injectTourContext();
+      readonly state = runtime.injectGlowTourContext();
     }
 
     @Component({

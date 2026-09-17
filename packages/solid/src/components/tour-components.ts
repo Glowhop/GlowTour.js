@@ -102,7 +102,7 @@ export function useTourSnapshot(tour: () => Tour) {
  * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns The current tour state.
  */
-export function useTourContext(): Accessor<TourState<SolidTourContent>> {
+export function useGlowTourContext(): Accessor<TourState<SolidTourContent>> {
   return useTourSnapshot(useTourScope().tour);
 }
 

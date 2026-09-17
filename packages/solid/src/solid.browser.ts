@@ -176,7 +176,7 @@ describe("solid adapter browser behavior", () => {
     const [
       { createComponent },
       { Dynamic, render },
-      { createGlowTour, GlowTourPopover, GlowTourRoot, useTourContext },
+      { createGlowTour, GlowTourPopover, GlowTourRoot, useGlowTourContext },
     ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
@@ -188,7 +188,7 @@ describe("solid adapter browser behavior", () => {
       .step({ id: "step-2", content: "Second", target, title: "Second" })
       .build();
     function Observer() {
-      const state = useTourContext();
+      const state = useGlowTourContext();
       return createComponent(Dynamic, {
         component: "output",
         get children() {

@@ -140,7 +140,7 @@ describe("vue adapter browser behavior", () => {
       .build();
     const Observer = defineComponent({
       setup() {
-        const state = runtime.useTourContext();
+        const state = runtime.useGlowTourContext();
         return () => h("output", `${state.value.status}:${state.value.currentStepIndex}`);
       },
     });

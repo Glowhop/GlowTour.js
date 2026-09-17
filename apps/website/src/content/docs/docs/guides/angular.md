@@ -243,11 +243,11 @@ export class CustomTour {
 
 ### Add a custom step counter
 
-`injectGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `injectTourContext()`, without receiving the tour. Create the counter as a child component so the root's injector is available:
+`injectGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `injectGlowTourContext()`, without receiving the tour. Create the counter as a child component so the root's injector is available:
 
 ```typescript
 import { Component } from "@angular/core";
-import { injectTourContext } from "@glowhop/angular-tour";
+import { injectGlowTourContext } from "@glowhop/angular-tour";
 
 @Component({
   selector: "app-step-counter",
@@ -261,7 +261,7 @@ import { injectTourContext } from "@glowhop/angular-tour";
   `,
 })
 export class StepCounter {
-  protected readonly state = injectTourContext();
+  protected readonly state = injectGlowTourContext();
 }
 ```
 

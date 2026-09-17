@@ -477,7 +477,7 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps) {
  * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns The current tour state.
  */
-export function useTourContext(): TourState<ReactTourContent> {
+export function useGlowTourContext(): TourState<ReactTourContent> {
   const { tour } = useTourScope();
   return useTourSnapshot(tour);
 }
