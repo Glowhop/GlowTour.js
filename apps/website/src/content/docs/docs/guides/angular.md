@@ -320,4 +320,4 @@ GlowTour.js requires Angular 18 or later. The adapter uses Angular's new control
 
 ## SSR
 
-The adapter packages are DOM-free for import. Server-side rendering is not actively verified. See the compatibility table for details.
+`GlowTourDefault` supports server-side rendering with `@angular/ssr`. The component renders as an inert container on the server and hydrates without errors on the client. See [Angular SSR](/docs/guides/ssr#angular-ssr) in the SSR guide for the setup.

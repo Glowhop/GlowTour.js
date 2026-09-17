@@ -213,13 +213,7 @@ onMounted(() => {
 
 A tour runs only in the browser: it measures and highlights elements of the page. Start it from `onMounted` or from an event handler, never from the top level of `setup`, a plugin, or `useAsyncData`, which also run on the server.
 
-The state starts as `idle` on the server and in the browser, so markup that reads it hydrates cleanly, even when `onMounted` starts the tour right away. Wrap in `<ClientOnly>` only what cannot render on the server, such as your own tour UI that reads `window` or `localStorage` while rendering:
-
-```vue
-<ClientOnly>
-  <TourProgress />
-</ClientOnly>
-```
+`status` is `idle` on the server and in the browser, so a template that displays it hydrates without `<ClientOnly>`, even when `onMounted` starts the tour right away. Keep `<ClientOnly>` for components that read `window` or `localStorage` while rendering.
 
 ## Solid SSR
 

@@ -314,4 +314,4 @@ GlowTour.js requires Vue 3.3 or later. The adapter uses provide/inject and refs 
 
 ## SSR
 
-`GlowTourDefault` supports server-side rendering in SSR mode. The component renders as an inert container on the server and hydrates without warnings on the client. See the SSR guide for details.
+`GlowTourDefault` supports server-side rendering in SSR mode. The component renders as an inert container on the server and hydrates without warnings on the client. With Nuxt, see [With Nuxt](/docs/guides/ssr#with-nuxt) in the SSR guide.
