@@ -2,6 +2,7 @@ import "@glowhop/styles-tour/default.css";
 import "@glowhop/vanilla-tour/auto";
 import { createGlowTour } from "@glowhop/vanilla-tour";
 import "../src/styles.css";
+import "../src/theme";
 import { clearPersistedTour, createLogger, readPersistedTour } from "./shared";
 
 const logPanel = document.querySelector<HTMLElement>("#log");

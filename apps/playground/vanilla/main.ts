@@ -8,6 +8,7 @@ import {
 import { type LabContentFactory, mountLab } from "../lab";
 import "../lab/lab.css";
 import "../src/styles.css";
+import "../src/theme";
 
 // The main entry is side-effect free: the <glow-tour-*> markup below needs its elements defined.
 registerGlowTourElements();

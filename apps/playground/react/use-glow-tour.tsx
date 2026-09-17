@@ -1,17 +1,18 @@
-import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
+import { GlowTour, useGlowTour, useGlowTourContext } from "@glowhop/react-tour";
 import "@glowhop/styles-tour/default.css";
 import { StrictMode, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/styles.css";
+import "../src/theme";
 import "../src/tutorial.css";
 
 function Tutorial() {
   const saveButton = useRef<HTMLButtonElement>(null);
-  const { tour, create, start, cancel, status, canCancel, currentStepIndex, totalSteps } =
-    useGlowTour();
+  const core = useGlowTour();
 
   function startTutorial() {
-    const workflow = create("react-use-glow-tour")
+    const workflow = core
+      .create("react-use-glow-tour")
       .step({
         id: "profile",
         target: '[data-tour="profile"]',
@@ -31,8 +32,10 @@ function Tutorial() {
         content: "The status bar above updates from useGlowTour, outside the tour root.",
       })
       .build();
-    void start(workflow);
+    void core.start(workflow, {});
   }
+
+  console.log("core", core);
 
   return (
     <main className="tutorial">
@@ -40,14 +43,16 @@ function Tutorial() {
       <p className="tutorial-lead">Rendered under StrictMode.</p>
       <section className="tutorial-status" aria-label="Tour state">
         <output data-testid="tour-status">
-          {status}
-          {status === "active" ? ` · step ${currentStepIndex + 1} / ${totalSteps}` : ""}
+          {core.status}
+          {core.status === "active"
+            ? ` · step ${core.currentStepIndex + 1} / ${core.totalSteps}`
+            : ""}
         </output>
         <div className="tutorial-actions">
           <button type="button" onClick={startTutorial}>
             Start tutorial
           </button>
-          <button type="button" disabled={!canCancel} onClick={() => void cancel()}>
+          <button type="button" disabled={!core.canCancel} onClick={() => void core.cancel()}>
             Cancel
           </button>
         </div>
@@ -71,8 +76,34 @@ function Tutorial() {
           <small>target: '[data-tour="help"]'</small>
         </article>
       </div>
-      <GlowTourDefault tour={tour} />
+      <GlowTour.Root tour={core.tour}>
+        <GlowTour.Overlay />
+        <GlowTour.Pointer />
+        <GlowTour.Popover>
+          <GlowTour.Header />
+          <StepCounter />
+          <GlowTour.Content />
+          <GlowTour.Footer>
+            <GlowTour.CancelTrigger />
+            <GlowTour.PreviousTrigger />
+            <GlowTour.AdvanceTrigger />
+          </GlowTour.Footer>
+        </GlowTour.Popover>
+      </GlowTour.Root>
     </main>
+  );
+}
+
+function StepCounter() {
+  const { status, currentStepIndex, totalSteps } = useGlowTourContext();
+
+  return (
+    <div className="tutorial-status">
+      <output data-testid="tour-status">
+        {status}
+        {status === "active" ? ` · step ${currentStepIndex + 1} / ${totalSteps}` : ""}
+      </output>
+    </div>
   );
 }
 

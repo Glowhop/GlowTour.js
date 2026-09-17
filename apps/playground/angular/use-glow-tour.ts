@@ -2,9 +2,10 @@ import "@angular/compiler";
 import "zone.js";
 import { Component, type ElementRef, ViewChild } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
-import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
+import { GlowTourDefault, injectGlowTour, injectGlowTourContext } from "@glowhop/angular-tour";
 import "@glowhop/styles-tour/default.css";
 import "../src/styles.css";
+import "../src/theme";
 import "../src/tutorial.css";
 
 @Component({
@@ -76,6 +77,22 @@ class UseGlowTourTutorial {
 
   start() {
     void this.glow.start(this.workflow);
+  }
+}
+
+class StepCounter {
+  readonly glow = injectGlowTourContext();
+
+  get status() {
+    return this.glow()?.status;
+  }
+
+  get currentStepIndex() {
+    return this.glow()?.currentStepIndex;
+  }
+
+  get totalSteps() {
+    return this.glow()?.totalSteps;
   }
 }
 

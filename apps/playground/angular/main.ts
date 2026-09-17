@@ -20,6 +20,7 @@ import "@glowhop/styles-tour/default.css";
 import { type LabContentFactory, mountLab } from "../lab";
 import "../lab/lab.css";
 import "../src/styles.css";
+import "../src/theme";
 
 const root = document.querySelector<HTMLElement>("angular-playground");
 if (!root) throw new Error("Missing angular-playground");
