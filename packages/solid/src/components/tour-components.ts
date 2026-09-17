@@ -45,7 +45,7 @@ type ElementProps = ParentProps<
 >;
 type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = ParentProps<Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "ref">>;
-/** GlowTourContent displayed in the pointer indicator for each direction. */
+/** Content displayed in the pointer indicator for each direction. */
 export interface PointerDirectionContent {
   readonly top?: JSX.Element;
   readonly bottom?: JSX.Element;
@@ -142,7 +142,7 @@ function stepClass(
 }
 
 /**
- * GlowTourRoot component that must wrap all other tour components.
+ * Root component that must wrap all other tour components.
  *
  * Manages tour initialization and connects the tour instance to the DOM.
  * All other tour components (GlowTourOverlay, GlowTourPointer, GlowTourPopover, etc.) must be rendered inside this root.
