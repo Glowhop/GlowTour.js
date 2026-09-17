@@ -1,5 +1,6 @@
 import { navigate } from "astro:transitions/client";
 import type { Tour, WorkflowDefinition } from "@glowhop/vanilla-tour";
+import { FRAMEWORK_LOGOS, type SiteTourFramework } from "./site-tour-icons";
 
 /**
  * The tour of this site, running on this site.
@@ -72,7 +73,7 @@ function goTo(
  */
 function welcomeImage(): HTMLImageElement {
   const image = document.createElement("img");
-  image.src = "/welcome-image.png";
+  image.src = "/mascot-welcome-no-feet.png";
   image.alt = "Welcome! A wizard bunny waves hello before the tour of GlowTour.js begins.";
   // The intrinsic size reserves the box before the file loads, so the popover is centered on its
   // final height instead of growing under the user once the image arrives.
@@ -83,28 +84,172 @@ function welcomeImage(): HTMLImageElement {
   return image;
 }
 
+/** A decorative emoji: hidden from assistive technology, so titles and content read as plain text. */
+function emoji(symbol: string): HTMLSpanElement {
+  const span = document.createElement("span");
+  span.setAttribute("aria-hidden", "true");
+  span.textContent = symbol;
+  return span;
+}
+
+/** Creates an element with Tailwind classes and children. */
+function element<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className: string,
+  ...children: (Node | string)[]
+): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag);
+  node.className = className;
+  node.append(...children);
+  return node;
+}
+
+/** A step title led by an emoji or a logo. */
+function title(icon: string | Node, text: string): HTMLSpanElement {
+  return element(
+    "span",
+    "inline-flex items-center gap-2",
+    typeof icon === "string" ? emoji(icon) : icon,
+    text,
+  );
+}
+
+/** A framework logo, decorative: the framework's name is always written next to it. */
+function logo(framework: SiteTourFramework, size = "h-4 w-4"): SVGSVGElement {
+  const { body, viewBox } = FRAMEWORK_LOGOS[framework];
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", viewBox);
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  svg.setAttribute("class", `${size} shrink-0`);
+  svg.innerHTML = body;
+  return svg;
+}
+
+const MUTED_SURFACE = "bg-(--glow-tour-color-surface-muted)";
+
+/** A keyboard key. */
+function kbd(label: string): HTMLElement {
+  return element(
+    "kbd",
+    `inline-flex min-w-6 items-center justify-center rounded-md border border-b-2 border-(--glow-tour-color-border) ${MUTED_SURFACE} px-1.5 py-0.5 font-mono text-xs`,
+    label,
+  );
+}
+
+function code(text: string): HTMLElement {
+  return element("code", `rounded-md ${MUTED_SURFACE} px-1.5 py-0.5 font-mono text-[0.85em]`, text);
+}
+
+/** A tinted aside with a leading emoji, for a tip the reader can act on right away. */
+function callout(symbol: string, ...children: (Node | string)[]): HTMLElement {
+  return element(
+    "p",
+    "m-0 flex items-start gap-2 rounded-lg border-l-4 border-(--glow-tour-color-accent) bg-(--glow-tour-color-accent)/10 px-3 py-2 text-sm",
+    emoji(symbol),
+    element("span", "", ...children),
+  );
+}
+
+/** Small cards with a large emoji, two per row. */
+function cards(...items: readonly (readonly [symbol: string, label: string])[]): HTMLUListElement {
+  return element(
+    "ul",
+    "m-0 grid list-none grid-cols-2 gap-1.5 p-0",
+    ...items.map(([symbol, label]) =>
+      element(
+        "li",
+        "flex items-center gap-2 rounded-lg border border-(--glow-tour-color-border) px-2.5 py-2 text-sm",
+        element("span", "text-xl leading-none", emoji(symbol)),
+        label,
+      ),
+    ),
+  );
+}
+
+/** A few labelled pills, led by an emoji or a logo, as a list so screen readers announce how many there are. */
+function pills(
+  ...items: readonly (readonly [icon: string | Node, label: string])[]
+): HTMLUListElement {
+  return element(
+    "ul",
+    "m-0 flex list-none flex-wrap gap-1.5 p-0",
+    ...items.map(([icon, label]) =>
+      element(
+        "li",
+        `inline-flex items-center gap-1.5 rounded-full border border-(--glow-tour-color-border) ${MUTED_SURFACE} px-2.5 py-1 text-xs font-medium`,
+        typeof icon === "string" ? emoji(icon) : icon,
+        label,
+      ),
+    ),
+  );
+}
+
+/** Step content: paragraphs and rows stacked with even spacing. */
+function content(...children: (Node | string)[]): HTMLDivElement {
+  return element(
+    "div",
+    "flex flex-col gap-3",
+    ...children.map((child) => (typeof child === "string" ? element("p", "m-0", child) : child)),
+  );
+}
+
 export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
+  const frameworks = Object.keys(FRAMEWORK_LOGOS) as SiteTourFramework[];
+
   return tour
     .create(SITE_TOUR_NAME)
     .step({
       // Nothing on the page to point at yet: resolving to nothing lets the "detached" strategy
       // show the greeting centered, over a backdrop that covers the whole page.
+      classNames: {
+        popover: "block",
+      },
       behavior: { missingTarget: { strategy: "detached" } },
       content: welcomeImage(),
       id: "intro",
       target: () => null,
     })
     .step({
-      content:
+      content: content(
         "You are in one right now. Everything you see for the next few steps is the same library this page documents, running against this page.",
+        element(
+          "p",
+          "m-0 flex flex-wrap items-center gap-1.5 text-sm",
+          kbd("←"),
+          kbd("→"),
+          "to move,",
+          kbd("Esc"),
+          "to leave.",
+        ),
+      ),
       id: "welcome",
       popover: { placementTryOrder: ["bottom", "top"] },
       target: '[data-tour="hero"]',
-      title: "This is a guided tour",
+      title: title("👋", "This is a guided tour"),
     })
     .step({
-      content:
-        "Two packages: the adapter for your framework and the default theme. Pick a framework here and the command follows.",
+      content: content(
+        element(
+          "ul",
+          "m-0 flex list-none flex-col gap-1.5 p-0",
+          element(
+            "li",
+            "flex items-center gap-2",
+            emoji("🧩"),
+            code("@glowhop/react-tour"),
+            "the adapter",
+          ),
+          element(
+            "li",
+            "flex items-center gap-2",
+            emoji("🎨"),
+            code("@glowhop/styles-tour"),
+            "the default theme",
+          ),
+        ),
+        "Pick a framework here and the command follows.",
+      ),
       id: "install",
       popover: { placementTryOrder: ["bottom", "top"] },
       target: '[data-tour="install"]',
@@ -114,58 +259,108 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       // The page stays usable under the overlay, which is the point of the step: switching tabs
       // while a step is open is the behavior being described.
       behavior: { allowInteraction: true },
-      content:
-        "Switch tabs while this step is open - behavior.allowInteraction lets clicks through the overlay to the target. Each example runs for real, next to the code that produced it.",
+      content: content(
+        callout("💡", "Try it: switch tabs while this step is open."),
+        element(
+          "p",
+          "m-0",
+          code("behavior.allowInteraction"),
+          " lets clicks through the overlay to the target. Each example runs for real, next to the code that produced it.",
+        ),
+      ),
       id: "examples",
       popover: { placementTryOrder: ["bottom", "top"] },
       target: '[data-tour="examples-tabs"]',
       title: "You can still use the page",
     })
     .step({
-      content:
-        "React, Vue, Solid, Angular and vanilla DOM each get a native adapter over one shared engine. The tour you are in uses the vanilla one, because this page is static HTML. Next stop: the React page.",
+      content: content(
+        "Each framework gets a native adapter over one shared engine.",
+        pills(
+          ...frameworks.map(
+            (framework) => [logo(framework), FRAMEWORK_LOGOS[framework].label] as const,
+          ),
+        ),
+        "The tour you are in uses the vanilla one, because this page is static HTML. Next stop: the React page 👉",
+      ),
       id: "frameworks",
       popover: { placementTryOrder: ["top", "bottom"] },
       target: '[data-tour="frameworks"]',
-      title: "Five adapters, one engine",
+      title: title("⚙️", "Five adapters, one engine"),
     })
     .beforeLeave(goTo("advance", "adapter-install", "/react"))
     .step({
       behavior: acrossPageBoundary,
-      content:
-        "That was a client-side navigation, not a reload. The page was swapped underneath, and the tour picked itself back up here, on a target that only exists on this page.",
+      content: content(
+        element(
+          "p",
+          `m-0 flex items-center justify-center gap-2 rounded-lg ${MUTED_SURFACE} px-3 py-2 font-mono text-xs`,
+          element("span", "inline-flex items-center gap-1", emoji("🏠"), "/"),
+          element("span", "text-(--glow-tour-color-accent)", emoji("➜")),
+          element("span", "inline-flex items-center gap-1", logo("react"), "/react"),
+        ),
+        "That was a client-side navigation, not a reload ⚡ The page was swapped underneath, and the tour picked itself back up here, on a target that only exists on this page.",
+      ),
       id: "adapter-install",
       popover: { placementTryOrder: ["bottom", "top"] },
       target: '[data-tour="framework-install"]',
-      title: "A different page, the same tour",
+      title: title(logo("react", "h-5 w-5"), "A different page, the same tour"),
     })
     .beforeLeave(goTo("previous", "frameworks", "/"))
     .step({
-      content:
-        "Build a workflow, render the tour, run it. This snippet comes straight from the examples directory of the repository - copy, paste, run.",
+      content: content(
+        element(
+          "ol",
+          "m-0 flex list-none flex-col gap-1.5 p-0",
+          element("li", "flex items-center gap-2", emoji("1️⃣"), "Build a workflow"),
+          element("li", "flex items-center gap-2", emoji("2️⃣"), "Render the tour"),
+          element("li", "flex items-center gap-2", emoji("3️⃣"), "Run it"),
+        ),
+        "This snippet comes straight from the examples directory of the repository - copy, paste, run.",
+      ),
       id: "adapter-quickstart",
       popover: { placementTryOrder: ["left", "top", "bottom"] },
       target: '[data-tour="framework-quickstart"]',
-      title: "Your first tour, in one file",
+      title: title("🚀", "Your first tour, in one file"),
     })
     .beforeLeave(goTo("advance", "gallery", "/examples"))
     .step({
       behavior: acrossPageBoundary,
-      content:
-        "Placement, waiting on async data, tours that cannot be skipped, custom themes - every one of them runs on this page, beside its source.",
+      content: content(
+        "Every one of these runs on this page, beside its source:",
+        cards(
+          ["📍", "Placement"],
+          ["⏳", "Async data"],
+          ["🔒", "Unskippable"],
+          ["🎨", "Custom themes"],
+        ),
+      ),
       id: "gallery",
       popover: { placementTryOrder: ["bottom", "top"] },
       target: '[data-tour="examples-tabs"]',
-      title: "The whole gallery",
+      title: title("🖼️", "The whole gallery"),
     })
     .beforeLeave(goTo("previous", "adapter-quickstart", "/react"))
     .step({
-      content:
-        "That is the tour. It was about sixty lines of workflow. The documentation covers the rest: placement, scrolling, lifecycle hooks, accessibility, and SSR.",
+      content: content(
+        element(
+          "p",
+          "m-0 flex items-center gap-2 rounded-lg bg-(--glow-tour-color-accent) px-3 py-2 text-sm font-semibold text-(--glow-tour-color-on-accent)",
+          emoji("🏁"),
+          "9 steps, 3 pages, 0 reloads",
+        ),
+        "It was about sixty lines of workflow. The documentation covers the rest:",
+        pills(
+          ["📐", "Placement"],
+          ["🪝", "Lifecycle hooks"],
+          ["♿", "Accessibility"],
+          ["🖥️", "SSR"],
+        ),
+      ),
       id: "docs",
       popover: { placementTryOrder: ["bottom", "left"] },
       target: '[data-tour="docs-cta"]',
-      title: "Now go and build one",
+      title: title("🎉", "Now go and build one"),
       behavior: { allowInteraction: true },
     })
     .build();

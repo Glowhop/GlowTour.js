@@ -1,4 +1,4 @@
-import type { ReadonlyStepProps, TourState } from "@glowhop/core-tour";
+import type { ClassValue, ReadonlyStepProps, TourClassNames, TourState } from "@glowhop/core-tour";
 import {
   type AdapterRootBinding,
   connectGlowTourRoot,
@@ -11,6 +11,24 @@ import {
   POPOVER_IDLE_STYLE,
 } from "@glowhop/core-tour/adapter";
 import type { Tour, VanillaTourContent } from "../glow-tour";
+
+/**
+ * Brings `element` to the classes the step adds to it. `added` holds the classes added so far, so
+ * that only those are removed later: a class the element already had is never added nor removed.
+ */
+function syncStepClasses(element: Element, added: Set<string>, value: ClassValue | undefined) {
+  const next = [value ?? []].flat().join(" ").split(" ").filter(Boolean);
+  for (const name of added) {
+    if (next.includes(name)) continue;
+    element.classList.remove(name);
+    added.delete(name);
+  }
+  for (const name of next) {
+    if (element.classList.contains(name)) continue;
+    element.classList.add(name);
+    added.add(name);
+  }
+}
 
 function applyIdleStyle(element: HTMLElement | SVGElement, style: Record<string, string>) {
   for (const [property, value] of Object.entries(style)) {
@@ -451,6 +469,7 @@ export function registerGlowTourElements() {
     private cleanup?: () => void;
     protected readonly managedAttributes = new ManagedAttributes();
     private root?: GlowTourRootElement;
+    private readonly stepClasses = new Set<string>();
 
     connectedCallback() {
       this.rebind();
@@ -482,12 +501,32 @@ export function registerGlowTourElements() {
       if (!nextRoot) return;
       const context = rootContext(nextRoot);
       if (!context?.tour) return;
-      this.cleanup = this.bind(context);
+      const release = this.bind(context);
+      const [slot, target] = this.classTarget();
+      if (!target) {
+        this.cleanup = release;
+        return;
+      }
+      const unsubscribe = context.tour.state.subscribe((state) =>
+        syncStepClasses(
+          target,
+          this.stepClasses,
+          state.currentStep?.currentProps.classNames?.[slot],
+        ),
+      );
+      this.cleanup = () => {
+        unsubscribe();
+        release?.();
+        syncStepClasses(target, this.stepClasses, undefined);
+      };
     };
 
     protected bind(_context: RootContext): (() => void) | undefined {
       return undefined;
     }
+
+    /** The `classNames` entry of this element, and the element that receives its classes. */
+    protected abstract classTarget(): readonly [keyof TourClassNames, Element | null | undefined];
   }
 
   abstract class ReactiveElement extends ScopedElement {
@@ -506,6 +545,10 @@ export function registerGlowTourElements() {
   }
 
   class GlowTourHeader extends ReactiveElement {
+    protected classTarget() {
+      return ["header", this] as const;
+    }
+
     connectedCallback() {
       this.setAttribute("data-glow-tour-header", "");
       super.connectedCallback();
@@ -526,6 +569,10 @@ export function registerGlowTourElements() {
   }
 
   class GlowTourContent extends ReactiveElement {
+    protected classTarget() {
+      return ["content", this] as const;
+    }
+
     connectedCallback() {
       applyIntrinsicAttributes(this, { "aria-live": "polite" });
       this.setAttribute("data-glow-tour-content", "");
@@ -545,13 +592,23 @@ export function registerGlowTourElements() {
     }
   }
 
-  class GlowTourFooter extends HTMLElement {
+  // Scoped rather than a plain HTMLElement only so the current step's `classNames.footer` applies.
+  class GlowTourFooter extends ScopedElement {
+    protected classTarget() {
+      return ["footer", this] as const;
+    }
+
     connectedCallback() {
       this.setAttribute("data-glow-tour-footer", "");
+      super.connectedCallback();
     }
   }
 
   class GlowTourPopover extends ScopedElement {
+    protected classTarget() {
+      return ["popover", this] as const;
+    }
+
     connectedCallback() {
       applyIdleStyle(this, POPOVER_IDLE_STYLE);
       this.setAttribute("data-glow-tour-popover", "");
@@ -599,6 +656,10 @@ export function registerGlowTourElements() {
   class GlowTourPointer extends ScopedElement implements GlowTourPointerElement {
     private directionContentValue: PointerDirectionContent | undefined;
 
+    protected classTarget() {
+      return ["pointer", this] as const;
+    }
+
     get directionContent() {
       return this.directionContentValue;
     }
@@ -636,6 +697,10 @@ export function registerGlowTourElements() {
   }
 
   class GlowTourOverlay extends ScopedElement {
+    protected classTarget() {
+      return ["overlay", this.querySelector("svg[data-glow-tour-overlay]")] as const;
+    }
+
     connectedCallback() {
       this.setAttribute("data-glow-tour-overlay-host", "");
       super.connectedCallback();
@@ -654,6 +719,10 @@ export function registerGlowTourElements() {
     private labelSnapshot?: string;
     private capabilityDisabled = false;
     private evaluatedInitialDisabledState = false;
+
+    protected classTarget() {
+      return [this.action, this.button] as const;
+    }
 
     get disabled() {
       return this.hasAttribute("disabled");

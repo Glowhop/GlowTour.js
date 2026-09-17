@@ -1,4 +1,9 @@
-import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import type {
+  ClassValue,
+  GlowTour as CoreGlowTour,
+  TourClassNames,
+  TourState,
+} from "@glowhop/core-tour";
 import {
   type AdapterRootBinding,
   connectGlowTourRoot,
@@ -115,6 +120,17 @@ function useStep(snapshot: TourState<ReactTourContent>) {
   return snapshot.currentStep?.currentProps;
 }
 
+/** Joins the component's own classes with the ones the current step adds to it. */
+function joinClassNames(...values: (ClassValue | undefined)[]) {
+  return values.flat().filter(Boolean).join(" ") || undefined;
+}
+
+/** The component's `className` followed by the current step's `classNames[slot]`. */
+function useStepClassName(slot: keyof TourClassNames, className: string | undefined) {
+  const { tour } = useTourContext();
+  return joinClassNames(className, useStep(useTourSnapshot(tour))?.classNames?.[slot]);
+}
+
 /**
  * GlowTourRoot component that must wrap all other tour components.
  *
@@ -169,7 +185,12 @@ export function GlowTourRoot({ children, idPrefix, tour, ...props }: RootProps) 
  * @param props HTML attributes and the `as` prop for customizing the container element.
  * @returns The popover container.
  */
-export function GlowTourPopover({ as: Component = "section", style, ...props }: ElementProps) {
+export function GlowTourPopover({
+  as: Component = "section",
+  className,
+  style,
+  ...props
+}: ElementProps) {
   const { binding, tour } = useTourContext();
   const step = useStep(useTourSnapshot(tour));
   // Without a title, the content names the dialog instead of describing it.
@@ -184,6 +205,7 @@ export function GlowTourPopover({ as: Component = "section", style, ...props }: 
       aria-describedby={titled ? binding?.ids.description : undefined}
       aria-hidden={POPOVER_IDLE_ATTRIBUTES["aria-hidden"]}
       aria-labelledby={titled ? binding?.ids.title : binding?.ids.description}
+      className={joinClassNames(className, step?.classNames?.popover)}
       data-glow-tour-popover
       id={binding?.ids.popover}
       inert={POPOVER_IDLE_ATTRIBUTES.inert === "true"}
@@ -200,13 +222,18 @@ export function GlowTourPopover({ as: Component = "section", style, ...props }: 
  * @param props HTML attributes.
  * @returns The step title header.
  */
-export function GlowTourHeader(props: ContentProps) {
+export function GlowTourHeader({ className, ...props }: ContentProps) {
   const { binding, tour } = useTourContext();
   const step = useStep(useTourSnapshot(tour));
   if (step && step.title == null) return null;
 
   return (
-    <header {...props} data-glow-tour-header id={binding?.ids.title}>
+    <header
+      {...props}
+      className={joinClassNames(className, step?.classNames?.header)}
+      data-glow-tour-header
+      id={binding?.ids.title}
+    >
       {step?.title ?? null}
     </header>
   );
@@ -217,12 +244,18 @@ export function GlowTourHeader(props: ContentProps) {
  * @param props HTML attributes.
  * @returns The step content area.
  */
-export function GlowTourContent(props: ContentProps) {
+export function GlowTourContent({ className, ...props }: ContentProps) {
   const { binding, tour } = useTourContext();
   const step = useStep(useTourSnapshot(tour));
 
   return (
-    <div {...props} aria-live="polite" data-glow-tour-content id={binding?.ids.description}>
+    <div
+      {...props}
+      aria-live="polite"
+      className={joinClassNames(className, step?.classNames?.content)}
+      data-glow-tour-content
+      id={binding?.ids.description}
+    >
       {step?.content ?? null}
     </div>
   );
@@ -233,9 +266,9 @@ export function GlowTourContent(props: ContentProps) {
  * @param props HTML attributes and children.
  * @returns The footer container.
  */
-export function GlowTourFooter({ children, ...props }: ElementProps) {
+export function GlowTourFooter({ children, className, ...props }: ElementProps) {
   return (
-    <footer {...props} data-glow-tour-footer>
+    <footer {...props} className={useStepClassName("footer", className)} data-glow-tour-footer>
       {children}
     </footer>
   );
@@ -254,7 +287,14 @@ const OVERLAY_INERT_PROP: { inert?: boolean } = {
   inert: OVERLAY_IDLE_ATTRIBUTES.inert === "true",
 };
 
-export function GlowTourOverlay({ children, style, viewBox = "0 0 0 0", ...props }: OverlayProps) {
+export function GlowTourOverlay({
+  children,
+  className,
+  style,
+  viewBox = "0 0 0 0",
+  ...props
+}: OverlayProps) {
+  const stepClassName = useStepClassName("overlay", className);
   const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
 
   return (
@@ -262,6 +302,7 @@ export function GlowTourOverlay({ children, style, viewBox = "0 0 0 0", ...props
       {...props}
       {...OVERLAY_INERT_PROP}
       aria-hidden={OVERLAY_IDLE_ATTRIBUTES["aria-hidden"]}
+      className={stepClassName}
       data-glow-tour-allow-interaction={OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"]}
       data-glow-tour-overlay
       focusable="false"
@@ -292,10 +333,12 @@ export function GlowTourOverlay({ children, style, viewBox = "0 0 0 0", ...props
  */
 export function GlowTourPointer({
   as: Component = "div",
+  className,
   directionContent,
   style,
   ...props
 }: PointerProps) {
+  const stepClassName = useStepClassName("pointer", className);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...directionContent };
 
@@ -303,6 +346,7 @@ export function GlowTourPointer({
     <Component
       {...props}
       aria-hidden="true"
+      className={stepClassName}
       data-glow-tour-pointer
       ref={ref}
       style={style ?? POINTER_IDLE_STYLE_REACT}
@@ -321,6 +365,7 @@ export function GlowTourPointer({
 function Trigger({
   children,
   capabilityDisabled,
+  className,
   label,
   marker,
   onClick,
@@ -334,6 +379,7 @@ function Trigger({
   const { binding } = useTourContext();
   const child = typeof children === "function" ? null : children;
   const childProps: React.ButtonHTMLAttributes<HTMLButtonElement> = child?.props ?? {};
+  const stepClassName = useStepClassName(marker, className ?? childProps.className);
   const consumerDisabled = userDisabled === true || childProps.disabled === true;
   const disabled = capabilityDisabled || consumerDisabled;
 
@@ -347,6 +393,7 @@ function Trigger({
     "aria-controls": binding?.ids.popover,
     "aria-label": props["aria-label"] || label,
     "aria-disabled": disabled ? "true" : "false",
+    className: stepClassName,
     "data-glow-tour-cancel-trigger": marker === "cancel" || undefined,
     "data-glow-tour-consumer-disabled": consumerDisabled ? "true" : undefined,
     "data-glow-tour-advance-trigger": marker === "advance" || undefined,

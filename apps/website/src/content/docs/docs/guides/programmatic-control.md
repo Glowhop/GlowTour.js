@@ -181,11 +181,22 @@ tour comes back to the step, until the workflow runs again.
 - `overlay`, `popover`, and `indicator` are merged the way step options merge over the workflow
   defaults.
 - Arrays such as `placementTryOrder` are replaced, never concatenated.
+- `classNames` is merged per component: a component named in the change gets exactly the classes
+  given.
 
 Pass a function to compute the change from the current props:
 
 ```typescript
 props.update((current) => ({ data: { clicks: Number(current.data?.clicks ?? 0) + 1 } }));
+```
+
+To add a single class to the current ones, read them in the function form. They are a string or an
+array:
+
+```typescript
+props.update((current) => ({
+  classNames: { popover: [current.classNames?.popover ?? [], "popover-highlighted"].flat() },
+}));
 ```
 
 `update()` validates and publishes once, like `set()`. To remove a value, use `set()`.

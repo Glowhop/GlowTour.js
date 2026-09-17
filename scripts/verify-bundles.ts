@@ -59,7 +59,10 @@ export const bundleScenarios: readonly BundleScenario[] = [
   {
     entry: 'export { createWorkflowFromConfig } from "@glowhop/core-tour/config";',
     externalPackages: [],
-    gzipBudget: 5.25 * KIB,
+    // Raised from 5.25 KiB for validating and passing on the `classNames`
+    // option, after sharing its class arrays instead of copying them and
+    // reusing the string-array validator.
+    gzipBudget: 5.5 * KIB,
     name: "Core config",
     outputExtension: "js",
   },

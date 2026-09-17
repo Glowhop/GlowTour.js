@@ -12,6 +12,7 @@ export const LAB_CONFIG = {
       popover: {},
       indicator: {},
       behavior: {},
+      classNames: { popover: "lab-popover" },
     } satisfies StartOptions<unknown>,
   },
   selectors: {
