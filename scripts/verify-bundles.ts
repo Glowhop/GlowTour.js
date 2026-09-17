@@ -43,8 +43,8 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // 21 KiB for presenting a step while its scroll is still travelling, then
     // from 21.5 KiB for applying a `behavior.allowInteraction` changed through
     // the step props live (modality, focus, pointer fade) on the step, then
-    // from 21.75 KiB for focusing the dialog itself when the tour opens so
-    // screen readers announce the step content.
+    // from 21.75 KiB for the `"detached"` missing-target strategy (a centered
+    // popover over a backdrop without a cutout).
     gzipBudget: 22 * KIB,
     name: "Core index",
     outputExtension: "js",
@@ -59,7 +59,10 @@ export const bundleScenarios: readonly BundleScenario[] = [
   {
     entry: 'export { createWorkflowFromConfig } from "@glowhop/core-tour/config";',
     externalPackages: [],
-    gzipBudget: 5.25 * KIB,
+    // Raised from 5.25 KiB for validating and passing on the `classNames`
+    // option, after sharing its class arrays instead of copying them and
+    // reusing the string-array validator.
+    gzipBudget: 5.5 * KIB,
     name: "Core config",
     outputExtension: "js",
   },

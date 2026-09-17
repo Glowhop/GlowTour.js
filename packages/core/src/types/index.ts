@@ -63,9 +63,16 @@ export interface KeyboardShortcuts {
 
 /** How a step handles a target that cannot be found. */
 export interface MissingTargetOptions {
-  /** `"wait"` retries until `timeout`, `"skip"` moves past the step, `"error"` fails the tour. @default "error" */
-  strategy?: "wait" | "skip" | "error";
-  /** How long to look for the target, in milliseconds, before applying `strategy`. @default 3000 */
+  /**
+   * `"wait"` retries until `timeout`, `"skip"` moves past the step, `"error"` fails the tour,
+   * `"detached"` shows the popover centered in the viewport over a backdrop that covers the whole
+   * screen. A detached step has no pointer and no cutout, does not scroll, keeps the page blocked
+   * even when `allowInteraction` is `true`, and binds no `targetEvents`; its `context.target` is the
+   * document's `<body>`.
+   * @default "error"
+   */
+  strategy?: "wait" | "skip" | "error" | "detached";
+  /** How long to look for the target with the `"wait"` strategy, in milliseconds. @default 3000 */
   timeout?: number;
 }
 
@@ -73,6 +80,28 @@ export interface MissingTargetOptions {
 export type TryOrderOptions = "top" | "bottom" | "left" | "right";
 /** A resolved placement direction, including `"center"` for centered positioning. */
 export type ResolvedPlacement = TryOrderOptions | "center";
+
+/** One CSS class, or several. A string may hold several space-separated classes. */
+export type ClassValue = string | readonly string[];
+
+/**
+ * Classes added to the tour components while a step is shown, one entry per component.
+ *
+ * They are added to the classes passed to the component itself, never replacing them. A step's entry
+ * overrides the workflow's entry for the same component; the components the step leaves out keep the
+ * workflow's classes.
+ */
+export interface TourClassNames {
+  overlay?: ClassValue;
+  popover?: ClassValue;
+  pointer?: ClassValue;
+  header?: ClassValue;
+  content?: ClassValue;
+  footer?: ClassValue;
+  advance?: ClassValue;
+  previous?: ClassValue;
+  cancel?: ClassValue;
+}
 
 /** Base configuration for animated elements. */
 export interface BaseOptions {
@@ -241,6 +270,8 @@ export interface StartOptions<T> {
   animated?: boolean;
   /** Default step behavior for all steps. */
   behavior?: StepBehavior;
+  /** Classes added to the tour components on every step. See `TourClassNames`. */
+  classNames?: TourClassNames;
 
   /** Lifecycle hook called when the tour starts. */
   onStart?: (context: LifecycleHookContext<T>) => void | Promise<void>;
@@ -266,7 +297,8 @@ export type StepPropsUpdate<T> =
 /**
  * Partial change to step properties, for `StepPropsStore.update`. Fields it leaves out are kept.
  * `data` is merged key by key; `overlay`, `popover` and `indicator` are merged the way step options
- * merge over workflow defaults; arrays such as `placementTryOrder` are replaced.
+ * merge over workflow defaults; arrays such as `placementTryOrder` are replaced. `classNames` is merged
+ * per component: a component it names gets exactly the classes given.
  */
 export type StepPropsPatch<T> = Partial<ReadonlyStepProps<T>>;
 
@@ -301,7 +333,7 @@ export interface StepContext<T> {
   readonly direction: TourDirection;
   /** The step properties as initially configured, before any `props.set()`. */
   readonly initialProps: ReadonlyStepProps<T>;
-  /** The DOM element being highlighted for this step. */
+  /** The DOM element being highlighted for this step, or the document's `<body>` for a detached step. */
   readonly target: HTMLElement;
   /** Store for reading and updating the current step's properties. */
   readonly props: StepPropsStore<T>;
@@ -566,6 +598,8 @@ export type StepParameters<T> = {
   indicator?: IndicatorOptions;
   /** Step behavior (overrides workflow defaults). */
   behavior?: StepBehavior;
+  /** Classes added to the tour components on this step (overrides workflow defaults per component). See `TourClassNames`. */
+  classNames?: TourClassNames;
   /** The title content for this step. Without a title, the popover is named by its content. */
   title?: T;
   /** The body content for this step. */

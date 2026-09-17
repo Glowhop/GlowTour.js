@@ -55,6 +55,7 @@ step(params: StepParameters): WorkflowStepBuilder
 - `popover` - Popover options (see [Popover options](#popover-options))
 - `indicator` - Indicator options (see [Indicator options](#indicator-options))
 - `behavior` - Behavior options (see [Behavior options](#behavior-options))
+- `classNames` - Classes added to the tour components on this step (see [Class name options](#class-name-options))
 
 **Usage**:
 ```typescript
@@ -238,7 +239,7 @@ const workflow = tour
 
 ### `.beforeEnter(callback)`
 
-Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTarget: { strategy: "skip" }` never runs it. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `run()`, the tour goes back to `idle`.
+Runs each time the step is entered, after its target is resolved and before the step is shown. Can be async: the step is not shown until it resolves. A step skipped by `missingTarget: { strategy: "skip" }` never runs it; a step shown with `"detached"` runs it with the document's `<body>` as `context.target`. Call `context.abort()` to stay on the current step instead: nothing is shown and no event is emitted, and when it is the first step of `run()`, the tour goes back to `idle`.
 
 Step props are not reset automatically: a value set with `context.props.set()` is still there when the tour comes back to the step, until the workflow runs again. `beforeEnter` is where to reset them, because what it sets is what the step renders first.
 
@@ -296,6 +297,7 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 | `popover` | PopoverOptions | - | Popover appearance (see [Popover options](#popover-options)) |
 | `indicator` | IndicatorOptions | - | Indicator appearance (see [Indicator options](#indicator-options)) |
 | `behavior` | StepBehavior | - | Step behavior (see [Behavior options](#behavior-options)) |
+| `classNames` | TourClassNames | - | Classes added to the tour components on every step, unless a step sets its own for the same component (see [Class name options](#class-name-options)) |
 | `allowScroll` | boolean | `true` | The page stays scrollable during the tour; set `false` to lock page scroll while the tour is active (restored on finish/cancel/error/dispose) |
 | `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour starts |
 | `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour is cancelled |
@@ -352,7 +354,7 @@ popover: {
 }
 ```
 
-A hidden or disabled control only blocks the popover UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. The default tour component omits the footer when every control is hidden; a footer you compose yourself is always rendered.
+A hidden or disabled control only blocks the popover UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. The footer is always rendered, even when every control is hidden.
 
 ### Arrow options
 
@@ -418,7 +420,7 @@ Control step interaction and scrolling behavior.
 | `keyboard.advance` | Array | `["Enter", "ArrowRight"]` | Keys to advance to next step |
 | `keyboard.previous` | Array | `["ArrowLeft", "Backspace"]` | Keys to go to previous step |
 | `keyboard.cancel` | Array | `["Escape"]` | Keys to cancel the tour |
-| `missingTarget.strategy` | `"error" \| "wait" \| "skip"` | `"error"` | What to do if target isn't found - see [Handling errors](/docs/guides/handling-errors) |
+| `missingTarget.strategy` | `"error" \| "wait" \| "skip" \| "detached"` | `"error"` | What to do if target isn't found: `"detached"` shows the popover centered over a backdrop covering the whole screen - see [Handling errors](/docs/guides/handling-errors) |
 | `missingTarget.timeout` | number | `3000` | Time to wait for target with the `"wait"` strategy (in milliseconds) |
 | `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
 | `scroll` | ScrollOptions | - | Scroll behavior (see [Scroll options](#scroll-options)) |
@@ -437,7 +439,47 @@ behavior: {
 }
 ```
 
-**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTarget.strategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `missingTarget.timeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
+**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTarget.strategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, `detached` moves the popover to the center of the screen over a backdrop without a cutout, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `missingTarget.timeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
+
+### Class name options
+
+Add CSS classes to a tour component, for the whole workflow or for one step. Each entry takes a
+string or an array of strings.
+
+| Option | Component |
+|--------|-----------|
+| `overlay` | The overlay `<svg>` |
+| `popover` | The popover |
+| `pointer` | The indicator |
+| `header` | The popover header |
+| `content` | The popover content |
+| `footer` | The popover footer |
+| `previous` | The previous button |
+| `advance` | The advance button |
+| `cancel` | The cancel button |
+
+The classes land on the element that carries the matching `data-glow-tour-*` attribute, the one the
+default theme styles:
+
+- They are added after the classes you give the component itself, such as `<GlowTourFooter className="p-2">`, which are never replaced.
+- A step's entry overrides the workflow entry for the same component, like the other step options. A component the step leaves out keeps the workflow classes.
+- They are removed when the next step shows without them.
+
+**Usage**:
+```typescript
+tour
+  .create("onboarding", { classNames: { popover: "onboarding-popover" } })
+  .step({
+    id: "billing",
+    target: "#billing",
+    content: "Plans changed this month.",
+    // On this step the popover gets "popover-warning" instead of "onboarding-popover".
+    classNames: { popover: "popover-warning", advance: ["button", "button-danger"] },
+  })
+  .build();
+```
+
+To change the classes during a step, see [Updating step props](/docs/guides/programmatic-control#updating-step-props).
 
 ### Lifecycle hook context
 

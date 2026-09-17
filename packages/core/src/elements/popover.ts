@@ -75,7 +75,7 @@ export default class PopoverElement extends GlowTourElement {
     const targetCenterX = targetPosition.left + targetPosition.width / 2;
     const targetCenterY = targetPosition.top + targetPosition.height / 2;
 
-    if (maxX < minX || maxY < minY) {
+    if (step.detached || maxX < minX || maxY < minY) {
       return this._centerPosition(popoverPosition, viewport);
     }
 

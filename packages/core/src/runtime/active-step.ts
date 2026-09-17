@@ -15,6 +15,8 @@ export class ActiveStep<T> {
   readonly animated: boolean | undefined;
   readonly allowScroll: boolean;
   target: HTMLElement | null = null;
+  /** Shown without its target (`missingTarget.strategy: "detached"`); `target` is then the body. */
+  detached = false;
   /** The navigation that last brought the tour to this step. */
   direction: TourDirection = "advance";
 
@@ -32,25 +34,12 @@ export class ActiveStep<T> {
     this.allowScroll = defaults.allowScroll !== false;
   }
 
-  /** The step behavior, read live: `props.update({ behavior })` changes it while the step runs. */
-  get behavior() {
-    return this.props.get().behavior;
-  }
-
-  get allowInteraction() {
-    return this.behavior?.allowInteraction === true;
-  }
-
-  get overlay() {
-    return this.props.get().overlay;
-  }
-
-  get popover() {
-    return this.props.get().popover;
-  }
-
-  get indicator() {
-    return this.props.get().indicator;
+  /**
+   * Reads `behavior.allowInteraction` live: `props.update({ behavior })` changes it while the step runs.
+   * A detached step has no target to interact with, so it always blocks the page.
+   */
+  allowsInteraction() {
+    return !this.detached && this.props.get().behavior?.allowInteraction === true;
   }
 
   async resolveTarget(signal: AbortSignal) {
@@ -59,6 +48,13 @@ export class ActiveStep<T> {
       { document: this.rootDocument, signal },
       this.path,
     );
+  }
+
+  /** Marks the step detached and returns the body it stands on, or `null` without a document. */
+  detach() {
+    const body = (this.rootDocument ?? globalThis.document)?.body ?? null;
+    this.detached = body !== null;
+    return body;
   }
 
   snapshot() {

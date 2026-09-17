@@ -1,17 +1,17 @@
 {
-  "Core index": 22294,
+  "Core index": 22489,
   "Core adapter": 237,
-  "Core config": 5334,
+  "Core config": 5441,
   "React": 314,
   "React config": 149,
   "Vue": 102,
   "Vue config": 149,
-  "Angular": 3868,
+  "Angular": 3866,
   "Angular config": 154,
-  "Solid": 318,
+  "Solid": 315,
   "Solid config": 149,
   "Vanilla main": 200,
-  "Vanilla /auto": 3721,
+  "Vanilla /auto": 3883,
   "Vanilla config": 149,
   "Styles CSS": 1403
 }

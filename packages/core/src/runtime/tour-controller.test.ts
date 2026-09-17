@@ -1209,6 +1209,92 @@ describe("instance-first TourController", () => {
     assert.equal(tour.state.get().status, "cancelled");
   });
 
+  test("shows a detached step on the body without polling when its target is missing", async () => {
+    const realm = createRealmDocument();
+    const body = realm.element();
+    const attachedTarget = realm.element();
+    Object.assign(realm.document, { body });
+    const driver = new RecordingDriver();
+    const shown: { allowInteraction: boolean; detached: boolean; target: HTMLElement | null }[] =
+      [];
+    driver.show = (step: ActiveStep<string>) => {
+      shown.push({
+        allowInteraction: step.allowsInteraction(),
+        detached: step.detached,
+        target: step.target,
+      });
+    };
+    let attempts = 0;
+    let actionTarget: HTMLElement | null = null;
+    const tour = new TourController<string>(driver, { assertCanRun: () => realm.document });
+    await tour.run(
+      tour
+        .create("detached")
+        .step({
+          id: "step-detached",
+          behavior: {
+            allowInteraction: true,
+            missingTarget: { strategy: "detached", timeout: 60_000 },
+          },
+          content: "one",
+          target: () => {
+            attempts += 1;
+            return null;
+          },
+          title: "one",
+        })
+        .do(({ target }) => {
+          actionTarget = target;
+        })
+        .step({ id: "step-attached", content: "two", target: () => attachedTarget, title: "two" })
+        .build(),
+    );
+
+    assert.equal(attempts, 1);
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStep?.target, body);
+    assert.equal(actionTarget, body);
+    assert.deepEqual(shown, [{ allowInteraction: false, detached: true, target: body }]);
+
+    await tour.advance();
+    assert.deepEqual(shown[1], {
+      allowInteraction: false,
+      detached: false,
+      target: attachedTarget,
+    });
+  });
+
+  test("detaches a step whose target disconnects for good", async () => {
+    const realm = createRealmDocument();
+    const body = realm.element();
+    Object.assign(realm.document, { body });
+    const driver = new RecordingDriver();
+    const firstTarget = realm.element();
+    let resolvedTarget: HTMLElement | null = firstTarget;
+    const tour = new TourController<string>(driver, { assertCanRun: () => realm.document });
+    await tour.run(
+      tour
+        .create("recover-detached")
+        .step({
+          id: "step-recover-detached",
+          behavior: { missingTarget: { strategy: "detached" } },
+          content: "one",
+          target: () => resolvedTarget,
+          title: "one",
+        })
+        .build(),
+    );
+    assert.ok(driver.commands);
+
+    resolvedTarget = null;
+    await driver.commands.targetDisconnected(firstTarget);
+
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 0);
+    assert.equal(tour.state.get().currentStep?.target, body);
+    assert.deepEqual(driver.retargetedTargets, [body]);
+  });
+
   test("resolves selector, sync and async targets and applies error, skip, and wait strategies", async () => {
     const documentDescriptor = Object.getOwnPropertyDescriptor(globalThis, "document");
     Object.defineProperty(globalThis, "document", {
@@ -1367,7 +1453,7 @@ describe("instance-first TourController", () => {
     class InteractionDriver extends NoopTourViewDriver<string> {
       override show(...args: Parameters<NoopTourViewDriver<string>["show"]>) {
         const step: ActiveStep<string> = args[0];
-        shown.push(step.allowInteraction);
+        shown.push(step.allowsInteraction());
         return super.show(...args);
       }
     }
@@ -3145,6 +3231,45 @@ describe("instance-first TourController", () => {
       "async hook failure",
       "sync hook failure",
     ]);
+  });
+});
+
+describe("step classNames", () => {
+  test("overrides the workflow classes per component and lets the step update them", async () => {
+    const tour = createGlowTour<string>();
+    let context: StepContext<string> | undefined;
+    const workflow = tour
+      .create("class-names", { classNames: { popover: "tour", header: "tour-header" } })
+      .step({
+        id: "first",
+        content: "content",
+        target: targetResolver,
+        classNames: { popover: "first" },
+      })
+      .do((stepContext) => {
+        context = stepContext;
+      })
+      .step({ id: "second", content: "content", target: targetResolver })
+      .build();
+
+    await tour.run(workflow);
+    assert.deepEqual(tour.state.get().currentStep?.currentProps.classNames, {
+      popover: "first",
+      header: "tour-header",
+    });
+
+    context?.props.update({ classNames: { popover: "highlighted" } });
+    assert.deepEqual(tour.state.get().currentStep?.currentProps.classNames, {
+      popover: "highlighted",
+      header: "tour-header",
+    });
+
+    await tour.advance();
+    assert.deepEqual(tour.state.get().currentStep?.currentProps.classNames, {
+      popover: "tour",
+      header: "tour-header",
+    });
+    await tour.dispose();
   });
 });
 

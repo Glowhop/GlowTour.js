@@ -7,8 +7,12 @@
  * declared styles; the client router swaps the head and drops it, leaving an unstyled popover on
  * every page reached by a client-side navigation. Declaring it in the stylesheet the layout
  * imports puts it in every page's head instead, in dev and in the build alike.
+ *
+ * It goes in Tailwind's `components` layer: unlayered, the theme would beat every utility class
+ * given to a tour component, whatever its specificity. Keep it the only import of the theme, since
+ * an unlayered copy anywhere else would win again.
  */
-@import "@glowhop/styles-tour/default.css";
+@import "@glowhop/styles-tour/default.css" layer(components);
 
 /*
  * Marketing design tokens derived from the default GlowTour.js theme

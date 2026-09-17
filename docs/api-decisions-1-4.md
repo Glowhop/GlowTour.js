@@ -48,10 +48,11 @@ rediscovered. The user-facing changes are listed in the migration guide
 
 ## Footer visibility
 
-- **Chosen:** only the default tour component omits its footer when every control is hidden.
-- **Rejected:** `GlowTourFooter` hiding itself.
-- **Why:** the footer accepts arbitrary children. Hiding it from the control states would remove
-  content the consumer placed there.
+- **Chosen:** the footer is always rendered, including in the default tour component.
+- **Rejected:** `GlowTourFooter` hiding itself, and the default tour component omitting its footer
+  when every control is hidden.
+- **Why:** the footer accepts arbitrary children, and the default tour component is a plain
+  composition of the public components. A tour without a footer is composed without one.
 
 ## JSON config format version
 
@@ -72,14 +73,19 @@ rediscovered. The user-facing changes are listed in the migration guide
 ## Component names
 
 - **Chosen:** the `GlowTour` prefix on every component of every adapter, `GlowTourPreviousTrigger`,
-  and the Vanilla `<glow-tour-default>` element.
-- **Rejected:** keeping the unprefixed React and Solid components with their `GlowTour` namespace
-  object, the "back" trigger naming, and `createDefaultTourElement()`.
-- **Why:** names differed between adapters, the namespace object shared its name with the core
-  `GlowTour` interface and referenced every component at once, and "back" did not match
-  `tour.previous()`, `canPrevious` or `data-glow-tour-previous-trigger`. The default element is
-  declarative like the Angular `glow-tour-default` selector; registering it with the other elements
-  costs about 180 B gzip in `@glowhop/vanilla-tour/auto`.
+  and the Vanilla `<glow-tour-default>` element. React, Solid and Vue also export a `GlowTour`
+  object that groups the composition components without their prefix (`<GlowTour.Root>`), next
+  to the named exports.
+- **Rejected:** keeping the unprefixed React and Solid components, `GlowTour.Default`, the "back"
+  trigger naming, `createDefaultTourElement()`, and `export * as GlowTour` for the object.
+- **Why:** names differed between adapters, and "back" did not match `tour.previous()`,
+  `canPrevious` or `data-glow-tour-previous-trigger`. The compound syntax is common in JSX and Vue
+  templates, so the object stays, limited to the composition components. It is a plain object
+  literal because Bun flattens `export * as` into an `__export()` call that bundlers keep: every
+  component then stayed in a bundle that only imported `createGlowTour` (332 B to 2093 B gzip
+  for React). The object literal is dropped when unused. The default element is declarative like
+  the Angular `glow-tour-default` selector; registering it with the other elements costs about
+  180 B gzip in `@glowhop/vanilla-tour/auto`.
 
 ## Optional title
 
@@ -89,3 +95,32 @@ rediscovered. The user-facing changes are listed in the migration guide
 - **Why:** short hints do not need a title, and an empty labelled header would give the dialog an
   empty accessible name. Outside a step the header stays rendered, so server and client markup
   still match.
+
+## Detached steps
+
+- **Chosen:** `missingTarget.strategy: "detached"` shows the step centered over a backdrop without a
+  cutout, as soon as the target is missing. `context.target` stays typed `HTMLElement` and is the
+  document's `<body>`; `targetEvents` are not bound.
+- **Rejected:** typing `context.target` as `HTMLElement | null`, and waiting for `timeout` before
+  detaching.
+- **Why:** a nullable target would force a check in every action and hook, including the many
+  workflows that never detach. Waiting first would give `timeout` a second meaning; `wait` already
+  covers late targets, and `skip` and `error` also apply at once.
+
+## Step classNames
+
+- **Chosen:** one `classNames` record, on the workflow and on each step, with an entry per rendered
+  component (`overlay`, `popover`, `pointer`, `header`, `content`, `footer`, `previous`, `advance`,
+  `cancel`). The classes are added after the component's own classes. A step's entry overrides the
+  workflow entry for the same component, and `props.update()` replaces the classes of the components
+  it names. The adapters apply the classes; the core only merges them.
+- **Rejected:** a `className` inside `overlay`, `popover` and `indicator`; a name such as
+  `additionalClassNames`; adding a step's classes to the workflow ones; applying the classes from the
+  core.
+- **Why:** the header, content, footer and buttons have no option object, and one record covers every
+  component the same way. `classNames` already means added classes in component libraries. Overriding
+  per component matches how the other step options merge over the workflow defaults, and lets a step
+  drop a workflow class without a separate removal syntax. The core cannot apply them: it does not know the header,
+  content, footer and buttons, and the frameworks own the `class` attribute of what they render, so a
+  class set from outside would be erased on the next render. To stay within the size budgets, the class arrays are
+  shared with the definition instead of being copied and frozen.

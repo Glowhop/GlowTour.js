@@ -11,7 +11,6 @@ import {
   GlowTourPopover,
   GlowTourPreviousTrigger,
   GlowTourRoot,
-  useTour,
 } from "./tour-components";
 
 /** Props for the GlowTourDefault component. */
@@ -36,27 +35,12 @@ export function GlowTourDefault({ idPrefix, tour }: GlowTourDefaultProps) {
       <GlowTourPopover>
         <GlowTourHeader />
         <GlowTourContent />
-        <DefaultFooter />
+        <GlowTourFooter>
+          <GlowTourCancelTrigger />
+          <GlowTourPreviousTrigger />
+          <GlowTourAdvanceTrigger />
+        </GlowTourFooter>
       </GlowTourPopover>
     </GlowTourRoot>
-  );
-}
-
-/** The footer of the default tour, omitted when every control is hidden. */
-function DefaultFooter() {
-  const state = useTour();
-  const controls = state.currentStep?.currentProps.popover?.controls;
-  if (
-    controls?.advance === "hidden" &&
-    controls.previous === "hidden" &&
-    (controls.cancel === "hidden" || !state.canCancel)
-  )
-    return null;
-  return (
-    <GlowTourFooter>
-      <GlowTourCancelTrigger />
-      <GlowTourPreviousTrigger />
-      <GlowTourAdvanceTrigger />
-    </GlowTourFooter>
   );
 }

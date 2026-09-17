@@ -417,3 +417,22 @@
     grid-column: auto;
   }
 }
+
+/* classNames: "lab-popover" comes from the workflow, step-4 overrides it with its own classes. */
+.lab-popover {
+  --glow-tour-radius: 14px;
+}
+
+.lab-popover-waiting {
+  --glow-tour-color-border: #f59e0b;
+  border-style: dashed;
+}
+
+.lab-popover-revealed {
+  --glow-tour-color-border: #16a34a;
+  border-width: 2px;
+}
+
+.lab-control-waiting {
+  cursor: progress;
+}

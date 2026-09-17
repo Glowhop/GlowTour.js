@@ -1,4 +1,3 @@
-import "@glowhop/styles-tour/default.css";
 import {
   createGlowTour,
   GlowTourAdvanceTrigger,
@@ -496,6 +495,24 @@ export const customStyledIndicatorWorkflow = customStyledIndicatorTour
     popover: { arrow: { hidden: true } },
     behavior: { allowInteraction: true },
   })
+  .step({
+    id: "custom-styled-classes",
+    target: "#hero-custom-styled-member-2",
+    title: "Tailwind classes, for one step",
+    content:
+      "classNames adds classes to this step's popover, header and advance button only - go back and the earlier steps keep their defaults.",
+    classNames: {
+      popover: [
+        "border-2",
+        "shadow-lg",
+        "shadow-sky-500/25",
+        "[--glow-tour-color-border:#0ea5e9]",
+        "[--glow-tour-color-accent:#0ea5e9]",
+      ],
+      header: "text-sky-500",
+      advance: "rounded-full",
+    },
+  })
   .build();
 
 const customStyledTeamMembers = [
@@ -521,7 +538,13 @@ export function CustomStyledIndicatorDemo() {
           {customStyledTeamMembers.map((member, index) => (
             <li
               key={member.initials}
-              id={index === 0 ? "hero-custom-styled-member" : undefined}
+              id={
+                index === 0
+                  ? "hero-custom-styled-member"
+                  : index === 1
+                    ? "hero-custom-styled-member-2"
+                    : undefined
+              }
               className="flex items-center gap-3"
             >
               <Avatar initials={member.initials} />

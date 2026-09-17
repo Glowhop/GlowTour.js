@@ -432,14 +432,18 @@ export class TourController<T> {
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
     const signal = this.signalFor(operation);
-    const strategy = step.behavior?.missingTarget?.strategy ?? "error";
-    const timeout = step.behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
+    const missingTarget = step.props.get().behavior?.missingTarget;
+    const strategy = missingTarget?.strategy ?? "error";
+    const timeout = missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
     const startedAt = Date.now();
+    step.detached = false;
     while (true) {
       const target = await step.resolveTarget(signal);
       this.assertCurrent(operation);
       if (target) return target;
       if (strategy === "skip") return null;
+      const body = strategy === "detached" && step.detach();
+      if (body) return body;
       if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
         throw this.missingTargetError(step);
       }
@@ -492,39 +496,41 @@ export class TourController<T> {
     const operation = this.beginOperation();
     try {
       this.assertCurrent(operation);
-      const recoveredDuringGrace = await this.pollForTarget(step, operation, TARGET_LOSS_GRACE_MS);
+      let recovered = await this.pollForTarget(step, operation, TARGET_LOSS_GRACE_MS);
       this.assertCurrent(operation);
-      if (recoveredDuringGrace) {
-        step.target = recoveredDuringGrace;
-        await this.driver.retarget(step, this.signalFor(operation));
+      if (!recovered) {
+        const strategy = step.props.get().behavior?.missingTarget?.strategy ?? "error";
+        if (strategy === "skip") {
+          await this.navigate(
+            index + (direction === "advance" ? 1 : -1),
+            direction,
+            operation,
+            step,
+          );
+          return;
+        }
+        // The grace period counts against the "wait" budget rather than
+        // extending it — a longer configured timeout is the only way to wait
+        // longer overall, `missingTarget.timeout` is never silently doubled.
+        recovered =
+          strategy === "detached"
+            ? step.detach()
+            : strategy === "wait"
+              ? await this.pollForTarget(
+                  step,
+                  operation,
+                  (step.props.get().behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT) -
+                    TARGET_LOSS_GRACE_MS,
+                )
+              : null;
         this.assertCurrent(operation);
-        // The status doesn't change (still "active"), but the step's target
-        // did — publish so consumers reading `currentStep.target` see it.
-        this.publish();
-        return;
+        if (!recovered) throw this.missingTargetError(step);
       }
-
-      const strategy = step.behavior?.missingTarget?.strategy ?? "error";
-      if (strategy === "skip") {
-        await this.navigate(index + (direction === "advance" ? 1 : -1), direction, operation, step);
-        return;
-      }
-      if (strategy !== "wait") throw this.missingTargetError(step);
-
-      // The grace period counts against the "wait" budget rather than
-      // extending it — a longer configured timeout is the only way to wait
-      // longer overall, `missingTarget.timeout` is never silently doubled.
-      const timeout = step.behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
-      const recoveredAfterWait = await this.pollForTarget(
-        step,
-        operation,
-        Math.max(0, timeout - TARGET_LOSS_GRACE_MS),
-      );
-      this.assertCurrent(operation);
-      if (!recoveredAfterWait) throw this.missingTargetError(step);
-      step.target = recoveredAfterWait;
+      step.target = recovered;
       await this.driver.retarget(step, this.signalFor(operation));
       this.assertCurrent(operation);
+      // The status doesn't change (still "active"), but the step's target
+      // did — publish so consumers reading `currentStep.target` see it.
       this.publish();
     } catch (error) {
       try {
