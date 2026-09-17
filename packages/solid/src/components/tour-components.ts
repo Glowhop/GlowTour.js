@@ -80,7 +80,7 @@ interface TourContextValue {
 
 const TourContext = createContext<TourContextValue>();
 
-function useTourContext() {
+function useTourScope() {
   const context = useContext(TourContext);
   if (!context) {
     throw new Error("GlowTour components must be rendered inside <GlowTourRoot tour={...}>.");
@@ -88,7 +88,8 @@ function useTourContext() {
   return context;
 }
 
-function useTourSnapshot(tour: () => Tour) {
+/** @internal Reactive snapshot of a tour's state, shared with `useGlowTour`. */
+export function useTourSnapshot(tour: () => Tour) {
   const [snapshot, setSnapshot] = createSignal<TourState<SolidTourContent>>(tour().state.get());
   createEffect(() => {
     const activeTour = tour();
@@ -100,19 +101,19 @@ function useTourSnapshot(tour: () => Tour) {
 }
 
 /**
- * Solid hook that returns the current tour state.
+ * Reads the state of the tour rendered by the enclosing `<GlowTourRoot>`.
  *
- * Must be called inside a component rendered within `<GlowTourRoot>`.
+ * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns The current tour state.
  */
-export function useTour(): Accessor<TourState<SolidTourContent>> {
-  return useTourSnapshot(useTourContext().tour);
+export function useTourContext(): Accessor<TourState<SolidTourContent>> {
+  return useTourSnapshot(useTourScope().tour);
 }
 
 function useBoundElement<T extends Element>(
   bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
-  const context = useTourContext();
+  const context = useTourScope();
   const [element, setElement] = createSignal<T | null>(null);
   createEffect(() => {
     const activeBinding = context.binding();
@@ -202,7 +203,7 @@ export function GlowTourRoot(props: RootProps): JSX.Element {
  * @returns The popover container.
  */
 export function GlowTourPopover(props: ElementProps): JSX.Element {
-  const context = useTourContext();
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   // Without a title, the content names the dialog instead of describing it.
   const titled = () => {
@@ -253,7 +254,7 @@ export function GlowTourPopover(props: ElementProps): JSX.Element {
  * @returns The step title header.
  */
 export function GlowTourHeader(props: ContentProps): JSX.Element {
-  const context = useTourContext();
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
@@ -287,7 +288,7 @@ export function GlowTourHeader(props: ContentProps): JSX.Element {
  * @returns The step content area.
  */
 export function GlowTourContent(props: ContentProps): JSX.Element {
-  const context = useTourContext();
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   return createComponent(
     Dynamic,
@@ -314,7 +315,7 @@ export function GlowTourContent(props: ContentProps): JSX.Element {
  * @returns The footer container.
  */
 export function GlowTourFooter(props: ElementProps): JSX.Element {
-  const snapshot = useTourSnapshot(useTourContext().tour);
+  const snapshot = useTourSnapshot(useTourScope().tour);
   return createComponent(
     Dynamic,
     mergeProps(props, {
@@ -335,7 +336,7 @@ export function GlowTourFooter(props: ElementProps): JSX.Element {
  */
 export function GlowTourOverlay(props: OverlayProps): JSX.Element {
   const [local, other] = splitProps(props, ["children", "viewBox"]);
-  const snapshot = useTourSnapshot(useTourContext().tour);
+  const snapshot = useTourSnapshot(useTourScope().tour);
   const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
   const path = createComponent(Dynamic, {
     component: "path",
@@ -384,7 +385,7 @@ export function GlowTourOverlay(props: OverlayProps): JSX.Element {
  */
 export function GlowTourPointer(props: PointerProps): JSX.Element {
   const [local, other] = splitProps(props, ["as", "directionContent"]);
-  const snapshot = useTourSnapshot(useTourContext().tour);
+  const snapshot = useTourSnapshot(useTourScope().tour);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const directions = (
     Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
@@ -425,7 +426,7 @@ function Trigger(
     marker: "cancel" | "advance" | "previous";
   },
 ): JSX.Element {
-  const context = useTourContext();
+  const context = useTourScope();
   const [local, other] = splitProps(props, ["children", "capabilityDisabled", "label", "marker"]);
   const buttonProps = mergeProps(other, {
     get "aria-controls"() {
@@ -477,7 +478,7 @@ function Trigger(
  * @returns The back button, or null if hidden.
  */
 export function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Element {
-  const context = useTourContext();
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
@@ -511,7 +512,7 @@ export function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Elemen
  * @returns The advance button, or null if hidden.
  */
 export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
-  const context = useTourContext();
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
@@ -548,7 +549,7 @@ export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element 
  * @returns The cancel button, or null if the tour cannot be cancelled.
  */
 export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
-  const context = useTourContext();
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {

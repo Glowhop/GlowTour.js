@@ -147,13 +147,54 @@ interface PointerProps extends ComponentProps {
 
 ## Hooks
 
-### `useTour()`
+### `useGlowTour(source?)`
+
+Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and the current value of each state field.
+
+**Signature**:
+```typescript
+function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
+
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> &
+  TourState & { readonly tour: Tour }
+```
+
+**Parameters**:
+- `source` - Options for a new tour, or an existing tour created with `createGlowTour()` to share it.
+
+With options, the tour is created once, on the first render, and released with its root when the component unmounts; call `tour.dispose()` to end it explicitly. With a tour, the hook only reads it.
+
+**Usage**:
+```tsx
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
+
+function Onboarding() {
+  const { tour, create, run, status } = useGlowTour();
+
+  function start() {
+    void run(create("welcome").step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." }).build());
+  }
+
+  return (
+    <>
+      <button disabled={status === "active"} onClick={start}>Start tour</button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+```
+
+See the [guide](/docs/guides/react#run-a-tour-from-a-component) for sharing a tour and choosing step targets.
+
+### `useTourContext()`
+
+Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
 
 Returns reactive tour state. Must be called inside `<GlowTourRoot tour={...}>`.
 
 **Signature**:
 ```typescript
-function useTour(): TourState<ReactTourContent>
+function useTourContext(): TourState<ReactTourContent>
 ```
 
 **Returns**:
@@ -176,7 +217,7 @@ function useTour(): TourState<ReactTourContent>
 
 **Usage**:
 ```tsx
-const state = useTour();
+const state = useTourContext();
 
 return (
   <div>
@@ -191,6 +232,7 @@ return (
 ## Types
 
 - `Tour` - Tour controller
+- `UseGlowTourResult` - Value returned by `useGlowTour`
 - `TourState` - Reactive tour state
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
@@ -216,7 +258,7 @@ export {
   Pointer,
   Popover,
   Root,
-  useTour,
+  useTourContext,
 } from "./components/tour-components";
 export type {
   ReactTourContent,
@@ -226,4 +268,5 @@ export type {
   WorkflowDefinition,
 } from "./glow-tour";
 export { createGlowTour } from "./glow-tour";
+export { type UseGlowTourResult, useGlowTour } from "./use-glow-tour";
 ```

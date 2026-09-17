@@ -15,76 +15,56 @@ npm i @glowhop/solid-tour @glowhop/styles-tour
 
 ```tsx
 import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 ```
 
-## Instance scoping
+## Run a tour from a component
 
-Create the tour instance at the top level of your app:
-
-```tsx
-import { createGlowTour } from "@glowhop/solid-tour";
-
-export const tour = createGlowTour();
-```
-
-Then mount the `GlowTourDefault` component in your app:
+`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and one accessor per state field.
 
 ```tsx
-import { GlowTourDefault } from "@glowhop/solid-tour";
-import { tour } from "./tour";
-
-export function App() {
-  return (
-    <>
-      {/* Your app content */}
-      <GlowTourDefault tour={tour} />
-    </>
-  );
-}
-```
-
-## Complete example
-
-```tsx
+import { Show } from "solid-js";
 import { render } from "solid-js/web";
 import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
-
-const tour = createGlowTour();
-
-const workflow = tour
-  .create("product-tour")
-  .step({
-    id: "features",
-    target: "#features",
-    title: "Explore features",
-    content: "Learn about all the capabilities.",
-  })
-  .step({
-    id: "pricing",
-    target: "#pricing",
-    title: "Check pricing",
-    content: "See plans that fit your needs.",
-  })
-  .build();
+import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 
 function TourApp() {
+  const { tour, create, run, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
+
+  const workflow = create("product-tour")
+    .step({
+      id: "features",
+      target: '[data-tour="features"]',
+      title: "Explore features",
+      content: "Learn about all the capabilities.",
+    })
+    .step({
+      id: "pricing",
+      target: '[data-tour="pricing"]',
+      title: "Check pricing",
+      content: "See plans that fit your needs.",
+    })
+    .build();
+
   return (
     <>
-      <header>
-        <h1>Welcome</h1>
-      </header>
       <main>
-        <section id="features">
+        <section data-tour="features">
           <h2>Features</h2>
           <p>We offer guided tours, SSR support, and full keyboard navigation.</p>
         </section>
-        <section id="pricing">
+        <section data-tour="pricing">
           <h2>Pricing</h2>
           <p>Open source and free.</p>
         </section>
-        <button onClick={() => void tour.run(workflow)}>Start tour</button>
+        <Show
+          when={status() === "active"}
+          fallback={<button onClick={() => void run(workflow)}>Start tour</button>}
+        >
+          <p>
+            Step {currentStepIndex() + 1} of {totalSteps()} <button onClick={() => void cancel()}>Stop</button>
+          </p>
+        </Show>
       </main>
       <GlowTourDefault tour={tour} />
     </>
@@ -93,6 +73,122 @@ function TourApp() {
 
 render(() => <TourApp />, document.getElementById("app")!);
 ```
+
+The tour is disposed when the component's owner is cleaned up.
+
+## Share a tour with `createGlowTour`
+
+When several components drive the same tour, or code outside components needs it, create the tour yourself and pass it to `useGlowTour`:
+
+```tsx
+// tour.ts
+import { createGlowTour } from "@glowhop/solid-tour";
+
+export const tour = createGlowTour();
+```
+
+```tsx
+import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
+import { tour } from "./tour";
+
+export function App() {
+  return (
+    <>
+      <HelpButton />
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+
+function HelpButton() {
+  const { status } = useGlowTour(tour);
+  return <button disabled={status() === "active"}>Help</button>;
+}
+```
+
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
+
+## Step targets
+
+A step's `target` is the element the tour highlights. It accepts three forms:
+
+| Form | Example | Use it for |
+|---|---|---|
+| CSS selector | `'[data-tour="pricing"]'`, `"#pricing"` | Markup you render yourself |
+| Function | `() => element` | A ref, or an element that appears later |
+| `HTMLElement` | `document.body` | An element that already exists when the workflow is built |
+
+Selectors and functions are resolved each time the step is entered, not when the workflow is built.
+
+### Mark elements with `data-tour`
+
+Ids break as soon as a component renders twice, and classes change with styling. A dedicated attribute states the intent and survives both:
+
+```html
+<section data-tour="pricing">
+  <h2>Pricing</h2>
+</section>
+```
+
+```ts
+.step({ id: "pricing", target: '[data-tour="pricing"]', title: "Pricing", content: "Pick a plan." })
+```
+
+A selector matches the first element in the document, wherever it is rendered, so it keeps working with portals. When a component renders several times, target the one you mean through a ref.
+
+### Target a ref through a function
+
+Wrap the ref in a function. The function runs when the step is entered, after the component has mounted, so it reads the rendered element:
+
+```tsx
+import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
+
+export function Checkout() {
+  let payButton: HTMLButtonElement | undefined;
+  const { tour, create, run } = useGlowTour();
+
+  const workflow = create("checkout")
+    .step({
+      id: "pay",
+      target: () => payButton ?? null,
+      title: "Pay",
+      content: "Confirm your order here.",
+    })
+    .build();
+
+  return (
+    <>
+      <button ref={payButton}>Pay</button>
+      <button onClick={() => void run(workflow)}>Show me</button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+```
+
+Do not read the ref while building the workflow (`target: payButton`): the element is not rendered yet, so the step would get nothing.
+
+### Wait for an element that appears later
+
+The function can return a promise, for content that loads or opens after the tour has started. It receives a `signal` that aborts when the tour is cancelled or disposed, so a pending wait can stop:
+
+```ts
+.step({
+  id: "results",
+  target: async ({ signal }) => {
+    await loadResults({ signal }); // your own async work
+    return document.querySelector<HTMLElement>('[data-tour="results"]');
+  },
+  title: "Results",
+  content: "Your matches appear here.",
+})
+```
+
+### When no element is found
+
+A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors#missing-target-strategies).
+
+The target must be an HTML element of the page: an SVG element makes the tour fail with a `TypeError`. To highlight an SVG graphic, target its HTML container.
 
 ## Customize progressively
 
@@ -177,14 +273,14 @@ The object brings every composition component into your bundle. Import component
 
 ### Add a custom step counter
 
-Components rendered inside `GlowTourRoot` can read its reactive state with `useTour()`. Add this small component to the popover from the previous example:
+`useGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `useTourContext()`, without receiving the tour. Add this small component to the popover from the previous example:
 
 ```tsx
 import { Show } from "solid-js";
-import { useTour } from "@glowhop/solid-tour";
+import { useTourContext } from "@glowhop/solid-tour";
 
 function StepCounter() {
-  const state = useTour();
+  const state = useTourContext();
 
   return (
     <Show when={state().currentStepIndex >= 0 && state().totalSteps > 0}>
@@ -208,27 +304,6 @@ function StepCounter() {
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
 See the runnable [Live step counter example](/examples).
-
-### Subscribe outside the composition
-
-`useTour()` is intended for descendants of `GlowTourRoot`. Elsewhere in a Solid application, adapt the store to a signal and dispose the subscription with the component owner:
-
-```tsx
-import { createSignal, onCleanup } from "solid-js";
-
-function useTourState() {
-  const [state, setState] = createSignal(tour.state.get());
-  onCleanup(tour.state.subscribe(setState));
-  return state;
-}
-
-function TourStatus() {
-  const state = useTourState();
-  return <p>Tour status: {state().status}</p>;
-}
-```
-
-`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the cleanup function passed to `onCleanup`. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
 
 ## Solid 1.8+
 

@@ -46,7 +46,15 @@ type Tour = CoreGlowTour<VueTourContent>;
 
 type TourState = CoreTourState<VueTourContent>;
 
-function useTour(): ShallowRef<TourState<VNodeChild>>;
+function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
+
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+    readonly tour: Tour;
+} & {
+    readonly [K in keyof TourState]: Readonly<Ref<TourState[K]>>;
+};
+
+function useTourContext(): ShallowRef<TourState<VNodeChild>>;
 
 type VueTourContent = VNodeChild;
 

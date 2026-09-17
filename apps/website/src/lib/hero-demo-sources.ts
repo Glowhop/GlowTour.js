@@ -256,7 +256,7 @@ const workflow = tour
 
 tour.run(workflow);`;
 
-export const liveProgressSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger, createGlowTour, useTour } from "@glowhop/react-tour";
+export const liveProgressSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger, createGlowTour, useTourContext } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
@@ -270,7 +270,7 @@ const workflow = tour
 
 // A custom popover subcomponent, wired to real tour state:
 function StepCounter() {
-  const state = useTour();
+  const state = useTourContext();
 
   if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
 

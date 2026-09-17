@@ -62,23 +62,30 @@ The adapters depend on `@glowhop/core-tour`; you only install it directly if you
 ```tsx
 import { createRoot } from "react-dom/client";
 import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/react-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 
-const tour = createGlowTour();
-const workflow = tour
-  .create("welcome")
-  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." })
-  .build();
+function App() {
+  const { tour, create, run } = useGlowTour();
 
-createRoot(document.getElementById("app")!).render(
-  <>
-    <button id="welcome">Welcome</button>
-    <button type="button" onClick={() => void tour.run(workflow)}>
-      Start tour
-    </button>
-    <GlowTourDefault tour={tour} />
-  </>
-);
+  function start() {
+    const workflow = create("welcome")
+      .step({ id: "welcome", target: '[data-tour="welcome"]', title: "Welcome", content: "Hello." })
+      .build();
+    void run(workflow);
+  }
+
+  return (
+    <>
+      <button data-tour="welcome">Welcome</button>
+      <button type="button" onClick={start}>
+        Start tour
+      </button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+
+createRoot(document.getElementById("app")!).render(<App />);
 ```
 
 ### Vue
@@ -86,22 +93,17 @@ createRoot(document.getElementById("app")!).render(
 ```vue
 <script setup lang="ts">
 import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/vue-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
 
-const tour = createGlowTour();
-const workflow = tour
-  .create("welcome")
-  .step({ id: "welcome-2", target: "#welcome", title: "Welcome", content: "Hello." })
+const { tour, create, run } = useGlowTour();
+const workflow = create("welcome")
+  .step({ id: "welcome-2", target: '[data-tour="welcome"]', title: "Welcome", content: "Hello." })
   .build();
-
-function start() {
-  void tour.run(workflow);
-}
 </script>
 
 <template>
-  <button id="welcome">Welcome</button>
-  <button type="button" @click="start">Start tour</button>
+  <button data-tour="welcome">Welcome</button>
+  <button type="button" @click="run(workflow)">Start tour</button>
   <GlowTourDefault :tour="tour" />
 </template>
 ```
@@ -111,23 +113,26 @@ function start() {
 ```tsx
 import { render } from "solid-js/web";
 import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/solid-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 
-const tour = createGlowTour();
-const workflow = tour
-  .create("welcome")
-  .step({ id: "welcome-3", target: "#welcome", title: "Welcome", content: "Hello." })
-  .build();
+function App() {
+  const { tour, create, run } = useGlowTour();
+  const workflow = create("welcome")
+    .step({ id: "welcome-3", target: '[data-tour="welcome"]', title: "Welcome", content: "Hello." })
+    .build();
 
-render(() => (
-  <>
-    <button id="welcome">Welcome</button>
-    <button type="button" onClick={() => void tour.run(workflow)}>
-      Start tour
-    </button>
-    <GlowTourDefault tour={tour} />
-  </>
-), document.getElementById("app")!);
+  return (
+    <>
+      <button data-tour="welcome">Welcome</button>
+      <button type="button" onClick={() => void run(workflow)}>
+        Start tour
+      </button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+
+render(() => <App />, document.getElementById("app")!);
 ```
 
 ### Angular
@@ -135,26 +140,26 @@ render(() => (
 ```typescript
 import { Component } from "@angular/core";
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, GlowTourDefault } from "@glowhop/angular-tour";
+import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
 
 @Component({
   standalone: true,
   imports: [GlowTourDefault],
   template: `
-    <button id="welcome">Welcome</button>
+    <button data-tour="welcome">Welcome</button>
     <button type="button" (click)="start()">Start tour</button>
-    <glow-tour-default [tour]="tour" />
+    <glow-tour-default [tour]="glow.tour" />
   `,
 })
 export class TourComponent {
-  readonly tour = createGlowTour();
-  readonly workflow = this.tour
+  readonly glow = injectGlowTour();
+  private readonly workflow = this.glow
     .create("welcome")
-    .step({ id: "welcome-4", target: "#welcome", title: "Welcome", content: "Hello." })
+    .step({ id: "welcome-4", target: '[data-tour="welcome"]', title: "Welcome", content: "Hello." })
     .build();
 
   start() {
-    void this.tour.run(this.workflow);
+    void this.glow.run(this.workflow);
   }
 }
 ```
@@ -196,7 +201,7 @@ document.body.append(root);
 
 ### Tour
 
-A tour is the controller: the state machine that manages workflow execution, navigation, and lifecycle. Create one with `createGlowTour()` and keep it alive for the lifetime of your app. A tour can run multiple workflows sequentially or restart the same one.
+A tour is the controller: the state machine that manages workflow execution, navigation, and lifecycle. In a component, `useGlowTour()` (Angular: `injectGlowTour()`) creates one and returns its state in the framework's reactive form. To share a tour across components, or outside a framework, create it with `createGlowTour()` and keep it alive for the lifetime of your app. A tour can run multiple workflows sequentially or restart the same one.
 
 ### Workflow
 

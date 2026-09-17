@@ -68,7 +68,7 @@ interface TourContextValue {
 
 const TourContext = React.createContext<TourContextValue | null>(null);
 
-function useTourContext() {
+function useTourScope() {
   const context = React.useContext(TourContext);
   if (!context) {
     throw new Error("GlowTour components must be rendered inside <GlowTourRoot tour={...}>.");
@@ -76,7 +76,8 @@ function useTourContext() {
   return context;
 }
 
-function useTourSnapshot(tour: Tour): TourState<ReactTourContent> {
+/** @internal Subscribes to a tour's state, shared with `useGlowTour`. */
+export function useTourSnapshot(tour: Tour): TourState<ReactTourContent> {
   return React.useSyncExternalStore(tour.state.subscribe, tour.state.get, tour.state.get);
 }
 
@@ -103,7 +104,7 @@ function useEffectEvent<T extends (...args: never[]) => unknown>(fn: T): T {
 function useBoundElement<T extends Element>(
   bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
-  const { binding } = useTourContext();
+  const { binding } = useTourScope();
   const [element, setElement] = React.useState<T | null>(null);
 
   const binder = useEffectEvent(bind);
@@ -127,7 +128,7 @@ function joinClassNames(...values: (ClassValue | undefined)[]) {
 
 /** The component's `className` followed by the current step's `classNames[slot]`. */
 function useStepClassName(slot: keyof TourClassNames, className: string | undefined) {
-  const { tour } = useTourContext();
+  const { tour } = useTourScope();
   return joinClassNames(className, useStep(useTourSnapshot(tour))?.classNames?.[slot]);
 }
 
@@ -191,7 +192,7 @@ export function GlowTourPopover({
   style,
   ...props
 }: ElementProps) {
-  const { binding, tour } = useTourContext();
+  const { binding, tour } = useTourScope();
   const step = useStep(useTourSnapshot(tour));
   // Without a title, the content names the dialog instead of describing it.
   const titled = !step || step.title != null;
@@ -223,7 +224,7 @@ export function GlowTourPopover({
  * @returns The step title header.
  */
 export function GlowTourHeader({ className, ...props }: ContentProps) {
-  const { binding, tour } = useTourContext();
+  const { binding, tour } = useTourScope();
   const step = useStep(useTourSnapshot(tour));
   if (step && step.title == null) return null;
 
@@ -245,7 +246,7 @@ export function GlowTourHeader({ className, ...props }: ContentProps) {
  * @returns The step content area.
  */
 export function GlowTourContent({ className, ...props }: ContentProps) {
-  const { binding, tour } = useTourContext();
+  const { binding, tour } = useTourScope();
   const step = useStep(useTourSnapshot(tour));
 
   return (
@@ -376,7 +377,7 @@ function Trigger({
   label: string;
   marker: "cancel" | "advance" | "previous";
 }) {
-  const { binding } = useTourContext();
+  const { binding } = useTourScope();
   const child = typeof children === "function" ? null : children;
   const childProps: React.ButtonHTMLAttributes<HTMLButtonElement> = child?.props ?? {};
   const stepClassName = useStepClassName(marker, className ?? childProps.className);
@@ -418,7 +419,7 @@ function Trigger({
  * @returns The back button, or null if hidden.
  */
 export function GlowTourPreviousTrigger({ previousLabel, ...props }: PreviousTriggerProps) {
-  const { tour } = useTourContext();
+  const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
 
   const step = useStep(snapshot);
@@ -448,7 +449,7 @@ export function GlowTourAdvanceTrigger({
   advanceLabel,
   ...props
 }: AdvanceTriggerProps) {
-  const { tour } = useTourContext();
+  const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
   const step = useStep(snapshot);
   const control = step?.popover?.controls?.advance;
@@ -475,7 +476,7 @@ export function GlowTourAdvanceTrigger({
  * @returns The cancel button, or null if the tour cannot be cancelled.
  */
 export function GlowTourCancelTrigger(props: CancelTriggerProps) {
-  const { tour } = useTourContext();
+  const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
   const control = useStep(snapshot)?.popover?.controls?.cancel;
   if (!snapshot.canCancel || control === "hidden") return null;
@@ -485,12 +486,12 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps) {
 }
 
 /**
- * React hook that returns the current tour state.
+ * Reads the state of the tour rendered by the enclosing `<GlowTourRoot>`.
  *
- * Must be called inside a component rendered within `<GlowTourRoot>`.
+ * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns The current tour state.
  */
-export function useTour(): TourState<ReactTourContent> {
-  const { tour } = useTourContext();
+export function useTourContext(): TourState<ReactTourContent> {
+  const { tour } = useTourScope();
   return useTourSnapshot(tour);
 }

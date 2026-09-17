@@ -15,84 +15,182 @@ npm i @glowhop/react-tour @glowhop/styles-tour
 
 ```tsx
 import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/react-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 ```
 
-## Instance scoping
+## Run a tour from a component
 
-The tour instance is scoped to React Context. Create the tour at the top level of your app or in a context provider:
-
-```tsx
-import { createGlowTour } from "@glowhop/react-tour";
-
-export const tour = createGlowTour();
-```
-
-Then mount the `GlowTourDefault` component near your app root:
+`useGlowTour()` creates a tour for the component and returns everything needed to drive it: the `tour` to render, its methods (`create`, `run`, `advance`, `previous`, `goTo`, `cancel`), and every field of its state. The component re-renders when the state changes.
 
 ```tsx
-import { GlowTourDefault } from "@glowhop/react-tour";
-import { tour } from "./tour";
-
-export function App() {
-  return (
-    <>
-      {/* Your app content */}
-      <GlowTourDefault tour={tour} />
-    </>
-  );
-}
-```
-
-## Complete example
-
-```tsx
-import { createRoot } from "react-dom/client";
 import "@glowhop/styles-tour/default.css";
-import { GlowTourDefault, createGlowTour } from "@glowhop/react-tour";
-
-const tour = createGlowTour();
-
-const workflow = tour
-  .create("product-tour")
-  .step({
-    id: "features",
-    target: "#features",
-    title: "Explore features",
-    content: "Learn about all the capabilities.",
-  })
-  .step({
-    id: "pricing",
-    target: "#pricing",
-    title: "Check pricing",
-    content: "See plans that fit your needs.",
-  })
-  .build();
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 
 export function TourApp() {
+  const { tour, create, run, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
+
+  function startTour() {
+    const workflow = create("product-tour")
+      .step({
+        id: "features",
+        target: '[data-tour="features"]',
+        title: "Explore features",
+        content: "Learn about all the capabilities.",
+      })
+      .step({
+        id: "pricing",
+        target: '[data-tour="pricing"]',
+        title: "Check pricing",
+        content: "See plans that fit your needs.",
+      })
+      .build();
+    void run(workflow);
+  }
+
   return (
     <>
-      <header>
-        <h1>Welcome</h1>
-      </header>
       <main>
-        <section id="features">
+        <section data-tour="features">
           <h2>Features</h2>
           <p>We offer guided tours, SSR support, and full keyboard navigation.</p>
         </section>
-        <section id="pricing">
+        <section data-tour="pricing">
           <h2>Pricing</h2>
           <p>Open source and free.</p>
         </section>
-        <button onClick={() => void tour.run(workflow)}>Start tour</button>
+        {status === "active" ? (
+          <p>
+            Step {currentStepIndex + 1} of {totalSteps} <button onClick={() => void cancel()}>Stop</button>
+          </p>
+        ) : (
+          <button onClick={startTour}>Start tour</button>
+        )}
       </main>
       <GlowTourDefault tour={tour} />
     </>
   );
 }
-
-createRoot(document.getElementById("app")!).render(<TourApp />);
 ```
+
+The tour is created once, on the first render. When the component unmounts, the tour is released with its root; call `tour.dispose()` if you need to end it explicitly.
+
+## Share a tour with `createGlowTour`
+
+When several components drive the same tour, or code outside React needs it, create the tour yourself and pass it to `useGlowTour`:
+
+```tsx
+// tour.ts
+import { createGlowTour } from "@glowhop/react-tour";
+
+export const tour = createGlowTour();
+```
+
+```tsx
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
+import { tour } from "./tour";
+
+export function App() {
+  return (
+    <>
+      <HelpButton />
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+
+function HelpButton() {
+  const { status } = useGlowTour(tour);
+  return <button disabled={status === "active"}>Help</button>;
+}
+```
+
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
+
+## Step targets
+
+A step's `target` is the element the tour highlights. It accepts three forms:
+
+| Form | Example | Use it for |
+|---|---|---|
+| CSS selector | `'[data-tour="pricing"]'`, `"#pricing"` | Markup you render yourself |
+| Function | `() => element` | A ref, or an element that appears later |
+| `HTMLElement` | `document.body` | An element that already exists when the workflow is built |
+
+Selectors and functions are resolved each time the step is entered, not when the workflow is built.
+
+### Mark elements with `data-tour`
+
+Ids break as soon as a component renders twice, and classes change with styling. A dedicated attribute states the intent and survives both:
+
+```html
+<section data-tour="pricing">
+  <h2>Pricing</h2>
+</section>
+```
+
+```ts
+.step({ id: "pricing", target: '[data-tour="pricing"]', title: "Pricing", content: "Pick a plan." })
+```
+
+A selector matches the first element in the document, wherever it is rendered, so it keeps working with portals. When a component renders several times, target the one you mean through a ref.
+
+### Target a ref through a function
+
+Wrap the ref in a function. The function runs when the step is entered, after the component has mounted, so it reads the rendered element:
+
+```tsx
+import { useRef } from "react";
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
+
+export function Checkout() {
+  const payButton = useRef<HTMLButtonElement>(null);
+  const { tour, create, run } = useGlowTour();
+
+  function startTour() {
+    const workflow = create("checkout")
+      .step({
+        id: "pay",
+        target: () => payButton.current,
+        title: "Pay",
+        content: "Confirm your order here.",
+      })
+      .build();
+    void run(workflow);
+  }
+
+  return (
+    <>
+      <button ref={payButton}>Pay</button>
+      <button onClick={startTour}>Show me</button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+```
+
+Do not read the ref while building the workflow (`target: payButton.current`): the element is not rendered yet, so the step would get nothing.
+
+### Wait for an element that appears later
+
+The function can return a promise, for content that loads or opens after the tour has started. It receives a `signal` that aborts when the tour is cancelled or disposed, so a pending wait can stop:
+
+```ts
+.step({
+  id: "results",
+  target: async ({ signal }) => {
+    await loadResults({ signal }); // your own async work
+    return document.querySelector<HTMLElement>('[data-tour="results"]');
+  },
+  title: "Results",
+  content: "Your matches appear here.",
+})
+```
+
+### When no element is found
+
+A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors#missing-target-strategies).
+
+The target must be an HTML element of the page: an SVG element makes the tour fail with a `TypeError`. To highlight an SVG graphic, target its HTML container.
 
 ## Customize progressively
 
@@ -177,13 +275,13 @@ The object brings every composition component into your bundle. Import component
 
 ### Add a custom step counter
 
-Components rendered inside `GlowTourRoot` can read its reactive state with `useTour()`. Add this small component to the popover from the previous example:
+`useGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `useTourContext()`, without receiving the tour. Add this small component to the popover from the previous example:
 
 ```tsx
-import { useTour } from "@glowhop/react-tour";
+import { useTourContext } from "@glowhop/react-tour";
 
 function StepCounter() {
-  const state = useTour();
+  const state = useTourContext();
 
   if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
 
@@ -207,26 +305,6 @@ function StepCounter() {
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
 See the runnable [Live step counter example](/examples).
-
-### Subscribe outside the composition
-
-`useTour()` is intended for descendants of `GlowTourRoot`. Elsewhere in a React application, connect directly to the tour's external store with `useSyncExternalStore`:
-
-```tsx
-import { useSyncExternalStore } from "react";
-
-function TourStatus() {
-  const state = useSyncExternalStore(
-    tour.state.subscribe,
-    tour.state.get,
-    tour.state.get,
-  );
-
-  return <p>Tour status: {state.status}</p>;
-}
-```
-
-`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns an unsubscribe function, which React manages for this hook. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
 
 ## React 18 vs 19
 

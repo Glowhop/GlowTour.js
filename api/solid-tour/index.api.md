@@ -53,7 +53,15 @@ type Tour = CoreGlowTour<SolidTourContent>;
 
 type TourState = CoreTourState<SolidTourContent>;
 
-function useTour(): Accessor<TourState<Element>>;
+function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
+
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+    readonly tour: Tour;
+} & {
+    readonly [K in keyof TourState]: Accessor<TourState[K]>;
+};
+
+function useTourContext(): Accessor<TourState<Element>>;
 
 type WorkflowDefinition = CoreWorkflowDefinition<SolidTourContent>;
 ```
