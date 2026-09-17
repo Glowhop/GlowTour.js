@@ -84,7 +84,7 @@ export function useTourSnapshot(tour: WatchSource<Tour>) {
  * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns A reactive shallow ref containing the current tour state.
  */
-export function useTourContext(): ShallowRef<TourState<VueTourContent>> {
+export function useGlowTourContext(): ShallowRef<TourState<VueTourContent>> {
   const { tour } = useTourScope();
   return useTourSnapshot(tour);
 }

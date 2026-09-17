@@ -167,7 +167,7 @@ describe("react adapter browser behavior", () => {
     const [
       React,
       { createRoot },
-      { createGlowTour, GlowTourPopover, GlowTourRoot, useTourContext },
+      { createGlowTour, GlowTourPopover, GlowTourRoot, useGlowTourContext },
     ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
@@ -179,7 +179,7 @@ describe("react adapter browser behavior", () => {
       .step({ id: "step-3", content: "Second", target, title: "Second" })
       .build();
     function Observer() {
-      const state = useTourContext();
+      const state = useGlowTourContext();
       return React.createElement("output", null, `${state.status}:${state.currentStepIndex}`);
     }
     const root = createRoot(container);

@@ -44,7 +44,7 @@ const workflow = create("welcome")
 
 See the guide to [choose step targets](/docs/guides/vue#step-targets) and [share one tour between components](/docs/guides/vue#share-one-tour-between-components).
 
-### `useTourContext()`
+### `useGlowTourContext()`
 
 Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
 
@@ -52,7 +52,7 @@ Returns reactive tour state as a ref. Must be called inside `<GlowTourRoot tour=
 
 **Signature**:
 ```typescript
-function useTourContext(): ShallowRef<TourState<VueTourContent>>
+function useGlowTourContext(): ShallowRef<TourState<VueTourContent>>
 ```
 
 **Returns**:
@@ -76,9 +76,9 @@ ShallowRef<{
 **Usage**:
 ```vue
 <script setup>
-import { useTourContext } from "@glowhop/vue-tour";
+import { useGlowTourContext } from "@glowhop/vue-tour";
 
-const state = useTourContext();
+const state = useGlowTourContext();
 </script>
 
 <template>

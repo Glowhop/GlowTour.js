@@ -53,13 +53,13 @@ export class Onboarding {
 
 See the guide to [choose step targets](/docs/guides/angular#step-targets) and [share one tour between components](/docs/guides/angular#share-one-tour-between-components).
 
-### `injectTourContext()`
+### `injectGlowTourContext()`
 
 Reads the state of the tour rendered by the enclosing `glow-tour-root`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `injectGlowTour`.
 
 **Signature**:
 ```typescript
-function injectTourContext(): Signal<TourState | null>
+function injectGlowTourContext(): Signal<TourState | null>
 ```
 
 **Returns**: A Signal containing the current tour state, or `null` if no tour is active.
@@ -67,7 +67,7 @@ function injectTourContext(): Signal<TourState | null>
 **Usage**:
 ```typescript
 import { Component } from "@angular/core";
-import { injectTourContext } from "@glowhop/angular-tour";
+import { injectGlowTourContext } from "@glowhop/angular-tour";
 
 @Component({
   template: `
@@ -77,7 +77,7 @@ import { injectTourContext } from "@glowhop/angular-tour";
   `,
 })
 export class MyComponent {
-  protected tourState = injectTourContext();
+  protected tourState = injectGlowTourContext();
 }
 ```
 

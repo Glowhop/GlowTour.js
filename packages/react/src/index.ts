@@ -13,7 +13,7 @@ export {
   GlowTourPopover,
   GlowTourPreviousTrigger,
   GlowTourRoot,
-  useTourContext,
+  useGlowTourContext,
 } from "./components/tour-components";
 export type {
   ReactTourContent,

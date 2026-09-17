@@ -230,14 +230,14 @@ The object brings every composition component into your bundle. Import component
 
 ### Add a custom step counter
 
-`useGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `useTourContext()`, without receiving the tour. Create the counter as a child component so the root context is available:
+`useGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `useGlowTourContext()`, without receiving the tour. Create the counter as a child component so the root context is available:
 
 ```vue
 <!-- StepCounter.vue -->
 <script setup lang="ts">
-import { useTourContext } from "@glowhop/vue-tour";
+import { useGlowTourContext } from "@glowhop/vue-tour";
 
-const state = useTourContext();
+const state = useGlowTourContext();
 </script>
 
 <template>

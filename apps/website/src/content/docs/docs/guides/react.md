@@ -240,13 +240,13 @@ The object brings every composition component into your bundle. Import component
 
 ### Add a custom step counter
 
-`useGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `useTourContext()`, without receiving the tour. Add this small component to the popover from the previous example:
+`useGlowTour()` gives state to the component that starts the tour. Components rendered inside `GlowTourRoot` read the same state with `useGlowTourContext()`, without receiving the tour. Add this small component to the popover from the previous example:
 
 ```tsx
-import { useTourContext } from "@glowhop/react-tour";
+import { useGlowTourContext } from "@glowhop/react-tour";
 
 function StepCounter() {
-  const state = useTourContext();
+  const state = useGlowTourContext();
 
   if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
 

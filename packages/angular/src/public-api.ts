@@ -15,7 +15,7 @@ export {
   GlowTourPopover,
   GlowTourPreviousTrigger,
   GlowTourRoot,
-  injectTourContext,
+  injectGlowTourContext,
 } from "./lib/components/tour-components";
 export type {
   AngularTourContent,

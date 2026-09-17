@@ -155,7 +155,7 @@ createSSRApp({
 
 The Nuxt app in this repository (`apps/ssr-vue`) follows this setup and is tested end to end.
 
-Import the theme and auto-import the composables in `nuxt.config.ts`. `useTourContext` is left out on purpose: it is only needed inside a custom `GlowTourRoot`, and an auto-imported name that close to other libraries' `useTour` is easy to mix up.
+Import the theme and auto-import the composables in `nuxt.config.ts`. `useGlowTourContext` is left out on purpose: it is only needed inside a custom `GlowTourRoot`.
 
 ```ts title="nuxt.config.ts"
 export default defineNuxtConfig({

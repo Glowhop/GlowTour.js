@@ -46,7 +46,7 @@ function Onboarding() {
 
 See the guide to [choose step targets](/docs/guides/react#step-targets) and [share one tour between components](/docs/guides/react#share-one-tour-between-components).
 
-### `useTourContext()`
+### `useGlowTourContext()`
 
 Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
 
@@ -54,7 +54,7 @@ Returns reactive tour state. Must be called inside `<GlowTourRoot tour={...}>`.
 
 **Signature**:
 ```typescript
-function useTourContext(): TourState<ReactTourContent>
+function useGlowTourContext(): TourState<ReactTourContent>
 ```
 
 **Returns**:
@@ -77,7 +77,7 @@ function useTourContext(): TourState<ReactTourContent>
 
 **Usage**:
 ```tsx
-const state = useTourContext();
+const state = useGlowTourContext();
 
 return (
   <p>

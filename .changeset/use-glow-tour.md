@@ -9,8 +9,8 @@ Run a tour from a component with `useGlowTour()`.
 
 **Breaking changes**
 
-- React, Vue, and Solid: `useTour()` becomes `useTourContext()`. It still reads the state of the enclosing `GlowTourRoot`.
-- Angular: `injectGlowTour()` becomes `injectTourContext()`. The `injectGlowTour` name now belongs to the new API below and returns a different shape.
+- React, Vue, and Solid: `useTour()` becomes `useGlowTourContext()`. It still reads the state of the enclosing `GlowTourRoot`.
+- Angular: `injectGlowTour()` becomes `injectGlowTourContext()`. The `injectGlowTour` name now belongs to the new API below and returns a different shape.
 
 **Added**
 

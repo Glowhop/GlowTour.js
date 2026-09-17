@@ -46,7 +46,7 @@ function Onboarding() {
 
 See the guide to [choose step targets](/docs/guides/solid#step-targets) and [share one tour between components](/docs/guides/solid#share-one-tour-between-components).
 
-### `useTourContext()`
+### `useGlowTourContext()`
 
 Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
 
@@ -54,7 +54,7 @@ Returns reactive tour state via Solid signals. Must be called inside `<GlowTourR
 
 **Signature**:
 ```typescript
-function useTourContext(): Accessor<TourState<SolidTourContent>>
+function useGlowTourContext(): Accessor<TourState<SolidTourContent>>
 ```
 
 **Returns** (accessor):
@@ -77,9 +77,9 @@ function useTourContext(): Accessor<TourState<SolidTourContent>>
 
 **Usage**:
 ```tsx
-import { useTourContext } from "@glowhop/solid-tour";
+import { useGlowTourContext } from "@glowhop/solid-tour";
 
-const state = useTourContext();
+const state = useGlowTourContext();
 
 return (
   <p>
