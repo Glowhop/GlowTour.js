@@ -73,7 +73,15 @@ class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
     tour: Tour;
 }
 
-function injectGlowTour(): Signal<TourState<AngularTourContent> | null>;
+function injectGlowTour(source?: GlowTourOptions | Tour): InjectGlowTourResult;
+
+type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+    readonly tour: Tour;
+} & {
+    readonly [K in keyof TourState]: Signal<TourState[K]>;
+};
+
+function injectTourContext(): Signal<TourState<AngularTourContent> | null>;
 
 interface PointerDirectionContent {
     readonly top?: PointerDirectionValue;

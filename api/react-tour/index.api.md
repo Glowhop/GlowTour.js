@@ -53,7 +53,13 @@ type Tour = CoreGlowTour<ReactTourContent>;
 
 type TourState = CoreTourState<ReactTourContent>;
 
-function useTour(): TourState<ReactNode>;
+function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
+
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & TourState & {
+    readonly tour: Tour;
+};
+
+function useTourContext(): TourState<ReactNode>;
 
 type WorkflowDefinition = CoreWorkflowDefinition<ReactTourContent>;
 ```

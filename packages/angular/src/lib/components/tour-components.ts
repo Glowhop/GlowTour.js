@@ -107,11 +107,11 @@ function useTourScope() {
 }
 
 /**
- * Injects the tour state signal into a component.
- * Must be called within a GlowTourRoot component context.
+ * Reads the state of the tour rendered by the enclosing `glow-tour-root`.
+ * Use it to build tour UI inside the root; use `injectGlowTour` to run a tour from a component.
  * @returns A signal containing the current tour state or null.
  */
-export function injectGlowTour(): Signal<TourState<AngularTourContent> | null> {
+export function injectTourContext(): Signal<TourState<AngularTourContent> | null> {
   return useTourScope().state;
 }
 

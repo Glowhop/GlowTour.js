@@ -152,7 +152,7 @@ describe("angular adapter browser behavior", () => {
       template: `<output>{{ state()?.status }}:{{ state()?.currentStepIndex }}</output>`,
     })
     class TourStateObserver {
-      readonly state = runtime.injectGlowTour();
+      readonly state = runtime.injectTourContext();
     }
 
     @Component({
@@ -186,6 +186,68 @@ describe("angular adapter browser behavior", () => {
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");
     await app.destroy();
+  });
+
+  test("injectGlowTour exposes state signals outside the root and disposes the tour it creates", async () => {
+    const target = document.createElement("button");
+    document.body.append(target);
+
+    @Component({
+      selector: "angular-inject-glow-tour",
+      standalone: true,
+      imports: [runtime.GlowTourRoot, runtime.GlowTourPopover],
+      template: `
+        <output>{{ glow.status() }}:{{ glow.currentStepIndex() }}</output>
+        <glow-tour-root [tour]="glow.tour">
+          <glow-tour-popover />
+        </glow-tour-root>
+      `,
+    })
+    class InjectGlowTourHarness {
+      readonly glow = runtime.injectGlowTour();
+    }
+
+    document.body.append(document.createElement("angular-inject-glow-tour"));
+    const app = await bootstrapApplication(InjectGlowTourHarness);
+    const { glow } = app.components[0].instance as InjectGlowTourHarness;
+    const workflow = glow
+      .create("inject glow tour")
+      .step({ id: "first", content: "First", target, title: "First" })
+      .step({ id: "second", content: "Second", target, title: "Second" })
+      .build();
+    await glow.run(workflow);
+    await settle();
+    app.tick();
+    assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
+    await glow.advance();
+    await settle();
+    app.tick();
+    assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");
+    await glow.cancel();
+    assert.equal(glow.status(), "cancelled");
+    await app.destroy();
+    assert.equal(glow.tour.state.get().status, "disposed");
+    target.remove();
+  });
+
+  test("injectGlowTour never disposes a tour it is given", async () => {
+    const tour = runtime.createGlowTour();
+
+    @Component({
+      selector: "angular-inject-shared-glow-tour",
+      standalone: true,
+      template: `<output>{{ glow.status() }}</output>`,
+    })
+    class SharedGlowTourHarness {
+      readonly glow = runtime.injectGlowTour(tour);
+    }
+
+    document.body.append(document.createElement("angular-inject-shared-glow-tour"));
+    const app = await bootstrapApplication(SharedGlowTourHarness);
+    const { glow } = app.components[0].instance as SharedGlowTourHarness;
+    assert.equal(glow.tour, tour);
+    await app.destroy();
+    assert.equal(tour.state.get().status, "idle");
   });
 
   test("connects a root during Angular initialization and releases it on destruction", async () => {

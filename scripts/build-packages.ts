@@ -43,6 +43,7 @@ const packageBuilds: readonly PackageBuild[] = [
     entrypoints: [
       "src/index.ts",
       "src/glow-tour.ts",
+      "src/use-glow-tour.ts",
       "src/config.ts",
       "src/components/default-tour.ts",
       "src/components/glow-tour-namespace.ts",

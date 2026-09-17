@@ -87,7 +87,7 @@ if (state.status === "error") {
 }
 ```
 
-In React, use the `useTour` hook, which exposes the same state; every adapter follows the same pattern.
+In a component, `useGlowTour()` (Angular: `injectGlowTour()`) exposes the same fields as reactive state, including `status` and `error`.
 
 ### 3. Rejected promise
 

@@ -140,7 +140,7 @@ describe("vue adapter browser behavior", () => {
       .build();
     const Observer = defineComponent({
       setup() {
-        const state = runtime.useTour();
+        const state = runtime.useTourContext();
         return () => h("output", `${state.value.status}:${state.value.currentStepIndex}`);
       },
     });
@@ -156,6 +156,71 @@ describe("vue adapter browser behavior", () => {
     await nextTick();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     app.unmount();
+  });
+
+  test("useGlowTour exposes state refs outside the root and disposes the tour it creates", async () => {
+    const [{ createApp, defineComponent, h, nextTick }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    let glow!: ReturnType<typeof runtime.useGlowTour>;
+    const app = createApp(
+      defineComponent({
+        setup() {
+          glow = runtime.useGlowTour();
+          return () => [
+            h("output", `${glow.status.value}:${glow.currentStepIndex.value}`),
+            h(runtime.GlowTourRoot, { tour: glow.tour }, () => h(runtime.GlowTourPopover)),
+          ];
+        },
+      }),
+    );
+    app.mount(container);
+    const workflow = glow
+      .create("use glow tour")
+      .step({ id: "first", content: "First", target, title: "First" })
+      .step({ id: "second", content: "Second", target, title: "Second" })
+      .build();
+    await glow.run(workflow);
+    await nextTick();
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await glow.advance();
+    await nextTick();
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    await glow.cancel();
+    await nextTick();
+    assert.equal(glow.status.value, "cancelled");
+    app.unmount();
+    assert.equal(glow.tour.state.get().status, "disposed");
+    container.remove();
+    target.remove();
+  });
+
+  test("useGlowTour never disposes a tour it is given", async () => {
+    const [{ createApp, defineComponent, h }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const tour = runtime.createGlowTour();
+    let glow!: ReturnType<typeof runtime.useGlowTour>;
+    const app = createApp(
+      defineComponent({
+        setup() {
+          glow = runtime.useGlowTour(tour);
+          return () => h("output", glow.status.value);
+        },
+      }),
+    );
+    app.mount(container);
+    assert.equal(glow.tour, tour);
+    app.unmount();
+    assert.equal(tour.state.get().status, "idle");
+    container.remove();
   });
 
   test("connects before an immediate run after synchronous mount", async () => {

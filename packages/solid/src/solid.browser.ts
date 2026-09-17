@@ -176,7 +176,7 @@ describe("solid adapter browser behavior", () => {
     const [
       { createComponent },
       { Dynamic, render },
-      { createGlowTour, GlowTourPopover, GlowTourRoot, useTour },
+      { createGlowTour, GlowTourPopover, GlowTourRoot, useTourContext },
     ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
@@ -188,7 +188,7 @@ describe("solid adapter browser behavior", () => {
       .step({ id: "step-2", content: "Second", target, title: "Second" })
       .build();
     function Observer() {
-      const state = useTour();
+      const state = useTourContext();
       return createComponent(Dynamic, {
         component: "output",
         get children() {
@@ -211,6 +211,72 @@ describe("solid adapter browser behavior", () => {
     await tour.advance();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     dispose();
+  });
+
+  test("useGlowTour exposes state accessors outside the root and disposes the tour it creates", async () => {
+    const [
+      { createComponent },
+      { Dynamic, render },
+      { GlowTourPopover, GlowTourRoot, useGlowTour },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    let glow!: ReturnType<typeof useGlowTour>;
+    function App() {
+      glow = useGlowTour();
+      return [
+        createComponent(Dynamic, {
+          component: "output",
+          get children() {
+            return `${glow.status()}:${glow.currentStepIndex()}`;
+          },
+        }),
+        createComponent(GlowTourRoot, {
+          tour: glow.tour,
+          get children() {
+            return createComponent(GlowTourPopover, {});
+          },
+        }),
+      ];
+    }
+    const dispose = render(() => createComponent(App, {}), container);
+    const workflow = glow
+      .create("use glow tour")
+      .step({ id: "first", content: "First", target, title: "First" })
+      .step({ id: "second", content: "Second", target, title: "Second" })
+      .build();
+    await glow.run(workflow);
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await glow.advance();
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    await glow.cancel();
+    assert.equal(glow.status(), "cancelled");
+    dispose();
+    assert.equal(glow.tour.state.get().status, "disposed");
+    container.remove();
+    target.remove();
+  });
+
+  test("useGlowTour never disposes a tour it is given", async () => {
+    const [{ createComponent }, { render }, { createGlowTour, useGlowTour }] = await Promise.all([
+      import("solid-js"),
+      import("solid-js/web"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const tour = createGlowTour();
+    let glow!: ReturnType<typeof useGlowTour>;
+    function App() {
+      glow = useGlowTour(tour);
+      return glow.status();
+    }
+    const dispose = render(() => createComponent(App, {}), container);
+    assert.equal(glow.tour, tour);
+    dispose();
+    assert.equal(tour.state.get().status, "idle");
+    container.remove();
   });
 
   test("keeps nested tour controls isolated from the outer root", async () => {

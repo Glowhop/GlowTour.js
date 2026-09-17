@@ -147,13 +147,54 @@ interface PointerProps extends ComponentProps {
 
 ## Hooks
 
-### `useTour()`
+### `useGlowTour(source?)`
+
+Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and one accessor per state field.
+
+**Signature**:
+```typescript
+function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
+
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+  readonly tour: Tour
+} & { readonly [K in keyof TourState]: Accessor<TourState[K]> }
+```
+
+**Parameters**:
+- `source` - Options for a new tour, or an existing tour created with `createGlowTour()` to share it.
+
+With options, the tour is disposed when the owning scope is cleaned up. With a tour, the hook only reads it and never disposes it.
+
+**Usage**:
+```tsx
+import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
+
+function Onboarding() {
+  const { tour, create, run, status } = useGlowTour();
+  const workflow = create("welcome")
+    .step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." })
+    .build();
+
+  return (
+    <>
+      <button disabled={status() === "active"} onClick={() => void run(workflow)}>Start tour</button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+```
+
+See the [guide](/docs/guides/solid#run-a-tour-from-a-component) for sharing a tour and choosing step targets.
+
+### `useTourContext()`
+
+Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
 
 Returns reactive tour state via Solid signals. Must be called inside `<GlowTourRoot tour={...}>`.
 
 **Signature**:
 ```typescript
-function useTour(): Accessor<TourState<SolidTourContent>>
+function useTourContext(): Accessor<TourState<SolidTourContent>>
 ```
 
 **Returns** (accessor):
@@ -176,9 +217,9 @@ function useTour(): Accessor<TourState<SolidTourContent>>
 
 **Usage**:
 ```tsx
-import { useTour } from "@glowhop/solid-tour";
+import { useTourContext } from "@glowhop/solid-tour";
 
-const state = useTour();
+const state = useTourContext();
 
 return (
   <div>
@@ -193,6 +234,7 @@ return (
 ## Types
 
 - `Tour` - Tour controller
+- `UseGlowTourResult` - Value returned by `useGlowTour`
 - `TourState` - Tour state
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
@@ -218,7 +260,7 @@ export {
   Pointer,
   Popover,
   Root,
-  useTour,
+  useTourContext,
 } from "./components/tour-components";
 export type {
   SolidTourContent,
@@ -228,4 +270,5 @@ export type {
   WorkflowDefinition,
 } from "./glow-tour";
 export { createGlowTour } from "./glow-tour";
+export { type UseGlowTourResult, useGlowTour } from "./use-glow-tour";
 ```

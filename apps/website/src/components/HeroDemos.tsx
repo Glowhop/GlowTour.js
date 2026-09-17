@@ -11,7 +11,7 @@ import {
   GlowTourPopover,
   GlowTourPreviousTrigger,
   GlowTourRoot,
-  useTour,
+  useTourContext,
 } from "@glowhop/react-tour";
 import { Bell, Rocket, Trash2, UserPlus } from "lucide-react";
 import type { CSSProperties } from "react";
@@ -587,13 +587,15 @@ export const liveProgressWorkflow = liveProgressTour
     id: "live-progress-field-1",
     target: "#hero-live-progress-field-1",
     title: "Company name",
-    content: "The counter above this title is real state from useTour(), not a hardcoded label.",
+    content:
+      "The counter above this title is real state from useTourContext(), not a hardcoded label.",
   })
   .step({
     id: "live-progress-field-2",
     target: "#hero-live-progress-field-2",
     title: "Industry",
-    content: "Advance again - the counter updates because it reads useTour().currentStepIndex.",
+    content:
+      "Advance again - the counter updates because it reads useTourContext().currentStepIndex.",
   })
   .step({
     id: "live-progress-field-3",
@@ -610,7 +612,7 @@ export const liveProgressWorkflow = liveProgressTour
   .build();
 
 function StepCounter() {
-  const state = useTour();
+  const state = useTourContext();
 
   if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
 
