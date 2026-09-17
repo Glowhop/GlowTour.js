@@ -7,31 +7,13 @@ The GlowTour.js Vanilla adapter uses native custom elements. Content is HTML and
 
 ## Setup
 
-Install the package and import the default theme:
+Install the adapter and the default theme:
 
 ```bash
 npm i @glowhop/vanilla-tour @glowhop/styles-tour
 ```
 
-```typescript
-import "@glowhop/styles-tour/default.css";
-import {
-  createGlowTour,
-  registerGlowTourElements,
-} from "@glowhop/vanilla-tour";
-```
-
-## Registering elements
-
-Register the custom elements before creating a tour:
-
-```typescript
-import { registerGlowTourElements } from "@glowhop/vanilla-tour";
-
-registerGlowTourElements();
-```
-
-The pure entry point requires explicit registration. Alternatively, import from `@glowhop/vanilla-tour/auto` for auto-registration as a side effect.
+Register the custom elements before creating a tour. The pure entry point requires this explicit call; alternatively, import from `@glowhop/vanilla-tour/auto` to register them as a side effect. The complete example below imports the theme and registers the elements.
 
 ## Complete example
 
@@ -69,10 +51,10 @@ document.body.append(tourRoot);
 
 // Create and wire up a start button
 const startButton = document.querySelector("#start-tour") as HTMLButtonElement;
-startButton.addEventListener("click", () => void tour.run(workflow));
+startButton.addEventListener("click", () => void tour.start(workflow));
 ```
 
-In your HTML:
+In your `index.html`, loaded by a bundler such as Vite that compiles `main.ts` and resolves the package imports:
 
 ```html
 <!doctype html>
@@ -95,7 +77,7 @@ In your HTML:
       </section>
       <button id="start-tour">Start tour</button>
     </main>
-    <script src="./main.ts"></script>
+    <script type="module" src="/main.ts"></script>
   </body>
 </html>
 ```

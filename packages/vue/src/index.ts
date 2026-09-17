@@ -13,7 +13,7 @@ export {
   GlowTourPopover,
   GlowTourPreviousTrigger,
   GlowTourRoot,
-  useTour,
+  useTourContext,
 } from "./components/tour-components.js";
 export type {
   StartOptions,
@@ -24,3 +24,4 @@ export type {
   WorkflowDefinition,
 } from "./glow-tour.js";
 export { createGlowTour } from "./glow-tour.js";
+export { type UseGlowTourResult, useGlowTour } from "./use-glow-tour.js";

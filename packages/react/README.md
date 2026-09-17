@@ -12,14 +12,14 @@ import { GlowTourDefault, createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 const workflow = tour.create("intro").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
-createRoot(document.getElementById("app")!).render(<><button id="welcome">Welcome</button><button type="button" onClick={() => void tour.run(workflow)}>Start tour</button><GlowTourDefault tour={tour} /></>);
+createRoot(document.getElementById("app")!).render(<><button id="welcome">Welcome</button><button type="button" onClick={() => void tour.start(workflow)}>Start tour</button><GlowTourDefault tour={tour} /></>);
 ```
 
 <!-- glow-tour:snippet react-advanced -->
 ```tsx
 import { createGlowTour, GlowTourAdvanceTrigger, GlowTourCancelTrigger, GlowTourContent, GlowTourFooter, GlowTourHeader, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourRoot } from "@glowhop/react-tour";
 const tour = createGlowTour(); const workflow = tour.create("custom").step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello." }).build();
-export function CustomTour() { return <><button id="welcome">Target</button><button type="button" onClick={() => void tour.run(workflow)}>Start</button><GlowTourRoot tour={tour}><GlowTourOverlay /><GlowTourPointer /><GlowTourPopover><GlowTourHeader /><GlowTourContent /><GlowTourFooter><GlowTourCancelTrigger /><GlowTourAdvanceTrigger /></GlowTourFooter></GlowTourPopover></GlowTourRoot></>; }
+export function CustomTour() { return <><button id="welcome">Target</button><button type="button" onClick={() => void tour.start(workflow)}>Start</button><GlowTourRoot tour={tour}><GlowTourOverlay /><GlowTourPointer /><GlowTourPopover><GlowTourHeader /><GlowTourContent /><GlowTourFooter><GlowTourCancelTrigger /><GlowTourAdvanceTrigger /></GlowTourFooter></GlowTourPopover></GlowTourRoot></>; }
 ```
 
-Compose `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, and trigger primitives. `GlowTourDefault` is the complete default composition; `useTour()` exposes native reactive state. Static/dynamic targets, placement, interaction, scroll, callbacks, actions/events, cancellation, and cleanup follow Core.
+Compose `GlowTourRoot`, `GlowTourOverlay`, `GlowTourPointer`, `GlowTourPopover`, `GlowTourHeader`, `GlowTourContent`, `GlowTourFooter`, and trigger primitives. `GlowTourDefault` is the complete default composition. `useGlowTour()` runs a tour from a component and returns its state; `useTourContext()` reads that state inside `GlowTourRoot`. Static/dynamic targets, placement, interaction, scroll, callbacks, actions/events, cancellation, and cleanup follow Core.

@@ -6,15 +6,15 @@ import { createGlowTour } from "./glow-tour";
 describe("react config entry point", () => {
   test("createWorkflowFromConfig needs no generic or cast to run through createGlowTour", async () => {
     // This is a compile-level regression test: `createWorkflowFromConfig(json)` must be directly
-    // assignable to what `createGlowTour().run(...)` expects, with no `<ReactNode>` type argument
+    // assignable to what `createGlowTour().start(...)` expects, with no `<ReactNode>` type argument
     // and no cast. That was broken before the config module gained per-adapter pre-bound entry
-    // points (see HANDOFF-serializable-config.md).
+    // points (see docs/json-config-design.md).
     const definition = createWorkflowFromConfig({
       name: "onboarding",
       version: "1.1",
       steps: [{ id: "s1", target: "#invite-button", title: "Invite", content: "Invite your team" }],
     });
 
-    await assert.rejects(() => createGlowTour().run(definition), /connected root/i);
+    await assert.rejects(() => createGlowTour().start(definition), /connected root/i);
   });
 });

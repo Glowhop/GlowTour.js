@@ -23,6 +23,9 @@ coverage/
 .codex/
 .mcp.json
 
+# Local progress notes
+PROGRESS-*.md
+
 # Environment files
 .env
 .env.*

@@ -28,7 +28,7 @@ that instance runs - including workflows built from a [JSON config](/docs/guides
 
 | Event | Emitted |
 | --- | --- |
-| `tour:start` | Once `run()` has passed `onStart` and the first step's `beforeEnter` without an abort, before any other event |
+| `tour:start` | Once `start()` has passed `onStart` and the first step's `beforeEnter` without an abort, before any other event |
 | `step:enter` | Once a step is on screen and interactive |
 | `step:leave` | When a step is left - moving on, going back, finishing, or cancelling |
 | `step:skip` | When a navigation passes over a step whose target is missing and whose `missingTarget.strategy` is `"skip"` |
@@ -68,14 +68,14 @@ Every event carries the same shape:
 
 `durationMs` follows one rule: it times whatever the event is named after. On
 `step:leave`, that is the time spent on the step. On `tour:complete`, `tour:cancel`
-and `tour:error`, the time since `run()`. On `tour:start` and `step:enter` - the
+and `tour:error`, the time since `start()`. On `tour:start` and `step:enter` - the
 beginnings - it is always `0`.
 
 ### `source`
 
 | Value | What the user did |
 | --- | --- |
-| `"trigger"` | Clicked a Next / Back / Cancel button |
+| `"trigger"` | Clicked the advance, previous, or cancel (Skip) button |
 | `"keyboard"` | Used a keyboard shortcut |
 | `"overlay"` | Clicked the dimmed backdrop |
 | `"api"` | Nothing - your own code called `advance()`, `previous()`, `goTo()` or `cancel()`, including from inside a step action |
@@ -130,7 +130,7 @@ There is no `tour:resume`. A resumed tour is a tour that starts on a different s
 and `tour:start` already says which one:
 
 ```ts
-tour.run(workflow, { startAt: "invite" });
+tour.start(workflow, { startAt: "invite" });
 // tour:start  → stepId "invite", stepIndex 1
 ```
 

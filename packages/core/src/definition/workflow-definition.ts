@@ -127,7 +127,7 @@ export function cloneWorkflowStepDraft<T>(
 
 /**
  * Validates that every step carries a non-empty id and that ids are unique.
- * Runs at construction time so a malformed workflow can never reach `run()`.
+ * Runs at construction time so a malformed workflow can never reach `start()`.
  */
 function assertUniqueStepIds<T>(name: string, drafts: readonly WorkflowStepDraft<T>[]): void {
   const seen = new Map<string, number>();

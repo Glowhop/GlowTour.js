@@ -136,8 +136,8 @@ export function mountLab<TContent>({
       content,
     );
 
-    void tour.run(workflow).catch((error: unknown) => {
-      log(`Erreur run() - ${error instanceof Error ? error.message : String(error)}`);
+    void tour.start(workflow).catch((error: unknown) => {
+      log(`Erreur start() - ${error instanceof Error ? error.message : String(error)}`);
     });
   };
 

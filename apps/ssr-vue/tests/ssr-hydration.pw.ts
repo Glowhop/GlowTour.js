@@ -9,6 +9,7 @@ test("server renders target/trigger markup before any JS runs", async ({ baseURL
   expect(html).toContain("This is the tour target element.");
   expect(html).toContain('id="tour-trigger"');
   expect(html).toContain("Start tour");
+  expect(html).toMatch(/id="tour-status">idle</);
 
   // The default tour popover markup is always present (for animation/layout), but the tour
   // has not been started yet, so its trigger buttons are disabled.
@@ -44,6 +45,7 @@ test("hydrates without console errors/warnings and the tour is interactive", asy
   const popover = page.locator("[data-glow-tour-popover]");
   await expect(popover).toBeVisible();
   await expect(page.locator("[data-glow-tour-header]")).toHaveText("Step one");
+  await expect(page.locator("#tour-status")).toHaveText("active");
 
   // Advancing moves to step two.
   const advanceButton = page.locator("[data-glow-tour-advance-trigger]");
@@ -54,4 +56,5 @@ test("hydrates without console errors/warnings and the tour is interactive", asy
   await advanceButton.click();
   await expect(popover).toHaveAttribute("aria-hidden", "true");
   await expect(popover).toHaveAttribute("inert", "true");
+  await expect(page.locator("#tour-status")).toHaveText("finished");
 });

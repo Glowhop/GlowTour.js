@@ -154,7 +154,7 @@ export class TourController<T> {
     return new WorkflowBuilder<T>(name, options);
   }
 
-  async run(workflow: WorkflowDefinition<T>, runOptions: RunOptions = {}) {
+  async start(workflow: WorkflowDefinition<T>, runOptions: RunOptions = {}) {
     this.assertNotDisposed();
     validateWorkflowOptions(workflow);
     const startIndex =
@@ -603,10 +603,10 @@ export class TourController<T> {
   }
 
   /**
-   * Restores the controller to its pre-`run()` idle state. Used when an
+   * Restores the controller to its pre-`start()` idle state. Used when an
    * aborted hook prevents the tour from ever becoming active (`onStart`, the
    * first step's `beforeEnter`, and the zero-step `onFinish` edge case). A
-   * tour this `run()` replaced is still on screen, so it is cleared first.
+   * tour this `start()` replaced is still on screen, so it is cleared first.
    */
   private async resetToIdle(operation: number) {
     if (this.retainedPresentation) {
@@ -952,7 +952,7 @@ export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
     dispose: () => controller.dispose(),
     goTo: (id) => controller.goTo(id),
     previous: () => controller.previous(),
-    run: (workflow, runOptions) => controller.run(workflow, runOptions),
+    start: (workflow, runOptions) => controller.start(workflow, runOptions),
     state: controller.state,
   };
   bridge = attachRootBridge(

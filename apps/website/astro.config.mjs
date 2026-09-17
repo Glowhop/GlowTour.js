@@ -15,6 +15,8 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "GlowTour.js",
+      // src/pages/404.astro serves every missing page, docs included.
+      disable404Route: true,
       favicon: "/favicon.png",
       logo: {
         src: "./public/glow-tour-logo.png",

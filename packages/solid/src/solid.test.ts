@@ -24,6 +24,21 @@ const glowTourOptions: GlowTourOptions = {
 };
 void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTourOptions];
 
+// Components render a fixed element that core binds to: none of them takes an `as` prop.
+type FooterProps = Parameters<typeof runtime.GlowTourFooter>[0];
+type PopoverProps = Parameters<typeof runtime.GlowTourPopover>[0];
+type PointerProps = Parameters<typeof runtime.GlowTourPointer>[0];
+const footerProps: FooterProps = { class: "tour-footer" };
+const popoverProps: PopoverProps = { class: "tour-popover" };
+const pointerProps: PointerProps = { class: "tour-pointer", directionContent: { top: "^" } };
+// @ts-expect-error GlowTourFooter has no `as` prop.
+const footerWithAs: FooterProps = { as: "div" };
+// @ts-expect-error GlowTourPopover has no `as` prop.
+const popoverWithAs: PopoverProps = { as: "div" };
+// @ts-expect-error GlowTourPointer has no `as` prop.
+const pointerWithAs: PointerProps = { as: "span" };
+void [footerProps, popoverProps, pointerProps, footerWithAs, popoverWithAs, pointerWithAs];
+
 describe("solid adapter contract", () => {
   test("forwards subscriber error handlers to the core tour", () => {
     const errors: Error[] = [];
@@ -58,10 +73,12 @@ describe("solid adapter contract", () => {
       "GlowTourPreviousTrigger",
       "GlowTourRoot",
       "createGlowTour",
-      "useTour",
+      "useGlowTour",
+      "useTourContext",
     ]);
     assert.equal(typeof runtime.createGlowTour, "function");
-    assert.equal(typeof runtime.useTour, "function");
+    assert.equal(typeof runtime.useGlowTour, "function");
+    assert.equal(typeof runtime.useTourContext, "function");
     assert.equal(typeof runtime.GlowTourDefault, "function");
 
     for (const legacy of [

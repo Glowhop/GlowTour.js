@@ -8,7 +8,7 @@ tested code, exposed through the `@glowhop/core-tour/config` entry point.
 A `WorkflowConfig<T = string>` is a plain JSON object: a format `version` (`"1.1"`, independent of
 the package version), a `name`, the usual tour-level
 display/behavior options, and `steps`. Every step carries a required `id`, unique within the
-workflow - it is what `run(workflow, { startAt })` resolves against, so it is validated at build
+workflow - it is what `start(workflow, { startAt })` resolves against, so it is validated at build
 time like any other required field. Content (`title`/`content`) is generic over `T`, defaulting
 to `string` for the untrusted-JSON path (`JSON.parse()` output). No i18n either way; put
 translation keys in `content` and interpolation params in `data`. `target` is a CSS selector
@@ -19,7 +19,7 @@ string only.
 lifecycle hooks use it contravariantly). A non-generic, `string`-only format would produce
 `WorkflowDefinition<string>`, which is neither assignable to nor from `WorkflowDefinition<ReactNode>`
 - even though `string` is a valid `ReactNode` - locking every framework adapter out of the config
-path (see decision #3 in `HANDOFF-serializable-config.md`). Instantiating with the adapter's
+path. Instantiating with the adapter's
 content type (`createWorkflowFromConfig<ReactNode>(...)`) fixes this with no cast.
 
 Runtime validation of `title`/`content` cannot know what `T` is, so it stays strict by default -
@@ -155,7 +155,7 @@ not deferred problems:
    `packages/core/src/definition/types.ts`) has no such field and this module doesn't touch it.
    `WorkflowDefinitionFromConfig<T>` is declared as `WorkflowDefinition<T> & { source }` (via
    `interface ... extends`), so it stays assignable anywhere a plain `WorkflowDefinition<T>` is
-   expected (e.g. `GlowTour<T>.run()`), and `.source` is only visible to code that imports from
+   expected (e.g. `GlowTour<T>.start()`), and `.source` is only visible to code that imports from
    `@glowhop/core-tour/config` specifically. `source` contains a recursively frozen copy of the
    config containers, not the caller's own objects, so the config stays reusable and editable to
    build a variant. Rich `title`/`content` values, functions, and non-plain framework objects are

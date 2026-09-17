@@ -33,7 +33,7 @@ export default function Page() {
       <button
         id="start-tour-trigger"
         type="button"
-        onClick={() => void tour.run(workflow)}
+        onClick={() => void tour.start(workflow)}
         style={{ padding: "10px 20px", fontSize: 16 }}
       >
         Start tour

@@ -21,7 +21,7 @@ export interface DefaultTourAcceptanceFixture<TContent> {
   readonly name: string;
   readonly root: HTMLElement;
   readonly target: HTMLElement;
-  readonly tour: Pick<GlowTour<TContent>, "create" | "run" | "state">;
+  readonly tour: Pick<GlowTour<TContent>, "create" | "start" | "state">;
   content(value: string): TContent;
   settle(): Promise<void>;
   unmount(): Promise<void>;
@@ -147,16 +147,16 @@ export async function runAdapterAcceptance<TContent>(
   );
 
   let primaryProps!: StepContext<TContent>["props"];
-  await primaryTour.run(
+  await primaryTour.start(
     workflow(primaryTour, primaryTarget, `${name}-primary`, (props) => {
       primaryProps = props;
     }),
   );
   await assert.rejects(
-    () => secondaryTour.run(workflow(secondaryTour, secondaryTarget, `${name}-secondary-modal`)),
+    () => secondaryTour.start(workflow(secondaryTour, secondaryTarget, `${name}-secondary-modal`)),
     /only supports one active modal tour per document/,
   );
-  await secondaryTour.run(
+  await secondaryTour.start(
     workflow(secondaryTour, secondaryTarget, `${name}-secondary`, undefined, true),
   );
   await settle();
@@ -190,11 +190,11 @@ export async function runAdapterAcceptance<TContent>(
 
   await unmount();
   await assert.rejects(
-    () => primaryTour.run(primaryTour.create(`${name}-released`).build()),
+    () => primaryTour.start(primaryTour.create(`${name}-released`).build()),
     /connected root/i,
   );
   await assert.rejects(
-    () => secondaryTour.run(secondaryTour.create(`${name}-secondary-released`).build()),
+    () => secondaryTour.start(secondaryTour.create(`${name}-secondary-released`).build()),
     /connected root/i,
   );
 }
@@ -221,7 +221,7 @@ export async function runDefaultTourAcceptance<TContent>(
       .step({ id: "step-4", content: content("Second content"), target, title: content("Second title") })
       .build();
 
-  await tour.run(workflow());
+  await tour.start(workflow());
   await settle();
 
   assert.equal(root.matches("[data-glow-tour-root]"), true, `${name}: root selector`);
@@ -286,7 +286,7 @@ export async function runDefaultTourAcceptance<TContent>(
   const renderedTexts: string[] = [];
   const observer = new MutationObserver(() => renderedTexts.push(root.textContent ?? ""));
   observer.observe(root, { characterData: true, childList: true, subtree: true });
-  await tour.run(
+  await tour.start(
     tour
       .create(`${name} beforeEnter`)
       .step({
@@ -323,7 +323,7 @@ export async function runDefaultTourAcceptance<TContent>(
     return element !== null && element.closest("[hidden]") === null;
   };
   const footerShown = () => shown("[data-glow-tour-footer]");
-  await tour.run(
+  await tour.start(
     tour
       .create(`${name} hidden controls`)
       .step({
@@ -343,7 +343,7 @@ export async function runDefaultTourAcceptance<TContent>(
   assert.equal(shown("[data-glow-tour-cancel-trigger]"), false, `${name}: hidden cancel`);
 
   // Without a title, the header is omitted and the content names the dialog.
-  await tour.run(
+  await tour.start(
     tour
       .create(`${name} untitled`)
       .step({ id: "step-7", content: content("Untitled content"), target })
@@ -374,7 +374,7 @@ export async function runDefaultTourAcceptance<TContent>(
   const classesOf = (slot: keyof typeof classTargets) =>
     Array.from(requiredOwnedElement(root, classTargets[slot], name).classList).sort();
   let classProps: StepContext<TContent>["props"] | undefined;
-  await tour.run(
+  await tour.start(
     tour
       .create(`${name} classNames`, {
         classNames: {
@@ -443,7 +443,7 @@ export async function runDefaultTourAcceptance<TContent>(
   await settle();
   assert.equal(tour.state.get().status, "cancelled", `${name}: classNames tour cancelled`);
 
-  await tour.run(workflow());
+  await tour.start(workflow());
   await settle();
   assert.equal(footerShown(), true, `${name}: footer shown with visible controls`);
   assert.equal(
@@ -460,7 +460,7 @@ export async function runDefaultTourAcceptance<TContent>(
 
   await unmount();
   await assert.rejects(
-    () => tour.run(tour.create(`${name} released`).build()),
+    () => tour.start(tour.create(`${name} released`).build()),
     /connected root/i,
   );
 }

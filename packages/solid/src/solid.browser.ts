@@ -176,7 +176,7 @@ describe("solid adapter browser behavior", () => {
     const [
       { createComponent },
       { Dynamic, render },
-      { createGlowTour, GlowTourPopover, GlowTourRoot, useTour },
+      { createGlowTour, GlowTourPopover, GlowTourRoot, useTourContext },
     ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
@@ -188,7 +188,7 @@ describe("solid adapter browser behavior", () => {
       .step({ id: "step-2", content: "Second", target, title: "Second" })
       .build();
     function Observer() {
-      const state = useTour();
+      const state = useTourContext();
       return createComponent(Dynamic, {
         component: "output",
         get children() {
@@ -206,11 +206,77 @@ describe("solid adapter browser behavior", () => {
         }),
       container,
     );
-    await tour.run(workflow);
+    await tour.start(workflow);
     assert.equal(container.querySelector("output")?.textContent, "active:0");
     await tour.advance();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     dispose();
+  });
+
+  test("useGlowTour exposes state accessors outside the root and disposes the tour it creates", async () => {
+    const [
+      { createComponent },
+      { Dynamic, render },
+      { GlowTourPopover, GlowTourRoot, useGlowTour },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    let glow!: ReturnType<typeof useGlowTour>;
+    function App() {
+      glow = useGlowTour();
+      return [
+        createComponent(Dynamic, {
+          component: "output",
+          get children() {
+            return `${glow.status()}:${glow.currentStepIndex()}`;
+          },
+        }),
+        createComponent(GlowTourRoot, {
+          tour: glow.tour,
+          get children() {
+            return createComponent(GlowTourPopover, {});
+          },
+        }),
+      ];
+    }
+    const dispose = render(() => createComponent(App, {}), container);
+    const workflow = glow
+      .create("use glow tour")
+      .step({ id: "first", content: "First", target, title: "First" })
+      .step({ id: "second", content: "Second", target, title: "Second" })
+      .build();
+    await glow.start(workflow);
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await glow.advance();
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    await glow.cancel();
+    assert.equal(glow.status(), "cancelled");
+    dispose();
+    assert.equal(glow.tour.state.get().status, "disposed");
+    container.remove();
+    target.remove();
+  });
+
+  test("useGlowTour never disposes a tour it is given", async () => {
+    const [{ createComponent }, { render }, { createGlowTour, useGlowTour }] = await Promise.all([
+      import("solid-js"),
+      import("solid-js/web"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const tour = createGlowTour();
+    let glow!: ReturnType<typeof useGlowTour>;
+    function App() {
+      glow = useGlowTour(tour);
+      return glow.status();
+    }
+    const dispose = render(() => createComponent(App, {}), container);
+    assert.equal(glow.tour, tour);
+    dispose();
+    assert.equal(tour.state.get().status, "idle");
+    container.remove();
   });
 
   test("keeps nested tour controls isolated from the outer root", async () => {
@@ -272,8 +338,8 @@ describe("solid adapter browser behavior", () => {
         }),
       container,
     );
-    await outer.run(workflow(outer, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner", true));
+    await outer.start(workflow(outer, outerTarget, "outer"));
+    await inner.start(workflow(inner, innerTarget, "inner", true));
     const [outerAdvance, innerAdvance] = Array.from(
       container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
@@ -319,7 +385,7 @@ describe("solid adapter browser behavior", () => {
         },
       });
     }, container);
-    await tour.run(workflow);
+    await tour.start(workflow);
     const disabled = container.querySelector<HTMLButtonElement>(
       "[data-glow-tour-consumer-disabled]",
     );
@@ -378,7 +444,7 @@ describe("solid adapter browser behavior", () => {
       });
     }, container);
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     const firstBack = container.querySelector<HTMLButtonElement>(
       "[data-glow-tour-previous-trigger]",
     );
@@ -390,7 +456,7 @@ describe("solid adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().status, "cancelled");
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     await tour.advance();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
@@ -444,7 +510,7 @@ describe("solid adapter browser behavior", () => {
       });
     }, container);
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     assert.equal(advance?.disabled, true);
     assert.equal(advance?.getAttribute("data-glow-tour-consumer-disabled"), "true");
@@ -550,7 +616,7 @@ describe("solid adapter browser behavior", () => {
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
 
     assert.equal(advance?.disabled, true);
-    await tour.run(workflow);
+    await tour.start(workflow);
     assert.equal(advance?.disabled, false);
     assert.equal(advance?.textContent, "Continue");
     advance?.click();
@@ -599,7 +665,7 @@ describe("solid adapter browser behavior", () => {
       container,
     );
 
-    await first.tour.run(firstWorkflow);
+    await first.tour.start(firstWorkflow);
     assert.equal(container.textContent, "First tourFinish tour");
     // Popover (title-dependent dialog relations), content and trigger each subscribe.
     assert.equal(first.subscriptions, 3);
@@ -609,7 +675,7 @@ describe("solid adapter browser behavior", () => {
     assert.equal(first.unsubscriptions, first.subscriptions);
     assert.equal(second.subscriptions, 3);
 
-    await second.tour.run(secondWorkflow);
+    await second.tour.start(secondWorkflow);
     assert.equal(container.textContent, "Second tourFinish tour");
     container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]")?.click();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
@@ -658,7 +724,7 @@ describe("solid adapter browser behavior", () => {
       container,
     );
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     assert.equal(advance?.disabled, true);

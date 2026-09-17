@@ -15,7 +15,7 @@ export {
   GlowTourPopover,
   GlowTourPreviousTrigger,
   GlowTourRoot,
-  injectGlowTour,
+  injectTourContext,
 } from "./lib/components/tour-components";
 export type {
   AngularTourContent,
@@ -26,3 +26,4 @@ export type {
   WorkflowDefinition,
 } from "./lib/glow-tour";
 export { createGlowTour } from "./lib/glow-tour";
+export { type InjectGlowTourResult, injectGlowTour } from "./lib/inject-glow-tour";

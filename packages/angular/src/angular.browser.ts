@@ -152,7 +152,7 @@ describe("angular adapter browser behavior", () => {
       template: `<output>{{ state()?.status }}:{{ state()?.currentStepIndex }}</output>`,
     })
     class TourStateObserver {
-      readonly state = runtime.injectGlowTour();
+      readonly state = runtime.injectTourContext();
     }
 
     @Component({
@@ -177,7 +177,7 @@ describe("angular adapter browser behavior", () => {
       .step({ id: "step-1", content: "First", target, title: "First" })
       .step({ id: "step-2", content: "Second", target, title: "Second" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
@@ -186,6 +186,68 @@ describe("angular adapter browser behavior", () => {
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");
     await app.destroy();
+  });
+
+  test("injectGlowTour exposes state signals outside the root and disposes the tour it creates", async () => {
+    const target = document.createElement("button");
+    document.body.append(target);
+
+    @Component({
+      selector: "angular-inject-glow-tour",
+      standalone: true,
+      imports: [runtime.GlowTourRoot, runtime.GlowTourPopover],
+      template: `
+        <output>{{ glow.status() }}:{{ glow.currentStepIndex() }}</output>
+        <glow-tour-root [tour]="glow.tour">
+          <glow-tour-popover />
+        </glow-tour-root>
+      `,
+    })
+    class InjectGlowTourHarness {
+      readonly glow = runtime.injectGlowTour();
+    }
+
+    document.body.append(document.createElement("angular-inject-glow-tour"));
+    const app = await bootstrapApplication(InjectGlowTourHarness);
+    const { glow } = app.components[0].instance as InjectGlowTourHarness;
+    const workflow = glow
+      .create("inject glow tour")
+      .step({ id: "first", content: "First", target, title: "First" })
+      .step({ id: "second", content: "Second", target, title: "Second" })
+      .build();
+    await glow.start(workflow);
+    await settle();
+    app.tick();
+    assert.equal(document.querySelector("output")?.textContent?.trim(), "active:0");
+    await glow.advance();
+    await settle();
+    app.tick();
+    assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");
+    await glow.cancel();
+    assert.equal(glow.status(), "cancelled");
+    await app.destroy();
+    assert.equal(glow.tour.state.get().status, "disposed");
+    target.remove();
+  });
+
+  test("injectGlowTour never disposes a tour it is given", async () => {
+    const tour = runtime.createGlowTour();
+
+    @Component({
+      selector: "angular-inject-shared-glow-tour",
+      standalone: true,
+      template: `<output>{{ glow.status() }}</output>`,
+    })
+    class SharedGlowTourHarness {
+      readonly glow = runtime.injectGlowTour(tour);
+    }
+
+    document.body.append(document.createElement("angular-inject-shared-glow-tour"));
+    const app = await bootstrapApplication(SharedGlowTourHarness);
+    const { glow } = app.components[0].instance as SharedGlowTourHarness;
+    assert.equal(glow.tour, tour);
+    await app.destroy();
+    assert.equal(tour.state.get().status, "idle");
   });
 
   test("connects a root during Angular initialization and releases it on destruction", async () => {
@@ -249,7 +311,7 @@ describe("angular adapter browser behavior", () => {
       })
       .step({ id: "step-4", content: "Second content", target, title: "Second title" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     await settle();
     app.tick();
     assert.match(document.body.textContent ?? "", /First title/);
@@ -287,7 +349,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(tour.state.get().currentStepIndex, 1);
 
     await app.destroy();
-    await assert.rejects(() => tour.run(tour.create("released").build()), /connected root/i);
+    await assert.rejects(() => tour.start(tour.create("released").build()), /connected root/i);
   });
 
   test("reconnects only the latest Angular input pair and isolates nearest nested roots", async () => {
@@ -333,7 +395,7 @@ describe("angular adapter browser behavior", () => {
     await settle();
     assert.equal(document.querySelector("[data-glow-tour-root]")?.id, "second-root");
     await assert.rejects(
-      () => first.run(first.create("first released").build()),
+      () => first.start(first.create("first released").build()),
       /connected root/i,
     );
 
@@ -360,8 +422,8 @@ describe("angular adapter browser behavior", () => {
           title: "Two",
         })
         .build();
-    await second.run(workflow(second, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner", true));
+    await second.start(workflow(second, outerTarget, "outer"));
+    await inner.start(workflow(inner, innerTarget, "inner", true));
     const [outerAdvance, innerAdvance] = Array.from(
       document.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
@@ -429,8 +491,8 @@ describe("angular adapter browser behavior", () => {
           title: `${name} two`,
         })
         .build();
-    await first.run(workflow(first, firstTarget, "first"));
-    await second.run(workflow(second, secondTarget, "second", true));
+    await first.start(workflow(first, firstTarget, "first"));
+    await second.start(workflow(second, secondTarget, "second", true));
     await settle();
     app.tick();
 
@@ -473,7 +535,7 @@ describe("angular adapter browser behavior", () => {
     @Component({ selector: "angular-descendant-runner", standalone: true, template: "" })
     class DescendantRunner implements OnInit {
       ngOnInit() {
-        started = tour.run(tour.create("descendant initialization").build());
+        started = tour.start(tour.create("descendant initialization").build());
       }
     }
 
@@ -584,7 +646,7 @@ describe("angular adapter browser behavior", () => {
       })
       .step({ id: "step-10", content: "Two", target, title: "Two" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     const harness = app.components[0]?.instance;
     assert.ok(harness instanceof LateTriggerHarness);
     harness.showAdvance = true;
@@ -702,7 +764,7 @@ describe("angular adapter browser behavior", () => {
       .step({ id: "step-11", content: "One", target, title: "One" })
       .step({ id: "step-12", content: "Two", target, title: "Two" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     await settle();
     app.tick();
 

@@ -192,7 +192,7 @@ export const examples: readonly Example[] = [
   },
   {
     Demo: LiveProgressDemo,
-    description: "A custom popover subcomponent reads useTour() to show real step progress.",
+    description: "A custom popover subcomponent reads useTourContext() to show real step progress.",
     icon: ListOrdered,
     label: "Live step counter",
     source: liveProgressSource,

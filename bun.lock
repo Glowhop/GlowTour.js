@@ -178,6 +178,75 @@
         "tailwindcss": "^4.3.3",
       },
     },
+    "examples/angular": {
+      "name": "@glowhop/example-angular",
+      "version": "0.1.0",
+      "dependencies": {
+        "@angular/common": "^18.2.14",
+        "@angular/compiler": "^18.2.14",
+        "@angular/core": "^18.2.14",
+        "@angular/platform-browser": "^18.2.14",
+        "@glowhop/angular-tour": "workspace:*",
+        "@glowhop/styles-tour": "workspace:*",
+        "zone.js": "^0.14.10",
+      },
+      "devDependencies": {
+        "vite": "^6.0.11",
+      },
+    },
+    "examples/react": {
+      "name": "@glowhop/example-react",
+      "version": "0.1.0",
+      "dependencies": {
+        "@glowhop/react-tour": "workspace:*",
+        "@glowhop/styles-tour": "workspace:*",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0",
+      },
+      "devDependencies": {
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "@vitejs/plugin-react": "^4.3.4",
+        "vite": "^6.0.11",
+      },
+    },
+    "examples/solid": {
+      "name": "@glowhop/example-solid",
+      "version": "0.1.0",
+      "dependencies": {
+        "@glowhop/solid-tour": "workspace:*",
+        "@glowhop/styles-tour": "workspace:*",
+        "solid-js": "^1.9.14",
+      },
+      "devDependencies": {
+        "vite": "^6.0.11",
+        "vite-plugin-solid": "^2.11.13",
+      },
+    },
+    "examples/vanilla": {
+      "name": "@glowhop/example-vanilla",
+      "version": "0.1.0",
+      "dependencies": {
+        "@glowhop/styles-tour": "workspace:*",
+        "@glowhop/vanilla-tour": "workspace:*",
+      },
+      "devDependencies": {
+        "vite": "^6.0.11",
+      },
+    },
+    "examples/vue": {
+      "name": "@glowhop/example-vue",
+      "version": "0.1.0",
+      "dependencies": {
+        "@glowhop/styles-tour": "workspace:*",
+        "@glowhop/vue-tour": "workspace:*",
+        "vue": "^3.5.13",
+      },
+      "devDependencies": {
+        "@vitejs/plugin-vue": "^5.2.1",
+        "vite": "^6.0.11",
+      },
+    },
     "packages/angular": {
       "name": "@glowhop/angular-tour",
       "version": "1.3.1",
@@ -690,6 +759,16 @@
     "@glowhop/angular-tour": ["@glowhop/angular-tour@workspace:packages/angular"],
 
     "@glowhop/core-tour": ["@glowhop/core-tour@workspace:packages/core"],
+
+    "@glowhop/example-angular": ["@glowhop/example-angular@workspace:examples/angular"],
+
+    "@glowhop/example-react": ["@glowhop/example-react@workspace:examples/react"],
+
+    "@glowhop/example-solid": ["@glowhop/example-solid@workspace:examples/solid"],
+
+    "@glowhop/example-vanilla": ["@glowhop/example-vanilla@workspace:examples/vanilla"],
+
+    "@glowhop/example-vue": ["@glowhop/example-vue@workspace:examples/vue"],
 
     "@glowhop/playground": ["@glowhop/playground@workspace:apps/playground"],
 

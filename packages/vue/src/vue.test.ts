@@ -44,10 +44,12 @@ describe("vue adapter contract", () => {
       "GlowTourPreviousTrigger",
       "GlowTourRoot",
       "createGlowTour",
-      "useTour",
+      "useGlowTour",
+      "useTourContext",
     ]);
     assert.equal(typeof runtime.createGlowTour, "function");
-    assert.equal(typeof runtime.useTour, "function");
+    assert.equal(typeof runtime.useGlowTour, "function");
+    assert.equal(typeof runtime.useTourContext, "function");
     assert.equal(typeof runtime.GlowTourDefault, "object");
 
     for (const component of [

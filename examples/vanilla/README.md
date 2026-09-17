@@ -4,12 +4,12 @@ Minimal vanilla JavaScript example showing how to use GlowTour.js without a fram
 
 ## Quick Start
 
-From the monorepo root:
+The example is part of the monorepo workspace and uses the local packages, so build them first. From the monorepo root:
 
 ```bash
-cd examples/vanilla
-npm install
-npm run dev
+bun install
+bun run build
+bun run --cwd examples/vanilla dev
 ```
 
 Open `http://localhost:5173` in your browser.
@@ -20,7 +20,7 @@ Open `http://localhost:5173` in your browser.
 - Building a workflow with `.create()` and `.step()`
 - Registering custom elements with `registerGlowTourElements()`
 - Adding the complete tour UI with the `<glow-tour-default>` element
-- Triggering the tour with `tour.run(workflow)`
+- Triggering the tour with `tour.start(workflow)`
 
 ## API Used
 

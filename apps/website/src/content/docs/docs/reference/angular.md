@@ -7,22 +7,59 @@ The Angular adapter (`@glowhop/angular-tour`) exports components and utility fun
 
 ## Functions
 
-### `createGlowTour(options?)`
+### `injectGlowTour(source?)`
 
-Creates a tour controller instance. Inherited from Core.
+Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and one signal per state field. Call it in an injection context, such as a field initializer.
 
 **Signature**:
 ```typescript
-function createGlowTour(options?: GlowTourOptions): Tour
+function injectGlowTour(source?: GlowTourOptions | Tour): InjectGlowTourResult
+
+type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
+  readonly tour: Tour
+} & { readonly [K in keyof TourState]: Signal<TourState[K]> }
 ```
 
-### `injectGlowTour()`
+**Parameters**:
+- `source` - Options for a new tour, or an existing tour created with `createGlowTour()` to share it.
 
-Accesses the tour state Signal via Angular's dependency injection. Must be called from a component inside a `glow-tour-root`.
+With options, the tour is disposed when the injector is destroyed. With a tour, the function only reads it and never disposes it.
+
+**Usage**:
+```typescript
+import { Component } from "@angular/core";
+import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
+
+@Component({
+  standalone: true,
+  imports: [GlowTourDefault],
+  template: `
+    <button [disabled]="glow.status() === 'active'" (click)="start()">Start tour</button>
+    <glow-tour-default [tour]="glow.tour" />
+  `,
+})
+export class Onboarding {
+  readonly glow = injectGlowTour();
+  private readonly workflow = this.glow
+    .create("welcome")
+    .step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." })
+    .build();
+
+  start() {
+    void this.glow.start(this.workflow);
+  }
+}
+```
+
+See the guide to [choose step targets](/docs/guides/angular#step-targets) and [share one tour between components](/docs/guides/angular#share-one-tour-between-components).
+
+### `injectTourContext()`
+
+Reads the state of the tour rendered by the enclosing `glow-tour-root`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `injectGlowTour`.
 
 **Signature**:
 ```typescript
-function injectGlowTour(): Signal<TourState | null>
+function injectTourContext(): Signal<TourState | null>
 ```
 
 **Returns**: A Signal containing the current tour state, or `null` if no tour is active.
@@ -30,7 +67,7 @@ function injectGlowTour(): Signal<TourState | null>
 **Usage**:
 ```typescript
 import { Component } from "@angular/core";
-import { injectGlowTour } from "@glowhop/angular-tour";
+import { injectTourContext } from "@glowhop/angular-tour";
 
 @Component({
   template: `
@@ -40,8 +77,17 @@ import { injectGlowTour } from "@glowhop/angular-tour";
   `,
 })
 export class MyComponent {
-  protected tourState = injectGlowTour();
+  protected tourState = injectTourContext();
 }
+```
+
+### `createGlowTour(options?)`
+
+Creates a tour instance to share between components, passed to `injectGlowTour(tour)`, or to drive outside components. Inherited from Core.
+
+**Signature**:
+```typescript
+function createGlowTour(options?: GlowTourOptions): Tour
 ```
 
 ## Components
@@ -50,9 +96,10 @@ export class MyComponent {
 
 Pre-composed tour with overlay, popover, pointer, and all navigation buttons. Selector: `glow-tour-default`.
 
-**Input**:
+**Inputs**:
 ```typescript
-@Input() tour: Tour
+@Input({ required: true }) tour: Tour
+@Input() idPrefix?: string // Prefix for internal element IDs
 ```
 
 **Usage**:
@@ -62,12 +109,15 @@ Pre-composed tour with overlay, popover, pointer, and all navigation buttons. Se
 
 ### `GlowTourRoot`
 
-Root container. Selector: `glow-tour-root`.
+Root container. Selector: `glow-tour-root`. Every other composition component must be rendered inside it.
 
-**Input**:
+**Inputs**:
 ```typescript
-@Input() tour: Tour
+@Input({ required: true }) tour: Tour
+@Input() idPrefix?: string // Prefix for internal element IDs
 ```
+
+`idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
 
 **Usage**:
 ```html
@@ -87,7 +137,7 @@ Backdrop overlay component. Selector: `glow-tour-overlay`.
 
 ### `GlowTourPointer`
 
-Decorative indicator/arrow pointing to the target. Selector: `glow-tour-pointer`.
+Decorative pointer indicator next to the target (not the popover arrow). Selector: `glow-tour-pointer`.
 
 **Input**:
 ```typescript
@@ -135,11 +185,11 @@ Dialog container for tour content. Selector: `glow-tour-popover`.
 
 ### `GlowTourHeader`
 
-Title/header area inside the popover. Selector: `glow-tour-header`.
+Title/header area inside the popover. Selector: `glow-tour-header`. Renders the step `title`, and nothing when the step has no title.
 
 ### `GlowTourContent`
 
-Description content area inside the popover. Selector: `glow-tour-content`.
+Description content area inside the popover. Selector: `glow-tour-content`. Renders the step `content` in a polite live region.
 
 ### `GlowTourFooter`
 
@@ -152,31 +202,23 @@ Navigation button container. Selector: `glow-tour-footer`.
 </glow-tour-footer>
 ```
 
-### `GlowTourAdvanceTrigger`
+### Triggers
 
-Next step button. Selector: `glow-tour-advance-trigger`.
+| Component | Selector | Inputs |
+| --- | --- | --- |
+| `GlowTourPreviousTrigger` | `glow-tour-previous-trigger` | `previousLabel?: string` (default `"Previous step"`), `ariaLabel?: string`, `disabled: boolean` |
+| `GlowTourAdvanceTrigger` | `glow-tour-advance-trigger` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), `ariaLabel?: string`, `disabled: boolean` |
+| `GlowTourCancelTrigger` | `glow-tour-cancel-trigger` | `ariaLabel?: string`, `disabled: boolean`. Its label is `"Skip"`; it is not rendered when the tour cannot be cancelled |
 
-**Usage**:
-```html
-<glow-tour-advance-trigger />
-```
-
-### `GlowTourPreviousTrigger`
-
-Previous step button. Selector: `glow-tour-previous-trigger`.
+Each trigger renders a `<button>`. The label is the button text and, without `ariaLabel`, its accessible name. Projected content replaces the button text. `disabled` accepts a boolean attribute and adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. A control set to `"hidden"` is not rendered.
 
 **Usage**:
 ```html
-<glow-tour-previous-trigger />
-```
-
-### `GlowTourCancelTrigger`
-
-Dismiss button. Selector: `glow-tour-cancel-trigger`.
-
-**Usage**:
-```html
-<glow-tour-cancel-trigger />
+<glow-tour-footer>
+  <glow-tour-cancel-trigger />
+  <glow-tour-previous-trigger previousLabel="Previous" />
+  <glow-tour-advance-trigger advanceLabel="Next" finishLabel="Done" />
+</glow-tour-footer>
 ```
 
 ## DI
@@ -193,20 +235,20 @@ export class TourService {
 }
 ```
 
-Then inject it:
+Then read and drive it from any component with `injectGlowTour`, which never disposes a tour it is given:
 
 ```typescript
 @Component({
   // ...
 })
 export class MyComponent {
-  constructor(public tourService: TourService) {}
+  readonly glow = injectGlowTour(inject(TourService).tour);
 }
 ```
 
 ## Signals
 
-Tour state is managed via Angular signals internally. Access state via the tour controller:
+`injectGlowTour()` exposes each state field as a signal (`glow.status()`, `glow.currentStepIndex()`). Outside an injection context, read the tour controller's store directly:
 
 ```typescript
 const state = this.tour.state.get();
@@ -240,6 +282,7 @@ export class MyComponent {}
 ## Types
 
 - `Tour` - Tour controller
+- `InjectGlowTourResult` - Value returned by `injectGlowTour`
 - `TourState` - Tour state
 - `WorkflowDefinition` - Immutable workflow
 - `StepPropsStore` - Step state store
