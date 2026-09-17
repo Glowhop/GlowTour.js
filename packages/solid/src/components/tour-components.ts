@@ -40,9 +40,8 @@ type RootProps = ParentProps<
     tour: Tour;
   }
 >;
-type ElementProps = ParentProps<
-  Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref"> & { as?: ValidComponent }
->;
+type FooterProps = ParentProps<Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref">>;
+type PopoverProps = FooterProps & { as?: ValidComponent };
 type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = ParentProps<Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "ref">>;
 /** Content displayed in the pointer indicator for each direction. */
@@ -202,7 +201,7 @@ export function GlowTourRoot(props: RootProps): JSX.Element {
  * @param props HTML attributes and the `as` prop for customizing the container element.
  * @returns The popover container.
  */
-export function GlowTourPopover(props: ElementProps): JSX.Element {
+export function GlowTourPopover(props: PopoverProps): JSX.Element {
   const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   // Without a title, the content names the dialog instead of describing it.
@@ -314,7 +313,7 @@ export function GlowTourContent(props: ContentProps): JSX.Element {
  * @param props HTML attributes and children.
  * @returns The footer container.
  */
-export function GlowTourFooter(props: ElementProps): JSX.Element {
+export function GlowTourFooter(props: FooterProps): JSX.Element {
   const snapshot = useTourSnapshot(useTourScope().tour);
   return createComponent(
     Dynamic,

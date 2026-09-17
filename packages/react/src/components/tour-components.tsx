@@ -24,7 +24,8 @@ type RootProps = Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "id" | 
   idPrefix?: string;
   tour: Tour;
 };
-type ElementProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref"> & {
+type FooterProps = Omit<React.HTMLAttributes<HTMLElement>, "id" | "ref">;
+type PopoverProps = FooterProps & {
   as?: React.ElementType;
 };
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "id">;
@@ -191,7 +192,7 @@ export function GlowTourPopover({
   className,
   style,
   ...props
-}: ElementProps) {
+}: PopoverProps) {
   const { binding, tour } = useTourScope();
   const step = useStep(useTourSnapshot(tour));
   // Without a title, the content names the dialog instead of describing it.
@@ -267,7 +268,7 @@ export function GlowTourContent({ className, ...props }: ContentProps) {
  * @param props HTML attributes and children.
  * @returns The footer container.
  */
-export function GlowTourFooter({ children, className, ...props }: ElementProps) {
+export function GlowTourFooter({ children, className, ...props }: FooterProps) {
   return (
     <footer {...props} className={useStepClassName("footer", className)} data-glow-tour-footer>
       {children}
