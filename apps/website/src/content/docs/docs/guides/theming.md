@@ -181,6 +181,77 @@ your own tokens, or place the tour over a busy background, check the contrast of
 [accessibility notes](/docs/guides/accessibility) for what the library does and does
 not guarantee.
 
+## Styling a step
+
+To style a component on some steps only, give those steps `classNames`. The classes are added to
+the element the default theme styles, and removed when a step shows without them:
+
+```typescript
+tour
+  .create("onboarding")
+  .step({
+    id: "danger-zone",
+    target: "#delete-account",
+    content: "This cannot be undone.",
+    classNames: { popover: "tour-danger", advance: "tour-danger-button" },
+  })
+  .build();
+```
+
+```css
+[data-glow-tour-popover].tour-danger {
+  --glow-tour-color-surface: #fff1f2;
+  --glow-tour-color-border: #e11d48;
+}
+```
+
+The same option works on the workflow, for every step that does not set its own classes for the
+component, and in the JSON config. See
+[Class name options](/docs/reference/builder#class-name-options).
+
+## Tailwind CSS
+
+Tailwind CSS v4 generates its utility classes inside `@layer utilities`. A stylesheet imported
+outside any layer always wins over a layered one, whatever the specificity, so an unlayered
+`default.css` overrides the utilities you give a tour component: `p-2` loses to the popover's
+padding.
+
+Import the theme in Tailwind's `components` layer instead, from the same CSS file that imports
+Tailwind:
+
+```css
+@import "tailwindcss";
+@import "@glowhop/styles-tour/default.css" layer(components);
+```
+
+The theme's rules then come before the utilities, and your classes take precedence:
+
+```tsx
+<GlowTourPopover className="p-2 rounded-2xl">
+  <GlowTourHeader />
+  <GlowTourContent />
+  <GlowTourFooter className="gap-3" />
+</GlowTourPopover>
+```
+
+The same applies to the classes a step adds with `classNames`:
+
+```typescript
+.step({
+  id: "billing",
+  target: "#billing",
+  content: "Plans changed this month.",
+  classNames: { popover: "border-rose-500 bg-rose-50", advance: "bg-rose-600" },
+})
+```
+
+Keep that stylesheet the only place the theme is imported. An `import "@glowhop/styles-tour/default.css"`
+left in a script loads a second, unlayered copy that wins over the utilities again.
+
+Tailwind only generates the classes it finds in your source files. Class names that come from a
+JSON config loaded at runtime are not scanned: list them in your sources, or declare them with
+[`@source inline()`](https://tailwindcss.com/docs/detecting-classes-in-source-files#safelisting-specific-utilities).
+
 ## Advanced customization
 
 For complete control over the popover layout, header styling, or footer layout, you can use custom composition and write your own styles:

@@ -435,6 +435,44 @@ describe("vanilla adapter browser behavior", () => {
     assert.doesNotThrow(() => element.remove());
   });
 
+  test("adds and removes only the step classes it added, leaving authored classes alone", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    const element = root(tour, "step-classes");
+    element.innerHTML =
+      '<glow-tour-popover class="authored shared"><glow-tour-advance-trigger><button class="authored-button"></button></glow-tour-advance-trigger></glow-tour-popover>';
+    document.body.append(target, element);
+    await settle();
+    const popover = element.querySelector<HTMLElement>("glow-tour-popover");
+    const button = element.querySelector<HTMLElement>("button");
+    assert.ok(popover && button);
+    await tour.run(
+      tour
+        .create("step-classes")
+        .step({
+          id: "classes-1",
+          content: "One",
+          target,
+          classNames: { popover: ["shared", "first"], advance: "step-advance" },
+        })
+        .step({ id: "classes-2", content: "Two", target, classNames: { popover: "second" } })
+        .build(),
+    );
+    await settle();
+    assert.equal(popover.className, "authored shared first");
+    assert.equal(button.className, "authored-button step-advance");
+
+    popover.classList.add("consumer");
+    await tour.advance();
+    await settle();
+    assert.equal(popover.className, "authored shared consumer second");
+    assert.equal(button.className, "authored-button");
+
+    element.remove();
+    await settle();
+    assert.equal(popover.className, "authored shared consumer");
+  });
+
   test("renders DOM node title and content, swaps them for strings, and restores them on previous", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");

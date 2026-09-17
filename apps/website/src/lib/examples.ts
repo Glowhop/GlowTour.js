@@ -1,5 +1,21 @@
 import type { WorkflowDefinition } from "@glowhop/react-tour";
 import {
+  Crosshair,
+  Footprints,
+  Hourglass,
+  ListOrdered,
+  Lock,
+  type LucideIcon,
+  MousePointerClick,
+  Move,
+  Palette,
+  ScrollText,
+  ShieldQuestionMark,
+  Sparkles,
+  SquareDashedMousePointer,
+  SunMoon,
+} from "lucide-react";
+import {
   AdvanceOnClickDemo,
   advanceOnClickWorkflow,
   CancellableDemo,
@@ -51,6 +67,8 @@ import {
 export interface Example {
   /** Tab label. */
   readonly label: string;
+  /** Decorative icon shown before the tab label. */
+  readonly icon: LucideIcon;
   /** Heading shown above the running demo. */
   readonly title: string;
   /** One line on what the example demonstrates. */
@@ -71,6 +89,7 @@ export const examples: readonly Example[] = [
   {
     Demo: NonInteractiveDemo,
     description: "A plain, 3-step walkthrough - no special options, just steps.",
+    icon: Footprints,
     label: "Simple walkthrough",
     source: nonInteractiveSource,
     title: "Simple walkthrough",
@@ -79,6 +98,7 @@ export const examples: readonly Example[] = [
   {
     Demo: AdvanceOnClickDemo,
     description: "onTargetEvent('click', ...) advances the tour from a real click on the target.",
+    icon: MousePointerClick,
     label: "Click to continue",
     source: advanceOnClickSource,
     title: "Click to continue",
@@ -88,6 +108,7 @@ export const examples: readonly Example[] = [
     Demo: PlacementOrderDemo,
     description:
       "Four steps, each pinning a single popover.placementTryOrder - top, bottom, left, right.",
+    icon: Crosshair,
     label: "Popover placement",
     source: placementOrderSource,
     title: "Popover placement",
@@ -97,6 +118,7 @@ export const examples: readonly Example[] = [
     Demo: ThemeDemo,
     description:
       "The default theme ships light and dark; data-glow-tour-theme on a wrapper pins one.",
+    icon: SunMoon,
     label: "Light and dark",
     source: themeSource,
     title: "Light and dark",
@@ -106,6 +128,7 @@ export const examples: readonly Example[] = [
     Demo: LongContentDemo,
     description:
       "A long step in a narrow popover: the content scrolls, the footer buttons stay put.",
+    icon: ScrollText,
     label: "Long content",
     source: longContentSource,
     title: "Long content",
@@ -114,6 +137,7 @@ export const examples: readonly Example[] = [
   {
     Demo: WaitForAsyncDemo,
     description: "waitUntilElement(selector) holds the tour until a late-arriving element exists.",
+    icon: Hourglass,
     label: "Wait for data",
     source: waitForAsyncSource,
     title: "Wait for data",
@@ -122,6 +146,7 @@ export const examples: readonly Example[] = [
   {
     Demo: CancellableDemo,
     description: "cancellable: false locks a tour so Escape and Cancel can't skip it.",
+    icon: Lock,
     label: "Can't be skipped",
     source: cancellableSource,
     title: "Can't be skipped",
@@ -130,6 +155,7 @@ export const examples: readonly Example[] = [
   {
     Demo: ConfirmCancelDemo,
     description: "onCancel opens window.confirm() and calls context.abort() to keep the tour open.",
+    icon: ShieldQuestionMark,
     label: "Confirm before leaving",
     source: confirmCancelSource,
     title: "Confirm before leaving",
@@ -138,6 +164,7 @@ export const examples: readonly Example[] = [
   {
     Demo: OverlayClickDemo,
     description: "behavior.overlayClick controls what a click on the dimmed backdrop does.",
+    icon: SquareDashedMousePointer,
     label: "Click outside to continue",
     source: overlayClickSource,
     title: "Click outside to continue",
@@ -146,7 +173,8 @@ export const examples: readonly Example[] = [
   {
     Demo: CustomStyledIndicatorDemo,
     description:
-      "overlay/popover overrides and a custom <Pointer> glyph, composed directly with Root/Overlay/Popover.",
+      "overlay/popover overrides, a custom <Pointer> glyph and step classNames, composed directly with Root/Overlay/Popover.",
+    icon: Sparkles,
     label: "Custom look",
     source: customStyledIndicatorSource,
     title: "Custom look",
@@ -156,6 +184,7 @@ export const examples: readonly Example[] = [
     Demo: CustomThemeDemo,
     description:
       "The same GlowTourDefault, re-skinned entirely from CSS: --glow-tour-* tokens and an inherited font.",
+    icon: Palette,
     label: "Custom theme",
     source: customThemeSource,
     title: "Custom theme",
@@ -164,6 +193,7 @@ export const examples: readonly Example[] = [
   {
     Demo: LiveProgressDemo,
     description: "A custom popover subcomponent reads useTour() to show real step progress.",
+    icon: ListOrdered,
     label: "Live step counter",
     source: liveProgressSource,
     title: "Live step counter",
@@ -173,6 +203,7 @@ export const examples: readonly Example[] = [
     Demo: RelocateTargetDemo,
     description:
       'missingTarget: { strategy: "wait" } keeps a step alive while its target leaves the page, then follows it to its new place.',
+    icon: Move,
     label: "Moving target",
     source: relocateTargetSource,
     title: "Moving target",

@@ -199,6 +199,53 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => root.unmount());
   });
 
+  test("adds step classNames after the component className, including a cloned child's", async () => {
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("class names", { classNames: { popover: "tour" } })
+      .step({
+        id: "step-classes",
+        content: "Content",
+        target,
+        classNames: { popover: ["step"], advance: "step-advance" },
+      })
+      .build();
+    const root = createRoot(container);
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          GlowTourRoot,
+          { tour },
+          React.createElement(
+            GlowTourPopover,
+            { className: "own" },
+            React.createElement(
+              GlowTourAdvanceTrigger,
+              null,
+              React.createElement("button", { className: "child" }),
+            ),
+          ),
+        ),
+      );
+    });
+    await React.act(async () => {
+      await tour.run(workflow);
+    });
+    const popover = container.querySelector("[data-glow-tour-popover]");
+    const advance = container.querySelector("[data-glow-tour-advance-trigger]");
+    assert.equal(popover?.className, "own step");
+    assert.equal(advance?.className, "child step-advance");
+    await React.act(async () => root.unmount());
+  });
+
   test("keeps nested tour controls isolated from the outer root", async () => {
     const [
       React,

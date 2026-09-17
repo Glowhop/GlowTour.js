@@ -300,4 +300,29 @@ describe("validateWorkflowConfig", () => {
     assert.ok(duplicate);
     assert.match(duplicate.message, /already used by steps\[0\]/);
   });
+
+  test("accepts classNames as strings or string arrays on the workflow and its steps", () => {
+    const config = {
+      ...minimalConfig(),
+      classNames: { popover: "tour-popover", advance: ["primary", "large"] },
+      steps: [{ ...minimalConfig().steps[0], classNames: { overlay: [], cancel: "ghost" } }],
+    };
+    assert.equal(validateWorkflowConfig(config), config);
+  });
+
+  test("rejects invalid classNames", () => {
+    const config = {
+      ...minimalConfig(),
+      classNames: { popover: 1, arrow: "arrow" },
+      steps: [{ ...minimalConfig().steps[0], classNames: { header: ["ok", 2] } }],
+    };
+    assert.deepEqual(
+      issuesOf(config).map((issue) => [issue.path, issue.message]),
+      [
+        ["classNames.arrow", "Unknown key: arrow"],
+        ["classNames.popover", "must be an array"],
+        ["steps[0].classNames.header[1]", "must be a string"],
+      ],
+    );
+  });
 });

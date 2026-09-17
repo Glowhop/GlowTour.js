@@ -9,12 +9,13 @@ import type {
   ScrollOptions,
   StepBehavior,
   StepPropsPatch,
+  TourClassNames,
 } from "../types";
 
 /**
  * Merges a partial change into step props: fields it leaves out are kept, `data` is merged key by
- * key, `overlay` / `popover` / `indicator` / `behavior` go through their option merges, and arrays
- * are replaced.
+ * key, `overlay` / `popover` / `indicator` / `behavior` go through their option merges, `classNames` is
+ * merged per component, and arrays are replaced.
  * Builds a step's initial props over the workflow defaults, and backs `StepPropsStore.update`.
  */
 export function mergeStepProps<T>(
@@ -29,7 +30,19 @@ export function mergeStepProps<T>(
     popover: mergePopoverOptions(base.popover, patch.popover),
     indicator: mergeIndicatorOptions(base.indicator, patch.indicator),
     behavior: mergeStepBehavior(base.behavior, patch.behavior),
+    classNames: mergeClassNames(base.classNames, patch.classNames),
   } as ReadonlyStepProps<T>;
+}
+
+/** Merges `classNames` per component: a component the patch leaves out or sets to `undefined` keeps its classes. */
+function mergeClassNames(base?: TourClassNames, patch?: TourClassNames) {
+  if (!patch) return base;
+  const merged: TourClassNames = { ...base };
+  for (const slot in patch) {
+    const key = slot as keyof TourClassNames;
+    merged[key] = patch[key] ?? merged[key];
+  }
+  return merged;
 }
 
 export function mergeOverlayOptions(
