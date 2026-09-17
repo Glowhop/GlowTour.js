@@ -6,7 +6,7 @@ import { createGlowTour, GlowTourDefault } from "@glowhop/vue-tour";
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello world!" })
+  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello world!" })
   .build();
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
