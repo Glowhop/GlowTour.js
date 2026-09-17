@@ -787,7 +787,7 @@ export function registerGlowTourElements() {
       }
       const details = this.details(state, props);
       this.hidden = details.hidden;
-      this.capabilityDisabled = state.status === "active" && details.disabled;
+      this.capabilityDisabled = details.disabled;
       this.syncDisabled();
       if (this.labelOwned) button.textContent = details.label;
       if (!this.managedAttributes.isAuthored(button, "aria-label")) {
@@ -805,6 +805,8 @@ export function registerGlowTourElements() {
       this.managedAttributes.set(this.button, "aria-disabled", String(disabled));
     }
 
+    // A missing capability only counts once the step is active, but a `controls` value authored by
+    // the step disables the trigger as soon as that step renders, transition included.
     protected abstract details(
       state: TourState<VanillaTourContent>,
       props: ReadonlyStepProps<VanillaTourContent>,
@@ -819,7 +821,9 @@ export function registerGlowTourElements() {
       props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canPrevious || props.popover?.controls?.previous === "disabled",
+        disabled:
+          (state.status === "active" && !state.canPrevious) ||
+          props.popover?.controls?.previous === "disabled",
         hidden: props.popover?.controls?.previous === "hidden",
         label: this.getAttribute("previous-label") ?? "Previous step",
       };
@@ -834,7 +838,9 @@ export function registerGlowTourElements() {
       props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canAdvance || props.popover?.controls?.advance === "disabled",
+        disabled:
+          (state.status === "active" && !state.canAdvance) ||
+          props.popover?.controls?.advance === "disabled",
         hidden: props.popover?.controls?.advance === "hidden",
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")
@@ -851,7 +857,9 @@ export function registerGlowTourElements() {
       props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canCancel || props.popover?.controls?.cancel === "disabled",
+        disabled:
+          (state.status === "active" && !state.canCancel) ||
+          props.popover?.controls?.cancel === "disabled",
         hidden: !state.canCancel || props.popover?.controls?.cancel === "hidden",
         label: "Skip",
       };
