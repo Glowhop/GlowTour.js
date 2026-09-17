@@ -268,7 +268,7 @@ interface WaitUntilOptions {
     timeout?: number;
 }
 
-class WorkflowBuilder {
+class WorkflowBuilder<T> {
     append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T>;
     build(): WorkflowDefinition<T>;
     name: string;
@@ -281,7 +281,7 @@ interface WorkflowDefinition<T> {
     readonly steps: readonly WorkflowStepDefinition<T>[];
 }
 
-class WorkflowStepBuilder {
+class WorkflowStepBuilder<T> {
     append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T>;
     beforeEnter(callback: StepHookAction<T>): WorkflowStepBuilder<T>;
     beforeLeave(callback: StepHookAction<T>): WorkflowStepBuilder<T>;
@@ -295,7 +295,7 @@ class WorkflowStepBuilder {
     step(options: StepParameters<T>): WorkflowStepBuilder<T>;
     wait(timeMs: number): WorkflowStepBuilder<T>;
     waitUntil(predicate: WaitUntilPredicate<T>, options?: WaitUntilOptions): WorkflowStepBuilder<T>;
-    waitUntilElement(selector: string, options?: WaitUntilOptions | undefined): WorkflowStepBuilder<T>;
+    waitUntilElement(selector: string, options?: WaitUntilOptions): WorkflowStepBuilder<T>;
 }
 
 interface WorkflowStepDefinition<T> {
@@ -307,4 +307,18 @@ interface WorkflowStepDefinition<T> {
     readonly beforeEnter: StepHookAction<T> | null;
     readonly beforeLeave: StepHookAction<T> | null;
 }
+
+// Used by the API above, but not exported by this entry.
+
+type DeepReadonly<T> = T extends (...arguments_: infer _Arguments) => infer _Return ? T : T extends readonly (infer TEntry)[] ? readonly DeepReadonly<TEntry>[] : T extends object ? {
+    readonly [TKey in keyof T]: DeepReadonly<T[TKey]>;
+} : T;
+
+type EventForName<TEventName extends EventName> = HTMLElementEventMap[TEventName];
+
+interface RunOptions {
+    startAt?: string;
+}
+
+type WaitUntilPredicate<T> = (context: StepContext<T>) => Promise<boolean> | boolean;
 ```
