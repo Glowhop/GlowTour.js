@@ -79,36 +79,7 @@ export class TourComponent {
 
 The tour is disposed when the component's injector is destroyed.
 
-## Share a tour with `createGlowTour`
-
-When several components drive the same tour, or code outside components needs it, create the tour in a service and pass it to `injectGlowTour`:
-
-```typescript
-import { Injectable } from "@angular/core";
-import { createGlowTour } from "@glowhop/angular-tour";
-
-@Injectable({ providedIn: "root" })
-export class TourService {
-  readonly tour = createGlowTour();
-}
-```
-
-```typescript
-import { Component, inject } from "@angular/core";
-import { injectGlowTour } from "@glowhop/angular-tour";
-import { TourService } from "./tour.service";
-
-@Component({
-  selector: "app-help-button",
-  standalone: true,
-  template: `<button [disabled]="glow.status() === 'active'">Help</button>`,
-})
-export class HelpButton {
-  readonly glow = injectGlowTour(inject(TourService).tour);
-}
-```
-
-Render `<glow-tour-default [tour]="tour" />` once, with the service's tour. `injectGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
+To drive the same tour from several components, see [Share one tour between components](#share-one-tour-between-components).
 
 ## Step targets
 
@@ -313,6 +284,37 @@ Add `StepCounter` to the `imports` array of `CustomTour`, then place it inside t
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
 See the runnable [Live step counter example](/examples).
+
+## Share one tour between components
+
+When several components drive the same tour, for example a layout that renders it and pages that start it, create the tour once in a service with `createGlowTour()` and pass it to `injectGlowTour`:
+
+```typescript
+import { Injectable } from "@angular/core";
+import { createGlowTour } from "@glowhop/angular-tour";
+
+@Injectable({ providedIn: "root" })
+export class TourService {
+  readonly tour = createGlowTour();
+}
+```
+
+```typescript
+import { Component, inject } from "@angular/core";
+import { injectGlowTour } from "@glowhop/angular-tour";
+import { TourService } from "./tour.service";
+
+@Component({
+  selector: "app-help-button",
+  standalone: true,
+  template: `<button [disabled]="glow.status() === 'active'">Help</button>`,
+})
+export class HelpButton {
+  readonly glow = injectGlowTour(inject(TourService).tour);
+}
+```
+
+Render `<glow-tour-default [tour]="tour" />` once, with the service's tour. `injectGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`.
 
 ## Angular 18+
 

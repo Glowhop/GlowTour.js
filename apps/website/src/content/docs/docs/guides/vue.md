@@ -69,46 +69,7 @@ const workflow = create("product-tour")
 
 The tour is disposed when the component's effect scope is disposed. Destructured refs stay reactive, so templates read `status` directly and scripts read `status.value`.
 
-## Share a tour with `createGlowTour`
-
-When several components drive the same tour, or code outside components needs it, create the tour yourself and pass it to `useGlowTour`:
-
-```ts
-// tour.ts
-import { createGlowTour } from "@glowhop/vue-tour";
-
-export const tour = createGlowTour();
-```
-
-```vue
-<!-- App.vue -->
-<script setup lang="ts">
-import { GlowTourDefault } from "@glowhop/vue-tour";
-import HelpButton from "./HelpButton.vue";
-import { tour } from "./tour";
-</script>
-
-<template>
-  <HelpButton />
-  <GlowTourDefault :tour="tour" />
-</template>
-```
-
-```vue
-<!-- HelpButton.vue -->
-<script setup lang="ts">
-import { useGlowTour } from "@glowhop/vue-tour";
-import { tour } from "./tour";
-
-const { status } = useGlowTour(tour);
-</script>
-
-<template>
-  <button :disabled="status === 'active'">Help</button>
-</template>
-```
-
-`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`. In Nuxt, a plugin can provide the shared tour: see [With Nuxt](/docs/guides/ssr#with-nuxt).
+To drive the same tour from several components, see [Share one tour between components](#share-one-tour-between-components).
 
 ## Step targets
 
@@ -307,6 +268,47 @@ Then place it in the composed popover:
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
 See the runnable [Live step counter example](/examples).
+
+## Share one tour between components
+
+When several components drive the same tour, for example a layout that renders it and pages that start it, create the tour once with `createGlowTour()` and pass it to `useGlowTour`:
+
+```ts
+// tour.ts
+import { createGlowTour } from "@glowhop/vue-tour";
+
+export const tour = createGlowTour();
+```
+
+```vue
+<!-- App.vue -->
+<script setup lang="ts">
+import { GlowTourDefault } from "@glowhop/vue-tour";
+import HelpButton from "./HelpButton.vue";
+import { tour } from "./tour";
+</script>
+
+<template>
+  <HelpButton />
+  <GlowTourDefault :tour="tour" />
+</template>
+```
+
+```vue
+<!-- HelpButton.vue -->
+<script setup lang="ts">
+import { useGlowTour } from "@glowhop/vue-tour";
+import { tour } from "./tour";
+
+const { status } = useGlowTour(tour);
+</script>
+
+<template>
+  <button :disabled="status === 'active'">Help</button>
+</template>
+```
+
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.run(workflow)`, `tour.cancel()`, and `tour.state`. In Nuxt, a plugin can provide the shared tour: see [With Nuxt](/docs/guides/ssr#with-nuxt).
 
 ## Vue 3.3+
 

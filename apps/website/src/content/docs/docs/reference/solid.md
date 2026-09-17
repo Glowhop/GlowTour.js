@@ -5,11 +5,97 @@ description: API reference for @glowhop/solid-tour.
 
 The Solid adapter (`@glowhop/solid-tour`) exports components, hooks, and utility functions.
 
+## Hooks
+
+### `useGlowTour(source?)`
+
+Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and one accessor per state field.
+
+**Signature**:
+```typescript
+function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
+
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
+  readonly tour: Tour
+} & { readonly [K in keyof TourState]: Accessor<TourState[K]> }
+```
+
+**Parameters**:
+- `source` - Options for a new tour, or an existing tour created with `createGlowTour()` to share it.
+
+With options, the tour is disposed when the owning scope is cleaned up. With a tour, the hook only reads it and never disposes it.
+
+**Usage**:
+```tsx
+import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
+
+function Onboarding() {
+  const { tour, create, run, status } = useGlowTour();
+  const workflow = create("welcome")
+    .step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." })
+    .build();
+
+  return (
+    <>
+      <button disabled={status() === "active"} onClick={() => void run(workflow)}>Start tour</button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
+```
+
+See the guide to [choose step targets](/docs/guides/solid#step-targets) and [share one tour between components](/docs/guides/solid#share-one-tour-between-components).
+
+### `useTourContext()`
+
+Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
+
+Returns reactive tour state via Solid signals. Must be called inside `<GlowTourRoot tour={...}>`.
+
+**Signature**:
+```typescript
+function useTourContext(): Accessor<TourState<SolidTourContent>>
+```
+
+**Returns** (accessor):
+```typescript
+() => {
+  name: string
+  totalSteps: number
+  currentStepIndex: number
+  currentStep: TourCurrentStep<SolidTourContent> | null
+  direction: "advance" | "previous"
+  canAdvance: boolean
+  canPrevious: boolean
+  canCancel: boolean
+  isFirstStep: boolean
+  isLastStep: boolean
+  status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
+  error: Error | null
+}
+```
+
+**Usage**:
+```tsx
+import { useTourContext } from "@glowhop/solid-tour";
+
+const state = useTourContext();
+
+return (
+  <div>
+    <p>Status: {state().status}</p>
+    <button disabled={!state().canAdvance} onClick={() => tour.advance()}>
+      Next
+    </button>
+  </div>
+);
+```
+
 ## Functions
 
 ### `createGlowTour(options?)`
 
-Creates a tour controller instance. Inherited from Core.
+Creates a tour instance to share between components, passed to `useGlowTour(tour)`, or to drive outside components. Inherited from Core.
 
 **Signature**:
 ```typescript
@@ -143,92 +229,6 @@ interface PointerProps extends ComponentProps {
     </GlowTourFooter>
   </GlowTourPopover>
 </GlowTourRoot>
-```
-
-## Hooks
-
-### `useGlowTour(source?)`
-
-Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and one accessor per state field.
-
-**Signature**:
-```typescript
-function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
-
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "run"> & {
-  readonly tour: Tour
-} & { readonly [K in keyof TourState]: Accessor<TourState[K]> }
-```
-
-**Parameters**:
-- `source` - Options for a new tour, or an existing tour created with `createGlowTour()` to share it.
-
-With options, the tour is disposed when the owning scope is cleaned up. With a tour, the hook only reads it and never disposes it.
-
-**Usage**:
-```tsx
-import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
-
-function Onboarding() {
-  const { tour, create, run, status } = useGlowTour();
-  const workflow = create("welcome")
-    .step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." })
-    .build();
-
-  return (
-    <>
-      <button disabled={status() === "active"} onClick={() => void run(workflow)}>Start tour</button>
-      <GlowTourDefault tour={tour} />
-    </>
-  );
-}
-```
-
-See the [guide](/docs/guides/solid#run-a-tour-from-a-component) for sharing a tour and choosing step targets.
-
-### `useTourContext()`
-
-Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build tour UI inside the root. To run a tour or read its state elsewhere, use `useGlowTour`.
-
-Returns reactive tour state via Solid signals. Must be called inside `<GlowTourRoot tour={...}>`.
-
-**Signature**:
-```typescript
-function useTourContext(): Accessor<TourState<SolidTourContent>>
-```
-
-**Returns** (accessor):
-```typescript
-() => {
-  name: string
-  totalSteps: number
-  currentStepIndex: number
-  currentStep: TourCurrentStep<SolidTourContent> | null
-  direction: "advance" | "previous"
-  canAdvance: boolean
-  canPrevious: boolean
-  canCancel: boolean
-  isFirstStep: boolean
-  isLastStep: boolean
-  status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
-  error: Error | null
-}
-```
-
-**Usage**:
-```tsx
-import { useTourContext } from "@glowhop/solid-tour";
-
-const state = useTourContext();
-
-return (
-  <div>
-    <p>Status: {state().status}</p>
-    <button disabled={!state().canAdvance} onClick={() => tour.advance()}>
-      Next
-    </button>
-  </div>
-);
 ```
 
 ## Types
