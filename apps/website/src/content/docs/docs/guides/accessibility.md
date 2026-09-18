@@ -77,6 +77,24 @@ While a step is active, focus is trapped inside the popover. Pressing `Tab` cycl
 
 When a step opens, focus goes to its Advance button, or to its Previous button when the user went back. If Previous is unavailable on that step, as on the first one, focus goes to Advance instead of an unavailable button.
 
+### Keeping focus where it is
+
+Set `behavior.autoFocus: false` when the tour should not pick a control for the user, for example while they fill in a form the tour walks them through:
+
+- Focus already in the popover, or on a target the step lets them interact with, stays there.
+- On a step with `allowInteraction: true`, the page stays live, so focus stays wherever it is on the page.
+- Focus the page lost, such as the button that started the tour once a modal step makes the page `inert`, goes to the popover itself instead of one of its buttons. The screen reader still announces the dialog, and `Tab` reaches its buttons.
+
+```ts
+.step({
+  id: "email",
+  target: "#email",
+  title: "Your email",
+  content: "We only use it to send your receipt.",
+  behavior: { allowInteraction: true, autoFocus: false },
+})
+```
+
 ### Focus restoration
 
 When the tour ends (whether it completes, is cancelled, or errors), focus automatically returns to the element that had focus before the tour started, once the popover has faded out. This ensures users return to their original position on the page, and screen readers announce where they landed.

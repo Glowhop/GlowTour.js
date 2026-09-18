@@ -10,6 +10,8 @@ export interface FocusGuardScope {
   allowedTarget?: HTMLElement | null;
   allowTargetInteraction?: boolean;
   autoFocus?: boolean;
+  /** The caller focuses a control later: keep a focus already in scope until then. */
+  deferFocus?: boolean;
   fallback?: HTMLElement | null;
 }
 
@@ -50,14 +52,23 @@ export class FocusGuard {
     }
 
     this.update(scope);
-    const currentFocus = this.document?.activeElement;
-    if (
-      scope.autoFocus !== false ||
-      !isNode(currentFocus, scope.popover) ||
-      !this.isAllowed(currentFocus)
-    ) {
-      this.focusFallback();
+    if (scope.autoFocus === false) {
+      // Without auto focus the step leaves focus where it is: in its scope, or anywhere on a page
+      // that interaction keeps live. Only focus the page lost, typically to `inert`, goes to the
+      // dialog itself rather than one of its controls.
+      const currentFocus = this.document?.activeElement;
+      const kept =
+        isHTMLElement(currentFocus, scope.popover) &&
+        currentFocus !== this.document?.body &&
+        (this.isAllowed(currentFocus) || this.allowTargetInteraction);
+      if (!kept) this.focusFallback(false);
+      return;
     }
+    const currentFocus = this.document?.activeElement;
+    if (scope.deferFocus && isNode(currentFocus, scope.popover) && this.isAllowed(currentFocus)) {
+      return;
+    }
+    this.focusFallback();
   }
 
   update(scope: FocusGuardScope) {
@@ -125,14 +136,14 @@ export class FocusGuard {
     );
   }
 
-  private focusFallback() {
+  private focusFallback(controls = true) {
     const popover = this.popover;
     if (!popover?.isConnected) {
       return;
     }
 
     const nextFocus =
-      this.findFocusable(popover, this.direction) ??
+      (controls ? this.findFocusable(popover, this.direction) : null) ??
       (isFocusable(popover)
         ? popover
         : this.fallback?.isConnected && isFocusable(this.fallback)

@@ -98,6 +98,14 @@ that Previous trigger is unavailable, the guard falls back to Advance (`findFocu
 `focus-guard.ts`): focus left on an unavailable control is a dead end, and NVDA re-reads the whole
 dialog when the focused control changes state.
 
+With `behavior.autoFocus: false`, entering a step never picks a trigger. Focus already in scope
+(the popover, or the target on an interactive step) stays, and so does focus anywhere on the page
+while the step allows interaction, because the page is not inert then. Focus the page lost, which
+on a modal step is always the case for focus outside the popover since `inert` blurs it, goes to
+the popover itself (`focusFallback(false)`), which the library already renders with
+`tabindex="-1"`. The dialog is still announced and `Tab` still reaches its triggers. Only step
+entry reads the option: focus redirected later by the trap still lands on a trigger.
+
 The guard is activated once per tour (the first `show()` call marks `initialFocus`) and stays
 active across step transitions; it is only deactivated - restoring focus - when the tour view is
 cleared. `driver.clear()` is invoked by every exit path in `tour-controller.ts`:
