@@ -33,7 +33,12 @@ export interface StepBehavior {
   allowInteraction?: boolean;
   /** Leave the page scrollable while the step is shown; set `false` to lock it. Change it during the step with `context.props.update({ behavior: { allowScroll } })`. @default true */
   allowScroll?: boolean;
-  /** Move focus into the popover when the step is shown. @default true */
+  /**
+   * Focus the popover's Advance control (Back when going back) when the step is shown. Set `false`
+   * to leave focus where it is: in the popover, on an interactive target, or anywhere on the page
+   * when `allowInteraction` is `true`. Focus the page lost, typically to a modal step making it
+   * inert, then goes to the popover itself rather than one of its controls. @default true
+   */
   autoFocus?: boolean;
   /** Scroll the target into view when the step is entered. @default true */
   autoScroll?: boolean;
