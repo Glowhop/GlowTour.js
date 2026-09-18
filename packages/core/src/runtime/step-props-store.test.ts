@@ -121,7 +121,7 @@ describe("step props store", () => {
     store.subscribe((props) => received.push(props));
     received.length = 0;
 
-    store.update({ data: { flag: true }, popover: { controls: { advance: "disabled" } } });
+    store.update({ data: { flag: true }, controls: { advance: { state: "disabled" } } });
 
     const props = store.get();
     assert.equal(received.length, 1);
@@ -129,7 +129,7 @@ describe("step props store", () => {
     assert.equal(props.title, "title");
     assert.equal(props.content, "content");
     assert.deepEqual(props.data, { count: 1, flag: true });
-    assert.equal(props.popover?.controls?.advance, "disabled");
+    assert.equal(props.controls?.advance?.state, "disabled");
     assert.equal(props.popover?.arrow?.color, "purple");
     assert.equal(Object.isFrozen(props.popover), true);
   });

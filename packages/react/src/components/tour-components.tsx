@@ -409,7 +409,7 @@ export function GlowTourPreviousTrigger({ previousLabel, ...props }: PreviousTri
   const snapshot = useTourSnapshot(tour);
 
   const step = useStep(snapshot);
-  const control = step?.popover?.controls?.previous;
+  const control = step?.controls?.previous?.state;
   if (control === "hidden") return null;
   const label = previousLabel ?? "Previous step";
   return (
@@ -438,7 +438,7 @@ export function GlowTourAdvanceTrigger({
   const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
   const step = useStep(snapshot);
-  const control = step?.popover?.controls?.advance;
+  const control = step?.controls?.advance?.state;
   if (control === "hidden") return null;
   const label = snapshot.isLastStep
     ? (finishLabel ?? "Finish tour")
@@ -464,7 +464,7 @@ export function GlowTourAdvanceTrigger({
 export function GlowTourCancelTrigger(props: CancelTriggerProps) {
   const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
-  const control = useStep(snapshot)?.popover?.controls?.cancel;
+  const control = useStep(snapshot)?.controls?.cancel?.state;
   if (!snapshot.canCancel || control === "hidden") return null;
   return (
     <Trigger {...props} capabilityDisabled={control === "disabled"} label="Skip" marker="cancel" />
