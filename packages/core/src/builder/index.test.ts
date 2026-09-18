@@ -49,6 +49,10 @@ const removedPopoverControls: PopoverOptions = {
   // @ts-expect-error Control states moved to the root controls option.
   controls: { advance: "hidden" },
 };
+const removedCancellableOption: StartOptions<string> = {
+  // @ts-expect-error The cancel control replaces cancellable.
+  cancellable: false,
+};
 const removedHiddenControlState: TourControl = {
   // @ts-expect-error A control is enabled or disabled: hide its button with classNames.
   state: "hidden",
@@ -99,6 +103,7 @@ void controlOptions;
 void _storedControls;
 void removedPopoverControls;
 void removedHiddenControlState;
+void removedCancellableOption;
 void removedKeyboardOption;
 void removedFooterOption;
 void behaviorOptions;

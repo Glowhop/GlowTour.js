@@ -120,7 +120,6 @@ export interface WorkflowConfig<T = string> {
   /** Version of the config format, required. It does not follow the package version. */
   readonly version: "1.1";
   readonly name: string;
-  readonly cancellable?: boolean;
   readonly overlay?: OverlayOptions;
   readonly popover?: PopoverOptions;
   readonly indicator?: IndicatorOptions;

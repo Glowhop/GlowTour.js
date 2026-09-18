@@ -319,8 +319,7 @@ export class TourController<T> {
       if (index >= this.steps.length || lostStep) this.direction = direction;
       if (index >= this.steps.length) await this.finish(operation, skipped);
       else if (!lostStep) this.setStatus("active");
-      else if (this.canCancel()) await this.cancelCurrent(operation);
-      else throw this.missingTargetError(lostStep);
+      else await this.cancelCurrent(operation);
       return;
     }
     step.target = target;
@@ -772,12 +771,7 @@ export class TourController<T> {
   }
 
   private canCancel() {
-    return (
-      (this.workflow?.options.cancellable ?? true) &&
-      this.status !== "finished" &&
-      this.status !== "cancelled" &&
-      this.status !== "error"
-    );
+    return this.status !== "finished" && this.status !== "cancelled" && this.status !== "error";
   }
 
   private setStatus(status: TourStatus) {

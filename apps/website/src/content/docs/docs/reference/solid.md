@@ -162,7 +162,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 | `GlowTourFooter` | `<footer>` | `children?: JSX.Element` |
 | `GlowTourPreviousTrigger` | `<button>` | `previousLabel?: string` (default `"Previous step"`), trigger props |
 | `GlowTourAdvanceTrigger` | `<button>` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), trigger props |
-| `GlowTourCancelTrigger` | `<button>` | Trigger props. Its label is `"Skip"`; it is not rendered when the tour cannot be cancelled |
+| `GlowTourCancelTrigger` | `<button>` | Trigger props. Its label is `"Skip"` |
 
 `idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
 

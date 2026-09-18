@@ -521,33 +521,26 @@ export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element 
 
 /**
  * Button that cancels the tour.
- * Automatically hidden if the tour is not cancellable.
+ * Automatically disabled based on tour state.
  * @param props Button props.
- * @returns The cancel button, or null if the tour cannot be cancelled.
+ * @returns The cancel button.
  */
 export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
   const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      return snapshot().canCancel;
-    },
-    get children() {
-      return Trigger(
-        mergeProps(props, {
-          get capabilityDisabled() {
-            return (
-              !snapshot().canCancel ||
-              currentStep(snapshot())?.controls?.cancel?.state === "disabled"
-            );
-          },
-          label: "Skip",
-          get class() {
-            return stepClass(snapshot, "cancel", props.class);
-          },
-          marker: "cancel" as const,
-        }),
-      );
-    },
-  });
+  return Trigger(
+    mergeProps(props, {
+      get capabilityDisabled() {
+        return (
+          (snapshot().status !== "transitioning" && !snapshot().canCancel) ||
+          currentStep(snapshot())?.controls?.cancel?.state === "disabled"
+        );
+      },
+      label: "Skip",
+      get class() {
+        return stepClass(snapshot, "cancel", props.class);
+      },
+      marker: "cancel" as const,
+    }),
+  );
 }

@@ -216,6 +216,12 @@ describe("validateWorkflowConfig", () => {
     }
   });
 
+  test("rejects cancellable: the cancel control replaces it", () => {
+    assert.deepEqual(issuesOf({ ...minimalConfig(), cancellable: false }), [
+      { path: "cancellable", message: "Unknown key: cancellable" },
+    ]);
+  });
+
   test("accepts only enabled and disabled as a control state", () => {
     for (const state of ["enabled", "disabled"]) {
       const config = { ...minimalConfig(), controls: { cancel: { state } } };

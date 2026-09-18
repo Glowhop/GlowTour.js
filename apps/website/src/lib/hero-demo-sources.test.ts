@@ -19,7 +19,6 @@ const CITED_OPTIONS = [
   "allowScroll",
   "autoFocus",
   "autoScroll",
-  "cancellable",
   "classNames",
   "controls",
   "missingTarget",
@@ -73,7 +72,7 @@ describe("hero demo sources", () => {
       });
 
       test("every option it names is set by the demo", () => {
-        // The whole definition, not just the steps: cancellable and the default behavior are start options.
+        // The whole definition, not just the steps: controls and the default behavior are start options.
         const keys = definedKeys(example.workflow);
         for (const option of CITED_OPTIONS) {
           if (!example.source.includes(`${option}:`)) continue;

@@ -307,28 +307,28 @@ export function WaitForAsyncDemo() {
   );
 }
 
-// 5. cancellable: false --------------------------------------------------------
+// 5. controls.cancel disabled ----------------------------------------------------
 
-const cancellableTour = createGlowTour();
-export const cancellableWorkflow = cancellableTour
-  .create("hero-cancellable", {
-    cancellable: false,
+const lockedTour = createGlowTour();
+export const lockedWorkflow = lockedTour
+  .create("hero-locked", {
+    controls: { cancel: { state: "disabled" } },
   })
   .step({
-    id: "cancellable-warning",
-    target: "#hero-cancellable-warning",
+    id: "locked-warning",
+    target: "#hero-locked-warning",
     title: "Read this carefully",
     content: "A warning is a good place for a tour step too.",
   })
   .step({
-    id: "cancellable-target",
-    target: "#hero-cancellable-target",
+    id: "locked-target",
+    target: "#hero-locked-target",
     title: "This step can't be skipped",
-    content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
+    content: "A disabled cancel control blocks Escape and the Skip button for the whole tour.",
   })
   .build();
 
-export function CancellableDemo() {
+export function LockedDemo() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <DemoCard className="p-4">
@@ -337,11 +337,11 @@ export function CancellableDemo() {
             <Trash2 className="h-4 w-4" aria-hidden="true" />
             Danger zone
           </h4>
-          <p id="hero-cancellable-warning" className="mt-1 text-xs text-text-muted">
+          <p id="hero-locked-warning" className="mt-1 text-xs text-text-muted">
             This permanently deletes your account and all of its data.
           </p>
           <button
-            id="hero-cancellable-target"
+            id="hero-locked-target"
             type="button"
             className="mt-3 rounded-glow border border-red-600 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-600/10"
           >
@@ -351,12 +351,12 @@ export function CancellableDemo() {
       </DemoCard>
       <button
         type="button"
-        onClick={() => void cancellableTour.start(cancellableWorkflow)}
+        onClick={() => void lockedTour.start(lockedWorkflow)}
         className={runButtonClass}
       >
         Run this demo
       </button>
-      <GlowTourDefault tour={cancellableTour} />
+      <GlowTourDefault tour={lockedTour} />
     </div>
   );
 }
@@ -366,7 +366,6 @@ export function CancellableDemo() {
 const confirmCancelTour = createGlowTour();
 export const confirmCancelWorkflow = confirmCancelTour
   .create("hero-confirm-cancel", {
-    cancellable: true,
     onCancel: (context) => {
       if (!window.confirm("Cancel this tour?")) {
         context.abort();

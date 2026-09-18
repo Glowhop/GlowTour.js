@@ -536,18 +536,16 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   selector: "glow-tour-cancel-trigger",
   standalone: true,
   template: `
-    @if (snapshot()?.canCancel) {
-      <button
-        data-glow-tour-cancel-trigger
-        [class]="stepClass('cancel')"
-        [attr.aria-controls]="ariaControls()"
-        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabelText() ?? label()"
-        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
-        [disabled]="isDisabled()"
-        type="button"
-      ><ng-content>{{ label() }}</ng-content></button>
-    }
+    <button
+      data-glow-tour-cancel-trigger
+      [class]="stepClass('cancel')"
+      [attr.aria-controls]="ariaControls()"
+      [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+      [attr.aria-label]="ariaLabelText() ?? label()"
+      [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+      [disabled]="isDisabled()"
+      type="button"
+    ><ng-content>{{ label() }}</ng-content></button>
   `,
 })
 /** Button component for canceling/skipping the tour. */

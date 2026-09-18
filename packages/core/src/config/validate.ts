@@ -4,7 +4,6 @@ import { ConfigValidationError } from "./types";
 const TOP_LEVEL_KEYS = [
   "version",
   "name",
-  "cancellable",
   "overlay",
   "popover",
   "indicator",
@@ -166,7 +165,6 @@ function validateWorkflowConfigShape(
   if (typeof value.name !== "string" || value.name.length === 0) {
     issues.push({ path: "name", message: "name must be a non-empty string" });
   }
-  validateOptionalBoolean("cancellable", value.cancellable, issues);
   validateOptionalBoolean("animated", value.animated, issues);
   validateOverlayShape("overlay", value.overlay, issues);
   validatePopoverShape("popover", value.popover, issues);

@@ -8,11 +8,11 @@ import type { ReactNode } from "react";
 
 function createGlowTour(options?: GlowTourOptions): Tour;
 
-const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => React.JSX.Element; CancelTrigger: (props: ButtonProps) => React.JSX.Element | null; Content: (props: ContentProps) => React.JSX.Element; Footer: (props: ElementProps) => React.JSX.Element; Header: (props: ContentProps) => React.JSX.Element | null; Overlay: (props: OverlayProps) => React.JSX.Element; Pointer: (props: PointerProps) => React.JSX.Element; Popover: (props: ElementProps) => React.JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => React.JSX.Element; Root: (props: RootProps) => React.JSX.Element; };
+const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => React.JSX.Element; CancelTrigger: (props: ButtonProps) => React.JSX.Element; Content: (props: ContentProps) => React.JSX.Element; Footer: (props: ElementProps) => React.JSX.Element; Header: (props: ContentProps) => React.JSX.Element | null; Overlay: (props: OverlayProps) => React.JSX.Element; Pointer: (props: PointerProps) => React.JSX.Element; Popover: (props: ElementProps) => React.JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => React.JSX.Element; Root: (props: RootProps) => React.JSX.Element; };
 
 function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): React.JSX.Element;
 
-function GlowTourCancelTrigger(props: CancelTriggerProps): React.JSX.Element | null;
+function GlowTourCancelTrigger(props: CancelTriggerProps): React.JSX.Element;
 
 function GlowTourContent(props: ContentProps): React.JSX.Element;
 

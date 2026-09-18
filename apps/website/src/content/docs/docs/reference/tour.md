@@ -116,7 +116,7 @@ A step action or a target event handler can do the same with `context.goTo(id)`,
 
 ### `tour.cancel()`
 
-Cancels the running tour. Only available if `canCancel` is true (see `StartOptions.cancellable`, default `true`, in the [Builder reference](/docs/reference/builder#start-options)).
+Cancels the running tour. Does nothing when no tour is running. A disabled `controls.cancel` only blocks the tour UI: `tour.cancel()` still cancels.
 
 **Signature**:
 ```typescript

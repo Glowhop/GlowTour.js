@@ -455,17 +455,23 @@ export function GlowTourAdvanceTrigger({
 
 /**
  * Button that cancels the tour.
- * Automatically hidden if the tour is not cancellable.
+ * Automatically disabled based on tour state.
  * @param props Button props.
- * @returns The cancel button, or null if the tour cannot be cancelled.
+ * @returns The cancel button.
  */
 export function GlowTourCancelTrigger(props: CancelTriggerProps) {
   const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
   const control = useStep(snapshot)?.controls?.cancel?.state;
-  if (!snapshot.canCancel) return null;
   return (
-    <Trigger {...props} capabilityDisabled={control === "disabled"} label="Skip" marker="cancel" />
+    <Trigger
+      {...props}
+      capabilityDisabled={
+        (snapshot.status !== "transitioning" && !snapshot.canCancel) || control === "disabled"
+      }
+      label="Skip"
+      marker="cancel"
+    />
   );
 }
 

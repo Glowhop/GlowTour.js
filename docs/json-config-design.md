@@ -35,7 +35,6 @@ and the tour-level `onStart`/`onCancel`/`onFinish` hooks accept only a plain fun
 {
   "version": "1.1",
   "name": "onboarding",
-  "cancellable": true,
   "steps": [
     {
       "id": "invite",
