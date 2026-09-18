@@ -465,104 +465,82 @@ function Trigger(
 
 /**
  * Button that navigates to the previous step.
- * Automatically hidden or disabled based on tour state.
+ * Automatically disabled based on tour state.
  * @param props Button props and an optional `previousLabel` for the button text.
- * @returns The back button, or null if hidden.
+ * @returns The back button.
  */
 export function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Element {
   const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      const step = currentStep(snapshot());
-      return step?.controls?.previous?.state !== "hidden";
-    },
-    get children() {
-      return Trigger(
-        mergeProps(props, {
-          get capabilityDisabled() {
-            return (
-              (snapshot().status !== "transitioning" && !snapshot().canPrevious) ||
-              currentStep(snapshot())?.controls?.previous?.state === "disabled"
-            );
-          },
-          label: props.previousLabel ?? "Previous step",
-          get class() {
-            return stepClass(snapshot, "previous", props.class);
-          },
-          marker: "previous" as const,
-        }),
-      );
-    },
-  });
+  return Trigger(
+    mergeProps(props, {
+      get capabilityDisabled() {
+        return (
+          (snapshot().status !== "transitioning" && !snapshot().canPrevious) ||
+          currentStep(snapshot())?.controls?.previous?.state === "disabled"
+        );
+      },
+      label: props.previousLabel ?? "Previous step",
+      get class() {
+        return stepClass(snapshot, "previous", props.class);
+      },
+      marker: "previous" as const,
+    }),
+  );
 }
 
 /**
  * Button that navigates to the next step, or finishes the tour on the last step.
- * Automatically hidden or disabled based on tour state.
+ * Automatically disabled based on tour state.
  * @param props Button props, an optional `advanceLabel` for non-final steps, and `finishLabel` for the final step.
- * @returns The advance button, or null if hidden.
+ * @returns The advance button.
  */
 export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
   const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      return currentStep(snapshot())?.controls?.advance?.state !== "hidden";
-    },
-    get children() {
-      return Trigger(
-        mergeProps(props, {
-          get capabilityDisabled() {
-            return (
-              (snapshot().status !== "transitioning" && !snapshot().canAdvance) ||
-              currentStep(snapshot())?.controls?.advance?.state === "disabled"
-            );
-          },
-          get label() {
-            return snapshot().isLastStep
-              ? (props.finishLabel ?? "Finish tour")
-              : (props.advanceLabel ?? "Advance step");
-          },
-          get class() {
-            return stepClass(snapshot, "advance", props.class);
-          },
-          marker: "advance" as const,
-        }),
-      );
-    },
-  });
+  return Trigger(
+    mergeProps(props, {
+      get capabilityDisabled() {
+        return (
+          (snapshot().status !== "transitioning" && !snapshot().canAdvance) ||
+          currentStep(snapshot())?.controls?.advance?.state === "disabled"
+        );
+      },
+      get label() {
+        return snapshot().isLastStep
+          ? (props.finishLabel ?? "Finish tour")
+          : (props.advanceLabel ?? "Advance step");
+      },
+      get class() {
+        return stepClass(snapshot, "advance", props.class);
+      },
+      marker: "advance" as const,
+    }),
+  );
 }
 
 /**
  * Button that cancels the tour.
- * Automatically hidden if the tour is not cancellable.
+ * Automatically disabled based on tour state.
  * @param props Button props.
- * @returns The cancel button, or null if the tour cannot be cancelled.
+ * @returns The cancel button.
  */
 export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
   const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      return snapshot().canCancel && currentStep(snapshot())?.controls?.cancel?.state !== "hidden";
-    },
-    get children() {
-      return Trigger(
-        mergeProps(props, {
-          get capabilityDisabled() {
-            return (
-              !snapshot().canCancel ||
-              currentStep(snapshot())?.controls?.cancel?.state === "disabled"
-            );
-          },
-          label: "Skip",
-          get class() {
-            return stepClass(snapshot, "cancel", props.class);
-          },
-          marker: "cancel" as const,
-        }),
-      );
-    },
-  });
+  return Trigger(
+    mergeProps(props, {
+      get capabilityDisabled() {
+        return (
+          (snapshot().status !== "transitioning" && !snapshot().canCancel) ||
+          currentStep(snapshot())?.controls?.cancel?.state === "disabled"
+        );
+      },
+      label: "Skip",
+      get class() {
+        return stepClass(snapshot, "cancel", props.class);
+      },
+      marker: "cancel" as const,
+    }),
+  );
 }

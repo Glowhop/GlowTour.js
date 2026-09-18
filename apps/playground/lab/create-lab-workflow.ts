@@ -17,7 +17,8 @@ export function createLabWorkflow<TContent>(
       target: selectors.customEvent,
       title: content.title("append() + onTargetEvent<T>()"),
       content: content.paragraph(copy.appended),
-      controls: { advance: { state: "hidden" } },
+      controls: { advance: { state: "disabled" } },
+      classNames: { advance: "lab-hidden" },
       behavior: { allowInteraction: true },
       data: { api: "append", appended: true },
     })
@@ -47,7 +48,8 @@ export function createLabWorkflow<TContent>(
       target: selectors.start,
       title: content.title("create() + step()"),
       content: content.paragraph(copy.intro),
-      controls: { previous: { state: "hidden" } },
+      controls: { previous: { state: "disabled" } },
+      classNames: { previous: "lab-hidden" },
       data: { api: "create", targetType: "selector" },
     })
     .beforeLeave(({ direction, props }) =>
@@ -102,7 +104,7 @@ export function createLabWorkflow<TContent>(
     .do((context) => {
       actions.log("waitUntilElement - cible révélée détectée");
       context.props.update({
-        controls: { advance: { state: "visible" } },
+        controls: { advance: { state: "enabled" } },
         overlay: { color: "red", opacity: 0.68 },
         // Replaces the step's popover and advance classes; the other components keep theirs.
         classNames: { popover: ["lab-popover", "lab-popover-revealed"], advance: [] },
@@ -137,10 +139,11 @@ export function createLabWorkflow<TContent>(
       title: content.title("waitUntil() + advance()"),
       content: content.paragraph(copy.condition),
       controls: {
-        advance: { state: "hidden" },
-        previous: { state: "hidden" },
-        cancel: { state: "hidden" },
+        advance: { state: "disabled" },
+        previous: { state: "disabled" },
+        cancel: { state: "disabled" },
       },
+      classNames: { footer: "lab-hidden" },
       indicator: { animated: false, gap: 8 },
       data: { api: "waitUntil" },
     })
@@ -164,7 +167,7 @@ export function createLabWorkflow<TContent>(
       data: { api: "action", result: false },
     })
     .do(({ props }) => {
-      props.update({ controls: { advance: { state: "visible" } } });
+      props.update({ controls: { advance: { state: "enabled" } } });
       actions.log("action(true) - chaîne poursuivie");
       return true;
     })
@@ -189,7 +192,8 @@ export function createLabWorkflow<TContent>(
       target: selectors.clickAdvance,
       title: content.title("onTargetEvent('click')"),
       content: content.paragraph(copy.clickAdvance),
-      controls: { advance: { state: "hidden" } },
+      controls: { advance: { state: "disabled" } },
+      classNames: { advance: "lab-hidden" },
       behavior: { allowInteraction: true },
       data: { api: "onTargetEvent", overload: "single" },
     })
@@ -202,7 +206,8 @@ export function createLabWorkflow<TContent>(
       target: selectors.clickOnce,
       title: content.title("props.update({ behavior })"),
       content: content.paragraph(copy.clickOnce),
-      controls: { advance: { state: "hidden" } },
+      controls: { advance: { state: "disabled" } },
+      classNames: { advance: "lab-hidden" },
       behavior: { allowInteraction: true },
       data: { api: "behavior.allowInteraction" },
     })
@@ -213,7 +218,8 @@ export function createLabWorkflow<TContent>(
       props.update({
         behavior: { allowInteraction: false },
         data: { clicked: true },
-        controls: { advance: { state: "visible" } },
+        controls: { advance: { state: "enabled" } },
+        classNames: { advance: [] },
       });
     })
     .beforeLeave(({ abort, direction, props }) => {
@@ -275,10 +281,11 @@ export function createLabWorkflow<TContent>(
       title: content.title("wait() + advance()"),
       content: content.paragraph(copy.autoAdvance),
       controls: {
-        advance: { state: "hidden" },
-        previous: { state: "hidden" },
-        cancel: { state: "hidden" },
+        advance: { state: "disabled" },
+        previous: { state: "disabled" },
+        cancel: { state: "disabled" },
       },
+      classNames: { footer: "lab-hidden" },
       data: { api: "advance", automatic: true },
     })
     .do(() => actions.log("advance - transition automatique imminente"))

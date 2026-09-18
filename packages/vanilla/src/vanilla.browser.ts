@@ -384,9 +384,9 @@ describe("vanilla adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       controls: {
-        advance: { state: "hidden" },
-        previous: { state: "hidden" },
-        cancel: { state: "hidden" },
+        advance: { state: "disabled" },
+        previous: { state: "disabled" },
+        cancel: { state: "disabled" },
       },
     }));
     await settle();
@@ -423,9 +423,9 @@ describe("vanilla adapter browser behavior", () => {
       ...props,
       content: "Two",
       controls: {
-        advance: { state: "hidden" },
-        previous: { state: "hidden" },
-        cancel: { state: "hidden" },
+        advance: { state: "disabled" },
+        previous: { state: "disabled" },
+        cancel: { state: "disabled" },
       },
       title: "Updated",
     }));

@@ -37,7 +37,7 @@ describe("createWorkflowFromConfig", () => {
     const config: WorkflowConfig = {
       name: "onboarding",
       version: "1.1",
-      cancellable: true,
+      controls: { cancel: { state: "disabled" } },
       onStart,
       steps: [
         {
@@ -54,7 +54,10 @@ describe("createWorkflowFromConfig", () => {
       ],
     };
 
-    const expected = new WorkflowBuilder<string>("onboarding", { cancellable: true, onStart })
+    const expected = new WorkflowBuilder<string>("onboarding", {
+      controls: { cancel: { state: "disabled" } },
+      onStart,
+    })
       .step({
         id: "invite",
         target: "#invite-button",
@@ -73,7 +76,7 @@ describe("createWorkflowFromConfig", () => {
     const actual = createWorkflowFromConfig(config);
 
     assert.equal(actual.name, expected.name);
-    assert.equal(actual.options.cancellable, expected.options.cancellable);
+    assert.deepEqual(actual.options.controls, expected.options.controls);
     assert.equal(actual.options.onStart, onStart);
     assert.deepEqual(actual.steps[0].props.title, expected.steps[0].props.title);
     assert.deepEqual(actual.steps[0].props.content, expected.steps[0].props.content);

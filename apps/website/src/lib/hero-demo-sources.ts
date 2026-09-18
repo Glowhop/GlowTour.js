@@ -112,7 +112,7 @@ const workflow = tour
   })
   .beforeEnter((context) => {
     if (context.props.get().data?.loaded) {
-      context.props.update({ controls: { advance: { state: "visible" } } });
+      context.props.update({ controls: { advance: { state: "enabled" } } });
     }
   })
   .step({
@@ -131,11 +131,11 @@ const workflow = tour
 
 tour.start(workflow);`;
 
-export const cancellableSource = `const tour = createGlowTour();
+export const lockedSource = `const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome", {
-    cancellable: false,
+    controls: { cancel: { state: "disabled" } },
   })
   .step({
     id: "warning",
@@ -147,7 +147,7 @@ const workflow = tour
     id: "delete-account",
     target: "#delete-account",
     title: "This step can't be skipped",
-    content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
+    content: "A disabled cancel control blocks Escape and the Skip button for the whole tour.",
   })
   .build();
 
@@ -157,7 +157,6 @@ export const confirmCancelSource = `const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome", {
-    cancellable: true,
     onCancel: (context) => {
       if (!window.confirm("Cancel this tour?")) {
         // Prevents the cancellation - the tour stays open on its current step.

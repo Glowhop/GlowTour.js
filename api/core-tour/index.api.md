@@ -105,7 +105,6 @@ interface ScrollOptions {
 }
 
 interface StartOptions<T> {
-    cancellable?: boolean;
     overlay?: OverlayOptions;
     popover?: PopoverOptions;
     indicator?: IndicatorOptions;
@@ -214,7 +213,7 @@ interface TourControls {
     cancel?: TourControl;
 }
 
-type TourControlState = "visible" | "hidden" | "disabled";
+type TourControlState = "enabled" | "disabled";
 
 interface TourCurrentStep<T> {
     readonly id: string;

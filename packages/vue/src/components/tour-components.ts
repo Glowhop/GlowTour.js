@@ -395,7 +395,7 @@ export const GlowTourPreviousTrigger = /* @__PURE__ */ defineComponent({
       attrs,
       slots,
     );
-    return () => (step()?.controls?.previous?.state === "hidden" ? null : renderTrigger());
+    return renderTrigger;
   },
 });
 
@@ -426,7 +426,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
       attrs,
       slots,
     );
-    return () => (step()?.controls?.advance?.state === "hidden" ? null : renderTrigger());
+    return renderTrigger;
   },
 });
 
@@ -441,15 +441,14 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
     const step = useStep();
     const renderTrigger = trigger(
       "cancel",
-      () => !snapshot.value.canCancel || step()?.controls?.cancel?.state === "disabled",
+      () =>
+        (snapshot.value.status !== "transitioning" && !snapshot.value.canCancel) ||
+        step()?.controls?.cancel?.state === "disabled",
       () => "Skip",
       () => props.ariaLabel,
       attrs,
       slots,
     );
-    return () =>
-      snapshot.value.canCancel && step()?.controls?.cancel?.state !== "hidden"
-        ? renderTrigger()
-        : null;
+    return renderTrigger;
   },
 });

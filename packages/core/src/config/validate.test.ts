@@ -216,6 +216,24 @@ describe("validateWorkflowConfig", () => {
     }
   });
 
+  test("rejects cancellable: the cancel control replaces it", () => {
+    assert.deepEqual(issuesOf({ ...minimalConfig(), cancellable: false }), [
+      { path: "cancellable", message: "Unknown key: cancellable" },
+    ]);
+  });
+
+  test("accepts only enabled and disabled as a control state", () => {
+    for (const state of ["enabled", "disabled"]) {
+      const config = { ...minimalConfig(), controls: { cancel: { state } } };
+      assert.equal(validateWorkflowConfig(config), config);
+    }
+    for (const state of ["visible", "hidden"]) {
+      assert.deepEqual(issuesOf({ ...minimalConfig(), controls: { cancel: { state } } }), [
+        { path: "controls.cancel.state", message: "must be one of: enabled, disabled" },
+      ]);
+    }
+  });
+
   test("rejects allowScroll as a workflow key: it lives in behavior", () => {
     assert.deepEqual(issuesOf({ ...minimalConfig(), allowScroll: false }), [
       { path: "allowScroll", message: "Unknown key: allowScroll" },

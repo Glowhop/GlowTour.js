@@ -595,7 +595,7 @@ describe("vue adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      controls: { advance: { state: "hidden" } },
+      controls: { advance: { state: "disabled" } },
       title: "Updated title",
     }));
     await nextTick();
@@ -604,11 +604,14 @@ describe("vue adapter browser behavior", () => {
       container.querySelector("[data-glow-tour-content]")?.textContent,
       "Updated content",
     );
-    assert.equal(container.querySelector("[data-glow-tour-advance-trigger]"), null);
+    assert.equal(
+      container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]")?.disabled,
+      true,
+    );
 
     activeProps.set((props) => ({
       ...props,
-      controls: { advance: { state: "visible" } },
+      controls: { advance: { state: "enabled" } },
     }));
     await nextTick();
     assert.equal(

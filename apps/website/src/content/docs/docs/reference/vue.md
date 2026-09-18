@@ -164,7 +164,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 | `GlowTourFooter` | `<footer>` | - | default |
 | `GlowTourPreviousTrigger` | `<button>` | `previousLabel?: string` (default `"Previous step"`), `ariaLabel?: string` | default, trigger slot |
 | `GlowTourAdvanceTrigger` | `<button>` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), `ariaLabel?: string` | default, trigger slot |
-| `GlowTourCancelTrigger` | `<button>` | `ariaLabel?: string` | default, trigger slot. Its label is `"Skip"`; it is not rendered when the tour cannot be cancelled |
+| `GlowTourCancelTrigger` | `<button>` | `ariaLabel?: string` | default, trigger slot. Its label is `"Skip"` |
 
 `idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
 
@@ -176,7 +176,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 </GlowTourAdvanceTrigger>
 ```
 
-A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. A control set to `"hidden"` is not rendered.
+A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder#hiding-a-controls-button).
 
 ### `GlowTourPointer`
 
