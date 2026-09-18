@@ -464,7 +464,7 @@ describe("react adapter browser behavior", () => {
       .step({
         id: "step-9",
         content: "First",
-        behavior: { keyboard: { advance: ["N"] } },
+        controls: { advance: { keys: ["N"] } },
         target,
         title: "First",
       })

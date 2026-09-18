@@ -464,8 +464,10 @@ function createStep(
       allowScroll: options.allowScroll,
       autoFocus: options.autoFocus,
       autoScroll: options.autoScroll,
-      keyboard: options.advanceShortcuts ? { advance: options.advanceShortcuts } : undefined,
     },
+    controls: options.advanceShortcuts
+      ? { advance: { keys: options.advanceShortcuts } }
+      : undefined,
   })
     .step({
       id: "step-1",
@@ -893,7 +895,7 @@ describe("DomTourViewDriver", () => {
       ...props,
       indicator: { ...props.indicator, hidden: true },
       overlay: { ...props.overlay, color: "rgb(12, 34, 56)", opacity: 0.4 },
-      popover: { ...props.popover, controls: { advance: "disabled" } },
+      controls: { advance: { state: "disabled" } },
     }));
 
     assert.notEqual(overlayPath.style.getPropertyValue("fill"), "rgb(12, 34, 56)");
@@ -1069,7 +1071,7 @@ describe("DomTourViewDriver", () => {
 
     step.props.set((props) => ({
       ...props,
-      popover: { ...props.popover, controls: { advance: "disabled" } },
+      controls: { advance: { state: "disabled" } },
     }));
     flushFrame();
     await flushMicrotasks();
@@ -1695,10 +1697,7 @@ describe("DomTourViewDriver", () => {
     );
     step.props.set((props) => ({
       ...props,
-      popover: {
-        ...props.popover,
-        controls: { previous: "disabled", advance: "disabled" },
-      },
+      controls: { previous: { state: "disabled" }, advance: { state: "disabled" } },
     }));
     window.dispatchEvent(
       new MockKeyboardEvent("keydown", { key: "Enter", target: elements.popover }),

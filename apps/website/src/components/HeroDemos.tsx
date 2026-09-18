@@ -101,7 +101,7 @@ export const advanceOnClickWorkflow = advanceOnClickTour
     target: "#hero-advance-on-click-target",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance() from a real DOM click.",
-    popover: { controls: { advance: "disabled" } },
+    controls: { advance: { state: "disabled" } },
     behavior: { allowInteraction: true },
   })
   .onTargetEvent("click", (_event, context) => context.advance())
@@ -225,7 +225,7 @@ export const waitForAsyncWorkflow = waitForAsyncTour
     title: "Load the data first",
     content: 'Click "Load data" - the next step waits for an element that doesn\'t exist yet.',
     behavior: { allowInteraction: true },
-    popover: { controls: { advance: "disabled" } },
+    controls: { advance: { state: "disabled" } },
   })
   .waitUntilElement("#hero-wait-for-async-loaded")
   .do(async (context) => {
@@ -234,7 +234,7 @@ export const waitForAsyncWorkflow = waitForAsyncTour
   })
   .beforeEnter((context) => {
     if (context.props.get().data?.loaded) {
-      context.props.update({ popover: { controls: { advance: "visible" } } });
+      context.props.update({ controls: { advance: { state: "visible" } } });
     }
   })
   .step({

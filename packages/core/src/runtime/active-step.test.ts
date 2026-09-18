@@ -1,6 +1,7 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { WorkflowBuilder } from "../builder";
+import type { TourControls } from "../types";
 import { ActiveStep } from "./active-step";
 
 function createRealmDocument() {
@@ -45,20 +46,17 @@ function definition(options: {
   indicator?: { gap?: number };
   popover?: {
     arrow?: { color?: string; hidden?: boolean; edgePadding?: number; size?: number };
-    controls?: {
-      advance?: "visible" | "hidden" | "disabled";
-      cancel?: "visible" | "hidden" | "disabled";
-    };
     gap?: number;
   };
+  controls?: TourControls;
 }) {
   return new WorkflowBuilder<string>("active-step", {
     indicator: { gap: 22 },
     popover: {
       arrow: { color: "var(--workflow-arrow)", hidden: true, edgePadding: 18, size: 12 },
-      controls: { advance: "disabled", cancel: "hidden" },
       gap: 18,
     },
+    controls: { advance: { state: "disabled", keys: ["n"] }, cancel: { state: "hidden" } },
   })
     .step({ id: "step-1", content: "content", target: "#target", title: "title", ...options })
     .build();
@@ -105,23 +103,39 @@ describe("ActiveStep presentation options", () => {
   });
 
   test("stores effective presentation props and restores nested mutations from initial props", () => {
-    const workflow = definition({ popover: { gap: 6, controls: { cancel: "visible" } } });
+    const workflow = definition({
+      popover: { gap: 6 },
+      controls: { cancel: { state: "visible" } },
+    });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
-    assert.equal(step.props.get().popover?.controls?.advance, "disabled");
-    assert.equal(step.props.get().popover?.controls?.cancel, "visible");
+    assert.equal(step.props.get().controls?.advance?.state, "disabled");
+    assert.equal(step.props.get().controls?.cancel?.state, "visible");
     assert.equal(step.snapshot().currentProps.popover?.gap, 6);
 
     step.props.set((props) => ({
       ...props,
-      popover: { ...props.popover, controls: { advance: "visible", cancel: "hidden" } },
+      controls: { advance: { state: "visible" }, cancel: { state: "hidden" } },
     }));
-    assert.equal(step.snapshot().currentProps.popover?.controls?.advance, "visible");
-    assert.equal(step.snapshot().currentProps.popover?.controls?.cancel, "hidden");
+    assert.equal(step.snapshot().currentProps.controls?.advance?.state, "visible");
+    assert.equal(step.snapshot().currentProps.controls?.cancel?.state, "hidden");
 
     step.props.set(step.initialProps);
-    assert.equal(step.props.get().popover?.controls?.advance, "disabled");
-    assert.equal(step.props.get().popover?.controls?.cancel, "visible");
+    assert.equal(step.props.get().controls?.advance?.state, "disabled");
+    assert.equal(step.props.get().controls?.cancel?.state, "visible");
+  });
+
+  test("merges step controls over the workflow ones field by field", () => {
+    const workflow = definition({ controls: { advance: { state: "visible" } } });
+    const step = new ActiveStep(workflow.steps[0], workflow.options);
+
+    assert.deepEqual(step.props.get().controls?.advance, { state: "visible", keys: ["n"] });
+    assert.deepEqual(step.props.get().controls?.cancel, { state: "hidden", keys: undefined });
+    assert.equal(step.props.get().controls?.previous, undefined);
+    assert.equal(Object.isFrozen(step.props.get().controls?.advance?.keys), true);
+
+    step.props.update({ controls: { advance: { keys: [] } } });
+    assert.deepEqual(step.props.get().controls?.advance, { state: "visible", keys: [] });
   });
 
   test("restores from its immutable initial definition", () => {

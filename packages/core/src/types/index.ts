@@ -42,8 +42,6 @@ export interface StepBehavior {
   autoFocus?: boolean;
   /** Scroll the target into view when the step is entered. @default true */
   autoScroll?: boolean;
-  /** Keyboard shortcuts for navigation while the step is shown. */
-  keyboard?: KeyboardShortcuts;
   /** What the step does when its target cannot be found. */
   missingTarget?: MissingTargetOptions;
   /** Scroll behavior options. */
@@ -56,16 +54,6 @@ export interface StepBehavior {
    * @default "none"
    */
   overlayClick?: "none" | "advance" | "cancel";
-}
-
-/** Keys that navigate the tour while a step is shown. */
-export interface KeyboardShortcuts {
-  /** Keys that go to the previous step. @default ["ArrowLeft", "Backspace"] */
-  previous?: readonly string[];
-  /** Keys that advance to the next step. @default ["Enter", "ArrowRight"] */
-  advance?: readonly string[];
-  /** Keys that cancel the tour. @default ["Escape"] */
-  cancel?: readonly string[];
 }
 
 /** How a step handles a target that cannot be found. */
@@ -170,19 +158,34 @@ export interface PopoverArrowOptions {
 }
 
 /**
- * Display state of a popover control. `"visible"` is the default. New states may be added in a
+ * Display state of a tour control. `"visible"` is the default. New states may be added in a
  * minor version.
  */
 export type TourControlState = "visible" | "hidden" | "disabled";
 
-/** Display state of each popover control. */
-export interface PopoverControls {
-  /** The advance button. @default "visible" */
-  advance?: TourControlState;
-  /** The previous button. @default "visible" */
-  previous?: TourControlState;
-  /** The cancel button, never shown when the tour is not cancellable. @default "visible" */
-  cancel?: TourControlState;
+/** One navigation command: the state of its button and the keys that run it. */
+export interface TourControl {
+  /**
+   * `"hidden"` removes the button and `"disabled"` disables it; both also block the command's keys
+   * and `overlayClick`. Navigation through the tour API and the step context stays available.
+   * @default "visible"
+   */
+  state?: TourControlState;
+  /** Keys that run the command while the step is shown. An empty array turns them off. */
+  keys?: readonly string[];
+}
+
+/**
+ * The advance, previous and cancel commands. A step's controls override the workflow ones field by
+ * field: a step that only sets `advance.state` keeps the workflow's `advance.keys`.
+ */
+export interface TourControls {
+  /** @default { state: "visible", keys: ["Enter", "ArrowRight"] } */
+  advance?: TourControl;
+  /** @default { state: "visible", keys: ["ArrowLeft", "Backspace"] } */
+  previous?: TourControl;
+  /** The cancel button is never shown when the tour is not cancellable. @default { state: "visible", keys: ["Escape"] } */
+  cancel?: TourControl;
 }
 
 /** Configures the popover box that displays content for each step. */
@@ -191,12 +194,6 @@ export interface PopoverOptions extends BaseOptions {
   placementTryOrder?: readonly TryOrderOptions[];
   /** Arrow configuration. */
   arrow?: PopoverArrowOptions;
-  /**
-   * Display state of the advance, previous and cancel controls. `"hidden"` removes a button and
-   * `"disabled"` disables it; both also block its keyboard shortcut and `overlayClick`. Navigation
-   * through the tour API and the step context stays available.
-   */
-  controls?: PopoverControls;
   /** Gap between the target and the popover in pixels. @default 16 */
   gap?: number;
 }
@@ -270,6 +267,8 @@ export interface StartOptions<T> {
   animated?: boolean;
   /** Default step behavior for all steps. */
   behavior?: StepBehavior;
+  /** Default controls for all steps. See `TourControls`. */
+  controls?: TourControls;
   /** Classes added to the tour components on every step. See `TourClassNames`. */
   classNames?: TourClassNames;
 
@@ -296,9 +295,10 @@ export type StepPropsUpdate<T> =
 
 /**
  * Partial change to step properties, for `StepPropsStore.update`. Fields it leaves out are kept.
- * `data` is merged key by key; `overlay`, `popover` and `indicator` are merged the way step options
- * merge over workflow defaults; arrays such as `placementTryOrder` are replaced. `classNames` is merged
- * per component: a component it names gets exactly the classes given.
+ * `data` is merged key by key; `overlay`, `popover`, `indicator`, `behavior` and `controls` are
+ * merged the way step options merge over workflow defaults; arrays such as `placementTryOrder` or
+ * `keys` are replaced. `classNames` is merged per component: a component it names gets exactly the
+ * classes given.
  */
 export type StepPropsPatch<T> = Partial<ReadonlyStepProps<T>>;
 
@@ -598,6 +598,8 @@ export type StepParameters<T> = {
   indicator?: IndicatorOptions;
   /** Step behavior (overrides workflow defaults). */
   behavior?: StepBehavior;
+  /** Navigation controls for this step (overrides workflow defaults field by field). See `TourControls`. */
+  controls?: TourControls;
   /** Classes added to the tour components on this step (overrides workflow defaults per component). See `TourClassNames`. */
   classNames?: TourClassNames;
   /** The title content for this step. Without a title, the popover is named by its content. */

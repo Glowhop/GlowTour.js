@@ -34,7 +34,7 @@ GlowTour.js supports full keyboard navigation with no mouse required:
 | `Tab` | Focus navigation | Trapped within popover while step disallows outside interaction |
 
 Shortcuts are disabled while:
-- The matching control is `"hidden"` or `"disabled"` in `popover.controls`
+- The matching control's `state` is `"hidden"` or `"disabled"` in `controls`
 - A modifier key (`Ctrl`, `Cmd`, `Alt`) is held
 - IME composition is in progress
 - Focus is in an editable field (for Advance/Previous only; Escape always works)
@@ -46,7 +46,7 @@ The `aria-keyshortcuts` attribute on each button is automatically kept in sync w
 
 ## Per-step keyboard overrides
 
-Override the default keyboard shortcuts for a specific step with `behavior.keyboard`:
+Override the default keyboard shortcuts with the `keys` of each control, on the workflow or on a step:
 
 ```typescript
 const workflow = tour
@@ -56,12 +56,10 @@ const workflow = tour
     target: "#field",
     title: "Custom shortcuts",
     content: "This step has different keyboard shortcuts.",
-    behavior: {
-      keyboard: {
-        advance: ["Enter"],  // Only Enter, no ArrowRight
-        previous: [],        // No previous (disable BackSpace/ArrowLeft)
-        cancel: ["Escape"],  // Keep Escape default
-      },
+    controls: {
+      advance: { keys: ["Enter"] },  // Only Enter, no ArrowRight
+      previous: { keys: [] },        // No previous (disable Backspace/ArrowLeft)
+      cancel: { keys: ["Escape"] },  // Keep Escape default
     },
   })
   .build();
