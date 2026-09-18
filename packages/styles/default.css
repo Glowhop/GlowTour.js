@@ -188,6 +188,7 @@
   background: transparent;
   color: var(--glow-tour-color-text-muted, #5f5f66);
   margin-inline-end: auto;
+  padding: 0;
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:hover:not(:disabled) {
