@@ -35,9 +35,9 @@ export interface StepBehavior {
   allowScroll?: boolean;
   /**
    * Focus the popover's Advance control (Back when going back) when the step is shown. Set `false`
-   * to leave focus where it is: in the popover, on an interactive target, or anywhere on the page
-   * when `allowInteraction` is `true`. Focus the page lost, typically to a modal step making it
-   * inert, then goes to the popover itself rather than one of its controls. @default true
+   * to never move focus during the step: it stays where it is, on the body when a modal step
+   * makes the page inert, and placing it is up to you. Focus that leaves the popover and target
+   * is still pulled back, and focus returns to where it was when the tour ends. @default true
    */
   autoFocus?: boolean;
   /** Scroll the target into view when the step is entered. @default true */

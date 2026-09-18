@@ -409,7 +409,7 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, secondButton);
   });
 
-  test("focuses the dialog, not a control, when auto focus is off and a modal step leaves focus outside", () => {
+  test("leaves focus outside the popover when auto focus is off", () => {
     const launcher = new MockElement("custom-button");
     mockDocument.activeElement = launcher;
     const guard = new FocusGuard();
@@ -421,12 +421,12 @@ describe("FocusGuard", () => {
       popover: popover as unknown as HTMLElement,
     });
 
-    assert.equal(mockDocument.activeElement, popover);
+    assert.equal(mockDocument.activeElement, launcher);
     guard.deactivate();
     assert.equal(mockDocument.activeElement, launcher);
   });
 
-  test("focuses the dialog when auto focus is off and focus was lost", () => {
+  test("leaves lost focus lost when auto focus is off", () => {
     const guard = new FocusGuard();
     const { popover } = createScope();
 
@@ -436,7 +436,7 @@ describe("FocusGuard", () => {
       popover: popover as unknown as HTMLElement,
     });
 
-    assert.equal(mockDocument.activeElement, popover);
+    assert.equal(mockDocument.activeElement, null);
   });
 
   test("leaves focus inside the popover when auto focus is off", () => {

@@ -2093,8 +2093,9 @@ describe("DomTourViewDriver", () => {
     modal.target = target as unknown as HTMLElement;
 
     await driver.show(modal, "advance", new AbortController().signal);
-    // The page lost focus to inert: it goes to the dialog, not to Advance.
-    assert.equal(document.activeElement, elements.popover);
+    // The page lost focus to inert: it stays lost, neither the dialog nor Advance takes it.
+    assert.equal(document.activeElement, null);
+    assert.equal(elements.popover.getAttribute("aria-modal"), "true");
     await driver.clear(new AbortController().signal);
     assert.equal(document.activeElement, trigger);
 
@@ -2498,6 +2499,21 @@ describe("DomTourViewDriver", () => {
     await flushMicrotasks();
     assert.equal(elements.pointer.getAttribute("aria-hidden"), null);
     assert.equal(elements.pointer.style.getPropertyValue("opacity"), "1");
+  });
+
+  test("leaves focus on the target when interaction is turned off and auto focus is off", async () => {
+    const { driver } = installDriver();
+    const step = createStep({ allowInteraction: true, autoFocus: false });
+    const target = createTarget();
+    step.target = target as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    flushFrame();
+    target.focus();
+
+    step.props.update({ behavior: { allowInteraction: false } });
+
+    assert.equal(target.hasAttribute("inert"), true);
+    assert.equal(document.activeElement, target);
   });
 
   test("lets the latest interaction change win over a pointer fade still running", async () => {
@@ -3635,6 +3651,26 @@ describe("DomTourViewDriver", () => {
       assert.equal(elements.overlay.getAttribute("data-glow-tour-allow-interaction"), "false");
       assert.equal(elements.popover.getAttribute("aria-modal"), "true");
       assert.equal(elements.popover.contains(document.activeElement as never), true);
+    });
+
+    test("leaves focus lost with the removed target when auto focus is off", async () => {
+      const { driver, elements } = installDriver();
+      const step = createStep({ allowInteraction: true, autoFocus: false });
+      const target = createTarget();
+      step.target = target as unknown as HTMLElement;
+      await driver.show(step, "advance", new AbortController().signal);
+      flushFrame();
+      target.focus();
+
+      target.isConnected = false;
+      flushFrame();
+      await flushMicrotasks();
+
+      step.target = step.detach();
+      await driver.retarget(step, new AbortController().signal);
+
+      assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+      assert.equal(document.activeElement, target);
     });
 
     test("moves the cutout without animating when the step is not animated", async () => {
