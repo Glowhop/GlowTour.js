@@ -79,11 +79,11 @@ When a step opens, focus goes to its Advance button, or to its Previous button w
 
 ### Keeping focus where it is
 
-Set `behavior.autoFocus: false` when the tour should not pick a control for the user, for example while they fill in a form the tour walks them through:
+Set `behavior.autoFocus: false` when your app places focus itself, for example while the user fills in a form the tour walks them through. The step then never moves focus:
 
-- Focus already in the popover, or on a target the step lets them interact with, stays there.
-- On a step with `allowInteraction: true`, the page stays live, so focus stays wherever it is on the page.
-- Focus the page lost, such as the button that started the tour once a modal step makes the page `inert`, goes to the popover itself instead of one of its buttons. The screen reader still announces the dialog, and `Tab` reaches its buttons.
+- Focus stays where it is: in the popover, on the target, or anywhere on the page when `allowInteraction` is `true`.
+- On a modal step, the page becomes `inert` and the browser drops focus from the element that had it, such as the button that started the tour. Focus then stays on the body: nothing is focused in the popover, and screen readers do not announce the dialog until the user reaches it. Keyboard shortcuts still work, and `Tab` goes straight into the popover. If the step needs focus somewhere, move it yourself once the step is shown, for example from [`onEvent`](/docs/guides/monitoring) on `step:enter`.
+- The [focus trap](#focus-trap) still pulls focus that leaves the popover and target back in, and [focus restoration](#focus-restoration) still runs when the tour ends.
 
 ```ts
 .step({

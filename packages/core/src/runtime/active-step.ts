@@ -40,6 +40,11 @@ export class ActiveStep<T> {
     return !this.detached && this.props.get().behavior?.allowInteraction === true;
   }
 
+  /** Reads `behavior.autoFocus` live: `false` hands every focus move to the page. */
+  autoFocuses() {
+    return this.props.get().behavior?.autoFocus !== false;
+  }
+
   /** Reads `behavior.allowScroll` live: `props.update({ behavior })` changes it while the step runs. */
   allowsScroll() {
     return this.props.get().behavior?.allowScroll !== false;

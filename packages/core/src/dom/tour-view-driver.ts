@@ -979,7 +979,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   ) {
     const popover = this.popover?.getElement();
     if (!isHTMLElement(popover, this.root ?? popover)) return;
-    const autoFocus = step.props.get().behavior?.autoFocus !== false;
+    const autoFocus = step.autoFocuses();
     const deferFocus = autoFocus && this.commands?.subscribeCapabilities !== undefined;
     if (deferFocus) this.pendingFocusGeneration = generation;
     this.focusGuard.activate({
@@ -1287,7 +1287,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     const focusWasInTarget = this.isFocusInsideTarget(target);
     this.applyInteraction(step, target);
-    if (focusWasInTarget && !step.allowsInteraction()) this.focusGuard.focus();
+    if (focusWasInTarget && !step.allowsInteraction() && step.autoFocuses())
+      this.focusGuard.focus();
     const targetRect = target.getBoundingClientRect();
     this.pointer?.cancelAnimations();
     this.observeDynamicOperation(
@@ -1313,7 +1314,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    * and popover to the new rect on the next frame. Deliberately skips
    * `appear()` (no re-entrance animation) and `activateFocus()` (focus stays
    * where the user left it), only reclaiming it if it was on the target that
-   * just disappeared.
+   * just disappeared and the step auto focuses.
    */
   async retarget(step: ActiveStep<T>, signal: AbortSignal): Promise<void> {
     this.throwIfAborted(signal);
@@ -1325,13 +1326,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.activeTarget = target;
     this.applyInteraction(step, target);
     this.attachTargetResources(step, target, this.generation, signal);
-    if (this.targetFocusedAtFreeze) {
-      this.targetFocusedAtFreeze = false;
+    // Without auto focus, focus lost with the removed target stays lost: the page owns it.
+    if (this.targetFocusedAtFreeze && step.autoFocuses()) {
       // A step that detached, or no longer allows interaction, blocks the page: focus goes back
       // into the popover instead of staying lost on the removed target.
       if (step.allowsInteraction()) target.focus();
       else this.focusGuard.focus();
     }
+    this.targetFocusedAtFreeze = false;
     this.syncControlState(step);
     this.syncShortcutLabels(step);
     this.moveToRetargetedRect(step, target);
