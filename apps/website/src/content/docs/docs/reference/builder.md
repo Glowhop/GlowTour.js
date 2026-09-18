@@ -483,7 +483,7 @@ Control step interaction and scrolling behavior.
 |--------|------|---------|-------------|
 | `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element. Every behavior option can change during the step with `context.props.update({ behavior })` - see [Changing behavior during a step](/docs/guides/programmatic-control#changing-behavior-during-a-step) |
 | `allowScroll` | boolean | `true` | The page stays scrollable while the step is shown; set `false` to lock page scroll while the step is shown (restored when a step allows scrolling again, and on finish/cancel/error/dispose) |
-| `autoFocus` | boolean | `true` | Focus the popover when the step is shown |
+| `autoFocus` | boolean | `true` | Focus the popover's Advance button (Previous when going back) when the step is shown. `false` leaves focus where it is, including on the page when `allowInteraction` is `true`, and only moves focus the page lost onto the popover itself - see [Keeping focus where it is](/docs/guides/accessibility#keeping-focus-where-it-is) |
 | `autoScroll` | boolean | `true` | Scroll the target into view when the step is shown |
 | `keyboard.advance` | Array | `["Enter", "ArrowRight"]` | Keys to advance to next step |
 | `keyboard.previous` | Array | `["ArrowLeft", "Backspace"]` | Keys to go to previous step |

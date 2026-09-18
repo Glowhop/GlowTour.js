@@ -451,6 +451,7 @@ function createStep(
     animated?: boolean;
     cancellable?: boolean;
     advanceShortcuts?: readonly string[];
+    autoFocus?: boolean;
     autoScroll?: boolean;
     overlayClick?: "none" | "advance" | "cancel";
   } = {},
@@ -461,6 +462,7 @@ function createStep(
     behavior: {
       allowInteraction: options.allowInteraction,
       allowScroll: options.allowScroll,
+      autoFocus: options.autoFocus,
       autoScroll: options.autoScroll,
       keyboard: options.advanceShortcuts ? { advance: options.advanceShortcuts } : undefined,
     },
@@ -2053,6 +2055,38 @@ describe("DomTourViewDriver", () => {
     assert.equal(document.activeElement, elements.advance);
     await driver.clear(new AbortController().signal);
     assert.equal(document.activeElement, trigger);
+  });
+  test("leaves the choice of focus to the page when a step turns auto focus off", async () => {
+    const shell = document.createElement("main"),
+      trigger = document.createElement("button"),
+      field = document.createElement("button"),
+      { driver, elements } = installDriver(),
+      target = createTarget();
+    shell.append(trigger, field);
+    document.body.append(shell);
+    const setAttribute = shell.setAttribute.bind(shell);
+    shell.setAttribute = (name: string, value: string) => {
+      setAttribute(name, value);
+      // Browsers blur a focused element whose ancestor becomes inert; the mock DOM does not.
+      if (name === "inert") document.activeElement = null;
+    };
+    trigger.focus();
+    const modal = createStep({ autoFocus: false });
+    modal.target = target as unknown as HTMLElement;
+
+    await driver.show(modal, "advance", new AbortController().signal);
+    // The page lost focus to inert: it goes to the dialog, not to Advance.
+    assert.equal(document.activeElement, elements.popover);
+    await driver.clear(new AbortController().signal);
+    assert.equal(document.activeElement, trigger);
+
+    field.focus();
+    const interactive = createStep({ allowInteraction: true, autoFocus: false });
+    interactive.target = target as unknown as HTMLElement;
+    await driver.show(interactive, "advance", new AbortController().signal);
+    // The page stays live: focus stays on the field the user is in.
+    assert.equal(document.activeElement, field);
+    await driver.clear(new AbortController().signal);
   });
   test("inerts the page and marks the dialog modal only once the popover is presented", async () => {
     const { driver, elements } = installDriver(),
