@@ -9,6 +9,7 @@ import type {
   StepBehavior,
   StepHookAction,
   TourClassNames,
+  TourControls,
 } from "../types";
 
 /**
@@ -94,6 +95,8 @@ export interface StepConfig<T = string> {
   readonly popover?: PopoverOptions;
   readonly indicator?: IndicatorOptions;
   readonly behavior?: StepBehavior;
+  /** Navigation controls for this step, overriding the workflow ones field by field. */
+  readonly controls?: TourControls;
   /** Classes added to the tour components on this step, overriding the workflow ones per component. */
   readonly classNames?: TourClassNames;
   readonly title?: T;
@@ -123,6 +126,8 @@ export interface WorkflowConfig<T = string> {
   readonly indicator?: IndicatorOptions;
   readonly animated?: boolean;
   readonly behavior?: StepBehavior;
+  /** Navigation controls for every step. */
+  readonly controls?: TourControls;
   /** Classes added to the tour components on every step. */
   readonly classNames?: TourClassNames;
   readonly onStart?: LifecycleActionRef<T>;

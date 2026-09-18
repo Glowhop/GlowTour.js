@@ -11,6 +11,7 @@ import type {
   TargetEventHandler,
   TargetResolver,
   TourClassNames,
+  TourControls,
 } from "../types";
 
 /** Recursively makes all properties readonly at any depth. */
@@ -34,6 +35,7 @@ export type ReadonlyStepProps<T> = {
   readonly popover?: DeepReadonly<PopoverOptions>;
   readonly indicator?: DeepReadonly<IndicatorOptions>;
   readonly behavior?: DeepReadonly<StepBehavior>;
+  readonly controls?: DeepReadonly<TourControls>;
   readonly classNames?: DeepReadonly<TourClassNames>;
 };
 

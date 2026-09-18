@@ -55,6 +55,7 @@ step(params: StepParameters): WorkflowStepBuilder
 - `popover` - Popover options (see [Popover options](#popover-options))
 - `indicator` - Indicator options (see [Indicator options](#indicator-options))
 - `behavior` - Behavior options (see [Behavior options](#behavior-options))
+- `controls` - State and keys of the advance, previous and cancel commands (see [Controls options](#controls-options))
 - `classNames` - Classes added to the tour components on this step (see [Class name options](#class-name-options))
 
 **Usage**:
@@ -365,6 +366,7 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 | `popover` | PopoverOptions | - | Popover appearance (see [Popover options](#popover-options)) |
 | `indicator` | IndicatorOptions | - | Indicator appearance (see [Indicator options](#indicator-options)) |
 | `behavior` | StepBehavior | - | Step behavior (see [Behavior options](#behavior-options)) |
+| `controls` | TourControls | - | State and keys of the navigation commands on every step, unless a step overrides them (see [Controls options](#controls-options)) |
 | `classNames` | TourClassNames | - | Classes added to the tour components on every step, unless a step sets its own for the same component (see [Class name options](#class-name-options)) |
 | `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour starts |
 | `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour is cancelled |
@@ -405,9 +407,6 @@ Control the information box that displays step title and content.
 |--------|------|---------|-------------|
 | `placementTryOrder` | Array | `["bottom", "top", "right", "left"]` | Preferred placements in order of preference |
 | `gap` | number | `16` | Spacing between popover and target, and the minimum margin it keeps from the viewport edges (in pixels) |
-| `controls.advance` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the advance button. `"hidden"` and `"disabled"` also block its keyboard shortcut and `overlayClick: "advance"` |
-| `controls.previous` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the previous button, with its keyboard shortcut |
-| `controls.cancel` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the cancel button, with `Escape` and `overlayClick: "cancel"`. The button is never shown when the tour is not cancellable |
 | `animated` | boolean | `true` | Enable/disable animation |
 | `animation` | AnimationOptions | - | Custom animation (duration and easing) |
 | `arrow` | PopoverArrowOptions | - | Popover arrow, the small triangle attached to the popover (see [Arrow options](#arrow-options)). The pointer indicator is configured with `indicator` |
@@ -416,12 +415,9 @@ Control the information box that displays step title and content.
 ```typescript
 popover: {
   placementTryOrder: ["right", "bottom", "left", "top"],
-  gap: 20,
-  controls: { previous: "hidden" }
+  gap: 20
 }
 ```
-
-A hidden or disabled control only blocks the popover UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. The footer is always rendered, even when every control is hidden.
 
 ### Arrow options
 
@@ -485,9 +481,6 @@ Control step interaction and scrolling behavior.
 | `allowScroll` | boolean | `true` | The page stays scrollable while the step is shown; set `false` to lock page scroll while the step is shown (restored when a step allows scrolling again, and on finish/cancel/error/dispose) |
 | `autoFocus` | boolean | `true` | Focus the popover when the step is shown |
 | `autoScroll` | boolean | `true` | Scroll the target into view when the step is shown |
-| `keyboard.advance` | Array | `["Enter", "ArrowRight"]` | Keys to advance to next step |
-| `keyboard.previous` | Array | `["ArrowLeft", "Backspace"]` | Keys to go to previous step |
-| `keyboard.cancel` | Array | `["Escape"]` | Keys to cancel the tour |
 | `missingTarget.strategy` | `"error" \| "wait" \| "skip" \| "detached"` | `"error"` | What to do if target isn't found: `"detached"` shows the popover centered over a backdrop covering the whole screen - see [Handling errors](/docs/guides/handling-errors) |
 | `missingTarget.timeout` | number | `3000` | Time to wait for target with the `"wait"` strategy (in milliseconds) |
 | `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
@@ -497,7 +490,6 @@ Control step interaction and scrolling behavior.
 ```typescript
 behavior: {
   allowInteraction: true,
-  keyboard: { previous: [] },
   missingTarget: { strategy: "skip" },
   scroll: {
     behavior: "smooth",
@@ -508,6 +500,38 @@ behavior: {
 ```
 
 **When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTarget.strategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, `detached` moves the popover to the center of the screen over a backdrop without a cutout, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `missingTarget.timeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
+
+### Controls options
+
+The advance, previous and cancel commands. Each one takes a `state` for its button and the `keys` that run it.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `advance.state` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the advance button. `"hidden"` and `"disabled"` also block its keys and `overlayClick: "advance"` |
+| `advance.keys` | Array | `["Enter", "ArrowRight"]` | Keys that advance to the next step |
+| `previous.state` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the previous button, with its keys |
+| `previous.keys` | Array | `["ArrowLeft", "Backspace"]` | Keys that go to the previous step |
+| `cancel.state` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the cancel button, with its keys and `overlayClick: "cancel"`. The button is never shown when the tour is not cancellable |
+| `cancel.keys` | Array | `["Escape"]` | Keys that cancel the tour |
+
+**Usage**:
+```typescript
+tour.create("onboarding", {
+  // Every step: N advances, the arrow keys no longer do.
+  controls: { advance: { keys: ["n"] }, previous: { keys: [] } },
+})
+.step({
+  id: "intro",
+  target: "#intro",
+  content: "Welcome",
+  // Keeps the workflow's advance keys: the step only changes the state.
+  controls: { previous: { state: "hidden" } },
+});
+```
+
+A step's controls override the workflow ones field by field: a step that sets only `advance.state` keeps the workflow's `advance.keys`. An empty `keys` array turns the command's keys off. Controls can change during the step with `context.props.update({ controls })`.
+
+A hidden or disabled control only blocks the tour UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. The footer is always rendered, even when every control is hidden.
 
 ### Class name options
 
@@ -647,6 +671,7 @@ Builder-related type exports for TypeScript users:
 - `StartOptions` - Options for `tour.create()`
 - `LifecycleHookContext` - Context passed to `onStart`, `onCancel`, `onFinish` callbacks
 - `StepBehavior` - Behavior options
+- `TourControls` - Controls options, one `TourControl` (`state`, `keys`) per command
 - `OverlayOptions` - Overlay options
 - `PopoverOptions` - Popover options
 - `PopoverArrowOptions` - Arrow options

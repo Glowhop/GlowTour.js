@@ -614,7 +614,7 @@ describe("instance-first TourController", () => {
       .create("readonly", {
         cancellable: true,
         popover: { arrow: { color: "#4c35fd" } },
-        behavior: { keyboard: { advance: ["Enter"] } },
+        controls: { advance: { keys: ["Enter"] } },
       })
       .step({
         id: "step-16",
@@ -634,7 +634,8 @@ describe("instance-first TourController", () => {
     assert.equal(Object.isFrozen(workflow.steps), true);
     assert.equal(Object.isFrozen(workflow.steps[0]), true);
     assert.equal(Object.isFrozen(workflow.steps[0].props.data), true);
-    assert.equal(Object.isFrozen(workflow.options.behavior?.keyboard?.advance), true);
+    assert.equal(Object.isFrozen(workflow.options.controls?.advance), true);
+    assert.equal(Object.isFrozen(workflow.options.controls?.advance?.keys), true);
     assert.equal(Object.isFrozen(workflow.options.popover?.arrow), true);
     assert.equal(Object.isFrozen(workflow.steps[0].props.overlay?.animation), true);
     assert.equal("clone" in workflow.steps[0], false);
@@ -782,7 +783,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-23",
         content: "one",
-        popover: { controls: { advance: "disabled" } },
+        controls: { advance: { state: "disabled" } },
         target: targetResolver,
         title: "one",
       })
@@ -840,14 +841,14 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-24",
         content: "zero",
-        popover: { controls: { advance: "disabled" } },
+        controls: { advance: { state: "disabled" } },
         target: targetResolver,
         title: "zero",
       })
       .step({
         id: "step-25",
         content: "one",
-        popover: { controls: { previous: "disabled" } },
+        controls: { previous: { state: "disabled" } },
         target: targetResolver,
         title: "one",
       })
@@ -883,7 +884,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-27",
         content: "zero",
-        popover: { controls: { advance: "disabled" } },
+        controls: { advance: { state: "disabled" } },
         target: targetResolver,
         title: "zero",
       })
@@ -894,7 +895,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-28",
         content: "one",
-        popover: { controls: { previous: "disabled" } },
+        controls: { previous: { state: "disabled" } },
         target: targetResolver,
         title: "one",
       })
@@ -924,7 +925,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-30",
         content: "replacement",
-        popover: { controls: { advance: "disabled" } },
+        controls: { advance: { state: "disabled" } },
         target: targetResolver,
         title: "replacement",
       })
@@ -2364,7 +2365,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-79",
         content: "one",
-        popover: { controls: { advance: "disabled" } },
+        controls: { advance: { state: "disabled" } },
         target: targetResolver,
         title: "one",
       })
@@ -2374,7 +2375,7 @@ describe("instance-first TourController", () => {
       .step({
         id: "step-80",
         content: "two",
-        popover: { controls: { previous: "disabled" } },
+        controls: { previous: { state: "disabled" } },
         target: targetResolver,
         title: "two",
       })
@@ -2388,7 +2389,7 @@ describe("instance-first TourController", () => {
 
     firstStepProps.set((props) => ({
       ...props,
-      popover: { ...props.popover, controls: { advance: "visible" } },
+      controls: { advance: { state: "visible" } },
     }));
     await tour.previous();
     assert.equal(tour.state.get().currentStepIndex, 0);

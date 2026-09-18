@@ -823,8 +823,8 @@ export function registerGlowTourElements() {
       return {
         disabled:
           (state.status === "active" && !state.canPrevious) ||
-          props.popover?.controls?.previous === "disabled",
-        hidden: props.popover?.controls?.previous === "hidden",
+          props.controls?.previous?.state === "disabled",
+        hidden: props.controls?.previous?.state === "hidden",
         label: this.getAttribute("previous-label") ?? "Previous step",
       };
     }
@@ -840,8 +840,8 @@ export function registerGlowTourElements() {
       return {
         disabled:
           (state.status === "active" && !state.canAdvance) ||
-          props.popover?.controls?.advance === "disabled",
-        hidden: props.popover?.controls?.advance === "hidden",
+          props.controls?.advance?.state === "disabled",
+        hidden: props.controls?.advance?.state === "hidden",
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")
           : (this.getAttribute("advance-label") ?? "Advance step"),
@@ -859,8 +859,8 @@ export function registerGlowTourElements() {
       return {
         disabled:
           (state.status === "active" && !state.canCancel) ||
-          props.popover?.controls?.cancel === "disabled",
-        hidden: !state.canCancel || props.popover?.controls?.cancel === "hidden",
+          props.controls?.cancel?.state === "disabled",
+        hidden: !state.canCancel || props.controls?.cancel?.state === "hidden",
         label: "Skip",
       };
     }
