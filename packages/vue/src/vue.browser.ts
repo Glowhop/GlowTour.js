@@ -492,7 +492,7 @@ describe("vue adapter browser behavior", () => {
       .step({
         id: "step-6",
         content: "One",
-        behavior: { keyboard: { advance: ["N"] } },
+        controls: { advance: { keys: ["N"] } },
         target,
         title: "One",
       })
@@ -595,7 +595,7 @@ describe("vue adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      popover: { controls: { advance: "hidden" } },
+      controls: { advance: { state: "hidden" } },
       title: "Updated title",
     }));
     await nextTick();
@@ -608,7 +608,7 @@ describe("vue adapter browser behavior", () => {
 
     activeProps.set((props) => ({
       ...props,
-      popover: { ...props.popover, controls: { advance: "visible" } },
+      controls: { advance: { state: "visible" } },
     }));
     await nextTick();
     assert.equal(

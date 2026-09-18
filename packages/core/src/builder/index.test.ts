@@ -35,11 +35,25 @@ const removedResetPropsOnEnter: keyof StoredStepProps = "resetPropsOnEnter";
 // Behavior is a dynamic step prop.
 const _storedBehavior: keyof StoredStepProps = "behavior";
 
-const popoverOptions: PopoverOptions = {
-  controls: { advance: "hidden", cancel: "visible", previous: "disabled" },
+const controlOptions: StartOptions<string> = {
+  controls: {
+    advance: { state: "hidden", keys: ["n"] },
+    cancel: { state: "visible" },
+    previous: { state: "disabled", keys: [] },
+  },
+};
+// Controls are a dynamic step prop.
+const _storedControls: keyof StoredStepProps = "controls";
+const removedPopoverControls: PopoverOptions = {
+  // @ts-expect-error Control states moved to the root controls option.
+  controls: { advance: "hidden" },
+};
+const removedKeyboardOption: StepBehavior = {
+  // @ts-expect-error Keyboard shortcuts moved to controls.<command>.keys.
+  keyboard: { advance: ["n"] },
 };
 const removedFooterOption: PopoverOptions = {
-  // @ts-expect-error Footer visibility follows popover.controls.
+  // @ts-expect-error Footer visibility follows controls.
   hideFooter: true,
 };
 const behaviorOptions: StepBehavior = {
@@ -76,7 +90,10 @@ void removedButtonOption;
 void removedTarget;
 void removedResetPropsOnEnter;
 void _storedBehavior;
-void popoverOptions;
+void controlOptions;
+void _storedControls;
+void removedPopoverControls;
+void removedKeyboardOption;
 void removedFooterOption;
 void behaviorOptions;
 void removedStepScroll;

@@ -475,7 +475,7 @@ export function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Elemen
   return Show({
     get when() {
       const step = currentStep(snapshot());
-      return step?.popover?.controls?.previous !== "hidden";
+      return step?.controls?.previous?.state !== "hidden";
     },
     get children() {
       return Trigger(
@@ -483,7 +483,7 @@ export function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Elemen
           get capabilityDisabled() {
             return (
               (snapshot().status !== "transitioning" && !snapshot().canPrevious) ||
-              currentStep(snapshot())?.popover?.controls?.previous === "disabled"
+              currentStep(snapshot())?.controls?.previous?.state === "disabled"
             );
           },
           label: props.previousLabel ?? "Previous step",
@@ -508,7 +508,7 @@ export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element 
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return currentStep(snapshot())?.popover?.controls?.advance !== "hidden";
+      return currentStep(snapshot())?.controls?.advance?.state !== "hidden";
     },
     get children() {
       return Trigger(
@@ -516,7 +516,7 @@ export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element 
           get capabilityDisabled() {
             return (
               (snapshot().status !== "transitioning" && !snapshot().canAdvance) ||
-              currentStep(snapshot())?.popover?.controls?.advance === "disabled"
+              currentStep(snapshot())?.controls?.advance?.state === "disabled"
             );
           },
           get label() {
@@ -545,9 +545,7 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
   const snapshot = useTourSnapshot(context.tour);
   return Show({
     get when() {
-      return (
-        snapshot().canCancel && currentStep(snapshot())?.popover?.controls?.cancel !== "hidden"
-      );
+      return snapshot().canCancel && currentStep(snapshot())?.controls?.cancel?.state !== "hidden";
     },
     get children() {
       return Trigger(
@@ -555,7 +553,7 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
           get capabilityDisabled() {
             return (
               !snapshot().canCancel ||
-              currentStep(snapshot())?.popover?.controls?.cancel === "disabled"
+              currentStep(snapshot())?.controls?.cancel?.state === "disabled"
             );
           },
           label: "Skip",

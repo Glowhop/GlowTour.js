@@ -443,7 +443,7 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   selector: "glow-tour-previous-trigger",
   standalone: true,
   template: `
-    @if (step()?.popover?.controls?.previous !== "hidden") {
+    @if (step()?.controls?.previous?.state !== "hidden") {
       <button
         data-glow-tour-previous-trigger
         [class]="stepClass('previous')"
@@ -478,7 +478,7 @@ export class GlowTourPreviousTrigger extends GlowTourTrigger {
     () =>
       this.consumerDisabled() ||
       this.unavailableWhileActive(!this.snapshot()?.canPrevious) ||
-      this.step()?.popover?.controls?.previous === "disabled",
+      this.step()?.controls?.previous?.state === "disabled",
   );
   readonly label = computed(() => this.previousLabelValue() ?? "Previous step");
 }
@@ -487,7 +487,7 @@ export class GlowTourPreviousTrigger extends GlowTourTrigger {
   selector: "glow-tour-advance-trigger",
   standalone: true,
   template: `
-    @if (step()?.popover?.controls?.advance !== "hidden") {
+    @if (step()?.controls?.advance?.state !== "hidden") {
       <button
         data-glow-tour-advance-trigger
         [class]="stepClass('advance')"
@@ -527,7 +527,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
     () =>
       this.consumerDisabled() ||
       this.unavailableWhileActive(!this.snapshot()?.canAdvance) ||
-      this.step()?.popover?.controls?.advance === "disabled",
+      this.step()?.controls?.advance?.state === "disabled",
   );
   readonly label = computed(() => {
     return this.snapshot()?.isLastStep
@@ -540,7 +540,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   selector: "glow-tour-cancel-trigger",
   standalone: true,
   template: `
-    @if (snapshot()?.canCancel && step()?.popover?.controls?.cancel !== "hidden") {
+    @if (snapshot()?.canCancel && step()?.controls?.cancel?.state !== "hidden") {
       <button
         data-glow-tour-cancel-trigger
         [class]="stepClass('cancel')"
@@ -569,7 +569,7 @@ export class GlowTourCancelTrigger extends GlowTourTrigger {
     () =>
       this.consumerDisabled() ||
       this.unavailableWhileActive(!this.snapshot()?.canCancel) ||
-      this.step()?.popover?.controls?.cancel === "disabled",
+      this.step()?.controls?.cancel?.state === "disabled",
   );
   readonly label = computed(() => "Skip");
 }

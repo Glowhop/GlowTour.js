@@ -389,13 +389,13 @@ export const GlowTourPreviousTrigger = /* @__PURE__ */ defineComponent({
       "previous",
       () =>
         (snapshot.value.status !== "transitioning" && !snapshot.value.canPrevious) ||
-        step()?.popover?.controls?.previous === "disabled",
+        step()?.controls?.previous?.state === "disabled",
       () => props.previousLabel ?? "Previous step",
       () => props.ariaLabel,
       attrs,
       slots,
     );
-    return () => (step()?.popover?.controls?.previous === "hidden" ? null : renderTrigger());
+    return () => (step()?.controls?.previous?.state === "hidden" ? null : renderTrigger());
   },
 });
 
@@ -416,7 +416,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
       "advance",
       () =>
         (snapshot.value.status !== "transitioning" && !snapshot.value.canAdvance) ||
-        step()?.popover?.controls?.advance === "disabled",
+        step()?.controls?.advance?.state === "disabled",
       () => {
         return snapshot.value.isLastStep
           ? (props.finishLabel ?? "Finish tour")
@@ -426,7 +426,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
       attrs,
       slots,
     );
-    return () => (step()?.popover?.controls?.advance === "hidden" ? null : renderTrigger());
+    return () => (step()?.controls?.advance?.state === "hidden" ? null : renderTrigger());
   },
 });
 
@@ -441,14 +441,14 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
     const step = useStep();
     const renderTrigger = trigger(
       "cancel",
-      () => !snapshot.value.canCancel || step()?.popover?.controls?.cancel === "disabled",
+      () => !snapshot.value.canCancel || step()?.controls?.cancel?.state === "disabled",
       () => "Skip",
       () => props.ariaLabel,
       attrs,
       slots,
     );
     return () =>
-      snapshot.value.canCancel && step()?.popover?.controls?.cancel !== "hidden"
+      snapshot.value.canCancel && step()?.controls?.cancel?.state !== "hidden"
         ? renderTrigger()
         : null;
   },

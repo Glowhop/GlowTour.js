@@ -14,10 +14,10 @@ Reshape the step options around positive booleans and grouped behavior settings.
 - `behavior.disableAutoFocus` and `behavior.disableAutoScroll` are replaced by `behavior.autoFocus` and `behavior.autoScroll`, which default to `true`: `disableAutoFocus: true` becomes `autoFocus: false`.
 - `indicator.disabled` and `popover.arrow.disabled` are renamed to `indicator.hidden` and `popover.arrow.hidden`.
 - `popover.arrow.disableAutoStyles` is replaced by `popover.arrow.autoStyles`, which defaults to `true`: `disableAutoStyles: true` becomes `autoStyles: false`.
-- `popover.keyboardShortcuts` moves to `behavior.keyboard`, with the same `advance`, `previous` and `cancel` arrays.
+- `popover.keyboardShortcuts` moves to the root `controls` option: `keyboardShortcuts: { advance: ["n"] }` becomes `controls: { advance: { keys: ["n"] } }`.
 - `behavior.missingTargetStrategy` and `behavior.targetTimeout` are grouped into `behavior.missingTarget: { strategy, timeout }`.
 - The JSON config follows the same shapes and rejects the old keys.
 
 **Added**
 
-- `KeyboardShortcuts` and `MissingTargetOptions` types.
+- `MissingTargetOptions` type.

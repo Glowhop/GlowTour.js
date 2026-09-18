@@ -68,9 +68,9 @@ and `Enter` on any other focusable control in the popover is left to the browser
 (`activationCommand()` in `tour-view-driver.ts`, used by both `handleKeydown` and the keydowns
 queued during a step transition). A disabled or `aria-disabled` trigger does nothing.
 
-Per-step overrides are supported via `step.behavior?.keyboard`; when a step doesn't
-override a command, the defaults above apply. Shortcuts are ignored while:
-- the matching control is `"hidden"` or `"disabled"` in `step.popover?.controls` (`isControlAvailable()`), which also removes the trigger's `aria-keyshortcuts`,
+Workflow and per-step overrides are supported via `controls.<command>.keys`; when neither
+overrides a command, the defaults above apply. Shortcuts are ignored while:
+- the matching control's `state` is `"hidden"` or `"disabled"` in `step.controls` (`isControlAvailable()`), which also removes the trigger's `aria-keyshortcuts`,
 - a modifier key (`ctrlKey`/`metaKey`/`altKey`) is held,
 - the event is part of IME composition (`isComposing`),
 - the event was already handled (`defaultPrevented`),

@@ -157,16 +157,16 @@ tour comes back to the step, until the workflow runs again.
 
 ```typescript
 .do(({ props }) => {
-  // Only this option changes; the other popover options, the title and the content are kept.
-  props.update({ popover: { controls: { advance: "visible" } } });
+  // Only this field changes; the advance keys, the other controls, the title and the content are kept.
+  props.update({ controls: { advance: { state: "visible" } } });
 })
 ```
 
 - Fields left out of the change are kept.
 - `data` is merged key by key.
-- `overlay`, `popover`, and `indicator` are merged the way step options merge over the workflow
-  defaults.
-- Arrays such as `placementTryOrder` are replaced, never concatenated.
+- `overlay`, `popover`, `indicator`, `behavior`, and `controls` are merged the way step options merge
+  over the workflow defaults.
+- Arrays such as `placementTryOrder` or `keys` are replaced, never concatenated.
 - `classNames` is merged per component: a component named in the change gets exactly the classes
   given.
 
@@ -201,8 +201,11 @@ Each field takes effect when GlowTour reads it:
 | `allowScroll` | Continuously | Applies at once: page scroll is locked or released |
 | `overlayClick` | On each click on the dimmed area | Applies to the next click |
 | `autoFocus`, `autoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
-| `keyboard` | On each key press | Applies to the next key press |
 | `missingTarget` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
+
+`controls` works the same way: `context.props.update({ controls })` changes a button's `state` or
+a command's `keys` during the step. Both are read continuously: the button updates at once, and the
+keys apply to the next key press.
 
 A button the user may click only once:
 
@@ -213,12 +216,12 @@ A button the user may click only once:
   title: "Pay",
   content: "Click Pay to continue.",
   behavior: { allowInteraction: true },
-  popover: { controls: { advance: "hidden" } },
+  controls: { advance: { state: "hidden" } },
 })
 .onTargetEvent("click", (_event, { props }) => {
   props.update({
     behavior: { allowInteraction: false },
-    popover: { controls: { advance: "visible" } },
+    controls: { advance: { state: "visible" } },
   });
 })
 ```

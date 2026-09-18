@@ -329,7 +329,7 @@ export async function runDefaultTourAcceptance<TContent>(
       .step({
         id: "step-6",
         content: content("Hidden controls content"),
-        popover: { controls: { advance: "hidden", cancel: "hidden", previous: "hidden" } },
+        controls: { advance: { state: "hidden" }, cancel: { state: "hidden" }, previous: { state: "hidden" } },
         target,
         title: content("Hidden controls title"),
       })

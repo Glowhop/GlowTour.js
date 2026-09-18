@@ -123,6 +123,7 @@ export class WorkflowBuilder<T> {
         popover: options.popover,
         indicator: options.indicator,
         behavior: options.behavior,
+        controls: options.controls,
         classNames: options.classNames,
       },
       actions: [],

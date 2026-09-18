@@ -1,4 +1,4 @@
-import type { ReadonlyStepProps } from "../definition";
+import type { DeepReadonly, ReadonlyStepProps } from "../definition";
 import type {
   AnimationOptions,
   BaseOptions,
@@ -10,12 +10,14 @@ import type {
   StepBehavior,
   StepPropsPatch,
   TourClassNames,
+  TourControl,
+  TourControls,
 } from "../types";
 
 /**
  * Merges a partial change into step props: fields it leaves out are kept, `data` is merged key by
- * key, `overlay` / `popover` / `indicator` / `behavior` go through their option merges, `classNames` is
- * merged per component, and arrays are replaced.
+ * key, `overlay` / `popover` / `indicator` / `behavior` / `controls` go through their option merges,
+ * `classNames` is merged per component, and arrays are replaced.
  * Builds a step's initial props over the workflow defaults, and backs `StepPropsStore.update`.
  */
 export function mergeStepProps<T>(
@@ -30,6 +32,7 @@ export function mergeStepProps<T>(
     popover: mergePopoverOptions(base.popover, patch.popover),
     indicator: mergeIndicatorOptions(base.indicator, patch.indicator),
     behavior: mergeStepBehavior(base.behavior, patch.behavior),
+    controls: mergeControls(base.controls, patch.controls),
     classNames: mergeClassNames(base.classNames, patch.classNames),
   } as ReadonlyStepProps<T>;
 }
@@ -103,7 +106,6 @@ export function mergePopoverOptions(
           autoStyles: overrides?.arrow?.autoStyles ?? defaults?.arrow?.autoStyles,
         }
       : undefined,
-    controls: mergeCommands(defaults?.controls, overrides?.controls, (state) => state),
     gap: overrides?.gap ?? defaults?.gap,
     placementTryOrder: cloneArray(placementTryOrder),
   };
@@ -158,24 +160,30 @@ export function mergeStepBehavior(
     allowScroll: overrides?.allowScroll ?? defaults?.allowScroll,
     autoFocus: overrides?.autoFocus ?? defaults?.autoFocus,
     autoScroll: overrides?.autoScroll ?? defaults?.autoScroll,
-    keyboard: mergeCommands(defaults?.keyboard, overrides?.keyboard, cloneArray),
     missingTarget: mergeMissingTarget(defaults?.missingTarget, overrides?.missingTarget),
     scroll: mergeScrollOptions(defaults?.scroll, overrides?.scroll),
     overlayClick: overrides?.overlayClick ?? defaults?.overlayClick,
   };
 }
 
-/** Merges a value per navigation command, such as `behavior.keyboard` or `popover.controls`. */
-function mergeCommands<V>(
-  defaults: { readonly previous?: V; readonly advance?: V; readonly cancel?: V } | undefined,
-  overrides: { readonly previous?: V; readonly advance?: V; readonly cancel?: V } | undefined,
-  copy: (value: V | undefined) => V | undefined,
-) {
+/** Merges `controls` per command, then per field: a step setting `advance.state` keeps the workflow `advance.keys`. */
+function mergeControls(
+  defaults?: TourControls,
+  overrides?: TourControls,
+): TourControls | undefined {
   if (!defaults && !overrides) return undefined;
   return {
-    previous: copy(overrides?.previous ?? defaults?.previous),
-    advance: copy(overrides?.advance ?? defaults?.advance),
-    cancel: copy(overrides?.cancel ?? defaults?.cancel),
+    previous: mergeControl(defaults?.previous, overrides?.previous),
+    advance: mergeControl(defaults?.advance, overrides?.advance),
+    cancel: mergeControl(defaults?.cancel, overrides?.cancel),
+  };
+}
+
+function mergeControl(defaults?: TourControl, overrides?: TourControl): TourControl | undefined {
+  if (!defaults && !overrides) return undefined;
+  return {
+    state: overrides?.state ?? defaults?.state,
+    keys: cloneArray(overrides?.keys ?? defaults?.keys),
   };
 }
 
@@ -194,20 +202,10 @@ function cloneArray<T>(value?: readonly T[]) {
   return value ? [...value] : undefined;
 }
 
-/** Whether a popover control is visible and enabled, so the popover UI may run its command. */
+/** Whether a control is visible and enabled, so its button, keys and `overlayClick` may run its command. */
 export function isControlAvailable(
-  props:
-    | {
-        readonly popover?: {
-          readonly controls?: {
-            readonly advance?: string;
-            readonly previous?: string;
-            readonly cancel?: string;
-          };
-        };
-      }
-    | undefined,
+  props: { readonly controls?: DeepReadonly<TourControls> } | undefined,
   command: "advance" | "previous" | "cancel",
 ) {
-  return props !== undefined && (props.popover?.controls?.[command] ?? "visible") === "visible";
+  return props !== undefined && (props.controls?.[command]?.state ?? "visible") === "visible";
 }
