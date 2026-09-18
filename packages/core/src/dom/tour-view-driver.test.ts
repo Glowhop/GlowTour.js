@@ -2055,6 +2055,25 @@ describe("DomTourViewDriver", () => {
     await driver.clear(new AbortController().signal);
     assert.equal(document.activeElement, trigger);
   });
+  test("never parks auto focus on the dialog while it waits for the controls", async () => {
+    const trigger = document.createElement("button");
+    document.body.append(trigger);
+    trigger.focus();
+    const commandState = createToggleableCommands();
+    const driver = new DomTourViewDriver<string>(commandState.commands);
+    const elements = createElements();
+    driver.registerRoot(elements.root as unknown as HTMLElement);
+    driver.registerPopover(elements.popover as unknown as HTMLElement);
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    commandState.setActive(false);
+
+    await driver.show(step, "advance", new AbortController().signal);
+    // Only `autoFocus: false` hands focus to the dialog: the default goes to Advance at once.
+    assert.equal(document.activeElement, elements.advance);
+    commandState.setActive(true);
+    assert.equal(document.activeElement, elements.advance);
+  });
   test("leaves the choice of focus to the page when a step turns auto focus off", async () => {
     const shell = document.createElement("main"),
       trigger = document.createElement("button"),

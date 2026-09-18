@@ -10,6 +10,8 @@ export interface FocusGuardScope {
   allowedTarget?: HTMLElement | null;
   allowTargetInteraction?: boolean;
   autoFocus?: boolean;
+  /** The caller focuses a control later: keep a focus already in scope until then. */
+  deferFocus?: boolean;
   fallback?: HTMLElement | null;
 }
 
@@ -60,6 +62,10 @@ export class FocusGuard {
         currentFocus !== this.document?.body &&
         (this.isAllowed(currentFocus) || this.allowTargetInteraction);
       if (!kept) this.focusFallback(false);
+      return;
+    }
+    const currentFocus = this.document?.activeElement;
+    if (scope.deferFocus && isNode(currentFocus, scope.popover) && this.isAllowed(currentFocus)) {
       return;
     }
     this.focusFallback();

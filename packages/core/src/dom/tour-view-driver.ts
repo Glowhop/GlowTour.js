@@ -985,7 +985,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.focusGuard.activate({
       allowedTarget: target,
       allowTargetInteraction: step.allowsInteraction(),
-      autoFocus: autoFocus && !deferFocus,
+      autoFocus,
+      deferFocus,
       direction,
       fallback: this.root ?? popover.parentElement,
       popover,
