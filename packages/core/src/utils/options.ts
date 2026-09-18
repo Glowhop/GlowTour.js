@@ -155,6 +155,7 @@ export function mergeStepBehavior(
   }
   return {
     allowInteraction: overrides?.allowInteraction ?? defaults?.allowInteraction,
+    allowScroll: overrides?.allowScroll ?? defaults?.allowScroll,
     autoFocus: overrides?.autoFocus ?? defaults?.autoFocus,
     autoScroll: overrides?.autoScroll ?? defaults?.autoScroll,
     keyboard: mergeCommands(defaults?.keyboard, overrides?.keyboard, cloneArray),

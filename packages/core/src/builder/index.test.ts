@@ -58,6 +58,10 @@ const removedStartScroll: StartOptions<string> = {
   // @ts-expect-error Scroll configuration now belongs to behavior.scroll.
   scroll: { behavior: "smooth" },
 };
+const removedStartAllowScroll: StartOptions<string> = {
+  // @ts-expect-error The scroll lock is a step behavior now: behavior.allowScroll.
+  allowScroll: false,
+};
 const removedResetOption: StepParameters<string> = {
   content: "Content",
   id: "step",
@@ -77,6 +81,7 @@ void removedFooterOption;
 void behaviorOptions;
 void removedStepScroll;
 void removedStartScroll;
+void removedStartAllowScroll;
 void removedResetOption;
 void (null as DynamicStepProps<string> | null);
 void (null as BeforeActionStepContext<string> | null);
