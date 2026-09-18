@@ -185,10 +185,10 @@ describe("validateWorkflowConfig", () => {
       behavior: {
         allowInteraction: "yes",
         allowScroll: "no",
-        keyboard: { advance: ["Enter", 42] },
         missingTarget: { strategy: "retry", timeout: -1 },
         scroll: { behavior: "instant" },
       },
+      controls: { advance: { keys: ["Enter", 42], state: "gone" }, next: {} },
     });
 
     const paths = issues.map((issue) => issue.path);
@@ -205,10 +205,12 @@ describe("validateWorkflowConfig", () => {
       "indicator.gap",
       "behavior.allowInteraction",
       "behavior.allowScroll",
-      "behavior.keyboard.advance[1]",
       "behavior.missingTarget.strategy",
       "behavior.missingTarget.timeout",
       "behavior.scroll.behavior",
+      "controls.advance.keys[1]",
+      "controls.advance.state",
+      "controls.next",
     ]) {
       assert.ok(paths.includes(path), `missing validation issue for ${path}`);
     }
@@ -230,7 +232,7 @@ describe("validateWorkflowConfig", () => {
         {
           ...config.steps[0],
           overlay: { color: 42 },
-          popover: { controls: { advance: "gone" } },
+          controls: { advance: { state: "gone" }, cancel: "hidden" },
           indicator: { placementTryOrder: ["center"] },
           behavior: { overlayClick: "close" },
         },
@@ -239,7 +241,8 @@ describe("validateWorkflowConfig", () => {
 
     const paths = issues.map((issue) => issue.path);
     assert.ok(paths.includes("steps[0].overlay.color"));
-    assert.ok(paths.includes("steps[0].popover.controls.advance"));
+    assert.ok(paths.includes("steps[0].controls.advance.state"));
+    assert.ok(paths.includes("steps[0].controls.cancel"));
     assert.ok(paths.includes("steps[0].indicator.placementTryOrder[0]"));
     assert.ok(paths.includes("steps[0].behavior.overlayClick"));
   });

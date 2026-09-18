@@ -383,7 +383,11 @@ describe("vanilla adapter browser behavior", () => {
     // A live region rewritten with the same text is announced again by screen readers.
     activeProps.set((props) => ({
       ...props,
-      popover: { controls: { advance: "hidden", previous: "hidden", cancel: "hidden" } },
+      controls: {
+        advance: { state: "hidden" },
+        previous: { state: "hidden" },
+        cancel: { state: "hidden" },
+      },
     }));
     await settle();
 
@@ -418,7 +422,11 @@ describe("vanilla adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Two",
-      popover: { controls: { advance: "hidden", previous: "hidden", cancel: "hidden" } },
+      controls: {
+        advance: { state: "hidden" },
+        previous: { state: "hidden" },
+        cancel: { state: "hidden" },
+      },
       title: "Updated",
     }));
     await settle();
@@ -699,7 +707,7 @@ describe("vanilla adapter browser behavior", () => {
         .step({
           id: "controls-2",
           content: "Two",
-          popover: { controls: { advance: "disabled", previous: "disabled" } },
+          controls: { advance: { state: "disabled" }, previous: { state: "disabled" } },
           target,
           title: "Two",
         })
@@ -775,7 +783,7 @@ describe("vanilla adapter browser behavior", () => {
     document.body.append(target, element);
     await settle();
     const tourWorkflow = tour
-      .create("controls", { behavior: { keyboard: { advance: ["N"] } } })
+      .create("controls", { controls: { advance: { keys: ["N"] } } })
       .step({ id: "step-5", content: "One", target, title: "One" })
       .step({ id: "step-6", content: "Two", target, title: "Two" })
       .build();

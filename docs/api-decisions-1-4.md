@@ -31,20 +31,26 @@ rediscovered. The user-facing changes are listed in the migration guide
 - **Why:** everything else addresses steps by id (`startAt`, events, resuming). An index breaks as
   soon as steps are reordered or inserted, and an overload would keep that failure mode available.
 
-## Keyboard shortcuts as behavior
+## One state per control
 
-- **Chosen:** `behavior.keyboard`.
-- **Rejected:** keeping `popover.keyboardShortcuts`.
-- **Why:** shortcuts drive navigation, not the popover's presentation, and they apply even when the
-  popover renders no trigger.
-
-## One state per popover control
-
-- **Chosen:** `popover.controls: { advance, previous, cancel }` with `"visible"`, `"hidden"` or
-  `"disabled"`. Both non-visible states block the button, its shortcut and `overlayClick`.
+- **Chosen:** a `state` per command, `"visible"`, `"hidden"` or `"disabled"`. Both non-visible
+  states block the button, its keys and `overlayClick`.
 - **Rejected:** the `hide*Button`, `disable*Button` and `hideFooter` booleans.
 - **Why:** the booleans allowed contradictory combinations, a hidden button kept its keyboard
   shortcut, and the cancel button had no equivalent.
+
+## Controls as a root option
+
+- **Chosen:** a root `controls: { advance, previous, cancel }` option, next to `popover` and
+  `behavior`, each command holding `{ state, keys }`. A step overrides the workflow field by field.
+- **Rejected:** keeping `popover.keyboardShortcuts`; splitting the two into `popover.controls`
+  (states) and `behavior.keyboard` (keys); a `"disabled" | { state, keys }` shorthand per command;
+  naming the field `keyboard` or `keyboards`.
+- **Why:** state and keys describe the same command and the state already gates the keys, so one
+  entry per command shows in one place whether it is available and how it runs. They are not
+  popover presentation: they apply to triggers rendered outside the popover and to `overlayClick`.
+  The shorthand made the merge ambiguous (does a step's `"disabled"` drop the workflow's `keys`?).
+  `keys` names what the array holds, `KeyboardEvent.key` values.
 
 ## Footer visibility
 

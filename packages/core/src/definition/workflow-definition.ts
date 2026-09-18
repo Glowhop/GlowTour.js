@@ -6,7 +6,7 @@ import type {
   StepParameters,
   TargetEventHandler,
 } from "../types";
-import { cloneClassNames, cloneStepProps, freezeStepProps } from "./step-props";
+import { cloneClassNames, cloneControls, cloneStepProps, freezeStepProps } from "./step-props";
 import type {
   ReadonlyStartOptions,
   StepProps,
@@ -49,7 +49,6 @@ function freezePopover(options: StepParameters<unknown>["popover"]) {
       ...options,
       animation: freezeAnimation(options.animation),
       arrow: options.arrow && freezeRecord({ ...options.arrow }),
-      controls: options.controls && freezeRecord({ ...options.controls }),
       placementTryOrder: options.placementTryOrder && freezeRecord([...options.placementTryOrder]),
     })
   );
@@ -85,23 +84,11 @@ function freezeOptions<T>(options: StartOptions<T>): ReadonlyStartOptions<T> {
     popover: freezePopover(options.popover),
     indicator: freezeIndicator(options.indicator),
     classNames: cloneClassNames(options.classNames),
+    controls: cloneControls(options.controls),
     behavior:
       options.behavior &&
       freezeRecord({
         ...options.behavior,
-        keyboard:
-          options.behavior.keyboard &&
-          freezeRecord({
-            previous:
-              options.behavior.keyboard.previous &&
-              freezeRecord([...options.behavior.keyboard.previous]),
-            advance:
-              options.behavior.keyboard.advance &&
-              freezeRecord([...options.behavior.keyboard.advance]),
-            cancel:
-              options.behavior.keyboard.cancel &&
-              freezeRecord([...options.behavior.keyboard.cancel]),
-          }),
         missingTarget:
           options.behavior.missingTarget && freezeRecord({ ...options.behavior.missingTarget }),
         scroll: options.behavior.scroll && freezeRecord({ ...options.behavior.scroll }),

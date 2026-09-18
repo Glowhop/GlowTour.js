@@ -17,7 +17,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.customEvent,
       title: content.title("append() + onTargetEvent<T>()"),
       content: content.paragraph(copy.appended),
-      popover: { controls: { advance: "hidden" } },
+      controls: { advance: { state: "hidden" } },
       behavior: { allowInteraction: true },
       data: { api: "append", appended: true },
     })
@@ -47,7 +47,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.start,
       title: content.title("create() + step()"),
       content: content.paragraph(copy.intro),
-      popover: { controls: { previous: "hidden" } },
+      controls: { previous: { state: "hidden" } },
       data: { api: "create", targetType: "selector" },
     })
     .beforeLeave(({ direction, props }) =>
@@ -85,7 +85,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.revealButton,
       title: content.title("clickTarget() + waitUntilElement()"),
       content: content.paragraph(copy.reveal),
-      popover: { controls: { advance: "disabled" } },
+      controls: { advance: { state: "disabled" } },
       // Overrides the workflow's "lab-popover" on this step.
       classNames: { popover: "lab-popover-waiting", advance: ["lab-control-waiting"] },
       data: { api: "waitUntilElement" },
@@ -102,7 +102,7 @@ export function createLabWorkflow<TContent>(
     .do((context) => {
       actions.log("waitUntilElement - cible révélée détectée");
       context.props.update({
-        popover: { controls: { advance: "visible" } },
+        controls: { advance: { state: "visible" } },
         overlay: { color: "red", opacity: 0.68 },
         // Replaces the step's popover and advance classes; the other components keep theirs.
         classNames: { popover: ["lab-popover", "lab-popover-revealed"], advance: [] },
@@ -136,7 +136,11 @@ export function createLabWorkflow<TContent>(
       target: selectors.condition,
       title: content.title("waitUntil() + advance()"),
       content: content.paragraph(copy.condition),
-      popover: { controls: { advance: "hidden", previous: "hidden", cancel: "hidden" } },
+      controls: {
+        advance: { state: "hidden" },
+        previous: { state: "hidden" },
+        cancel: { state: "hidden" },
+      },
       indicator: { animated: false, gap: 8 },
       data: { api: "waitUntil" },
     })
@@ -156,11 +160,11 @@ export function createLabWorkflow<TContent>(
       target: selectors.actions,
       title: content.title("action(): true | false"),
       content: content.paragraph(copy.actions),
-      popover: { controls: { previous: "disabled", advance: "disabled" } },
+      controls: { previous: { state: "disabled" }, advance: { state: "disabled" } },
       data: { api: "action", result: false },
     })
     .do(({ props }) => {
-      props.update({ popover: { controls: { advance: "visible" } } });
+      props.update({ controls: { advance: { state: "visible" } } });
       actions.log("action(true) - chaîne poursuivie");
       return true;
     })
@@ -185,7 +189,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.clickAdvance,
       title: content.title("onTargetEvent('click')"),
       content: content.paragraph(copy.clickAdvance),
-      popover: { controls: { advance: "hidden" } },
+      controls: { advance: { state: "hidden" } },
       behavior: { allowInteraction: true },
       data: { api: "onTargetEvent", overload: "single" },
     })
@@ -198,7 +202,7 @@ export function createLabWorkflow<TContent>(
       target: selectors.clickOnce,
       title: content.title("props.update({ behavior })"),
       content: content.paragraph(copy.clickOnce),
-      popover: { controls: { advance: "hidden" } },
+      controls: { advance: { state: "hidden" } },
       behavior: { allowInteraction: true },
       data: { api: "behavior.allowInteraction" },
     })
@@ -209,7 +213,7 @@ export function createLabWorkflow<TContent>(
       props.update({
         behavior: { allowInteraction: false },
         data: { clicked: true },
-        popover: { controls: { advance: "visible" } },
+        controls: { advance: { state: "visible" } },
       });
     })
     .beforeLeave(({ abort, direction, props }) => {
@@ -270,7 +274,11 @@ export function createLabWorkflow<TContent>(
       target: selectors.autoAdvance,
       title: content.title("wait() + advance()"),
       content: content.paragraph(copy.autoAdvance),
-      popover: { controls: { advance: "hidden", previous: "hidden", cancel: "hidden" } },
+      controls: {
+        advance: { state: "hidden" },
+        previous: { state: "hidden" },
+        cancel: { state: "hidden" },
+      },
       data: { api: "advance", automatic: true },
     })
     .do(() => actions.log("advance - transition automatique imminente"))

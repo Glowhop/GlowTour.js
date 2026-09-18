@@ -41,12 +41,6 @@ interface IndicatorOptions extends BaseOptions {
     placementTryOrder?: readonly TryOrderOptions[];
 }
 
-interface KeyboardShortcuts {
-    previous?: readonly string[];
-    advance?: readonly string[];
-    cancel?: readonly string[];
-}
-
 interface LifecycleHookContext<T> {
     readonly step: TourCurrentStep<T> | null;
     abort(): void;
@@ -75,16 +69,9 @@ interface PopoverArrowOptions {
     autoStyles?: boolean;
 }
 
-interface PopoverControls {
-    advance?: TourControlState;
-    previous?: TourControlState;
-    cancel?: TourControlState;
-}
-
 interface PopoverOptions extends BaseOptions {
     placementTryOrder?: readonly TryOrderOptions[];
     arrow?: PopoverArrowOptions;
-    controls?: PopoverControls;
     gap?: number;
 }
 
@@ -100,6 +87,7 @@ type ReadonlyStepProps<T> = {
     readonly popover?: DeepReadonly<PopoverOptions>;
     readonly indicator?: DeepReadonly<IndicatorOptions>;
     readonly behavior?: DeepReadonly<StepBehavior>;
+    readonly controls?: DeepReadonly<TourControls>;
     readonly classNames?: DeepReadonly<TourClassNames>;
 };
 
@@ -123,6 +111,7 @@ interface StartOptions<T> {
     indicator?: IndicatorOptions;
     animated?: boolean;
     behavior?: StepBehavior;
+    controls?: TourControls;
     classNames?: TourClassNames;
     onStart?: (context: LifecycleHookContext<T>) => void | Promise<void>;
     onCancel?: (context: LifecycleHookContext<T>) => void | Promise<void>;
@@ -141,7 +130,6 @@ interface StepBehavior {
     allowScroll?: boolean;
     autoFocus?: boolean;
     autoScroll?: boolean;
-    keyboard?: KeyboardShortcuts;
     missingTarget?: MissingTargetOptions;
     scroll?: ScrollOptions;
     overlayClick?: "none" | "advance" | "cancel";
@@ -174,6 +162,7 @@ type StepParameters<T> = {
     popover?: PopoverOptions;
     indicator?: IndicatorOptions;
     behavior?: StepBehavior;
+    controls?: TourControls;
     classNames?: TourClassNames;
     title?: T;
     content: T;
@@ -212,6 +201,17 @@ interface TourClassNames {
     advance?: ClassValue;
     previous?: ClassValue;
     cancel?: ClassValue;
+}
+
+interface TourControl {
+    state?: TourControlState;
+    keys?: readonly string[];
+}
+
+interface TourControls {
+    advance?: TourControl;
+    previous?: TourControl;
+    cancel?: TourControl;
 }
 
 type TourControlState = "visible" | "hidden" | "disabled";
