@@ -28,7 +28,6 @@ create(name: string, options?: StartOptions): WorkflowBuilder
 ```typescript
 const workflow = tour
   .create("onboarding", {
-    cancellable: true,
     onStart: () => console.log("Tour started"),
     onFinish: () => console.log("Tour finished")
   })
@@ -218,7 +217,7 @@ focusTarget(): WorkflowStepBuilder<T>
 
 ### `.append(workflow)`
 
-Copies every step of another workflow, with its actions, hooks, and target events, after the current step. The appended workflow's start options (`onStart`, `cancellable`, …) are not copied. Returns the builder of the last appended step, so it can be configured further. Throws when `workflow` has no steps.
+Copies every step of another workflow, with its actions, hooks, and target events, after the current step. The appended workflow's start options (`onStart`, `controls`, …) are not copied. Returns the builder of the last appended step, so it can be configured further. Throws when `workflow` has no steps.
 
 **Signature**:
 ```typescript
@@ -360,7 +359,6 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `cancellable` | boolean | `true` | Whether the tour can be cancelled by the user |
 | `animated` | boolean | `true`* | Enable animations (auto-disabled if OS prefers reduced motion) |
 | `overlay` | OverlayOptions | - | Overlay appearance (see [Overlay options](#overlay-options)) |
 | `popover` | PopoverOptions | - | Popover appearance (see [Popover options](#popover-options)) |
@@ -503,15 +501,15 @@ behavior: {
 
 ### Controls options
 
-The advance, previous and cancel commands. Each one takes a `state` for its button and the `keys` that run it.
+The advance, previous and cancel commands. Each one takes a `state`, whether the user may run it, and the `keys` that run it.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `advance.state` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the advance button. `"hidden"` and `"disabled"` also block its keys and `overlayClick: "advance"` |
+| `advance.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may advance. `"disabled"` disables the advance button and blocks its keys and `overlayClick: "advance"` |
 | `advance.keys` | Array | `["Enter", "ArrowRight"]` | Keys that advance to the next step |
-| `previous.state` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the previous button, with its keys |
+| `previous.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may go back. `"disabled"` disables the previous button and blocks its keys |
 | `previous.keys` | Array | `["ArrowLeft", "Backspace"]` | Keys that go to the previous step |
-| `cancel.state` | `"visible" \| "hidden" \| "disabled"` | `"visible"` | State of the cancel button, with its keys and `overlayClick: "cancel"`. The button is never shown when the tour is not cancellable |
+| `cancel.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may cancel. `"disabled"` disables the cancel button and blocks its keys and `overlayClick: "cancel"`. Set it on the workflow to keep the user from ending the tour |
 | `cancel.keys` | Array | `["Escape"]` | Keys that cancel the tour |
 
 **Usage**:
@@ -525,13 +523,54 @@ tour.create("onboarding", {
   target: "#intro",
   content: "Welcome",
   // Keeps the workflow's advance keys: the step only changes the state.
-  controls: { previous: { state: "hidden" } },
+  controls: { previous: { state: "disabled" } },
 });
 ```
 
 A step's controls override the workflow ones field by field: a step that sets only `advance.state` keeps the workflow's `advance.keys`. An empty `keys` array turns the command's keys off. Controls can change during the step with `context.props.update({ controls })`.
 
-A hidden or disabled control only blocks the tour UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. The footer is always rendered, even when every control is hidden.
+A disabled control only blocks the tour UI: `tour.advance()`, `tour.previous()`, `tour.goTo()` and the step context keep working. Its button stays rendered, disabled. The footer is always rendered, even when every control is disabled.
+
+#### Hiding a control's button
+
+`state` decides whether the user may run the command, not how its button looks. To hide a button,
+give it a class through [`classNames`](#class-name-options) and hide that class in your CSS:
+
+```css
+[data-glow-tour-root] .tour-hidden {
+  display: none;
+}
+```
+
+Scope the rule under `[data-glow-tour-root]`, as above: the default theme sets `display` on the
+buttons and the footer with a selector as specific as a single class, so a bare `.tour-hidden`
+only wins when it loads after the theme. With Tailwind CSS or any other cascade layer, the
+theme's unlayered rules win over layered ones: use the important variant instead, `hidden!` in
+Tailwind CSS v4, `!hidden` in v3.
+
+Combine the class with `state` to choose what stays available:
+
+```typescript
+.step({
+  id: "profile",
+  target: "#profile",
+  content: "Fill in your profile to continue.",
+  controls: { cancel: { state: "disabled" } },
+  // No Skip button, and Escape or a click on the overlay cannot cancel either.
+  classNames: { cancel: "tour-hidden" },
+})
+.step({
+  id: "tips",
+  target: "#tips",
+  content: "A few tips.",
+  behavior: { overlayClick: "cancel" },
+  // No Skip button, but Escape and a click on the overlay still cancel.
+  classNames: { cancel: "tour-hidden" },
+})
+```
+
+`classNames: { footer: "tour-hidden" }` hides the three buttons at once. A button hidden with
+`display: none` leaves the accessibility tree and cannot take focus.
 
 ### Class name options
 

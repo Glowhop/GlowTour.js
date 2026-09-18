@@ -13,6 +13,7 @@ import type {
   StepContext,
   StepParameters,
   StepPropsStore,
+  TourControl,
 } from "../types";
 import { WorkflowBuilder } from "./index";
 
@@ -37,8 +38,8 @@ const _storedBehavior: keyof StoredStepProps = "behavior";
 
 const controlOptions: StartOptions<string> = {
   controls: {
-    advance: { state: "hidden", keys: ["n"] },
-    cancel: { state: "visible" },
+    advance: { state: "enabled", keys: ["n"] },
+    cancel: { state: "disabled" },
     previous: { state: "disabled", keys: [] },
   },
 };
@@ -47,6 +48,14 @@ const _storedControls: keyof StoredStepProps = "controls";
 const removedPopoverControls: PopoverOptions = {
   // @ts-expect-error Control states moved to the root controls option.
   controls: { advance: "hidden" },
+};
+const removedCancellableOption: StartOptions<string> = {
+  // @ts-expect-error The cancel control replaces cancellable.
+  cancellable: false,
+};
+const removedHiddenControlState: TourControl = {
+  // @ts-expect-error A control is enabled or disabled: hide its button with classNames.
+  state: "hidden",
 };
 const removedKeyboardOption: StepBehavior = {
   // @ts-expect-error Keyboard shortcuts moved to controls.<command>.keys.
@@ -93,6 +102,8 @@ void _storedBehavior;
 void controlOptions;
 void _storedControls;
 void removedPopoverControls;
+void removedHiddenControlState;
+void removedCancellableOption;
 void removedKeyboardOption;
 void removedFooterOption;
 void behaviorOptions;

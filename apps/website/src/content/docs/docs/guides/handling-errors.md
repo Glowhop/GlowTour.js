@@ -32,7 +32,7 @@ The default is `"error"` because missing targets are usually bugs: the app chang
 
 `"skip"` is for optional steps that some users may never see. A skipped step is passed over in the direction of the navigation, and a `step:skip` event is emitted for it. If skipping forward goes past the last step, the tour finishes. If `previous()` or `goTo()` skips backward past the first step, the tour stays on the current step.
 
-When the target of the step on screen disappears and does not come back, the tour moves on from that `"skip"` step in the direction of the last navigation. If that goes backward past the first step, there is no step left to show: the tour is cancelled, or fails with a missing-target error when it is not cancellable.
+When the target of the step on screen disappears and does not come back, the tour moves on from that `"skip"` step in the direction of the last navigation. If that goes backward past the first step, there is no step left to show: the tour is cancelled.
 
 ## Three channels
 

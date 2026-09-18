@@ -41,7 +41,6 @@ export function createWorkflowFromConfig<T = string>(
   const validated = validateWorkflowConfig<T>(config, options);
 
   const builder = new WorkflowBuilder<T>(validated.name, {
-    cancellable: validated.cancellable,
     overlay: validated.overlay,
     popover: validated.popover,
     indicator: validated.indicator,

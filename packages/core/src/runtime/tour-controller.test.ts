@@ -486,7 +486,6 @@ describe("instance-first TourController", () => {
       const tour = createGlowTour<string>();
       const workflow = tour
         .create("oncancel-abort", {
-          cancellable: true,
           onCancel: (context) => {
             receivedTitle = context.step?.currentProps.title;
             context.abort();
@@ -508,7 +507,6 @@ describe("instance-first TourController", () => {
       const tour = createGlowTour<string>();
       const workflow = tour
         .create("oncancel-noop", {
-          cancellable: true,
           onCancel: () => {
             calls += 1;
           },
@@ -527,7 +525,6 @@ describe("instance-first TourController", () => {
       const tour = createGlowTour<string>();
       const workflow = tour
         .create("oncancel-abort-async", {
-          cancellable: true,
           onCancel: async (context) => {
             context.abort();
             await Promise.resolve();
@@ -612,7 +609,6 @@ describe("instance-first TourController", () => {
     let activeProps!: StepContext<string>["props"];
     const workflow = tour
       .create("readonly", {
-        cancellable: true,
         popover: { arrow: { color: "#4c35fd" } },
         controls: { advance: { keys: ["Enter"] } },
       })
@@ -778,7 +774,7 @@ describe("instance-first TourController", () => {
     const driver = new StagedTransitionDriver();
     const tour = new TourController<string>(driver);
     const workflow = tour
-      .create("staged-capabilities", { cancellable: true })
+      .create("staged-capabilities")
       .step({ id: "step-22", content: "zero", target: targetResolver, title: "zero" })
       .step({
         id: "step-23",
@@ -917,11 +913,11 @@ describe("instance-first TourController", () => {
     const driver = new StagedTransitionDriver();
     const tour = new TourController<string>(driver);
     const active = tour
-      .create("active", { cancellable: true })
+      .create("active")
       .step({ id: "step-29", content: "active", target: targetResolver, title: "active" })
       .build();
     const replacement = tour
-      .create("replacement", { cancellable: false })
+      .create("replacement")
       .step({
         id: "step-30",
         content: "replacement",
@@ -954,7 +950,7 @@ describe("instance-first TourController", () => {
         canCancel: tour.state.get().canCancel,
         canPrevious: tour.state.get().canPrevious,
       },
-      { canAdvance: false, canCancel: false, canPrevious: false },
+      { canAdvance: false, canCancel: true, canPrevious: false },
     );
 
     driver.finishShow();
@@ -1003,7 +999,7 @@ describe("instance-first TourController", () => {
     const driver = new StagedTransitionDriver();
     const tour = new TourController<string>(driver);
     const workflow = tour
-      .create("cancel-staged-content", { cancellable: true })
+      .create("cancel-staged-content")
       .step({ id: "step-34", content: "old", target: targetResolver, title: "old" })
       .step({ id: "step-35", content: "stale", target: targetResolver, title: "stale" })
       .build();
@@ -1021,24 +1017,16 @@ describe("instance-first TourController", () => {
     assert.equal(tour.state.get().currentStep?.currentProps.content, "old");
   });
 
-  test("keeps previous blocked on the first step independently from cancellation", async () => {
-    const cancellable = createGlowTour<string>();
-    const allowed = cancellable
-      .create("allowed", { cancellable: true })
+  test("keeps previous blocked on the first step", async () => {
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("first-step-previous")
       .step({ id: "step-36", content: "one", target: targetResolver, title: "one" })
       .build();
-    await cancellable.start(allowed);
-    await cancellable.previous();
-    assert.equal(cancellable.state.get().status, "active");
-
-    const nonCancellable = createGlowTour<string>();
-    const denied = nonCancellable
-      .create("denied", { cancellable: false })
-      .step({ id: "step-37", content: "one", target: targetResolver, title: "one" })
-      .build();
-    await nonCancellable.start(denied);
-    await nonCancellable.previous();
-    assert.equal(nonCancellable.state.get().status, "active");
+    await tour.start(workflow);
+    await tour.previous();
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStepIndex, 0);
   });
 
   test("awaits beforeLeave exactly once and exposes rejected hooks as errors", async () => {
@@ -1077,7 +1065,7 @@ describe("instance-first TourController", () => {
       calls.push({ context, label });
     };
     const workflow = tour
-      .create("hook-contexts", { cancellable: true })
+      .create("hook-contexts")
       .step({
         id: "step-40",
         content: "first content",
@@ -1252,7 +1240,7 @@ describe("instance-first TourController", () => {
     const listenerCounts = { added: 0, removed: 0 };
     const tour = createGlowTour<string>();
     const workflow = tour
-      .create("abort-wait", { cancellable: true })
+      .create("abort-wait")
       .step({
         id: "step-47",
         behavior: { missingTarget: { strategy: "wait", timeout: 60_000 } },
@@ -1894,7 +1882,7 @@ describe("instance-first TourController", () => {
       const calls: string[] = [];
       const tour = createGlowTour<string>();
       let actionStep = tour
-        .create(`context-${command}`, { cancellable: true })
+        .create(`context-${command}`)
         .step({ id: "step-60", content: "one", target: targetResolver, title: "one" });
       if (command === "previous") {
         actionStep = actionStep.step({
@@ -2075,7 +2063,6 @@ describe("instance-first TourController", () => {
     let cancelTarget: HTMLElement | null = null;
     const workflow = tour
       .create("recover-reverse-skip", {
-        cancellable: true,
         onCancel: ({ step }) => {
           cancelTarget = step?.target ?? null;
         },
@@ -2099,40 +2086,6 @@ describe("instance-first TourController", () => {
 
     assert.equal(tour.state.get().status, "cancelled");
     assert.equal(cancelTarget, firstTarget);
-  });
-
-  test("turns a non-cancellable backward recovery skip boundary into an indexed error", async () => {
-    const driver = new RecordingDriver();
-    const tour = new TourController<string>(driver);
-    const firstTarget = {} as HTMLElement;
-    const secondTarget = {} as HTMLElement;
-    let resolvedTarget: HTMLElement | null = firstTarget;
-    const workflow = tour
-      .create("recover-reverse-fixed", { cancellable: false })
-      .step({
-        id: "step-71",
-        behavior: { missingTarget: { strategy: "skip" } },
-        content: "one",
-        target: () => resolvedTarget,
-        title: "one",
-      })
-      .step({ id: "step-72", content: "two", target: () => secondTarget, title: "two" })
-      .build();
-    await tour.start(workflow);
-    await tour.advance();
-    await tour.previous();
-    assert.ok(driver.commands);
-
-    resolvedTarget = null;
-    await driver.commands.targetDisconnected(firstTarget);
-
-    assert.equal(tour.state.get().status, "error");
-    assert.match(tour.state.get().error?.message ?? "", /Missing target at steps\[0\]/);
-    assert.equal(tour.state.get().canAdvance, false);
-    assert.equal(tour.state.get().canCancel, false);
-    // A single clear: the grace period never mounted/unmounted a presentation
-    // of its own, so only the final teardown driven by `handleFailure` runs.
-    assert.equal(driver.clearCalls, 1);
   });
 
   test("reports an indexed error when active target recovery uses the error strategy", async () => {
@@ -2389,7 +2342,7 @@ describe("instance-first TourController", () => {
 
     firstStepProps.set((props) => ({
       ...props,
-      controls: { advance: { state: "visible" } },
+      controls: { advance: { state: "enabled" } },
     }));
     await tour.previous();
     assert.equal(tour.state.get().currentStepIndex, 0);
@@ -2640,7 +2593,7 @@ describe("instance-first TourController", () => {
     const hook = deferred<void>();
     const tour = createGlowTour<string>();
     const workflow = tour
-      .create("cancel-transition", { cancellable: true })
+      .create("cancel-transition")
       .step({ id: "step-90", content: "one", target: targetResolver, title: "one" })
       .beforeLeave(() => hook.promise)
       .step({ id: "step-91", content: "two", target: targetResolver, title: "two" })
@@ -2662,7 +2615,7 @@ describe("instance-first TourController", () => {
     const driver = new RecordingDriver();
     const tour = new TourController<string>(driver);
     const workflow = tour
-      .create("cancel-enter", { cancellable: true })
+      .create("cancel-enter")
       .step({ id: "one", content: "one", target: targetResolver, title: "one" })
       .step({ id: "two", content: "two", target: targetResolver, title: "two" })
       .beforeEnter(() => {
@@ -2765,7 +2718,7 @@ describe("instance-first TourController", () => {
     let oldHookCalls = 0;
     const tour = createGlowTour<string>();
     const workflow = tour
-      .create("cancel-reentrant", { cancellable: true })
+      .create("cancel-reentrant")
       .step({ id: "step-95", content: "one", target: targetResolver, title: "one" })
       .beforeLeave(() => {
         oldHookCalls += 1;
@@ -2785,21 +2738,16 @@ describe("instance-first TourController", () => {
   });
 
   test("exposes previous only after the first step", async () => {
-    const cancellableTour = createGlowTour<string>();
-    const cancellable = cancellableTour
-      .create("cancellable", { cancellable: true })
+    const tour = createGlowTour<string>();
+    const workflow = tour
+      .create("previous-after-first")
       .step({ id: "step-96", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-97", content: "two", target: targetResolver, title: "two" })
       .build();
-    await cancellableTour.start(cancellable);
-    assert.equal(cancellableTour.state.get().canPrevious, false);
-
-    const fixedTour = createGlowTour<string>();
-    const fixed = fixedTour
-      .create("fixed", { cancellable: false })
-      .step({ id: "step-97", content: "one", target: targetResolver, title: "one" })
-      .build();
-    await fixedTour.start(fixed);
-    assert.equal(fixedTour.state.get().canPrevious, false);
+    await tour.start(workflow);
+    assert.equal(tour.state.get().canPrevious, false);
+    await tour.advance();
+    assert.equal(tour.state.get().canPrevious, true);
   });
 
   test("removes the retry timer abort listener after resolving", async () => {
@@ -2966,7 +2914,7 @@ describe("instance-first TourController", () => {
     const cancelPredicate = deferred<boolean>();
     const cancelRun = cancellable.start(
       cancellable
-        .create("cancel-wait", { cancellable: true })
+        .create("cancel-wait")
         .step({ id: "step-105", content: "one", target: targetResolver, title: "one" })
         .waitUntil(
           () => {

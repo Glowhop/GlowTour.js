@@ -41,7 +41,6 @@ export function OnboardingTour() {
 {
   "name": "onboarding",
   "version": "1.1",
-  "cancellable": true,
   "overlay": { "opacity": 0.55 },
   "popover": { "gap": 16 },
   "steps": [

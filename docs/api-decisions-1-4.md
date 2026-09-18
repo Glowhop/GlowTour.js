@@ -33,11 +33,30 @@ rediscovered. The user-facing changes are listed in the migration guide
 
 ## One state per control
 
-- **Chosen:** a `state` per command, `"visible"`, `"hidden"` or `"disabled"`. Both non-visible
-  states block the button, its keys and `overlayClick`.
-- **Rejected:** the `hide*Button`, `disable*Button` and `hideFooter` booleans.
+- **Chosen:** a `state` per command, `"enabled"` or `"disabled"`. A disabled command is blocked
+  everywhere the tour UI offers it: its button is disabled, its keys and `overlayClick` do nothing.
+  Hiding a button is a styling recipe: a class through `classNames` and a `display: none` rule.
+- **Rejected:** the `hide*Button`, `disable*Button` and `hideFooter` booleans; a third `"hidden"`
+  state that removed the button and blocked the command like `"disabled"`.
 - **Why:** the booleans allowed contradictory combinations, a hidden button kept its keyboard
-  shortcut, and the cancel button had no equivalent.
+  shortcut, and the cancel button had no equivalent. A `"hidden"` state read as a button
+  appearance while it also blocked the keys and `overlayClick`, so `overlayClick: "cancel"` next
+  to a hidden cancel control silently did nothing. It also made "no button, but Escape still
+  cancels" impossible to express. With `state` limited to availability and the look left to
+  `classNames`, both combinations are one field each, and `state` names the command, not the button.
+
+## No cancellable option
+
+- **Chosen:** no workflow-level `cancellable` flag. A tour the user must not end disables its cancel
+  control on the workflow, `controls: { cancel: { state: "disabled" } }`, and hides the button with
+  `classNames` if it should not show. `tour.cancel()` and `context.cancel()` always cancel a running
+  tour, and a lost target with no step to fall back to always cancels it.
+- **Rejected:** keeping `cancellable: false` next to `controls.cancel`.
+- **Why:** its UI half duplicated the cancel control, a second public way to do the same thing. Its
+  other half made cancel the only command whose API could be refused: `advance` and `previous` have
+  no such flag, their controls only gate the UI. Refusing the application's own `tour.cancel()` call
+  protects against nothing the application does not control, and it turned a lost target into an
+  error instead of a cancellation.
 
 ## Controls as a root option
 

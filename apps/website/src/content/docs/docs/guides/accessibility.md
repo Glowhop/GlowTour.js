@@ -28,13 +28,13 @@ GlowTour.js supports full keyboard navigation with no mouse required:
 
 | Key(s) | Command | Condition |
 | --- | --- | --- |
-| `Escape` | Cancel/dismiss tour | Only when the tour is cancellable |
+| `Escape` | Cancel/dismiss tour | Only when cancelling is allowed |
 | `Enter` or `ArrowRight` | Advance to next step | Only when advancing is allowed |
 | `ArrowLeft` or `Backspace` | Go to previous step | Only when going back is allowed |
 | `Tab` | Focus navigation | Trapped within popover while step disallows outside interaction |
 
 Shortcuts are disabled while:
-- The matching control's `state` is `"hidden"` or `"disabled"` in `controls`
+- The matching control's `state` is `"disabled"` in `controls`
 - A modifier key (`Ctrl`, `Cmd`, `Alt`) is held
 - IME composition is in progress
 - Focus is in an editable field (for Advance/Previous only; Escape always works)

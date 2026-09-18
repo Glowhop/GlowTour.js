@@ -56,7 +56,7 @@ function definition(options: {
       arrow: { color: "var(--workflow-arrow)", hidden: true, edgePadding: 18, size: 12 },
       gap: 18,
     },
-    controls: { advance: { state: "disabled", keys: ["n"] }, cancel: { state: "hidden" } },
+    controls: { advance: { state: "disabled", keys: ["n"] }, cancel: { state: "disabled" } },
   })
     .step({ id: "step-1", content: "content", target: "#target", title: "title", ...options })
     .build();
@@ -105,37 +105,37 @@ describe("ActiveStep presentation options", () => {
   test("stores effective presentation props and restores nested mutations from initial props", () => {
     const workflow = definition({
       popover: { gap: 6 },
-      controls: { cancel: { state: "visible" } },
+      controls: { cancel: { state: "enabled" } },
     });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
     assert.equal(step.props.get().controls?.advance?.state, "disabled");
-    assert.equal(step.props.get().controls?.cancel?.state, "visible");
+    assert.equal(step.props.get().controls?.cancel?.state, "enabled");
     assert.equal(step.snapshot().currentProps.popover?.gap, 6);
 
     step.props.set((props) => ({
       ...props,
-      controls: { advance: { state: "visible" }, cancel: { state: "hidden" } },
+      controls: { advance: { state: "enabled" }, cancel: { state: "disabled" } },
     }));
-    assert.equal(step.snapshot().currentProps.controls?.advance?.state, "visible");
-    assert.equal(step.snapshot().currentProps.controls?.cancel?.state, "hidden");
+    assert.equal(step.snapshot().currentProps.controls?.advance?.state, "enabled");
+    assert.equal(step.snapshot().currentProps.controls?.cancel?.state, "disabled");
 
     step.props.set(step.initialProps);
     assert.equal(step.props.get().controls?.advance?.state, "disabled");
-    assert.equal(step.props.get().controls?.cancel?.state, "visible");
+    assert.equal(step.props.get().controls?.cancel?.state, "enabled");
   });
 
   test("merges step controls over the workflow ones field by field", () => {
-    const workflow = definition({ controls: { advance: { state: "visible" } } });
+    const workflow = definition({ controls: { advance: { state: "enabled" } } });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
-    assert.deepEqual(step.props.get().controls?.advance, { state: "visible", keys: ["n"] });
-    assert.deepEqual(step.props.get().controls?.cancel, { state: "hidden", keys: undefined });
+    assert.deepEqual(step.props.get().controls?.advance, { state: "enabled", keys: ["n"] });
+    assert.deepEqual(step.props.get().controls?.cancel, { state: "disabled", keys: undefined });
     assert.equal(step.props.get().controls?.previous, undefined);
     assert.equal(Object.isFrozen(step.props.get().controls?.advance?.keys), true);
 
     step.props.update({ controls: { advance: { keys: [] } } });
-    assert.deepEqual(step.props.get().controls?.advance, { state: "visible", keys: [] });
+    assert.deepEqual(step.props.get().controls?.advance, { state: "enabled", keys: [] });
   });
 
   test("restores from its immutable initial definition", () => {

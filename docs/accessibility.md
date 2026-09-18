@@ -58,7 +58,7 @@ diverge from, and none of the adapter `tour-components.ts(x)` files add one.
 
 | Key(s) | Command | Notes |
 | --- | --- | --- |
-| `Escape` | Cancel / dismiss | Only fires when the tour is cancellable (`canCommand("cancel", step)`) |
+| `Escape` | Cancel / dismiss | Only fires when cancelling is currently allowed for the step (`canCommand("cancel", step)`) |
 | `Enter`, `ArrowRight` | Advance | Only fires when advancing is currently allowed for the step |
 | `ArrowLeft`, `Backspace` | Previous | Only fires when going back is currently allowed for the step |
 | `Tab` | Focus loop | While the step disallows outside interaction, Tab is trapped within the popover instead of triggering a shortcut |
