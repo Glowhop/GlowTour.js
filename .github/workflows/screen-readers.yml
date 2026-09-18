@@ -48,7 +48,16 @@ jobs:
         run: bun run build
       - name: Prepare macOS for VoiceOver automation
         working-directory: apps/screen-readers
-        run: npx @guidepup/setup setup --ci --macos-record
+        # The macOS runner grants the Apple Events permission unreliably: setup then fails with
+        # "Not authorized to send Apple events to System Events" before any test runs. A new
+        # attempt usually gets the permission, so a flaky image does not fail the job.
+        run: |
+          for attempt in 1 2 3; do
+            if npx @guidepup/setup setup --ci --macos-record; then exit 0; fi
+            echo "::warning::VoiceOver setup attempt ${attempt} of 3 failed"
+            sleep 15
+          done
+          exit 1
       - name: Install VoiceOver assets
         working-directory: apps/screen-readers
         run: npx @guidepup/setup install voiceover
