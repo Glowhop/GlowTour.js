@@ -105,7 +105,6 @@ interface ScrollOptions {
 }
 
 interface StartOptions<T> {
-    cancellable?: boolean;
     overlay?: OverlayOptions;
     popover?: PopoverOptions;
     indicator?: IndicatorOptions;

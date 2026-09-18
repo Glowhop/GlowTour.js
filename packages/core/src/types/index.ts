@@ -185,7 +185,7 @@ export interface TourControls {
   advance?: TourControl;
   /** @default { state: "enabled", keys: ["ArrowLeft", "Backspace"] } */
   previous?: TourControl;
-  /** The cancel button is never shown when the tour is not cancellable. @default { state: "enabled", keys: ["Escape"] } */
+  /** @default { state: "enabled", keys: ["Escape"] } */
   cancel?: TourControl;
 }
 
@@ -256,8 +256,6 @@ export interface LifecycleHookContext<T> {
 
 /** Options for starting a tour workflow. */
 export interface StartOptions<T> {
-  /** Allow users to cancel the tour. @default true */
-  cancellable?: boolean;
   /** Default overlay options for all steps. */
   overlay?: OverlayOptions;
   /** Default popover options for all steps. */

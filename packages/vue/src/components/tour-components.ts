@@ -441,12 +441,14 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
     const step = useStep();
     const renderTrigger = trigger(
       "cancel",
-      () => !snapshot.value.canCancel || step()?.controls?.cancel?.state === "disabled",
+      () =>
+        (snapshot.value.status !== "transitioning" && !snapshot.value.canCancel) ||
+        step()?.controls?.cancel?.state === "disabled",
       () => "Skip",
       () => props.ariaLabel,
       attrs,
       slots,
     );
-    return () => (snapshot.value.canCancel ? renderTrigger() : null);
+    return renderTrigger;
   },
 });

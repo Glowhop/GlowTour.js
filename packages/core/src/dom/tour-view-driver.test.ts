@@ -449,7 +449,6 @@ function createStep(
     allowInteraction?: boolean;
     allowScroll?: boolean;
     animated?: boolean;
-    cancellable?: boolean;
     advanceShortcuts?: readonly string[];
     autoFocus?: boolean;
     autoScroll?: boolean;
@@ -458,7 +457,6 @@ function createStep(
 ) {
   const workflow = new WorkflowBuilder<string>("dom-driver", {
     animated: options.animated,
-    cancellable: options.cancellable,
     behavior: {
       allowInteraction: options.allowInteraction,
       allowScroll: options.allowScroll,
@@ -1291,15 +1289,16 @@ describe("DomTourViewDriver", () => {
     window.dispatchEvent(new MockEvent("click", { target: document.body }));
     assert.deepEqual(calls, []);
   });
-  test('respects cancellable: false when overlayClick is "cancel"', async () => {
+  test('respects a disabled cancel control when overlayClick is "cancel"', async () => {
     const { driver } = installDriver(),
       target = createTarget(),
       tour = new TourController(driver);
     const denied = tour
-      .create("overlay-click-denied", { cancellable: false })
+      .create("overlay-click-denied")
       .step({
         id: "step-2",
         behavior: { overlayClick: "cancel" },
+        controls: { cancel: { state: "disabled" } },
         content: "content",
         target: () => target as unknown as HTMLElement,
         title: "title",
@@ -1802,10 +1801,11 @@ describe("DomTourViewDriver", () => {
     cancel.setAttribute("data-glow-tour-cancel-trigger", "");
     elements.popover.append(cancel);
     const denied = tour
-      .create("denied", { cancellable: false })
+      .create("denied")
       .step({
         id: "step-3",
         content: "content",
+        controls: { cancel: { state: "disabled" } },
         target: () => target as unknown as HTMLElement,
         title: "title",
       })
@@ -1829,7 +1829,7 @@ describe("DomTourViewDriver", () => {
     assert.equal(cancel.getAttribute("aria-disabled"), "true");
 
     const allowed = tour
-      .create("allowed", { cancellable: true })
+      .create("allowed")
       .step({
         id: "step-4",
         content: "content",

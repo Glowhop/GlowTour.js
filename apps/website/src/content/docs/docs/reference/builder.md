@@ -28,7 +28,6 @@ create(name: string, options?: StartOptions): WorkflowBuilder
 ```typescript
 const workflow = tour
   .create("onboarding", {
-    cancellable: true,
     onStart: () => console.log("Tour started"),
     onFinish: () => console.log("Tour finished")
   })
@@ -218,7 +217,7 @@ focusTarget(): WorkflowStepBuilder<T>
 
 ### `.append(workflow)`
 
-Copies every step of another workflow, with its actions, hooks, and target events, after the current step. The appended workflow's start options (`onStart`, `cancellable`, …) are not copied. Returns the builder of the last appended step, so it can be configured further. Throws when `workflow` has no steps.
+Copies every step of another workflow, with its actions, hooks, and target events, after the current step. The appended workflow's start options (`onStart`, `controls`, …) are not copied. Returns the builder of the last appended step, so it can be configured further. Throws when `workflow` has no steps.
 
 **Signature**:
 ```typescript
@@ -360,7 +359,6 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `cancellable` | boolean | `true` | Whether the tour can be cancelled by the user |
 | `animated` | boolean | `true`* | Enable animations (auto-disabled if OS prefers reduced motion) |
 | `overlay` | OverlayOptions | - | Overlay appearance (see [Overlay options](#overlay-options)) |
 | `popover` | PopoverOptions | - | Popover appearance (see [Popover options](#popover-options)) |
@@ -511,7 +509,7 @@ The advance, previous and cancel commands. Each one takes a `state`, whether the
 | `advance.keys` | Array | `["Enter", "ArrowRight"]` | Keys that advance to the next step |
 | `previous.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may go back. `"disabled"` disables the previous button and blocks its keys |
 | `previous.keys` | Array | `["ArrowLeft", "Backspace"]` | Keys that go to the previous step |
-| `cancel.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may cancel. `"disabled"` disables the cancel button and blocks its keys and `overlayClick: "cancel"`. The button is never shown when the tour is not cancellable |
+| `cancel.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may cancel. `"disabled"` disables the cancel button and blocks its keys and `overlayClick: "cancel"`. Set it on the workflow to keep the user from ending the tour |
 | `cancel.keys` | Array | `["Escape"]` | Keys that cancel the tour |
 
 **Usage**:
