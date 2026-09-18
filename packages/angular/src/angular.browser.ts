@@ -325,18 +325,21 @@ describe("angular adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      controls: { advance: { state: "hidden" } },
+      controls: { advance: { state: "disabled" } },
       title: "Updated title",
     }));
     await settle();
     app.tick();
     assert.match(document.body.textContent ?? "", /Updated title/);
     assert.match(document.body.textContent ?? "", /Updated content/);
-    assert.equal(document.querySelector("[data-glow-tour-advance-trigger]"), null);
+    assert.equal(
+      document.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]")?.disabled,
+      true,
+    );
 
     activeProps.set((props) => ({
       ...props,
-      controls: { advance: { state: "visible" } },
+      controls: { advance: { state: "enabled" } },
     }));
     await settle();
     app.tick();

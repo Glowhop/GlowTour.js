@@ -443,18 +443,16 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   selector: "glow-tour-previous-trigger",
   standalone: true,
   template: `
-    @if (step()?.controls?.previous?.state !== "hidden") {
-      <button
-        data-glow-tour-previous-trigger
-        [class]="stepClass('previous')"
-        [attr.aria-controls]="ariaControls()"
-        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabelText() ?? label()"
-        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
-        [disabled]="isDisabled()"
-        type="button"
-      ><ng-content>{{ label() }}</ng-content></button>
-    }
+    <button
+      data-glow-tour-previous-trigger
+      [class]="stepClass('previous')"
+      [attr.aria-controls]="ariaControls()"
+      [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+      [attr.aria-label]="ariaLabelText() ?? label()"
+      [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+      [disabled]="isDisabled()"
+      type="button"
+    ><ng-content>{{ label() }}</ng-content></button>
   `,
 })
 /** Button component for navigating to the previous step in the tour. */
@@ -487,18 +485,16 @@ export class GlowTourPreviousTrigger extends GlowTourTrigger {
   selector: "glow-tour-advance-trigger",
   standalone: true,
   template: `
-    @if (step()?.controls?.advance?.state !== "hidden") {
-      <button
-        data-glow-tour-advance-trigger
-        [class]="stepClass('advance')"
-        [attr.aria-controls]="ariaControls()"
-        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabelText() ?? label()"
-        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
-        [disabled]="isDisabled()"
-        type="button"
-      ><ng-content>{{ label() }}</ng-content></button>
-    }
+    <button
+      data-glow-tour-advance-trigger
+      [class]="stepClass('advance')"
+      [attr.aria-controls]="ariaControls()"
+      [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+      [attr.aria-label]="ariaLabelText() ?? label()"
+      [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+      [disabled]="isDisabled()"
+      type="button"
+    ><ng-content>{{ label() }}</ng-content></button>
   `,
 })
 /** Button component for advancing to the next step or finishing the tour. */
@@ -540,7 +536,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   selector: "glow-tour-cancel-trigger",
   standalone: true,
   template: `
-    @if (snapshot()?.canCancel && step()?.controls?.cancel?.state !== "hidden") {
+    @if (snapshot()?.canCancel) {
       <button
         data-glow-tour-cancel-trigger
         [class]="stepClass('cancel')"

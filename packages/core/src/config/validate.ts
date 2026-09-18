@@ -616,7 +616,7 @@ function validateControlShape(path: string, value: unknown, issues: ConfigValida
     return;
   }
   assertNoUnknownKeys(value, CONTROL_FIELD_KEYS, path, issues);
-  validateOptionalEnum(`${path}.state`, value.state, ["visible", "hidden", "disabled"], issues);
+  validateOptionalEnum(`${path}.state`, value.state, ["enabled", "disabled"], issues);
   validateOptionalStringArray(`${path}.keys`, value.keys, issues);
 }
 

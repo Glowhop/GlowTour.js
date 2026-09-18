@@ -316,31 +316,38 @@ export async function runDefaultTourAcceptance<TContent>(
     `${name}: props set in beforeEnter render first`,
   );
 
-  // The default tour keeps its footer when every control is hidden; an adapter may drop an element or
-  // hide an ancestor.
+  // The default tour keeps its footer and every trigger when every control is disabled; an adapter
+  // may drop an element or hide an ancestor.
   const shown = (selector: string) => {
     const element = root.querySelector(selector);
     return element !== null && element.closest("[hidden]") === null;
   };
-  const footerShown = () => shown("[data-glow-tour-footer]");
+  const disabled = (selector: string) =>
+    root.querySelector<HTMLButtonElement>(selector)?.disabled === true;
   await tour.start(
     tour
-      .create(`${name} hidden controls`)
+      .create(`${name} disabled controls`)
       .step({
         id: "step-6",
-        content: content("Hidden controls content"),
-        controls: { advance: { state: "hidden" }, cancel: { state: "hidden" }, previous: { state: "hidden" } },
+        content: content("Disabled controls content"),
+        controls: {
+          advance: { state: "disabled" },
+          cancel: { state: "disabled" },
+          previous: { state: "disabled" },
+        },
         target,
-        title: content("Hidden controls title"),
+        title: content("Disabled controls title"),
       })
       .build(),
   );
   await settle();
-  assert.match(root.textContent ?? "", /Hidden controls title/, `${name}: hidden controls step renders`);
-  assert.equal(footerShown(), true, `${name}: footer kept without visible controls`);
-  assert.equal(shown("[data-glow-tour-advance-trigger]"), false, `${name}: hidden advance`);
-  assert.equal(shown("[data-glow-tour-previous-trigger]"), false, `${name}: hidden previous`);
-  assert.equal(shown("[data-glow-tour-cancel-trigger]"), false, `${name}: hidden cancel`);
+  assert.match(root.textContent ?? "", /Disabled controls title/, `${name}: disabled controls step renders`);
+  assert.equal(shown("[data-glow-tour-footer]"), true, `${name}: footer kept with disabled controls`);
+  for (const control of ["advance", "previous", "cancel"] as const) {
+    const selector = `[data-glow-tour-${control}-trigger]`;
+    assert.equal(shown(selector), true, `${name}: disabled ${control} still rendered`);
+    assert.equal(disabled(selector), true, `${name}: disabled ${control}`);
+  }
 
   // Without a title, the header is omitted and the content names the dialog.
   await tour.start(
@@ -445,7 +452,7 @@ export async function runDefaultTourAcceptance<TContent>(
 
   await tour.start(workflow());
   await settle();
-  assert.equal(footerShown(), true, `${name}: footer shown with visible controls`);
+  assert.equal(shown("[data-glow-tour-footer]"), true, `${name}: footer shown with enabled controls`);
   assert.equal(
     popover.getAttribute("aria-labelledby"),
     root.querySelector("[data-glow-tour-header]")?.id,

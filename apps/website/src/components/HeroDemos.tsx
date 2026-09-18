@@ -234,7 +234,7 @@ export const waitForAsyncWorkflow = waitForAsyncTour
   })
   .beforeEnter((context) => {
     if (context.props.get().data?.loaded) {
-      context.props.update({ controls: { advance: { state: "visible" } } });
+      context.props.update({ controls: { advance: { state: "enabled" } } });
     }
   })
   .step({

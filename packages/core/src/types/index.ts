@@ -158,17 +158,18 @@ export interface PopoverArrowOptions {
 }
 
 /**
- * Display state of a tour control. `"visible"` is the default. New states may be added in a
- * minor version.
+ * Whether the user may run a tour control. `"enabled"` is the default. New states may be added in
+ * a minor version.
  */
-export type TourControlState = "visible" | "hidden" | "disabled";
+export type TourControlState = "enabled" | "disabled";
 
-/** One navigation command: the state of its button and the keys that run it. */
+/** One navigation command: whether the user may run it and the keys that run it. */
 export interface TourControl {
   /**
-   * `"hidden"` removes the button and `"disabled"` disables it; both also block the command's keys
-   * and `overlayClick`. Navigation through the tour API and the step context stays available.
-   * @default "visible"
+   * `"disabled"` blocks the command everywhere the tour UI offers it: its button is disabled, and
+   * its keys and `overlayClick` do nothing. Navigation through the tour API and the step context
+   * stays available. To hide a button, give it a class through `classNames`.
+   * @default "enabled"
    */
   state?: TourControlState;
   /** Keys that run the command while the step is shown. An empty array turns them off. */
@@ -180,11 +181,11 @@ export interface TourControl {
  * field: a step that only sets `advance.state` keeps the workflow's `advance.keys`.
  */
 export interface TourControls {
-  /** @default { state: "visible", keys: ["Enter", "ArrowRight"] } */
+  /** @default { state: "enabled", keys: ["Enter", "ArrowRight"] } */
   advance?: TourControl;
-  /** @default { state: "visible", keys: ["ArrowLeft", "Backspace"] } */
+  /** @default { state: "enabled", keys: ["ArrowLeft", "Backspace"] } */
   previous?: TourControl;
-  /** The cancel button is never shown when the tour is not cancellable. @default { state: "visible", keys: ["Escape"] } */
+  /** The cancel button is never shown when the tour is not cancellable. @default { state: "enabled", keys: ["Escape"] } */
   cancel?: TourControl;
 }
 
