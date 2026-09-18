@@ -861,9 +861,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   ): TourViewCommand | null {
     const command = activationCommand(event, this.root);
     if (command) return command !== "native" && available(command) ? command : null;
-    const shortcuts = step.props.get().behavior?.keyboard;
+    const controls = step.props.get().controls;
     const shortcut = (command: TourViewCommand) =>
-      (shortcuts?.[command] ?? DEFAULT_SHORTCUTS[command]).includes(event.key) &&
+      (controls?.[command]?.keys ?? DEFAULT_SHORTCUTS[command]).includes(event.key) &&
       available(command);
     // Escape cancels even from an editable field; the navigation shortcuts do not.
     return shortcut("cancel")
@@ -1003,7 +1003,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private syncShortcutLabels(step: ActiveStep<T>) {
     for (const command of ["advance", "previous"] as const) {
       const shortcuts = isControlAvailable(step.props.get(), command)
-        ? (step.props.get().behavior?.keyboard?.[command] ?? DEFAULT_SHORTCUTS[command])
+        ? (step.props.get().controls?.[command]?.keys ?? DEFAULT_SHORTCUTS[command])
         : [];
       for (const trigger of this.findTriggers(command)) syncKeyShortcuts(trigger, shortcuts);
     }

@@ -325,7 +325,7 @@ describe("angular adapter browser behavior", () => {
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      popover: { controls: { advance: "hidden" } },
+      controls: { advance: { state: "hidden" } },
       title: "Updated title",
     }));
     await settle();
@@ -336,7 +336,7 @@ describe("angular adapter browser behavior", () => {
 
     activeProps.set((props) => ({
       ...props,
-      popover: { ...props.popover, controls: { advance: "visible" } },
+      controls: { advance: { state: "visible" } },
     }));
     await settle();
     app.tick();
@@ -640,7 +640,7 @@ describe("angular adapter browser behavior", () => {
       .step({
         id: "step-9",
         content: "One",
-        behavior: { keyboard: { advance: ["N"] } },
+        controls: { advance: { keys: ["N"] } },
         target,
         title: "One",
       })

@@ -10,6 +10,7 @@ const TOP_LEVEL_KEYS = [
   "indicator",
   "animated",
   "behavior",
+  "controls",
   "classNames",
   "onStart",
   "onCancel",
@@ -24,6 +25,7 @@ const STEP_KEYS = [
   "popover",
   "indicator",
   "behavior",
+  "controls",
   "classNames",
   "title",
   "content",
@@ -39,15 +41,9 @@ const EVENT_HANDLER_KEYS = ["event", "action"] as const;
 const ANIMATION_KEYS = ["duration", "easing"] as const;
 const OVERLAY_KEYS = ["animated", "animation", "color", "opacity", "padding", "radius"] as const;
 const INDICATOR_KEYS = ["animated", "animation", "hidden", "gap", "placementTryOrder"] as const;
-const POPOVER_KEYS = [
-  "animated",
-  "animation",
-  "placementTryOrder",
-  "arrow",
-  "controls",
-  "gap",
-] as const;
+const POPOVER_KEYS = ["animated", "animation", "placementTryOrder", "arrow", "gap"] as const;
 const CONTROL_KEYS = ["advance", "previous", "cancel"] as const;
+const CONTROL_FIELD_KEYS = ["state", "keys"] as const;
 const CLASS_NAME_KEYS = [
   "overlay",
   "popover",
@@ -67,14 +63,12 @@ const POPOVER_ARROW_KEYS = [
   "styleNonce",
   "autoStyles",
 ] as const;
-const KEYBOARD_SHORTCUT_KEYS = ["previous", "advance", "cancel"] as const;
 const MISSING_TARGET_KEYS = ["strategy", "timeout"] as const;
 const BEHAVIOR_KEYS = [
   "allowInteraction",
   "allowScroll",
   "autoFocus",
   "autoScroll",
-  "keyboard",
   "missingTarget",
   "scroll",
   "overlayClick",
@@ -178,6 +172,7 @@ function validateWorkflowConfigShape(
   validatePopoverShape("popover", value.popover, issues);
   validateIndicatorShape("indicator", value.indicator, issues);
   validateBehaviorShape("behavior", value.behavior, issues);
+  validateControlsShape("controls", value.controls, issues);
   validateClassNamesShape("classNames", value.classNames, issues);
   validateLifecycleActionRefShape("onStart", value.onStart, issues);
   validateLifecycleActionRefShape("onCancel", value.onCancel, issues);
@@ -244,6 +239,7 @@ function validateStepConfigShape(
   validatePopoverShape(`${path}.popover`, value.popover, issues);
   validateIndicatorShape(`${path}.indicator`, value.indicator, issues);
   validateBehaviorShape(`${path}.behavior`, value.behavior, issues);
+  validateControlsShape(`${path}.controls`, value.controls, issues);
   validateClassNamesShape(`${path}.classNames`, value.classNames, issues);
   validateDataShape(`${path}.data`, value.data, issues);
 
@@ -560,22 +556,6 @@ function validatePopoverArrowShape(
   validateOptionalBoolean(`${path}.autoStyles`, value.autoStyles, issues);
 }
 
-function validateKeyboardShortcutsShape(
-  path: string,
-  value: unknown,
-  issues: ConfigValidationIssue[],
-): void {
-  if (value === undefined) return;
-  if (!isPlainObject(value)) {
-    issues.push({ path, message: "must be an object" });
-    return;
-  }
-  assertNoUnknownKeys(value, KEYBOARD_SHORTCUT_KEYS, path, issues);
-  for (const key of KEYBOARD_SHORTCUT_KEYS) {
-    validateOptionalStringArray(`${path}.${key}`, value[key], issues);
-  }
-}
-
 function validatePopoverShape(path: string, value: unknown, issues: ConfigValidationIssue[]): void {
   if (value === undefined) return;
   if (!isPlainObject(value)) {
@@ -591,7 +571,6 @@ function validatePopoverShape(path: string, value: unknown, issues: ConfigValida
     "right",
   ]);
   validatePopoverArrowShape(`${path}.arrow`, value.arrow, issues);
-  validateControlsShape(`${path}.controls`, value.controls, issues);
   validateOptionalFiniteNonNegative(`${path}.gap`, value.gap, issues);
 }
 
@@ -626,8 +605,19 @@ function validateControlsShape(
   }
   assertNoUnknownKeys(value, CONTROL_KEYS, path, issues);
   for (const key of CONTROL_KEYS) {
-    validateOptionalEnum(`${path}.${key}`, value[key], ["visible", "hidden", "disabled"], issues);
+    validateControlShape(`${path}.${key}`, value[key], issues);
   }
+}
+
+function validateControlShape(path: string, value: unknown, issues: ConfigValidationIssue[]): void {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    issues.push({ path, message: "must be an object" });
+    return;
+  }
+  assertNoUnknownKeys(value, CONTROL_FIELD_KEYS, path, issues);
+  validateOptionalEnum(`${path}.state`, value.state, ["visible", "hidden", "disabled"], issues);
+  validateOptionalStringArray(`${path}.keys`, value.keys, issues);
 }
 
 function validateMissingTargetShape(
@@ -682,7 +672,6 @@ function validateBehaviorShape(
   validateOptionalBoolean(`${path}.allowScroll`, value.allowScroll, issues);
   validateOptionalBoolean(`${path}.autoFocus`, value.autoFocus, issues);
   validateOptionalBoolean(`${path}.autoScroll`, value.autoScroll, issues);
-  validateKeyboardShortcutsShape(`${path}.keyboard`, value.keyboard, issues);
   validateMissingTargetShape(`${path}.missingTarget`, value.missingTarget, issues);
   validateScrollShape(`${path}.scroll`, value.scroll, issues);
   validateOptionalEnum(
