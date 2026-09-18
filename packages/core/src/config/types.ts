@@ -118,7 +118,6 @@ export interface WorkflowConfig<T = string> {
   readonly version: "1.1";
   readonly name: string;
   readonly cancellable?: boolean;
-  readonly allowScroll?: boolean;
   readonly overlay?: OverlayOptions;
   readonly popover?: PopoverOptions;
   readonly indicator?: IndicatorOptions;

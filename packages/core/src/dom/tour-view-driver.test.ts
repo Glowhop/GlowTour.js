@@ -456,11 +456,11 @@ function createStep(
   } = {},
 ) {
   const workflow = new WorkflowBuilder<string>("dom-driver", {
-    allowScroll: options.allowScroll,
     animated: options.animated,
     cancellable: options.cancellable,
     behavior: {
       allowInteraction: options.allowInteraction,
+      allowScroll: options.allowScroll,
       autoScroll: options.autoScroll,
       keyboard: options.advanceShortcuts ? { advance: options.advanceShortcuts } : undefined,
     },
@@ -2513,6 +2513,49 @@ describe("DomTourViewDriver", () => {
 
     await driver.show(step, "advance", new AbortController().signal);
     assert.equal(elements.popover.getAttribute("aria-modal"), "true");
+  });
+
+  test("locks and releases page scroll live when behavior.allowScroll changes", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    const body = document.body as unknown as { style: { overflow?: string } };
+    assert.equal(body.style.overflow ?? "", "");
+
+    step.props.update({ behavior: { allowScroll: false } });
+    assert.equal(body.style.overflow, "hidden");
+
+    step.props.update({ behavior: { allowScroll: true } });
+    assert.equal(body.style.overflow ?? "", "");
+  });
+
+  test("locks scroll per step and releases it when the next step allows scrolling", async () => {
+    const { driver } = installDriver();
+    const locked = createStep({ allowScroll: false });
+    locked.target = createTarget() as unknown as HTMLElement;
+    await driver.show(locked, "advance", new AbortController().signal);
+    const body = document.body as unknown as { style: { overflow?: string } };
+    assert.equal(body.style.overflow, "hidden");
+
+    const free = createStep();
+    free.target = createTarget() as unknown as HTMLElement;
+    await driver.show(free, "advance", new AbortController().signal);
+    assert.equal(body.style.overflow ?? "", "");
+  });
+
+  test("applies an allowScroll change made before the step is presented", async () => {
+    const { driver } = installDriver();
+    const step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    step.props.update({ behavior: { allowScroll: false } });
+    const body = document.body as unknown as { style: { overflow?: string } };
+    assert.equal(body.style.overflow ?? "", "");
+
+    await driver.show(step, "advance", new AbortController().signal);
+    assert.equal(body.style.overflow, "hidden");
+    await driver.clear(new AbortController().signal);
+    assert.equal(body.style.overflow ?? "", "");
   });
 
   test("allows only the current interactive target subtree outside the popover", async () => {

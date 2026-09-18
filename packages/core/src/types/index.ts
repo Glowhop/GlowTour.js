@@ -31,6 +31,8 @@ export interface TargetResolverContext {
 export interface StepBehavior {
   /** Allow user interaction with the target: the page is no longer inert and pointer events reach the target through the cutout, while the dimmed area still catches clicks. Change it during the step with `context.props.update({ behavior: { allowInteraction } })`. @default false */
   allowInteraction?: boolean;
+  /** Leave the page scrollable while the step is shown; set `false` to lock it. Change it during the step with `context.props.update({ behavior: { allowScroll } })`. @default true */
+  allowScroll?: boolean;
   /** Move focus into the popover when the step is shown. @default true */
   autoFocus?: boolean;
   /** Scroll the target into view when the step is entered. @default true */
@@ -253,13 +255,6 @@ export interface LifecycleHookContext<T> {
 export interface StartOptions<T> {
   /** Allow users to cancel the tour. @default true */
   cancellable?: boolean;
-  /**
-   * Leaves page scroll available while the tour is active. Set `false` to lock
-   * scroll instead, restoring it on finish, cancel, error, or dispose.
-   *
-   * @default true
-   */
-  allowScroll?: boolean;
   /** Default overlay options for all steps. */
   overlay?: OverlayOptions;
   /** Default popover options for all steps. */

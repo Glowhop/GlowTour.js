@@ -13,7 +13,6 @@ export class ActiveStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
   readonly props: StepPropsStore<T>;
   readonly animated: boolean | undefined;
-  readonly allowScroll: boolean;
   target: HTMLElement | null = null;
   /** Shown without its target (`missingTarget.strategy: "detached"`); `target` is then the body. */
   detached = false;
@@ -31,7 +30,6 @@ export class ActiveStep<T> {
     this.initialProps = freezeStepProps(mergeStepProps(defaults, definition.props));
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
     this.animated = defaults.animated;
-    this.allowScroll = defaults.allowScroll !== false;
   }
 
   /**
@@ -40,6 +38,11 @@ export class ActiveStep<T> {
    */
   allowsInteraction() {
     return !this.detached && this.props.get().behavior?.allowInteraction === true;
+  }
+
+  /** Reads `behavior.allowScroll` live: `props.update({ behavior })` changes it while the step runs. */
+  allowsScroll() {
+    return this.props.get().behavior?.allowScroll !== false;
   }
 
   async resolveTarget(signal: AbortSignal) {
