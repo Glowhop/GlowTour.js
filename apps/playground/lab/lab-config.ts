@@ -6,12 +6,11 @@ export const LAB_CONFIG = {
     appendedName: "api-lab-appended",
     options: {
       cancellable: true,
-      allowScroll: true,
       animated: true,
       overlay: {},
       popover: {},
       indicator: {},
-      behavior: {},
+      behavior: { allowScroll: true },
       classNames: { popover: "lab-popover" },
     } satisfies StartOptions<unknown>,
   },

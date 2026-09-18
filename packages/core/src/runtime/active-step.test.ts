@@ -137,6 +137,33 @@ describe("ActiveStep presentation options", () => {
   });
 });
 
+describe("ActiveStep scroll", () => {
+  test("allows scrolling by default and reads behavior.allowScroll live", () => {
+    const workflow = new WorkflowBuilder<string>("active-step", {
+      behavior: { allowScroll: false },
+    })
+      .step({ id: "locked", content: "content", target: "#target", title: "title" })
+      .step({
+        id: "free",
+        content: "content",
+        target: "#target",
+        title: "title",
+        behavior: { allowScroll: true },
+      })
+      .build();
+    const locked = new ActiveStep(workflow.steps[0], workflow.options);
+    const free = new ActiveStep(workflow.steps[1], workflow.options);
+    const unset = new ActiveStep(definition({}).steps[0], definition({}).options);
+
+    assert.equal(locked.allowsScroll(), false);
+    assert.equal(free.allowsScroll(), true);
+    assert.equal(unset.allowsScroll(), true);
+
+    locked.props.update({ behavior: { allowScroll: true } });
+    assert.equal(locked.allowsScroll(), true);
+  });
+});
+
 describe("ActiveStep target resolution", () => {
   test("resolves selectors from its root document", async () => {
     const workflow = definition({});

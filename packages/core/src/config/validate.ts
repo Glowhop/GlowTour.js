@@ -5,7 +5,6 @@ const TOP_LEVEL_KEYS = [
   "version",
   "name",
   "cancellable",
-  "allowScroll",
   "overlay",
   "popover",
   "indicator",
@@ -72,6 +71,7 @@ const KEYBOARD_SHORTCUT_KEYS = ["previous", "advance", "cancel"] as const;
 const MISSING_TARGET_KEYS = ["strategy", "timeout"] as const;
 const BEHAVIOR_KEYS = [
   "allowInteraction",
+  "allowScroll",
   "autoFocus",
   "autoScroll",
   "keyboard",
@@ -173,7 +173,6 @@ function validateWorkflowConfigShape(
     issues.push({ path: "name", message: "name must be a non-empty string" });
   }
   validateOptionalBoolean("cancellable", value.cancellable, issues);
-  validateOptionalBoolean("allowScroll", value.allowScroll, issues);
   validateOptionalBoolean("animated", value.animated, issues);
   validateOverlayShape("overlay", value.overlay, issues);
   validatePopoverShape("popover", value.popover, issues);
@@ -680,6 +679,7 @@ function validateBehaviorShape(
   }
   assertNoUnknownKeys(value, BEHAVIOR_KEYS, path, issues);
   validateOptionalBoolean(`${path}.allowInteraction`, value.allowInteraction, issues);
+  validateOptionalBoolean(`${path}.allowScroll`, value.allowScroll, issues);
   validateOptionalBoolean(`${path}.autoFocus`, value.autoFocus, issues);
   validateOptionalBoolean(`${path}.autoScroll`, value.autoScroll, issues);
   validateKeyboardShortcutsShape(`${path}.keyboard`, value.keyboard, issues);
