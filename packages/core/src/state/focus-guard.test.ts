@@ -409,17 +409,80 @@ describe("FocusGuard", () => {
     assert.equal(mockDocument.activeElement, secondButton);
   });
 
-  test("enforces the focus scope when automatic directional focus is disabled", () => {
+  test("focuses the dialog, not a control, when auto focus is off and a modal step leaves focus outside", () => {
     const launcher = new MockElement("custom-button");
     mockDocument.activeElement = launcher;
     const guard = new FocusGuard();
-    const { advance, popover } = createScope();
+    const { popover } = createScope();
 
     guard.activate({
       autoFocus: false,
       direction: "advance",
       popover: popover as unknown as HTMLElement,
     });
+
+    assert.equal(mockDocument.activeElement, popover);
+    guard.deactivate();
+    assert.equal(mockDocument.activeElement, launcher);
+  });
+
+  test("focuses the dialog when auto focus is off and focus was lost", () => {
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+
+    guard.activate({
+      autoFocus: false,
+      direction: "advance",
+      popover: popover as unknown as HTMLElement,
+    });
+
+    assert.equal(mockDocument.activeElement, popover);
+  });
+
+  test("leaves focus inside the popover when auto focus is off", () => {
+    const guard = new FocusGuard();
+    const { contentLink, popover } = createScope();
+    contentLink.focus();
+
+    guard.activate({
+      autoFocus: false,
+      direction: "advance",
+      popover: popover as unknown as HTMLElement,
+    });
+
+    assert.equal(mockDocument.activeElement, contentLink);
+  });
+
+  test("leaves focus on the page when auto focus is off and the step allows interaction", () => {
+    const field = new MockElement("custom-button");
+    const target = new MockElement("target");
+    mockDocument.activeElement = field;
+    const guard = new FocusGuard();
+    const { popover } = createScope();
+
+    guard.activate({
+      allowedTarget: target as unknown as HTMLElement,
+      allowTargetInteraction: true,
+      autoFocus: false,
+      direction: "advance",
+      popover: popover as unknown as HTMLElement,
+    });
+
+    assert.equal(mockDocument.activeElement, field);
+  });
+
+  test("still traps focus that moves out of scope when auto focus is off", () => {
+    const outside = new MockElement("custom-button");
+    const guard = new FocusGuard();
+    const { advance, contentLink, popover } = createScope();
+    contentLink.focus();
+
+    guard.activate({
+      autoFocus: false,
+      direction: "advance",
+      popover: popover as unknown as HTMLElement,
+    });
+    outside.focus();
 
     assert.equal(mockDocument.activeElement, advance);
   });
