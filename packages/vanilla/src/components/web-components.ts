@@ -786,7 +786,7 @@ export function registerGlowTourElements() {
         );
       }
       const details = this.details(state, props);
-      this.hidden = details.hidden;
+      this.hidden = details.hidden === true;
       this.capabilityDisabled = details.disabled;
       this.syncDisabled();
       if (this.labelOwned) button.textContent = details.label;
@@ -810,7 +810,7 @@ export function registerGlowTourElements() {
     protected abstract details(
       state: TourState<VanillaTourContent>,
       props: ReadonlyStepProps<VanillaTourContent>,
-    ): { disabled: boolean; hidden: boolean; label: string };
+    ): { disabled: boolean; hidden?: boolean; label: string };
   }
 
   class GlowTourPreviousTrigger extends GlowTourTrigger {
@@ -824,7 +824,6 @@ export function registerGlowTourElements() {
         disabled:
           (state.status === "active" && !state.canPrevious) ||
           props.controls?.previous?.state === "disabled",
-        hidden: props.controls?.previous?.state === "hidden",
         label: this.getAttribute("previous-label") ?? "Previous step",
       };
     }
@@ -841,7 +840,6 @@ export function registerGlowTourElements() {
         disabled:
           (state.status === "active" && !state.canAdvance) ||
           props.controls?.advance?.state === "disabled",
-        hidden: props.controls?.advance?.state === "hidden",
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")
           : (this.getAttribute("advance-label") ?? "Advance step"),
@@ -860,7 +858,7 @@ export function registerGlowTourElements() {
         disabled:
           (state.status === "active" && !state.canCancel) ||
           props.controls?.cancel?.state === "disabled",
-        hidden: !state.canCancel || props.controls?.cancel?.state === "hidden",
+        hidden: !state.canCancel,
         label: "Skip",
       };
     }

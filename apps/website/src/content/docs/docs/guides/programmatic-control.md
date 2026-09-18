@@ -158,7 +158,7 @@ tour comes back to the step, until the workflow runs again.
 ```typescript
 .do(({ props }) => {
   // Only this field changes; the advance keys, the other controls, the title and the content are kept.
-  props.update({ controls: { advance: { state: "visible" } } });
+  props.update({ controls: { advance: { state: "enabled" } } });
 })
 ```
 
@@ -203,9 +203,9 @@ Each field takes effect when GlowTour reads it:
 | `autoFocus`, `autoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
 | `missingTarget` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
 
-`controls` works the same way: `context.props.update({ controls })` changes a button's `state` or
-a command's `keys` during the step. Both are read continuously: the button updates at once, and the
-keys apply to the next key press.
+`controls` works the same way: `context.props.update({ controls })` changes a command's `state` or
+its `keys` during the step. Both are read continuously: the button updates at once, and the keys
+apply to the next key press.
 
 A button the user may click only once:
 
@@ -216,12 +216,15 @@ A button the user may click only once:
   title: "Pay",
   content: "Click Pay to continue.",
   behavior: { allowInteraction: true },
-  controls: { advance: { state: "hidden" } },
+  controls: { advance: { state: "disabled" } },
+  // Hides the Next button until the click, see "Hiding a control's button" in the builder reference.
+  classNames: { advance: "tour-hidden" },
 })
 .onTargetEvent("click", (_event, { props }) => {
   props.update({
     behavior: { allowInteraction: false },
-    controls: { advance: { state: "visible" } },
+    controls: { advance: { state: "enabled" } },
+    classNames: { advance: [] },
   });
 })
 ```

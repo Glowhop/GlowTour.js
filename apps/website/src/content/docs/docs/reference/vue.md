@@ -176,7 +176,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 </GlowTourAdvanceTrigger>
 ```
 
-A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. A control set to `"hidden"` is not rendered.
+A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder#hiding-a-controls-button).
 
 ### `GlowTourPointer`
 

@@ -202,10 +202,10 @@ function cloneArray<T>(value?: readonly T[]) {
   return value ? [...value] : undefined;
 }
 
-/** Whether a control is visible and enabled, so its button, keys and `overlayClick` may run its command. */
+/** Whether a control is enabled, so its button, keys and `overlayClick` may run its command. */
 export function isControlAvailable(
   props: { readonly controls?: DeepReadonly<TourControls> } | undefined,
   command: "advance" | "previous" | "cancel",
 ) {
-  return props !== undefined && (props.controls?.[command]?.state ?? "visible") === "visible";
+  return props !== undefined && props.controls?.[command]?.state !== "disabled";
 }

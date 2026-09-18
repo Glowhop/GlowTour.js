@@ -214,7 +214,7 @@ interface TourControls {
     cancel?: TourControl;
 }
 
-type TourControlState = "visible" | "hidden" | "disabled";
+type TourControlState = "enabled" | "disabled";
 
 interface TourCurrentStep<T> {
     readonly id: string;

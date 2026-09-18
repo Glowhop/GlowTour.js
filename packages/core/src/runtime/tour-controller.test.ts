@@ -2389,7 +2389,7 @@ describe("instance-first TourController", () => {
 
     firstStepProps.set((props) => ({
       ...props,
-      controls: { advance: { state: "visible" } },
+      controls: { advance: { state: "enabled" } },
     }));
     await tour.previous();
     assert.equal(tour.state.get().currentStepIndex, 0);
