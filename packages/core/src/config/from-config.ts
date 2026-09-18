@@ -42,7 +42,6 @@ export function createWorkflowFromConfig<T = string>(
 
   const builder = new WorkflowBuilder<T>(validated.name, {
     cancellable: validated.cancellable,
-    allowScroll: validated.allowScroll,
     overlay: validated.overlay,
     popover: validated.popover,
     indicator: validated.indicator,

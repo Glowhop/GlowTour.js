@@ -198,6 +198,7 @@ Each field takes effect when GlowTour reads it:
 | Field | Read | A change made during the step |
 | --- | --- | --- |
 | `allowInteraction` | Continuously | Applies at once: the page becomes inert or usable again, focus leaves the target when interaction is blocked, and the indicator fades out or back in |
+| `allowScroll` | Continuously | Applies at once: page scroll is locked or released |
 | `overlayClick` | On each click on the dimmed area | Applies to the next click |
 | `autoFocus`, `autoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
 | `keyboard` | On each key press | Applies to the next key press |

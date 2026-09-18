@@ -595,6 +595,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           return;
         }
         this.presentationDirty = true;
+        this.syncScrollLock(step);
         if (step.allowsInteraction() === this.appliedAllowInteraction) return;
         this.syncInteraction(step);
         // The pointer fade has started: the next frame must not snap it with `syncVisibility`.
@@ -992,7 +993,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private syncScrollLock(step: ActiveStep<T>) {
-    if (step.allowScroll) {
+    if (step.allowsScroll()) {
       this.scrollLock.deactivate();
       return;
     }

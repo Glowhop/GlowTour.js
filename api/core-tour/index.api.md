@@ -118,7 +118,6 @@ interface ScrollOptions {
 
 interface StartOptions<T> {
     cancellable?: boolean;
-    allowScroll?: boolean;
     overlay?: OverlayOptions;
     popover?: PopoverOptions;
     indicator?: IndicatorOptions;
@@ -139,6 +138,7 @@ type StepActionResult = boolean | void;
 
 interface StepBehavior {
     allowInteraction?: boolean;
+    allowScroll?: boolean;
     autoFocus?: boolean;
     autoScroll?: boolean;
     keyboard?: KeyboardShortcuts;

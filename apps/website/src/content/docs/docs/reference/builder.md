@@ -366,7 +366,6 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 | `indicator` | IndicatorOptions | - | Indicator appearance (see [Indicator options](#indicator-options)) |
 | `behavior` | StepBehavior | - | Step behavior (see [Behavior options](#behavior-options)) |
 | `classNames` | TourClassNames | - | Classes added to the tour components on every step, unless a step sets its own for the same component (see [Class name options](#class-name-options)) |
-| `allowScroll` | boolean | `true` | The page stays scrollable during the tour; set `false` to lock page scroll while the tour is active (restored on finish/cancel/error/dispose) |
 | `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour starts |
 | `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour is cancelled |
 | `onFinish` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour completes |
@@ -483,6 +482,7 @@ Control step interaction and scrolling behavior.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element. Every behavior option can change during the step with `context.props.update({ behavior })` - see [Changing behavior during a step](/docs/guides/programmatic-control#changing-behavior-during-a-step) |
+| `allowScroll` | boolean | `true` | The page stays scrollable while the step is shown; set `false` to lock page scroll while the step is shown (restored when a step allows scrolling again, and on finish/cancel/error/dispose) |
 | `autoFocus` | boolean | `true` | Focus the popover when the step is shown |
 | `autoScroll` | boolean | `true` | Scroll the target into view when the step is shown |
 | `keyboard.advance` | Array | `["Enter", "ArrowRight"]` | Keys to advance to next step |

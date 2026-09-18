@@ -184,6 +184,7 @@ describe("validateWorkflowConfig", () => {
       indicator: { hidden: "no", gap: -1 },
       behavior: {
         allowInteraction: "yes",
+        allowScroll: "no",
         keyboard: { advance: ["Enter", 42] },
         missingTarget: { strategy: "retry", timeout: -1 },
         scroll: { behavior: "instant" },
@@ -203,6 +204,7 @@ describe("validateWorkflowConfig", () => {
       "indicator.hidden",
       "indicator.gap",
       "behavior.allowInteraction",
+      "behavior.allowScroll",
       "behavior.keyboard.advance[1]",
       "behavior.missingTarget.strategy",
       "behavior.missingTarget.timeout",
@@ -210,6 +212,14 @@ describe("validateWorkflowConfig", () => {
     ]) {
       assert.ok(paths.includes(path), `missing validation issue for ${path}`);
     }
+  });
+
+  test("rejects allowScroll as a workflow key: it lives in behavior", () => {
+    assert.deepEqual(issuesOf({ ...minimalConfig(), allowScroll: false }), [
+      { path: "allowScroll", message: "Unknown key: allowScroll" },
+    ]);
+    const config = { ...minimalConfig(), behavior: { allowScroll: false } };
+    assert.equal(validateWorkflowConfig(config), config);
   });
 
   test("validates nested options on individual steps", () => {
