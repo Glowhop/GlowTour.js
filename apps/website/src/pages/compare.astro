@@ -10,9 +10,9 @@ import {
   LIBRARY_KEYS,
 } from "../lib/comparison";
 
-const TITLE = "GlowTour.js vs Driver.js, Shepherd.js & React Joyride";
+const TITLE = "Best Product Tour Library? GlowTour.js vs Leading Alternatives";
 const DESCRIPTION =
-  "Compare GlowTour.js with Driver.js, Shepherd.js and React Joyride across framework support, customization, accessibility, API design and licensing.";
+  "Compare GlowTour.js, Driver.js, Shepherd.js and React Joyride across framework support, customization, accessibility, API design and licensing.";
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const libraries = LIBRARY_KEYS.map(getLibrary);
@@ -53,10 +53,7 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
   Astro drops the whitespace of a line break that sits right next to an inline element, so the
   prose below only ever wraps between two plain words, never before or after an <a>.
 */}
-<MarketingLayout
-  title="GlowTour.js vs Driver.js, Shepherd.js & React Joyride"
-  description="Compare GlowTour.js with Driver.js, Shepherd.js and React Joyride across framework support, customization, accessibility, API design and licensing."
->
+<MarketingLayout title={TITLE} description={DESCRIPTION}>
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
 
   <section class="mx-auto max-w-3xl px-6 pt-16 sm:pt-24">
@@ -64,10 +61,11 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
     <h1
       class="font-heading mt-2 text-4xl leading-[1.1] font-semibold tracking-tight text-balance text-text sm:text-5xl"
     >
-      GlowTour.js compared to other product tour libraries
+      Compare open-source product tour libraries
     </h1>
     <p class="mt-6 text-lg leading-relaxed text-pretty text-text-muted">
-      GlowTour.js is a framework-agnostic product tour library: one TypeScript engine with
+      The best product tour library depends on your frontend stack, customization needs, and
+      licensing constraints. GlowTour.js is framework-agnostic: one TypeScript engine with
       first-party integrations for React, Vue and Angular, plus Solid and vanilla JavaScript. It
       focuses on deep UI customization through composable components and CSS custom properties,
       accessible defaults, and a builder-style API for describing tours. Below, it is compared with

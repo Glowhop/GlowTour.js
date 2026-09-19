@@ -1,4 +1,5 @@
 ---
+import ApiComparison from "../components/ApiComparison.astro";
 import ComparisonPage from "../components/ComparisonPage.astro";
 import ComparisonSection from "../components/ComparisonSection.astro";
 ---
@@ -9,9 +10,28 @@ import ComparisonSection from "../components/ComparisonSection.astro";
 */}
 <ComparisonPage
   competitor="joyride"
-  title="GlowTour.js vs React Joyride - Product Tour Library Comparison"
-  description="GlowTour.js vs React Joyride: React-only vs framework-agnostic, Vue and Angular support, UI customization, accessibility and licensing compared."
-  intro="React Joyride is a React-focused product tour library; GlowTour.js is framework-agnostic, with native adapters for React, Vue, Angular, Solid and vanilla JavaScript. For a React-only product both are options; the differences are framework reach and how you customize the UI."
+  title="React Joyride Alternative: GlowTour.js vs React Joyride"
+  description="Looking for a React Joyride alternative? Compare GlowTour.js and React Joyride across framework support, customization, SSR, accessibility and licensing."
+  intro="React Joyride is a React-focused product tour library; GlowTour.js is framework-agnostic, with native adapters for React, Vue, Angular, Solid and vanilla JavaScript. For a React-only product both are options. If you are looking for a React Joyride alternative, the main differences are framework reach, workflow APIs and how you customize the UI."
+  glowtourBestFor="You need the same tour model across React, Vue, Angular, Solid or vanilla JavaScript, or prefer a chainable workflow builder and composable UI primitives."
+  competitorBestFor="Your product is React-only, may support React versions before 18, and fits React Joyride's component, hook and steps-prop model."
+  faq={[
+    {
+      question: "Is GlowTour.js a React Joyride alternative?",
+      answer:
+        "Yes. Both provide React product tours with customizable UI and accessible navigation. GlowTour.js also supports Vue, Angular, Solid and vanilla JavaScript through first-party adapters.",
+    },
+    {
+      question: "Which library is better for a React-only application?",
+      answer:
+        "Either can fit. React Joyride is dedicated to React and supports older React versions. GlowTour.js is useful when you want a builder-style workflow API, composable tour primitives, or a path to reuse tours in other frameworks.",
+    },
+    {
+      question: "Do GlowTour.js and React Joyride work with Next.js?",
+      answer:
+        "Both are designed to be SSR-safe. GlowTour.js verifies its React adapter in a production Next.js app; tour workflows should still start on the client after their target elements are mounted.",
+    },
+  ]}
 >
   <ComparisonSection id="react-only-vs-agnostic" heading="React-only vs framework-agnostic">
     <p>
@@ -46,6 +66,15 @@ import ComparisonSection from "../components/ComparisonSection.astro";
       for theming.
     </p>
   </ComparisonSection>
+
+
+  <ApiComparison
+    competitorName="React Joyride"
+    competitorCode={"import Joyride from \"react-joyride\";\n\nconst steps = [\n  {\n    target: \"#welcome\",\n    title: \"Welcome\",\n    content: \"Start here\",\n  },\n];\n\nexport function Tour() {\n  return <Joyride steps={steps} />;\n}"}
+    competitorLang="tsx"
+    glowtourCode={"import {\n  createGlowTour,\n  GlowTourDefault,\n} from \"@glowhop/react-tour\";\n\nconst tour = createGlowTour();\nconst workflow = tour\n  .create(\"onboarding\")\n  .step({\n    id: \"welcome\",\n    target: \"#welcome\",\n    title: \"Welcome\",\n    content: \"Start here\",\n  })\n  .build();\n\nexport function Tour() {\n  return <GlowTourDefault tour={tour} />;\n}"}
+    glowtourLang="tsx"
+  />
 
   <ComparisonSection id="accessibility-ssr-licensing" heading="Accessibility, SSR and licensing">
     <p>

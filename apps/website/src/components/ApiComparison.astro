@@ -1,0 +1,39 @@
+---
+import CodeBlock from "./CodeBlock.astro";
+
+interface Props {
+  competitorName: string;
+  competitorCode: string;
+  competitorLang?: string;
+  glowtourCode: string;
+  glowtourLang?: string;
+}
+
+const {
+  competitorName,
+  competitorCode,
+  competitorLang = "ts",
+  glowtourCode,
+  glowtourLang = "ts",
+} = Astro.props;
+---
+
+<section id="api-comparison" class="scroll-mt-20">
+  <h2 class="font-heading text-2xl font-semibold tracking-tight text-text sm:text-3xl">
+    API example: {competitorName} vs GlowTour.js
+  </h2>
+  <p class="mt-4 leading-relaxed text-text-muted">
+    Both examples create and start a one-step product tour. The difference is how each library
+    represents the workflow and connects it to the application UI.
+  </p>
+  <div class="mt-6 grid gap-6 lg:grid-cols-2">
+    <div>
+      <h3 class="mb-3 font-semibold text-text">{competitorName}</h3>
+      <CodeBlock code={competitorCode} lang={competitorLang} />
+    </div>
+    <div>
+      <h3 class="mb-3 font-semibold text-text">GlowTour.js</h3>
+      <CodeBlock code={glowtourCode} lang={glowtourLang} />
+    </div>
+  </div>
+</section>

@@ -15,9 +15,13 @@ interface Props {
   title: string;
   description: string;
   intro: string;
+  glowtourBestFor: string;
+  competitorBestFor: string;
+  faq: Array<{ question: string; answer: string }>;
 }
 
-const { competitor, title, description, intro } = Astro.props;
+const { competitor, title, description, intro, glowtourBestFor, competitorBestFor, faq } =
+  Astro.props;
 
 const glowtour = getLibrary("glowtour");
 const library = getLibrary(competitor);
@@ -38,6 +42,17 @@ const jsonLd = {
       inLanguage: "en",
       isPartOf: { "@id": "https://glowtour.dev/#website" },
       about: { "@id": "https://glowtour.dev/#software" },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: faq.map(({ question, answer }) => ({
+        "@type": "Question",
+        name: question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: answer,
+        },
+      })),
     },
     {
       "@type": "BreadcrumbList",
@@ -71,6 +86,26 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
     <p class="mt-6 text-lg leading-relaxed text-pretty text-text-muted">{intro}</p>
   </section>
 
+  <section id="quick-decision" class="mx-auto max-w-3xl px-6 pt-12 scroll-mt-20">
+    <h2 class={h2}>Quick decision</h2>
+    <div class="mt-6 grid gap-4 sm:grid-cols-2">
+      <article class="rounded-glow border border-accent/30 bg-accent/5 p-5">
+        <div class="flex items-center gap-2">
+          <LibraryMark library={glowtour} />
+          <h3 class="font-semibold text-text">Choose GlowTour.js if…</h3>
+        </div>
+        <p class="mt-3 text-sm leading-relaxed text-text-muted">{glowtourBestFor}</p>
+      </article>
+      <article class="rounded-glow border border-border bg-surface p-5">
+        <div class="flex items-center gap-2">
+          <LibraryMark library={library} />
+          <h3 class="font-semibold text-text">Choose {library.name} if…</h3>
+        </div>
+        <p class="mt-3 text-sm leading-relaxed text-text-muted">{competitorBestFor}</p>
+      </article>
+    </div>
+  </section>
+
   <section id="feature-comparison" class="mx-auto max-w-3xl px-6 pt-12 scroll-mt-20">
     <h2 class={h2}>Feature comparison</h2>
     <div class="mt-6">
@@ -98,6 +133,25 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
         class={link}>compatibility page</a
       > before adopting it.
     </p>
+
+    <section id="faq" class="mt-14 scroll-mt-20">
+      <h2 class={h2}>{heading} FAQ</h2>
+      <div class="mt-6 divide-y divide-border border-y border-border">
+        {
+          faq.map((item) => (
+            <details class="group py-5">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-text">
+                {item.question}
+                <span class="text-accent transition-transform group-open:rotate-45" aria-hidden="true">
+                  +
+                </span>
+              </summary>
+              <p class="mt-3 max-w-3xl leading-relaxed text-text-muted">{item.answer}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
 
     <section id="sources" class="mt-14 scroll-mt-20">
       <h2 class={h2}>Sources</h2>

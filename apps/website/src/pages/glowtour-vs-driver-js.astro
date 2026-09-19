@@ -1,4 +1,5 @@
 ---
+import ApiComparison from "../components/ApiComparison.astro";
 import ComparisonPage from "../components/ComparisonPage.astro";
 import ComparisonSection from "../components/ComparisonSection.astro";
 ---
@@ -9,9 +10,28 @@ import ComparisonSection from "../components/ComparisonSection.astro";
 */}
 <ComparisonPage
   competitor="driver"
-  title="GlowTour.js vs Driver.js - Product Tour Library Comparison"
-  description="GlowTour.js vs Driver.js: compare framework integrations, UI customization, builder API, accessibility and licensing for product tours and onboarding."
-  intro="Driver.js and GlowTour.js both have a framework-agnostic JavaScript core. Driver.js stops there, while GlowTour.js adds native React, Vue, Angular, Solid and vanilla adapters on top. The main differences are framework integration, how you customize the popover UI, and how tours are defined."
+  title="Driver.js Alternative: GlowTour.js vs Driver.js"
+  description="Looking for a Driver.js alternative? Compare GlowTour.js and Driver.js across framework integrations, customization, APIs, accessibility and licensing."
+  intro="Driver.js and GlowTour.js both have a framework-agnostic JavaScript core. Driver.js stops there, while GlowTour.js adds native React, Vue, Angular, Solid and vanilla adapters on top. If you are looking for a Driver.js alternative, the main differences are framework integration, how you customize the popover UI, and how tours are defined."
+  glowtourBestFor="You want first-party framework adapters, component-level UI composition, typed step actions and one workflow model across several frontend stacks."
+  competitorBestFor="You want a lightweight, dependency-free DOM library with a compact configuration API and are comfortable integrating it through framework lifecycle hooks."
+  faq={[
+    {
+      question: "Is GlowTour.js a Driver.js alternative?",
+      answer:
+        "Yes. Both libraries create guided product tours in JavaScript. GlowTour.js is a stronger fit when you need native framework adapters or composable UI; Driver.js is a strong fit when you prefer a small framework-agnostic DOM API.",
+    },
+    {
+      question: "Can I use Driver.js and GlowTour.js with React?",
+      answer:
+        "Yes. Driver.js can be called from React effects and event handlers but renders its own DOM. GlowTour.js provides React components and a Context-scoped tour instance.",
+    },
+    {
+      question: "Can I migrate a Driver.js tour to GlowTour.js?",
+      answer:
+        "The concepts map closely: Driver.js steps become GlowTour.js builder steps, selectors remain targets, and lifecycle hooks become workflow callbacks or step actions. The API is different, so the tour definition must be rewritten rather than copied unchanged.",
+    },
+  ]}
 >
   <ComparisonSection
     id="framework-integrations"
@@ -60,6 +80,13 @@ import ComparisonSection from "../components/ComparisonSection.astro";
       same tour can come from a JSON config when it is stored outside your code.
     </p>
   </ComparisonSection>
+
+
+  <ApiComparison
+    competitorName="Driver.js"
+    competitorCode={"import { driver } from \"driver.js\";\n\nconst tour = driver({\n  steps: [\n    {\n      element: \"#welcome\",\n      popover: {\n        title: \"Welcome\",\n        description: \"Start here\",\n      },\n    },\n  ],\n});\n\ntour.drive();"}
+    glowtourCode={"import { createGlowTour } from \"@glowhop/react-tour\";\n\nconst tour = createGlowTour();\nconst workflow = tour\n  .create(\"onboarding\")\n  .step({\n    id: \"welcome\",\n    target: \"#welcome\",\n    title: \"Welcome\",\n    content: \"Start here\",\n  })\n  .build();\n\nvoid tour.start(workflow);"}
+  />
 
   <ComparisonSection id="accessibility-licensing" heading="Accessibility and licensing">
     <p>
