@@ -185,6 +185,8 @@ export class TourController<T> {
     this.error = null;
     this.commandSource = "api";
     this.retainedPresentation = retainedPresentation;
+    // A start this one supersedes may still hold its `tour:start`: that tour never began.
+    this.pendingTourStart = undefined;
 
     try {
       this.setStatus("starting");
@@ -256,6 +258,7 @@ export class TourController<T> {
     this.direction = "advance";
     this.error = null;
     this.retainedPresentation = null;
+    this.pendingTourStart = undefined;
     this.status = "disposed";
     this.publish(true);
     this.stateListeners.clear();
@@ -278,6 +281,7 @@ export class TourController<T> {
     this.direction = "advance";
     this.error = null;
     this.retainedPresentation = null;
+    this.pendingTourStart = undefined;
     this.status = "idle";
   }
 
