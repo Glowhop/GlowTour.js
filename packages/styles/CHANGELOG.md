@@ -1,5 +1,12 @@
 # @glowhop/styles-tour
 
+## 1.4.0
+
+### Patch Changes
+
+- 91b23f1: The default theme no longer pads the Skip button, so its text lines up with the popover content.
+- b4e2dd6: The default theme lays out the popover as a flex column instead of a three-row grid, so the footer sits right under the content when a step has no title, and a popover with children of your own stacks them in order.
+
 ## 1.3.1
 
 ### Patch Changes
