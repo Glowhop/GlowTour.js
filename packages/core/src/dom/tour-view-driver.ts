@@ -141,6 +141,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   } | null = null;
   private pointer: PointerElement | null = null;
   private pendingFocusGeneration: number | null = null;
+  /**
+   * The last click a presented step's button handled. It bubbles on to the window after the
+   * command it ran started the next step, and must not be queued a second time there.
+   */
+  private handledTriggerClick: Event | null = null;
   private popover: PopoverElement | null = null;
   private presentationDirty = false;
   /**
@@ -954,6 +959,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (
       !this.isCurrentGeneration(generation) ||
       event.defaultPrevented ||
+      event === this.handledTriggerClick ||
       !isHTMLElement(scope, scope) ||
       !isElement(event.target, scope)
     )
@@ -1050,6 +1056,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (!isElement(event.target, scope)) return;
       const match = this.findClickedTrigger(event.target, scope);
       if (!match) return;
+      this.handledTriggerClick = event;
       this.deferTriggerCommand(match.command, event, step, generation, match.trigger);
     });
   }
