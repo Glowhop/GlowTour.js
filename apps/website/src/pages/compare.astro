@@ -10,7 +10,7 @@ import {
   LIBRARY_KEYS,
 } from "../lib/comparison";
 
-const TITLE = "Best Product Tour Library? GlowTour.js vs Leading Alternatives";
+const TITLE = "GlowTour.js vs Driver.js, Shepherd.js & React Joyride";
 const DESCRIPTION =
   "Compare GlowTour.js, Driver.js, Shepherd.js and React Joyride across framework support, customization, accessibility, API design and licensing.";
 
@@ -53,7 +53,10 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
   Astro drops the whitespace of a line break that sits right next to an inline element, so the
   prose below only ever wraps between two plain words, never before or after an <a>.
 */}
-<MarketingLayout title={TITLE} description={DESCRIPTION}>
+<MarketingLayout
+  title="GlowTour.js vs Driver.js, Shepherd.js & React Joyride"
+  description={DESCRIPTION}
+>
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
 
   <section class="mx-auto max-w-3xl px-6 pt-16 sm:pt-24">
