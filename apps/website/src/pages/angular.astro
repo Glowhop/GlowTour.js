@@ -14,4 +14,32 @@ import { angularSource } from "../lib/framework-sources";
   guideHref="/docs/guides/angular"
   title="Angular Product Tour Library - GlowTour.js"
   description="Build accessible product tours and guided onboarding for Angular 18 with @glowhop/angular-tour, a typed step builder, and GlowTourDefault."
+  benefits={[
+  {
+    "title": "Standalone Angular components",
+    "description": "Import GlowTourDefault directly into a standalone component without creating a dedicated NgModule."
+  },
+  {
+    "title": "Angular-native packaging",
+    "description": "Use an adapter distributed in Angular Package Format with partial compilation for Angular 18 applications."
+  },
+  {
+    "title": "Typed workflow builder",
+    "description": "Define reusable tours in TypeScript and start them from normal Angular template events."
+  }
+]}
+  faq={[
+  {
+    "question": "How do I create a product tour in Angular?",
+    "answer": "Install @glowhop/angular-tour and @glowhop/styles-tour, import GlowTourDefault in a standalone component, create a typed workflow, render glow-tour-default, and start it from a template event."
+  },
+  {
+    "question": "Does GlowTour.js support standalone Angular components?",
+    "answer": "Yes. GlowTourDefault is imported directly in the component imports array, so no NgModule is required."
+  },
+  {
+    "question": "Can I customize the Angular tour UI?",
+    "answer": "Yes. Replace the default theme with your own CSS or use the adapter primitives to control the tour presentation while keeping the shared workflow engine."
+  }
+]}
 />
