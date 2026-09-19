@@ -474,9 +474,11 @@ export function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Elemen
   const snapshot = useTourSnapshot(context.tour);
   return Trigger(
     mergeProps(props, {
+      // Tour state disables a trigger only while the tour is active: disabling it natively outside
+      // of that, as a replacing start does, would blur the focused trigger.
       get capabilityDisabled() {
         return (
-          (snapshot().status !== "transitioning" && !snapshot().canPrevious) ||
+          (snapshot().status === "active" && !snapshot().canPrevious) ||
           currentStep(snapshot())?.controls?.previous?.state === "disabled"
         );
       },
@@ -502,7 +504,7 @@ export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element 
     mergeProps(props, {
       get capabilityDisabled() {
         return (
-          (snapshot().status !== "transitioning" && !snapshot().canAdvance) ||
+          (snapshot().status === "active" && !snapshot().canAdvance) ||
           currentStep(snapshot())?.controls?.advance?.state === "disabled"
         );
       },
@@ -532,7 +534,7 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
     mergeProps(props, {
       get capabilityDisabled() {
         return (
-          (snapshot().status !== "transitioning" && !snapshot().canCancel) ||
+          (snapshot().status === "active" && !snapshot().canCancel) ||
           currentStep(snapshot())?.controls?.cancel?.state === "disabled"
         );
       },
