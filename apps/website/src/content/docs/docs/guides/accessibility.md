@@ -40,7 +40,7 @@ Shortcuts are disabled while:
 - Focus is in an editable field (for Advance/Previous only; Escape always works)
 - The event has already been handled
 
-When a tour button has focus, `Enter` activates that button rather than advancing: on Previous it goes to the previous step, on Skip it cancels the tour. `Enter` on any other control inside the popover content, such as a link or your own button, is left to that control.
+When a tour button has focus, `Enter` activates that button rather than advancing: on Previous it goes to the previous step, on Skip it cancels the tour. It clicks the button like `Space` or a pointer does, so your own `onClick` on the button runs first, and calling `event.preventDefault()` there stops the command. `Enter` on any other control inside the popover content, such as a link or your own button, is left to that control.
 
 The `aria-keyshortcuts` attribute on each button is automatically kept in sync with the active shortcuts, so screen readers and visible labels always match the actual keyboard behavior.
 

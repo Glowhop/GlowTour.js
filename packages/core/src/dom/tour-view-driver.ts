@@ -4,11 +4,7 @@ import PointerElement from "../elements/pointer";
 import PopoverElement from "../elements/popover";
 import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
-import {
-  FOCUSABLE_SELECTOR,
-  focusableElementsOwnedBy,
-  TOUR_TRIGGER_SELECTOR,
-} from "../state/focusable";
+import { FOCUSABLE_SELECTOR, focusableElementsOwnedBy } from "../state/focusable";
 import { ScrollLock } from "../state/scroll-lock";
 import type { ResolvedPlacement, TourDirection, TourEventSource } from "../types";
 import { isControlAvailable } from "../utils/options";
@@ -137,7 +133,12 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private modalDocument: Document | null = null;
   private modalRoot: HTMLElement | null = null;
   private overlay: OverlayElement | null = null;
-  private pendingKeyboardCommand: { command: TourViewCommand; generation: number } | null = null;
+  /** A command asked for while a visible popover was replaced, run once the new step is presented. */
+  private pendingCommand: {
+    command: TourViewCommand;
+    generation: number;
+    source: TourEventSource;
+  } | null = null;
   private pointer: PointerElement | null = null;
   private pendingFocusGeneration: number | null = null;
   private popover: PopoverElement | null = null;
@@ -213,7 +214,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
     const replaceVisiblePopover = this.active && onBeforePopoverAppear !== undefined;
-    let removeTransitionKeydown = () => {};
+    let removeTransitionListeners = () => {};
     try {
       this.cleanupStepResources();
       this.throwIfStale(generation, signal);
@@ -233,17 +234,26 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (modal) this.claimModal();
       // Blocks the page until a modal step is presented, and queues shortcuts while a visible
       // popover is replaced. On any other step it lets every key through.
-      const listener = (event: Event) =>
+      const onKeydown = (event: Event) =>
         this.queueTransitionKeydown(
           event as KeyboardEvent,
           step,
           generation,
           replaceVisiblePopover,
         );
+      // The popover being replaced no longer takes pointer input, but Enter or Space on its focused
+      // button still clicks it: queue that button's command like a shortcut.
+      const onClick = (event: Event) => {
+        if (replaceVisiblePopover) this.queueTransitionClick(event, step, generation);
+      };
       const currentWindow = this.getWindow();
       if (typeof currentWindow?.addEventListener === "function") {
-        currentWindow.addEventListener("keydown", listener);
-        removeTransitionKeydown = () => currentWindow.removeEventListener("keydown", listener);
+        currentWindow.addEventListener("keydown", onKeydown);
+        currentWindow.addEventListener("click", onClick);
+        removeTransitionListeners = () => {
+          currentWindow.removeEventListener("keydown", onKeydown);
+          currentWindow.removeEventListener("click", onClick);
+        };
       }
       const target = step.target;
       if (!target) return;
@@ -279,14 +289,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.activateFocus(step, target, direction, generation);
       this.syncScrollLock(step);
       this.throwIfStale(generation, signal);
-      removeTransitionKeydown();
-      removeTransitionKeydown = () => {};
+      removeTransitionListeners();
+      removeTransitionListeners = () => {};
       this.attachStepResources(step, target, generation, signal);
     } catch (error) {
       if (this.isCurrentGeneration(generation)) this.releaseModality();
       throw error;
     } finally {
-      removeTransitionKeydown();
+      removeTransitionListeners();
       removeAbort();
     }
   }
@@ -612,7 +622,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           this.pendingFocusGeneration = null;
           this.focusGuard.focus();
         }
-        if (active) this.flushPendingKeyboardCommand(step, generation);
+        if (active) this.flushPendingCommand(step, generation);
       }) ?? (() => {}),
     );
     this.attachTargetResources(step, target, generation, signal);
@@ -851,16 +861,16 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   /**
-   * The command a keydown asks for, if `available` allows it: the focused tour button's own on
-   * Enter, otherwise a keyboard shortcut. `null` leaves the key to the browser.
+   * The keyboard shortcut a keydown asks for, if `available` allows it. `null` leaves the key to the
+   * browser, as Enter on a focused control is: on a tour button, the click it produces runs that
+   * button's own command after the consumer's click handlers, like a pointer click.
    */
   private keyboardCommand(
     event: KeyboardEvent,
     step: ActiveStep<T>,
     available: (command: TourViewCommand) => boolean,
   ): TourViewCommand | null {
-    const command = activationCommand(event, this.root);
-    if (command) return command !== "native" && available(command) ? command : null;
+    if (activatesControl(event, this.root)) return null;
     const controls = step.props.get().controls;
     const shortcut = (command: TourViewCommand) =>
       (controls?.[command]?.keys ?? DEFAULT_SHORTCUTS[command]).includes(event.key) &&
@@ -927,19 +937,41 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     }
     if (!queue) return;
-    // Enter on a tour button queues that button's own command.
     const command = this.keyboardCommand(event, step, (command) =>
       isControlAvailable(step.props.get(), command),
     );
     if (!command) return;
     event.preventDefault();
-    this.pendingKeyboardCommand ??= { command, generation };
+    this.pendingCommand ??= { command, generation, source: "keyboard" };
   }
 
-  private flushPendingKeyboardCommand(step: ActiveStep<T>, generation: number) {
-    const pending = this.pendingKeyboardCommand;
+  /**
+   * Queues the command of a tour button clicked while a visible popover is replaced. Listening on
+   * the window runs after the consumer's own click handlers, so a prevented click queues nothing.
+   */
+  private queueTransitionClick(event: Event, step: ActiveStep<T>, generation: number) {
+    const scope = this.root ?? this.popover?.getElement();
+    if (
+      !this.isCurrentGeneration(generation) ||
+      event.defaultPrevented ||
+      !isHTMLElement(scope, scope) ||
+      !isElement(event.target, scope)
+    )
+      return;
+    const match = this.findClickedTrigger(event.target, scope);
+    if (
+      !match ||
+      this.isLiveDisabled(match.trigger) ||
+      !isControlAvailable(step.props.get(), match.command)
+    )
+      return;
+    this.pendingCommand ??= { command: match.command, generation, source: "trigger" };
+  }
+
+  private flushPendingCommand(step: ActiveStep<T>, generation: number) {
+    const pending = this.pendingCommand;
     if (!pending || pending.generation !== generation) return;
-    this.pendingKeyboardCommand = null;
+    this.pendingCommand = null;
     queueMicrotask(() => {
       if (
         !this.isCurrentGeneration(generation) ||
@@ -947,7 +979,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         !this.canCommand(pending.command, step)
       )
         return;
-      void this.commandForGeneration(pending.command, generation, "keyboard");
+      void this.commandForGeneration(pending.command, generation, pending.source);
     });
   }
 
@@ -1375,7 +1407,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private beginGeneration() {
     this.generation += 1;
-    this.pendingKeyboardCommand = null;
+    this.pendingCommand = null;
     this.pendingFocusGeneration = null;
     this.cancelElementAnimations();
     return this.generation;
@@ -1612,26 +1644,12 @@ function finite(value: number, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
 }
 
-/**
- * Enter activates the focused control, so it is not the advance shortcut there. On a tour button
- * it runs that button's own command (Back goes back, Skip cancels) and on any other control it is
- * left to the browser. `null` means the keyboard shortcuts apply.
- */
-function activationCommand(
-  event: KeyboardEvent,
-  context?: Node | null,
-): TourViewCommand | "native" | null {
+/** Whether a keydown is Enter on a focused control, which activates it and is left to the browser. */
+function activatesControl(event: KeyboardEvent, context?: Node | null) {
   const target = event.target;
-  if (event.key !== "Enter" || !isHTMLElement(target, context)) return null;
-  const trigger = target.closest<HTMLElement>(TOUR_TRIGGER_SELECTOR);
-  if (!trigger) return target.matches(FOCUSABLE_SELECTOR) ? "native" : null;
-  if (trigger.hasAttribute("disabled") || trigger.getAttribute("aria-disabled") === "true")
-    return "native";
-  return trigger.hasAttribute("data-glow-tour-previous-trigger")
-    ? "previous"
-    : trigger.hasAttribute("data-glow-tour-cancel-trigger")
-      ? "cancel"
-      : "advance";
+  return (
+    event.key === "Enter" && isHTMLElement(target, context) && target.matches(FOCUSABLE_SELECTOR)
+  );
 }
 
 function isEditable(target: EventTarget | null, context?: Node | null) {

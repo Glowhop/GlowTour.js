@@ -63,10 +63,13 @@ diverge from, and none of the adapter `tour-components.ts(x)` files add one.
 | `ArrowLeft`, `Backspace` | Previous | Only fires when going back is currently allowed for the step |
 | `Tab` | Focus loop | While the step disallows outside interaction, Tab is trapped within the popover instead of triggering a shortcut |
 
-`Enter` on a focused tour trigger runs that trigger's own command instead of the advance shortcut,
-and `Enter` on any other focusable control in the popover is left to the browser
-(`activationCommand()` in `tour-view-driver.ts`, used by both `handleKeydown` and the keydowns
-queued during a step transition). A disabled or `aria-disabled` trigger does nothing.
+`Enter` on a focused control is never the advance shortcut: it is left to the browser
+(`activatesControl()` in `tour-view-driver.ts`, used by both `handleKeydown` and the keydowns
+queued during a step transition). On a tour trigger, the click the browser produces runs that
+trigger's own command through the delegated click handler, after the consumer's own `onClick`, so a
+click the consumer prevents does nothing from the keyboard either. While a visible popover is being
+replaced, that click is queued like a shortcut (`queueTransitionClick()`). A disabled or
+`aria-disabled` trigger does nothing.
 
 Workflow and per-step overrides are supported via `controls.<command>.keys`; when neither
 overrides a command, the defaults above apply. Shortcuts are ignored while:
