@@ -17,6 +17,8 @@ interface Props {
   guideHref: string;
   title: string;
   description: string;
+  benefits: Array<{ title: string; description: string }>;
+  faq: Array<{ question: string; answer: string }>;
 }
 
 const {
@@ -30,6 +32,8 @@ const {
   guideHref,
   title,
   description,
+  benefits,
+  faq,
 } = Astro.props;
 
 const bundle = frameworkBundle(icon);
@@ -54,6 +58,17 @@ const jsonLd = {
       runtimePlatform: name,
       license: "https://github.com/Glowhop/GlowTour.js/blob/main/LICENSE",
       isPartOf: { "@id": "https://glowtour.dev/#website" },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: faq.map(({ question, answer }) => ({
+        "@type": "Question",
+        name: question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: answer,
+        },
+      })),
     },
     {
       "@type": "BreadcrumbList",
@@ -130,6 +145,52 @@ const jsonLd = {
       <div data-tour="framework-quickstart">
         <CodeBlock code={code} lang={lang} class="mt-3" />
       </div>
+    </div>
+
+    <div class="mt-16">
+      <h2 class="text-2xl font-semibold tracking-tight text-text">
+        Why use GlowTour.js with {name}?
+      </h2>
+      <div class="mt-6 grid gap-6 sm:grid-cols-3">
+        {
+          benefits.map((benefit) => (
+            <article class="rounded-glow border border-border bg-surface p-5">
+              <h3 class="font-semibold text-text">{benefit.title}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-text-muted">{benefit.description}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="mt-16">
+      <h2 class="text-2xl font-semibold tracking-tight text-text">
+        {name} product tour FAQ
+      </h2>
+      <div class="mt-6 divide-y divide-border border-y border-border">
+        {
+          faq.map((item) => (
+            <details class="group py-5">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-text">
+                {item.question}
+                <span class="text-accent transition-transform group-open:rotate-45" aria-hidden="true">
+                  +
+                </span>
+              </summary>
+              <p class="mt-3 max-w-3xl leading-relaxed text-text-muted">{item.answer}</p>
+            </details>
+          ))
+        }
+      </div>
+      <p class="mt-6 text-sm text-text-muted">
+        Need the complete API and framework-specific setup?{" "}
+        <a
+          href={guideHref}
+          class="font-medium text-text underline underline-offset-4 transition-colors hover:text-accent"
+        >
+          Read the {name} integration guide
+        </a>.
+      </p>
     </div>
   </section>
 </MarketingLayout>
