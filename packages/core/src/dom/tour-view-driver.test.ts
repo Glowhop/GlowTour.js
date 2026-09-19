@@ -1806,6 +1806,44 @@ describe("DomTourViewDriver", () => {
       assert.deepEqual(commandState.calls, []);
     });
   }
+  test("runs a tour button click once when its command replaces the popover", async () => {
+    const calls: string[] = [];
+    const secondStep = createStep();
+    let showing: Promise<void> | undefined;
+    const driver = new DomTourViewDriver<string>({
+      ...createToggleableCommands().commands,
+      advance: async () => {
+        calls.push("advance");
+        showing ??= driver.show(secondStep, "advance", new AbortController().signal, () => {});
+      },
+    });
+    const elements = createElements();
+    driver.registerRoot(elements.root as unknown as HTMLElement);
+    driver.registerPopover(elements.popover as unknown as HTMLElement);
+    driver.registerOverlay(elements.overlay as unknown as SVGSVGElement);
+    driver.registerPointer(elements.pointer as unknown as HTMLElement);
+    const target = createTarget();
+    const firstStep = createStep();
+    firstStep.target = target as unknown as HTMLElement;
+    secondStep.target = target as unknown as HTMLElement;
+    await driver.show(firstStep, "advance", new AbortController().signal);
+
+    animationMode = "controlled";
+    const animationStart = createdAnimations.length;
+    // A real click runs the popover's handler, then its microtasks, and only then reaches the
+    // window, where the next step is already listening for clicks during its transition.
+    const click = new MockEvent("click", { target: elements.advance });
+    elements.advance.dispatchEvent(click);
+    await flushMicrotasks();
+    window.dispatchEvent(click);
+
+    createdAnimations[animationStart]?.resolve();
+    await flushMicrotasks();
+    resolveAnimations(animationStart);
+    await showing;
+    await flushMicrotasks();
+    assert.deepEqual(calls, ["advance"]);
+  });
   test("leaves Enter on other popover controls to the browser", async () => {
     const { calls, driver, elements } = installDriver(),
       control = document.createElement("button"),
