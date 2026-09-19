@@ -72,8 +72,8 @@ given property in one channel or the other, not both. `--glow-tour-arrow-border-
 no JS equivalent and is only settable from CSS.
 :::
 
-To change the arrow's *shape* rather than its values, set `popover.arrow.disableAutoStyles`
-to skip the injected rules entirely and write your own. The popover carries a
+To change the arrow's *shape* rather than its values, set `popover.arrow.autoStyles`
+to `false` to skip the injected rules entirely and write your own. The popover carries a
 `data-glow-tour-placement` attribute, and the computed `--glow-tour-arrow-offset`, to
 position whatever you draw.
 
@@ -125,7 +125,7 @@ tour inside it - which is what lets a single dark example sit on an otherwise li
 
 ```tsx
 <div data-glow-tour-theme="dark">
-  <GlowTour.Default tour={tour} />
+  <GlowTourDefault tour={tour} />
 </div>
 ```
 
@@ -181,30 +181,101 @@ your own tokens, or place the tour over a busy background, check the contrast of
 [accessibility notes](/docs/guides/accessibility) for what the library does and does
 not guarantee.
 
+## Styling a step
+
+To style a component on some steps only, give those steps `classNames`. The classes are added to
+the element the default theme styles, and removed when a step shows without them:
+
+```typescript
+tour
+  .create("onboarding")
+  .step({
+    id: "danger-zone",
+    target: "#delete-account",
+    content: "This cannot be undone.",
+    classNames: { popover: "tour-danger", advance: "tour-danger-button" },
+  })
+  .build();
+```
+
+```css
+[data-glow-tour-popover].tour-danger {
+  --glow-tour-color-surface: #fff1f2;
+  --glow-tour-color-border: #e11d48;
+}
+```
+
+The same option works on the workflow, for every step that does not set its own classes for the
+component, and in the JSON config. See
+[Class name options](/docs/reference/builder#class-name-options).
+
+## Tailwind CSS
+
+Tailwind CSS v4 generates its utility classes inside `@layer utilities`. A stylesheet imported
+outside any layer always wins over a layered one, whatever the specificity, so an unlayered
+`default.css` overrides the utilities you give a tour component: `p-2` loses to the popover's
+padding.
+
+Import the theme in Tailwind's `components` layer instead, from the same CSS file that imports
+Tailwind:
+
+```css
+@import "tailwindcss";
+@import "@glowhop/styles-tour/default.css" layer(components);
+```
+
+The theme's rules then come before the utilities, and your classes take precedence:
+
+```tsx
+<GlowTourPopover className="p-2 rounded-2xl">
+  <GlowTourHeader />
+  <GlowTourContent />
+  <GlowTourFooter className="gap-3" />
+</GlowTourPopover>
+```
+
+The same applies to the classes a step adds with `classNames`:
+
+```typescript
+.step({
+  id: "billing",
+  target: "#billing",
+  content: "Plans changed this month.",
+  classNames: { popover: "border-rose-500 bg-rose-50", advance: "bg-rose-600" },
+})
+```
+
+Keep that stylesheet the only place the theme is imported. An `import "@glowhop/styles-tour/default.css"`
+left in a script loads a second, unlayered copy that wins over the utilities again.
+
+Tailwind only generates the classes it finds in your source files. Class names that come from a
+JSON config loaded at runtime are not scanned: list them in your sources, or declare them with
+[`@source inline()`](https://tailwindcss.com/docs/detecting-classes-in-source-files#safelisting-specific-utilities).
+
 ## Advanced customization
 
 For complete control over the popover layout, header styling, or footer layout, you can use custom composition and write your own styles:
 
 ```tsx
-import { GlowTour, createGlowTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTourAdvanceTrigger, GlowTourCancelTrigger, GlowTourContent, GlowTourFooter, GlowTourHeader, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourRoot } from "@glowhop/react-tour";
 import "./custom-tour.css";
 
 const tour = createGlowTour();
 
 export function CustomStyledTour() {
   return (
-    <GlowTour.Root tour={tour}>
-      <GlowTour.Overlay />
-      <GlowTour.Pointer />
-      <GlowTour.Popover className="my-custom-popover">
-        <GlowTour.Header className="my-custom-header" />
-        <GlowTour.Content className="my-custom-content" />
-        <GlowTour.Footer className="my-custom-footer">
-          <GlowTour.CancelTrigger />
-          <GlowTour.AdvanceTrigger />
-        </GlowTour.Footer>
-      </GlowTour.Popover>
-    </GlowTour.Root>
+    <GlowTourRoot tour={tour}>
+      <GlowTourOverlay />
+      <GlowTourPointer />
+      <GlowTourPopover className="my-custom-popover">
+        <GlowTourHeader className="my-custom-header" />
+        <GlowTourContent className="my-custom-content" />
+        <GlowTourFooter className="my-custom-footer">
+          <GlowTourCancelTrigger />
+          <GlowTourAdvanceTrigger />
+        </GlowTourFooter>
+      </GlowTourPopover>
+    </GlowTourRoot>
   );
 }
 ```

@@ -1,7 +1,8 @@
 import "@glowhop/styles-tour/default.css";
 import "@glowhop/vanilla-tour/auto";
-import { createDefaultTourElement, createGlowTour } from "@glowhop/vanilla-tour";
+import { createGlowTour } from "@glowhop/vanilla-tour";
 import "../src/styles.css";
+import "../src/theme";
 import { clearPersistedTour, createLogger, persistTour, readPersistedTour } from "./shared";
 
 type View = "dashboard" | "profile";
@@ -13,7 +14,9 @@ const log = createLogger(logPanel);
 const tour = createGlowTour({
   onSubscriberError: (error) => log(`onSubscriberError - ${error.message}`),
 });
-document.body.append(createDefaultTourElement(tour));
+const tourElement = document.createElement("glow-tour-default");
+tourElement.tour = tour;
+document.body.append(tourElement);
 
 // Debug handle so the lab can be driven from the console.
 (window as unknown as { __tour: typeof tour }).__tour = tour;
@@ -64,8 +67,9 @@ const spaWorkflow = tour
     title: "Dashboard",
     content: "Step 1 lives on the dashboard view. Advancing triggers a SPA route change.",
   })
-  .beforeAdvance(() => {
-    log("beforeAdvance - pushState to ?view=profile");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "advance") return;
+    log("beforeLeave(advance) - pushState to ?view=profile");
     navigate("profile");
   })
   .step({
@@ -73,10 +77,11 @@ const spaWorkflow = tour
     target: "#profile-avatar",
     title: "Profile",
     content: "Step 2 targets an element that only exists after the route change.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
-  .beforePrevious(() => {
-    log("beforePrevious - pushState back to the dashboard");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "previous") return;
+    log("beforeLeave(previous) - pushState back to the dashboard");
     navigate("dashboard");
   })
 
@@ -85,7 +90,7 @@ const spaWorkflow = tour
     target: "#profile-save",
     title: "Save",
     content: "Step 3 is on the same view as step 2. Finish to end the tour.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .build();
 
@@ -104,8 +109,11 @@ const reloadWorkflow = tour
     title: "Dashboard",
     content: "Advancing persists the tour position, then hard-navigates to page B.",
   })
-  .beforeAdvance(() => {
-    log("beforeAdvance - persisting the next step id and calling location.assign('page-b.html')");
+  .beforeLeave(({ direction }) => {
+    if (direction !== "advance") return;
+    log(
+      "beforeLeave(advance) - persisting the next step id and calling location.assign('page-b.html')",
+    );
     persistTour({ workflow: "reload-multipage", stepId: "reload-settings" });
     location.assign("page-b.html");
   })
@@ -114,7 +122,7 @@ const reloadWorkflow = tour
     target: "#settings-panel",
     title: "Settings",
     content: "This target only exists on page B.",
-    behavior: { missingTargetStrategy: "wait", targetTimeout: 5000 },
+    behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
   })
   .build();
 
@@ -122,12 +130,12 @@ const reloadWorkflow = tour
 
 document.querySelector("#run-spa")?.addEventListener("click", () => {
   navigate("dashboard");
-  void tour.run(spaWorkflow);
+  void tour.start(spaWorkflow);
 });
 
 document.querySelector("#run-reload")?.addEventListener("click", () => {
   navigate("dashboard");
-  void tour.run(reloadWorkflow);
+  void tour.start(reloadWorkflow);
 });
 
 document.querySelector("#clear-log")?.addEventListener("click", () => {

@@ -1,5 +1,4 @@
 import type {
-  EventHandler,
   IndicatorOptions,
   OverlayOptions,
   PopoverOptions,
@@ -7,9 +6,12 @@ import type {
   StartOptions,
   StepActionInstruction,
   StepBehavior,
+  StepHookAction,
   StepParameters,
-  StepTransitionAction,
+  TargetEventHandler,
   TargetResolver,
+  TourClassNames,
+  TourControls,
 } from "../types";
 
 /** Recursively makes all properties readonly at any depth. */
@@ -21,20 +23,20 @@ export type DeepReadonly<T> = T extends (...arguments_: infer _Arguments) => inf
       ? { readonly [TKey in keyof T]: DeepReadonly<T[TKey]> }
       : T;
 
-/** Step properties (title, content, and optional display options) excluding target and behavior. */
-export type StepProps<T> = Omit<
-  StepParameters<T>,
-  "id" | "target" | "resetPropsOnEnter" | "behavior"
->;
+/** Step properties (title, content, behavior, and optional display options) excluding id and target. */
+export type StepProps<T> = Omit<StepParameters<T>, "id" | "target">;
 
 /** Immutable step properties. */
 export type ReadonlyStepProps<T> = {
-  readonly title: T;
+  readonly title?: T;
   readonly content: T;
   readonly data?: Readonly<Record<string, PrimitiveValue>>;
   readonly overlay?: DeepReadonly<OverlayOptions>;
   readonly popover?: DeepReadonly<PopoverOptions>;
   readonly indicator?: DeepReadonly<IndicatorOptions>;
+  readonly behavior?: DeepReadonly<StepBehavior>;
+  readonly controls?: DeepReadonly<TourControls>;
+  readonly classNames?: DeepReadonly<TourClassNames>;
 };
 
 /** Immutable tour start options. */
@@ -45,14 +47,11 @@ export interface WorkflowStepDefinition<T> {
   /** Stable identifier, unique within the workflow. */
   readonly id: string;
   readonly target: TargetResolver;
-  readonly resetPropsOnEnter?: boolean;
-  readonly behavior?: DeepReadonly<StepBehavior>;
   readonly props: ReadonlyStepProps<T>;
   readonly actions: readonly StepActionInstruction<T>[];
-  readonly eventHandlers: readonly EventHandler<T>[];
-  readonly advanceAction: StepTransitionAction<T> | null;
-  readonly previousAction: StepTransitionAction<T> | null;
-  readonly cancelAction: StepTransitionAction<T> | null;
+  readonly targetEvents: readonly TargetEventHandler<T>[];
+  readonly beforeEnter: StepHookAction<T> | null;
+  readonly beforeLeave: StepHookAction<T> | null;
 }
 
 /** A complete tour workflow definition (immutable). */

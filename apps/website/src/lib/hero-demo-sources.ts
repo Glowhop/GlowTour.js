@@ -26,7 +26,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const advanceOnClickSource = `const tour = createGlowTour();
 
@@ -43,7 +43,7 @@ const workflow = tour
     target: "#continue",
     title: "Click the target to advance",
     content: "onTargetEvent('click', ...) calls context.advance().",
-    popover: { disableAdvanceButton: true },
+    controls: { advance: { state: "disabled" } },
     behavior: { allowInteraction: true },
   })
   .onTargetEvent("click", (event, context) => context.advance())
@@ -55,7 +55,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const placementOrderSource = `const tour = createGlowTour();
 
@@ -91,7 +91,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const waitForAsyncSource = `const tour = createGlowTour();
 
@@ -103,6 +103,17 @@ const workflow = tour
     title: "Load the data first",
     content: "The next step waits for an element that doesn't exist yet.",
     behavior: { allowInteraction: true },
+    controls: { advance: { state: "disabled" } },
+  })
+  .waitUntilElement("#loaded-content")
+  .do(async (context) => {
+    if (!context.props.get().data?.loaded) await context.advance();
+    context.props.update({ data: { loaded: true } });
+  })
+  .beforeEnter((context) => {
+    if (context.props.get().data?.loaded) {
+      context.props.update({ controls: { advance: { state: "enabled" } } });
+    }
   })
   .step({
     id: "loaded-content",
@@ -110,7 +121,6 @@ const workflow = tour
     title: "The tour waited for this",
     content: "waitUntilElement(selector) held the tour until this element appeared.",
   })
-  .waitUntilElement("#loaded-content")
   .step({
     id: "activity-row-1",
     target: "#activity-row-1",
@@ -119,13 +129,13 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
-export const cancellableSource = `const tour = createGlowTour();
+export const lockedSource = `const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome", {
-    cancellable: false,
+    controls: { cancel: { state: "disabled" } },
   })
   .step({
     id: "warning",
@@ -137,17 +147,16 @@ const workflow = tour
     id: "delete-account",
     target: "#delete-account",
     title: "This step can't be skipped",
-    content: "cancellable: false disables Escape and the Cancel button for the whole tour.",
+    content: "A disabled cancel control blocks Escape and the Skip button for the whole tour.",
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const confirmCancelSource = `const tour = createGlowTour();
 
 const workflow = tour
   .create("welcome", {
-    cancellable: true,
     onCancel: (context) => {
       if (!window.confirm("Cancel this tour?")) {
         // Prevents the cancellation - the tour stays open on its current step.
@@ -169,7 +178,7 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const overlayClickSource = `const tour = createGlowTour();
 
@@ -191,9 +200,9 @@ const workflow = tour
   })
   .build();
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
-export const customStyledIndicatorSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger } from "@glowhop/react-tour";
+export const customStyledIndicatorSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
@@ -211,30 +220,42 @@ const workflow = tour
     title: "Same tour, fully customized",
     content: "overlay/popover overrides, a custom pointer glyph, and allowInteraction, all at once.",
     overlay: { color: "#0ea5e9", opacity: 0.35 },
-    popover: { arrow: { disabled: true } },
+    popover: { arrow: { hidden: true } },
     behavior: { allowInteraction: true },
+  })
+  .step({
+    id: "second-member",
+    target: "#second-member",
+    title: "Tailwind classes, for one step",
+    content: "classNames restyles this step's popover, header and advance button only.",
+    // Import the theme with layer(components) so these utilities win over it.
+    classNames: {
+      popover: ["border-2", "shadow-lg", "shadow-sky-500/25", "[--glow-tour-color-accent:#0ea5e9]"],
+      header: "text-sky-500",
+      advance: "rounded-full",
+    },
   })
   .build();
 
-// Instead of <DefaultTour tour={tour} />, compose the pieces directly. Pointer takes
+// Instead of <GlowTourDefault tour={tour} />, compose the pieces directly. Pointer takes
 // per-direction content, not children, so it can show a distinct glyph for each placement:
-<Root tour={tour}>
-  <Overlay />
-  <Pointer directionContent={{ top: "🎯", bottom: "🎯", left: "🎯", right: "🎯" }} />
-  <Popover>
-    <Header />
-    <Content />
-    <Footer>
-      <CancelTrigger />
-      <BackTrigger />
-      <AdvanceTrigger />
-    </Footer>
-  </Popover>
-</Root>;
+<GlowTourRoot tour={tour}>
+  <GlowTourOverlay />
+  <GlowTourPointer directionContent={{ top: "🎯", bottom: "🎯", left: "🎯", right: "🎯" }} />
+  <GlowTourPopover>
+    <GlowTourHeader />
+    <GlowTourContent />
+    <GlowTourFooter>
+      <GlowTourCancelTrigger />
+      <GlowTourPreviousTrigger />
+      <GlowTourAdvanceTrigger />
+    </GlowTourFooter>
+  </GlowTourPopover>
+</GlowTourRoot>;
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
-export const liveProgressSource = `import { Root, Overlay, Pointer, Popover, Header, Content, Footer, AdvanceTrigger, BackTrigger, CancelTrigger, createGlowTour, useTour } from "@glowhop/react-tour";
+export const liveProgressSource = `import { GlowTourRoot, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourHeader, GlowTourContent, GlowTourFooter, GlowTourAdvanceTrigger, GlowTourPreviousTrigger, GlowTourCancelTrigger, createGlowTour, useGlowTourContext } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 
@@ -248,7 +269,7 @@ const workflow = tour
 
 // A custom popover subcomponent, wired to real tour state:
 function StepCounter() {
-  const state = useTour();
+  const state = useGlowTourContext();
 
   if (state.currentStepIndex < 0 || state.totalSteps === 0) return null;
 
@@ -259,22 +280,22 @@ function StepCounter() {
   );
 }
 
-<Root tour={tour}>
-  <Overlay />
-  <Pointer />
-  <Popover>
-    <Header />
+<GlowTourRoot tour={tour}>
+  <GlowTourOverlay />
+  <GlowTourPointer />
+  <GlowTourPopover>
+    <GlowTourHeader />
     <StepCounter />
-    <Content />
-    <Footer>
-      <CancelTrigger />
-      <BackTrigger />
-      <AdvanceTrigger />
-    </Footer>
-  </Popover>
-</Root>;
+    <GlowTourContent />
+    <GlowTourFooter>
+      <GlowTourCancelTrigger />
+      <GlowTourPreviousTrigger />
+      <GlowTourAdvanceTrigger />
+    </GlowTourFooter>
+  </GlowTourPopover>
+</GlowTourRoot>;
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const themeSource = `const tour = createGlowTour();
 
@@ -297,10 +318,10 @@ const workflow = tour
 // Nothing to configure for the OS preference. To pin a theme, put the
 // attribute on <html> for the whole page, or on a wrapper for one tour:
 <div data-glow-tour-theme="dark">
-  <GlowTour.Default tour={tour} />
+  <GlowTourDefault tour={tour} />
 </div>;
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const longContentSource = `const tour = createGlowTour();
 
@@ -320,10 +341,10 @@ const workflow = tour
 // on any screen:
 //   .demo-long-content [data-glow-tour-popover] { max-height: min(320px, 100dvh); }
 <div className="demo-long-content" style={{ "--glow-tour-popover-width": "260px" }}>
-  <GlowTour.Default tour={tour} />
+  <GlowTourDefault tour={tour} />
 </div>;
 
-tour.run(workflow);`;
+tour.start(workflow);`;
 
 export const customThemeSource = `const tour = createGlowTour();
 
@@ -333,12 +354,12 @@ const workflow = tour
     id: "branch",
     target: "#branch",
     title: "$ theming --from-css",
-    content: "The same <GlowTour.Default /> as every other example. No styling from JS.",
+    content: "The same <GlowTourDefault /> as every other example. No styling from JS.",
   })
   .build();
 
 <div className="terminal-tour">
-  <GlowTour.Default tour={tour} />
+  <GlowTourDefault tour={tour} />
 </div>;
 
 /* The whole skin is CSS on an ancestor - the tokens are declared at zero
@@ -376,4 +397,49 @@ const workflow = tour
   margin-inline-end: 0;
 }
 
-tour.run(workflow);`;
+tour.start(workflow);`;
+
+export const relocateTargetSource = `const tour = createGlowTour();
+
+const workflow = tour
+  .create("board")
+  .step({
+    id: "card",
+    target: "#card",
+    title: "Move this card",
+    content: "It leaves the page, then comes back in the other column.",
+    behavior: {
+      allowInteraction: true,
+      // Keep the step while the card is gone instead of failing the tour.
+      missingTarget: { strategy: "wait", timeout: 5000 },
+    },
+  })
+  .build();
+
+// Clicking the card removes it, then renders it in the other column:
+// the same #card selector, a new element, somewhere else on the page.
+function Board() {
+  const [column, setColumn] = useState("left");
+  const [moving, setMoving] = useState(false);
+
+  useEffect(() => {
+    if (!moving) return;
+    const timer = setTimeout(() => {
+      setColumn((current) => (current === "left" ? "right" : "left"));
+      setMoving(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [moving]);
+
+  return ["left", "right"].map((slot) => (
+    <div key={slot} className="column">
+      {!moving && column === slot && (
+        <button id="card" onClick={() => setMoving(true)}>
+          Move me
+        </button>
+      )}
+    </div>
+  ));
+}
+
+tour.start(workflow);`;

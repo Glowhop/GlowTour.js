@@ -25,7 +25,7 @@ describe("core adapter publication", () => {
     };
 
     assert.deepEqual(tsconfig.compilerOptions?.paths?.["@glowhop/core-tour/adapter"], [
-      "packages/core/src/adapter.ts",
+      "./packages/core/src/adapter.ts",
     ]);
   });
 });

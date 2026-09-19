@@ -115,10 +115,10 @@
   border-radius: var(--glow-tour-radius, 8px);
   box-shadow: var(--glow-tour-shadow, 0 4px 12px rgb(0 0 0 / 8%));
   color: var(--glow-tour-color-text, #1f1f23);
-  display: grid;
+  display: flex;
+  flex-direction: column;
   font: inherit;
-  gap: calc(var(--glow-tour-spacing, 8px) * 1.5);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: calc(var(--glow-tour-spacing, 8px) * 2);
   max-height: calc(100dvh - (var(--glow-tour-viewport-gap, 16px) * 2));
   max-width: calc(100vw - (var(--glow-tour-viewport-gap, 16px) * 2));
   overflow: visible;
@@ -188,6 +188,7 @@
   background: transparent;
   color: var(--glow-tour-color-text-muted, #5f5f66);
   margin-inline-end: auto;
+  padding: 0;
 }
 
 :where([data-glow-tour-root]) [data-glow-tour-cancel-trigger]:hover:not(:disabled) {

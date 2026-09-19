@@ -20,7 +20,7 @@ import {
   TemplateRef,
   ViewChild,
 } from "@angular/core";
-import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import type { GlowTour as CoreGlowTour, TourClassNames, TourState } from "@glowhop/core-tour";
 import {
   type AdapterRootBinding,
   connectGlowTourRoot,
@@ -34,6 +34,11 @@ import {
   styleRecordToCssText,
 } from "@glowhop/core-tour/adapter";
 import type { AngularTourContent } from "../glow-tour";
+
+/** The classes the current step adds to the `slot` component, as one class string. */
+function joinStepClass(state: TourState<AngularTourContent> | null, slot: keyof TourClassNames) {
+  return [state?.currentStep?.currentProps.classNames?.[slot] ?? []].flat().join(" ");
+}
 
 const OVERLAY_IDLE_STYLE_TEXT = styleRecordToCssText(OVERLAY_IDLE_STYLE);
 const POINTER_IDLE_STYLE_TEXT = styleRecordToCssText(POINTER_IDLE_STYLE);
@@ -102,19 +107,23 @@ function useTourScope() {
 }
 
 /**
- * Injects the tour state signal into a component.
- * Must be called within a GlowTourRoot component context.
+ * Reads the state of the tour rendered by the enclosing `glow-tour-root`.
+ * Use it to build tour UI inside the root; use `injectGlowTour` to run a tour from a component.
  * @returns A signal containing the current tour state or null.
  */
-export function injectGlowTour(): Signal<TourState<AngularTourContent> | null> {
+export function injectGlowTourContext(): Signal<TourState<AngularTourContent> | null> {
   return useTourScope().state;
 }
 
 @Directive()
-abstract class GlowTourReactiveComponent {
+export abstract class GlowTourReactiveComponent {
   protected readonly scope = useTourScope();
   protected readonly snapshot = this.scope.state;
   protected readonly step = computed(() => this.snapshot()?.currentStep?.currentProps ?? null);
+  /** The classes the current step adds to the `slot` component. */
+  protected stepClass(slot: keyof TourClassNames) {
+    return joinStepClass(this.snapshot(), slot);
+  }
 }
 
 @Component({
@@ -191,17 +200,23 @@ export class GlowTourRoot implements OnChanges, OnDestroy, OnInit {
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <header data-glow-tour-header [id]="scope.binding()?.ids?.title">
-      @if (titleTemplate()) {
-        <ng-container [ngTemplateOutlet]="titleTemplate()" />
-      } @else {
-        {{ titleText() }}
-      }
-    </header>
+    @if (titled()) {
+      <header data-glow-tour-header [class]="stepClass('header')" [id]="scope.binding()?.ids?.title">
+        @if (titleTemplate()) {
+          <ng-container [ngTemplateOutlet]="titleTemplate()" />
+        } @else {
+          {{ titleText() }}
+        }
+      </header>
+    }
   `,
 })
 /** Header component displaying the current step's title. */
 export class GlowTourHeader extends GlowTourReactiveComponent {
+  readonly titled = computed(() => {
+    const step = this.step();
+    return !step || step.title != null;
+  });
   readonly titleTemplate = computed(() => {
     const title = this.step()?.title;
     return title instanceof TemplateRef ? title : null;
@@ -217,7 +232,7 @@ export class GlowTourHeader extends GlowTourReactiveComponent {
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <div aria-live="polite" data-glow-tour-content [id]="scope.binding()?.ids?.description">
+    <div aria-live="polite" data-glow-tour-content [class]="stepClass('content')" [id]="scope.binding()?.ids?.description">
       @if (contentTemplate()) {
         <ng-container [ngTemplateOutlet]="contentTemplate()" />
       } @else {
@@ -241,14 +256,18 @@ export class GlowTourContent extends GlowTourReactiveComponent {
 @Component({
   selector: "glow-tour-footer",
   standalone: true,
-  template: `@if (!step()?.popover?.hideFooter) { <footer data-glow-tour-footer><ng-content /></footer> }`,
+  template: `<footer data-glow-tour-footer [class]="stepClass('footer')"><ng-content /></footer>`,
 })
-/** Footer component containing action buttons. Conditionally rendered based on tour step configuration. */
+/** Footer component containing action buttons. */
 export class GlowTourFooter extends GlowTourReactiveComponent {}
 
 @Directive()
 abstract class GlowTourBoundElement<T extends Element> {
   protected readonly scope = useTourScope();
+  /** The classes the current step adds to the `slot` component. */
+  protected stepClass(slot: keyof TourClassNames) {
+    return joinStepClass(this.scope.state(), slot);
+  }
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
@@ -276,8 +295,9 @@ abstract class GlowTourBoundElement<T extends Element> {
     <section #tourElement
       [attr.aria-hidden]="idleAriaHidden"
       data-glow-tour-popover
-      [attr.aria-describedby]="scope.binding()?.ids?.description"
-      [attr.aria-labelledby]="scope.binding()?.ids?.title"
+      [class]="stepClass('popover')"
+      [attr.aria-describedby]="titled() ? scope.binding()?.ids?.description : null"
+      [attr.aria-labelledby]="titled() ? scope.binding()?.ids?.title : scope.binding()?.ids?.description"
       [id]="scope.binding()?.ids?.popover"
       [attr.inert]="idleInert"
       role="dialog"
@@ -292,6 +312,11 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
   protected readonly idleAriaHidden = POPOVER_IDLE_ATTRIBUTES["aria-hidden"];
   protected readonly idleInert = POPOVER_IDLE_ATTRIBUTES.inert;
   protected readonly idleStyle = POPOVER_IDLE_STYLE_TEXT;
+  // Without a title, the content names the dialog instead of describing it.
+  protected readonly titled = computed(() => {
+    const step = this.scope.state()?.currentStep?.currentProps;
+    return !step || step.title != null;
+  });
 
   ngOnInit() {
     this.bind(this.element.nativeElement, (binding, element) => binding.bindPopover(element));
@@ -303,7 +328,7 @@ export class GlowTourPopover extends GlowTourBoundElement<HTMLElement> implement
   standalone: true,
   imports: [NgTemplateOutlet],
   template: `
-    <div #tourElement data-glow-tour-pointer [attr.aria-hidden]="idleAriaHidden" [style]="idleStyle">
+    <div #tourElement data-glow-tour-pointer [class]="stepClass('pointer')" [attr.aria-hidden]="idleAriaHidden" [style]="idleStyle">
       @for (direction of directions; track direction) {
         <div [attr.data-glow-tour-pointer-direction]="direction">
           @if (asTemplate(content()[direction]); as template) {
@@ -351,6 +376,7 @@ export class GlowTourPointer extends GlowTourBoundElement<HTMLElement> implement
       [attr.aria-hidden]="idleAriaHidden"
       [attr.data-glow-tour-allow-interaction]="idleAllowInteraction"
       data-glow-tour-overlay
+      [class]="stepClass('overlay')"
       focusable="false"
       [attr.inert]="idleInert"
       [attr.preserveAspectRatio]="idlePreserveAspectRatio"
@@ -402,36 +428,44 @@ abstract class GlowTourTrigger extends GlowTourReactiveComponent {
   protected setDisabled(value: boolean) {
     this.disabledValue.set(value);
   }
+
+  /**
+   * Tour state only disables a trigger while the tour is active, as in the vanilla adapter. During
+   * a step transition the controller reports every command as unavailable; natively disabling the
+   * focused trigger then would blur it, and screen readers lose their place in the dialog.
+   */
+  protected unavailableWhileActive(unavailable: boolean) {
+    return this.snapshot()?.status === "active" && unavailable;
+  }
 }
 
 @Component({
-  selector: "glow-tour-back-trigger",
+  selector: "glow-tour-previous-trigger",
   standalone: true,
   template: `
-    @if (!step()?.popover?.hidePreviousButton) {
-      <button
-        data-glow-tour-previous-trigger
-        [attr.aria-controls]="ariaControls()"
-        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabelText() ?? label()"
-        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
-        [disabled]="isDisabled()"
-        type="button"
-      ><ng-content>{{ label() }}</ng-content></button>
-    }
+    <button
+      data-glow-tour-previous-trigger
+      [class]="stepClass('previous')"
+      [attr.aria-controls]="ariaControls()"
+      [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+      [attr.aria-label]="ariaLabelText() ?? label()"
+      [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+      [disabled]="isDisabled()"
+      type="button"
+    ><ng-content>{{ label() }}</ng-content></button>
   `,
 })
 /** Button component for navigating to the previous step in the tour. */
-export class GlowTourBackTrigger extends GlowTourTrigger {
-  private readonly backLabelValue = signal<string | undefined>(undefined);
+export class GlowTourPreviousTrigger extends GlowTourTrigger {
+  private readonly previousLabelValue = signal<string | undefined>(undefined);
 
   /** Optional aria-label for the back button. */
   @Input() set ariaLabel(value: string | undefined) {
     this.setAriaLabel(value);
   }
   /** Optional label text for the back button. */
-  @Input() set backLabel(value: string | undefined) {
-    this.backLabelValue.set(value);
+  @Input() set previousLabel(value: string | undefined) {
+    this.previousLabelValue.set(value);
   }
   /** Whether the button is disabled. */
   @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
@@ -441,27 +475,26 @@ export class GlowTourBackTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
-      !this.snapshot()?.canPrevious ||
-      this.step()?.popover?.disablePreviousButton === true,
+      this.unavailableWhileActive(!this.snapshot()?.canPrevious) ||
+      this.step()?.controls?.previous?.state === "disabled",
   );
-  readonly label = computed(() => this.backLabelValue() ?? "Back step");
+  readonly label = computed(() => this.previousLabelValue() ?? "Previous step");
 }
 
 @Component({
   selector: "glow-tour-advance-trigger",
   standalone: true,
   template: `
-    @if (!step()?.popover?.hideAdvanceButton) {
-      <button
-        data-glow-tour-advance-trigger
-        [attr.aria-controls]="ariaControls()"
-        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabelText() ?? label()"
-        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
-        [disabled]="isDisabled()"
-        type="button"
-      ><ng-content>{{ label() }}</ng-content></button>
-    }
+    <button
+      data-glow-tour-advance-trigger
+      [class]="stepClass('advance')"
+      [attr.aria-controls]="ariaControls()"
+      [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+      [attr.aria-label]="ariaLabelText() ?? label()"
+      [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+      [disabled]="isDisabled()"
+      type="button"
+    ><ng-content>{{ label() }}</ng-content></button>
   `,
 })
 /** Button component for advancing to the next step or finishing the tour. */
@@ -489,8 +522,8 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
-      !this.snapshot()?.canAdvance ||
-      this.step()?.popover?.disableAdvanceButton === true,
+      this.unavailableWhileActive(!this.snapshot()?.canAdvance) ||
+      this.step()?.controls?.advance?.state === "disabled",
   );
   readonly label = computed(() => {
     return this.snapshot()?.isLastStep
@@ -503,17 +536,16 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   selector: "glow-tour-cancel-trigger",
   standalone: true,
   template: `
-    @if (snapshot()?.canCancel) {
-      <button
-        data-glow-tour-cancel-trigger
-        [attr.aria-controls]="ariaControls()"
-        [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
-        [attr.aria-label]="ariaLabelText() ?? label()"
-        [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
-        [disabled]="isDisabled()"
-        type="button"
-      ><ng-content>{{ label() }}</ng-content></button>
-    }
+    <button
+      data-glow-tour-cancel-trigger
+      [class]="stepClass('cancel')"
+      [attr.aria-controls]="ariaControls()"
+      [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
+      [attr.aria-label]="ariaLabelText() ?? label()"
+      [attr.data-glow-tour-consumer-disabled]="consumerDisabled() ? 'true' : null"
+      [disabled]="isDisabled()"
+      type="button"
+    ><ng-content>{{ label() }}</ng-content></button>
   `,
 })
 /** Button component for canceling/skipping the tour. */
@@ -527,6 +559,11 @@ export class GlowTourCancelTrigger extends GlowTourTrigger {
     this.setDisabled(value);
   }
 
-  readonly isDisabled = computed(() => this.consumerDisabled() || !this.snapshot()?.canCancel);
+  readonly isDisabled = computed(
+    () =>
+      this.consumerDisabled() ||
+      this.unavailableWhileActive(!this.snapshot()?.canCancel) ||
+      this.step()?.controls?.cancel?.state === "disabled",
+  );
   readonly label = computed(() => "Skip");
 }

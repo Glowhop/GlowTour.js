@@ -8,6 +8,7 @@ import {
 import { type LabContentFactory, mountLab } from "../lab";
 import "../lab/lab.css";
 import "../src/styles.css";
+import "../src/theme";
 
 // The main entry is side-effect free: the <glow-tour-*> markup below needs its elements defined.
 registerGlowTourElements();
@@ -26,23 +27,11 @@ const content: LabContentFactory<VanillaTourContent> = {
 };
 const lab = mountLab({ content, framework: "Vanilla", root, tour });
 lab.rendererRoot.innerHTML = `
-  <glow-tour-root>
-    <glow-tour-overlay></glow-tour-overlay>
-    <glow-tour-pointer></glow-tour-pointer>
-    <glow-tour-popover>
-      <glow-tour-header></glow-tour-header>
-      <glow-tour-content></glow-tour-content>
-      <glow-tour-footer>
-        <glow-tour-back-trigger></glow-tour-back-trigger>
-        <glow-tour-advance-trigger></glow-tour-advance-trigger>
-        <glow-tour-cancel-trigger></glow-tour-cancel-trigger>
-      </glow-tour-footer>
-    </glow-tour-popover>
-  </glow-tour-root>
+  <glow-tour-default></glow-tour-default>
 `;
 
-const tourRoot = lab.rendererRoot.querySelector<GlowTourRootElement>("glow-tour-root");
-if (!tourRoot) throw new Error("Missing glow-tour-root");
+const tourRoot = lab.rendererRoot.querySelector<GlowTourRootElement>("glow-tour-default");
+if (!tourRoot) throw new Error("Missing glow-tour-default");
 tourRoot.tour = tour;
 
 function element(tagName: string, text: string): HTMLElement {

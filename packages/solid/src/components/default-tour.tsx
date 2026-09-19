@@ -2,20 +2,20 @@ import type { GlowTour as CoreGlowTour } from "@glowhop/core-tour";
 import { createComponent, type JSX } from "solid-js";
 import type { SolidTourContent } from "../glow-tour";
 import {
-  AdvanceTrigger,
-  BackTrigger,
-  CancelTrigger,
-  Content,
-  Footer,
-  Header,
-  Overlay,
-  Pointer,
-  Popover,
-  Root,
+  GlowTourAdvanceTrigger,
+  GlowTourCancelTrigger,
+  GlowTourContent,
+  GlowTourFooter,
+  GlowTourHeader,
+  GlowTourOverlay,
+  GlowTourPointer,
+  GlowTourPopover,
+  GlowTourPreviousTrigger,
+  GlowTourRoot,
 } from "./tour-components";
 
-/** Props for the DefaultTour component. */
-export interface DefaultTourProps {
+/** Props for the GlowTourDefault component. */
+export interface GlowTourDefaultProps {
   /** Optional prefix for internal element IDs. */
   readonly idPrefix?: string;
   /** The tour controller instance. */
@@ -28,8 +28,8 @@ export interface DefaultTourProps {
  * @param props The component props.
  * @returns The rendered tour UI.
  */
-export function DefaultTour(props: DefaultTourProps): JSX.Element {
-  return createComponent(Root, {
+export function GlowTourDefault(props: GlowTourDefaultProps): JSX.Element {
+  return createComponent(GlowTourRoot, {
     get idPrefix() {
       return props.idPrefix;
     },
@@ -38,19 +38,19 @@ export function DefaultTour(props: DefaultTourProps): JSX.Element {
     },
     get children() {
       return [
-        createComponent(Overlay, {}),
-        createComponent(Pointer, {}),
-        createComponent(Popover, {
+        createComponent(GlowTourOverlay, {}),
+        createComponent(GlowTourPointer, {}),
+        createComponent(GlowTourPopover, {
           get children() {
             return [
-              createComponent(Header, {}),
-              createComponent(Content, {}),
-              createComponent(Footer, {
+              createComponent(GlowTourHeader, {}),
+              createComponent(GlowTourContent, {}),
+              createComponent(GlowTourFooter, {
                 get children() {
                   return [
-                    createComponent(CancelTrigger, {}),
-                    createComponent(BackTrigger, {}),
-                    createComponent(AdvanceTrigger, {}),
+                    createComponent(GlowTourCancelTrigger, {}),
+                    createComponent(GlowTourPreviousTrigger, {}),
+                    createComponent(GlowTourAdvanceTrigger, {}),
                   ];
                 },
               }),

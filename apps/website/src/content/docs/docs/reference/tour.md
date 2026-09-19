@@ -44,13 +44,13 @@ Starts building a new workflow on this controller. See the [Builder reference](/
 create(name: string, options?: StartOptions): WorkflowBuilder
 ```
 
-### `tour.run(workflow, options?)`
+### `tour.start(workflow, options?)`
 
-Runs a workflow built with `.build()`. Any previous run or navigation on this controller is cancelled first.
+Runs a workflow built with `.build()`. Any previous run or navigation on this controller is cancelled first. The returned promise resolves once the first step is on screen, not when the tour ends, and rejects if that first step fails.
 
 **Signature**:
 ```typescript
-run(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
+start(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
 ```
 
 **Options**:
@@ -60,7 +60,7 @@ run(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
 ```typescript
 const workflow = tour.create("welcome").step({ id: "save-button", target: "#save-button", title: "Save", content: "Click here to save." }).build();
 
-await tour.run(workflow);
+await tour.start(workflow);
 ```
 
 ### `tour.advance()`
@@ -91,28 +91,32 @@ previous(): Promise<void>
 **Usage**:
 ```typescript
 <button disabled={!state.canPrevious} onClick={() => tour.previous()}>
-  Back
+  Previous
 </button>
 ```
 
-### `tour.goToStep(index)`
+### `tour.goTo(id)`
 
-Jumps to a specific step by index, skipping the steps in between.
+Goes to the step with this `id`, skipping the steps in between. The direction (`"advance"` or `"previous"`) follows the position of that step. It does nothing while a transition is in progress or when that step is already shown, and it throws when no step has this `id`.
+
+Steps are designated by `id`, like `startAt` in `start()`: an index would break as soon as steps are reordered or inserted.
 
 **Signature**:
 ```typescript
-goToStep(index: number): Promise<void>
+goTo(id: string): Promise<void>
 ```
 
 **Usage**:
 ```typescript
-// Jump straight to the fourth step (0-indexed)
-await tour.goToStep(3);
+// Jump straight to the billing step
+await tour.goTo("billing");
 ```
+
+A step action or a target event handler can do the same with `context.goTo(id)`, which also stops the remaining actions of its step, like `context.advance()`.
 
 ### `tour.cancel()`
 
-Cancels the running tour. Only available if `canCancel` is true (see `StartOptions.cancellable`, default `true`, in the [Builder reference](/docs/reference/builder#start-options)).
+Cancels the running tour. Does nothing when no tour is running. A disabled `controls.cancel` only blocks the tour UI: `tour.cancel()` still cancels.
 
 **Signature**:
 ```typescript
@@ -203,5 +207,7 @@ Controller-related type exports for TypeScript users:
 - `TourEvent`, `TourEventListener`, `TourEventType`, `TourEventSource` - The monitoring contract; see the [Monitoring guide](/docs/guides/monitoring)
 - `TourState` - Immutable state object returned by `tour.state.get()`
 - `TourCurrentStep` - The active step's target and props, part of `TourState`
+
+`TourStatus`, `TourEventType`, and `TourEventSource` are unions that can gain members in a minor release. When you switch over them, keep a default branch.
 
 See the [Builder reference](/docs/reference/builder) for `tour.create()`'s workflow/step-building API and every option's default value.

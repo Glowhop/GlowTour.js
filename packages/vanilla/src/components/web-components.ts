@@ -1,4 +1,4 @@
-import type { ReadonlyStepProps, TourState } from "@glowhop/core-tour";
+import type { ClassValue, ReadonlyStepProps, TourClassNames, TourState } from "@glowhop/core-tour";
 import {
   type AdapterRootBinding,
   connectGlowTourRoot,
@@ -10,7 +10,25 @@ import {
   POPOVER_IDLE_ATTRIBUTES,
   POPOVER_IDLE_STYLE,
 } from "@glowhop/core-tour/adapter";
-import type { VanillaGlowTour, VanillaTourContent } from "../glow-tour";
+import type { Tour, VanillaTourContent } from "../glow-tour";
+
+/**
+ * Brings `element` to the classes the step adds to it. `added` holds the classes added so far, so
+ * that only those are removed later: a class the element already had is never added nor removed.
+ */
+function syncStepClasses(element: Element, added: Set<string>, value: ClassValue | undefined) {
+  const next = [value ?? []].flat().join(" ").split(" ").filter(Boolean);
+  for (const name of added) {
+    if (next.includes(name)) continue;
+    element.classList.remove(name);
+    added.delete(name);
+  }
+  for (const name of next) {
+    if (element.classList.contains(name)) continue;
+    element.classList.add(name);
+    added.add(name);
+  }
+}
 
 function applyIdleStyle(element: HTMLElement | SVGElement, style: Record<string, string>) {
   for (const [property, value] of Object.entries(style)) {
@@ -48,16 +66,25 @@ export const GLOW_TOUR_ELEMENT_NAMES = [
   "glow-tour-footer",
   "glow-tour-popover",
   "glow-tour-pointer",
-  "glow-tour-back-trigger",
+  "glow-tour-previous-trigger",
   "glow-tour-advance-trigger",
   "glow-tour-cancel-trigger",
   "glow-tour-overlay",
+  "glow-tour-default",
 ] as const;
 
 /** The root custom element that contains all tour UI. */
 export interface GlowTourRootElement extends HTMLElement {
   /** The tour controller instance. */
-  tour: VanillaGlowTour | null;
+  tour: Tour | null;
+  /** Optional prefix for internal element IDs. */
+  idPrefix: string | undefined;
+}
+
+/** A complete tour: a `glow-tour-root` with the overlay, pointer, popover and the three controls. */
+export interface GlowTourDefaultElement extends HTMLElement {
+  /** The tour controller instance. */
+  tour: Tour | null;
   /** Optional prefix for internal element IDs. */
   idPrefix: string | undefined;
 }
@@ -89,6 +116,7 @@ const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
 
 declare global {
   interface HTMLElementTagNameMap {
+    "glow-tour-default": GlowTourDefaultElement;
     "glow-tour-pointer": GlowTourPointerElement;
     "glow-tour-root": GlowTourRootElement;
   }
@@ -98,20 +126,20 @@ const ROOT_CHANGE_EVENT = "glow-tour-root-change";
 
 interface RootContext {
   readonly binding: AdapterRootBinding | null;
-  readonly tour: VanillaGlowTour | null;
+  readonly tour: Tour | null;
 }
 
 interface ActiveRootBinding {
   readonly binding: AdapterRootBinding;
   readonly idPrefix: string | undefined;
-  readonly tour: VanillaGlowTour;
+  readonly tour: Tour;
 }
 
 interface RootState {
   active: ActiveRootBinding | null;
   connected: boolean;
   pending: boolean;
-  tour: VanillaGlowTour | null;
+  tour: Tour | null;
 }
 
 const ROOT_STATES = new WeakMap<HTMLElement, RootState>();
@@ -125,13 +153,6 @@ function customElementRegistry() {
   return customElements;
 }
 
-export function areGlowTourElementsRegistered() {
-  const registry = customElementRegistry();
-  return (
-    registry !== null && GLOW_TOUR_ELEMENT_NAMES.every((name) => registry.get(name) !== undefined)
-  );
-}
-
 function rootContext(root: HTMLElement): RootContext | null {
   const state = ROOT_STATES.get(root);
   if (!state) return null;
@@ -143,7 +164,7 @@ function closestRoot(element: Element) {
 }
 
 function subscribeToCurrentStep(
-  tour: VanillaGlowTour,
+  tour: Tour,
   listener: (
     state: TourState<VanillaTourContent>,
     props: ReadonlyStepProps<VanillaTourContent>,
@@ -163,16 +184,30 @@ function subscribeToCurrentStep(
   };
 }
 
+/**
+ * The content is a live region, and screen readers announce it again whenever it is rewritten,
+ * even with the text it already shows. Every state update renders, so leave unchanged values
+ * alone.
+ */
 function renderValue(element: HTMLElement, value: VanillaTourContent) {
+  const only = element.childNodes.length === 1 ? element.firstChild : null;
   if (typeof value === "string") {
+    const TEXT_NODE = 3;
+    if (
+      value === ""
+        ? element.childNodes.length === 0
+        : only?.nodeType === TEXT_NODE && only.nodeValue === value
+    )
+      return;
     element.textContent = value;
     return;
   }
   if (typeof Node !== "undefined" && value instanceof Node) {
+    if (only === value) return;
     element.replaceChildren(value);
     return;
   }
-  element.replaceChildren();
+  if (element.childNodes.length > 0) element.replaceChildren();
 }
 
 function createOverlaySvg(host: HTMLElement) {
@@ -389,7 +424,7 @@ export function registerGlowTourElements() {
       return rootState(this).tour;
     }
 
-    set tour(value: VanillaGlowTour | null) {
+    set tour(value: Tour | null) {
       const state = rootState(this);
       if (state.tour === value) return;
       state.tour = value;
@@ -434,6 +469,7 @@ export function registerGlowTourElements() {
     private cleanup?: () => void;
     protected readonly managedAttributes = new ManagedAttributes();
     private root?: GlowTourRootElement;
+    private readonly stepClasses = new Set<string>();
 
     connectedCallback() {
       this.rebind();
@@ -465,12 +501,32 @@ export function registerGlowTourElements() {
       if (!nextRoot) return;
       const context = rootContext(nextRoot);
       if (!context?.tour) return;
-      this.cleanup = this.bind(context);
+      const release = this.bind(context);
+      const [slot, target] = this.classTarget();
+      if (!target) {
+        this.cleanup = release;
+        return;
+      }
+      const unsubscribe = context.tour.state.subscribe((state) =>
+        syncStepClasses(
+          target,
+          this.stepClasses,
+          state.currentStep?.currentProps.classNames?.[slot],
+        ),
+      );
+      this.cleanup = () => {
+        unsubscribe();
+        release?.();
+        syncStepClasses(target, this.stepClasses, undefined);
+      };
     };
 
     protected bind(_context: RootContext): (() => void) | undefined {
       return undefined;
     }
+
+    /** The `classNames` entry of this element, and the element that receives its classes. */
+    protected abstract classTarget(): readonly [keyof TourClassNames, Element | null | undefined];
   }
 
   abstract class ReactiveElement extends ScopedElement {
@@ -489,6 +545,10 @@ export function registerGlowTourElements() {
   }
 
   class GlowTourHeader extends ReactiveElement {
+    protected classTarget() {
+      return ["header", this] as const;
+    }
+
     connectedCallback() {
       this.setAttribute("data-glow-tour-header", "");
       super.connectedCallback();
@@ -503,11 +563,16 @@ export function registerGlowTourElements() {
       if (binding && !this.managedAttributes.isAuthored(this, "id")) {
         this.managedAttributes.set(this, "id", binding.ids.title);
       }
-      renderValue(this, props.title);
+      this.hidden = props.title == null;
+      renderValue(this, props.title ?? "");
     }
   }
 
   class GlowTourContent extends ReactiveElement {
+    protected classTarget() {
+      return ["content", this] as const;
+    }
+
     connectedCallback() {
       applyIntrinsicAttributes(this, { "aria-live": "polite" });
       this.setAttribute("data-glow-tour-content", "");
@@ -527,21 +592,23 @@ export function registerGlowTourElements() {
     }
   }
 
-  class GlowTourFooter extends ReactiveElement {
+  // Scoped rather than a plain HTMLElement only so the current step's `classNames.footer` applies.
+  class GlowTourFooter extends ScopedElement {
+    protected classTarget() {
+      return ["footer", this] as const;
+    }
+
     connectedCallback() {
       this.setAttribute("data-glow-tour-footer", "");
       super.connectedCallback();
     }
-
-    protected render(
-      _state: TourState<VanillaTourContent>,
-      props: ReadonlyStepProps<VanillaTourContent>,
-    ) {
-      this.hidden = props.popover?.hideFooter === true;
-    }
   }
 
   class GlowTourPopover extends ScopedElement {
+    protected classTarget() {
+      return ["popover", this] as const;
+    }
+
     connectedCallback() {
       applyIdleStyle(this, POPOVER_IDLE_STYLE);
       this.setAttribute("data-glow-tour-popover", "");
@@ -557,26 +624,41 @@ export function registerGlowTourElements() {
       if (!this.managedAttributes.isAuthored(this, "id")) {
         this.managedAttributes.set(this, "id", context.binding.ids.popover);
       }
-      if (!this.managedAttributes.isAuthored(this, "aria-describedby")) {
-        this.managedAttributes.set(
-          this,
-          "aria-describedby",
-          effectiveId(root, "[data-glow-tour-content]", context.binding.ids.description),
-        );
-      }
-      if (!this.managedAttributes.isAuthored(this, "aria-labelledby")) {
-        this.managedAttributes.set(
-          this,
-          "aria-labelledby",
-          effectiveId(root, "[data-glow-tour-header]", context.binding.ids.title),
-        );
-      }
-      return context.binding.bindPopover(this);
+      const description = effectiveId(
+        root,
+        "[data-glow-tour-content]",
+        context.binding.ids.description,
+      );
+      const title = effectiveId(root, "[data-glow-tour-header]", context.binding.ids.title);
+      // Without a title, the content names the dialog instead of describing it.
+      const syncRelations = (titled: boolean) => {
+        if (!this.managedAttributes.isAuthored(this, "aria-describedby")) {
+          this.managedAttributes.set(this, "aria-describedby", titled ? description : null);
+        }
+        if (!this.managedAttributes.isAuthored(this, "aria-labelledby")) {
+          this.managedAttributes.set(this, "aria-labelledby", titled ? title : description);
+        }
+      };
+      syncRelations(true);
+      const release = context.binding.bindPopover(this);
+      const unsubscribe = context.tour
+        ? subscribeToCurrentStep(context.tour, (state, props) =>
+            syncRelations(!state.currentStep || props.title != null),
+          )
+        : undefined;
+      return () => {
+        unsubscribe?.();
+        release();
+      };
     }
   }
 
   class GlowTourPointer extends ScopedElement implements GlowTourPointerElement {
     private directionContentValue: PointerDirectionContent | undefined;
+
+    protected classTarget() {
+      return ["pointer", this] as const;
+    }
 
     get directionContent() {
       return this.directionContentValue;
@@ -615,6 +697,10 @@ export function registerGlowTourElements() {
   }
 
   class GlowTourOverlay extends ScopedElement {
+    protected classTarget() {
+      return ["overlay", this.querySelector("svg[data-glow-tour-overlay]")] as const;
+    }
+
     connectedCallback() {
       this.setAttribute("data-glow-tour-overlay-host", "");
       super.connectedCallback();
@@ -633,6 +719,10 @@ export function registerGlowTourElements() {
     private labelSnapshot?: string;
     private capabilityDisabled = false;
     private evaluatedInitialDisabledState = false;
+
+    protected classTarget() {
+      return [this.action, this.button] as const;
+    }
 
     get disabled() {
       return this.hasAttribute("disabled");
@@ -696,8 +786,7 @@ export function registerGlowTourElements() {
         );
       }
       const details = this.details(state, props);
-      this.hidden = details.hidden;
-      this.capabilityDisabled = state.status === "active" && details.disabled;
+      this.capabilityDisabled = details.disabled;
       this.syncDisabled();
       if (this.labelOwned) button.textContent = details.label;
       if (!this.managedAttributes.isAuthored(button, "aria-label")) {
@@ -715,13 +804,15 @@ export function registerGlowTourElements() {
       this.managedAttributes.set(this.button, "aria-disabled", String(disabled));
     }
 
+    // A missing capability only counts once the step is active, but a `controls` value authored by
+    // the step disables the trigger as soon as that step renders, transition included.
     protected abstract details(
       state: TourState<VanillaTourContent>,
       props: ReadonlyStepProps<VanillaTourContent>,
-    ): { disabled: boolean; hidden: boolean; label: string };
+    ): { disabled: boolean; label: string };
   }
 
-  class GlowTourBackTrigger extends GlowTourTrigger {
+  class GlowTourPreviousTrigger extends GlowTourTrigger {
     protected readonly action = "previous" as const;
 
     protected details(
@@ -729,9 +820,10 @@ export function registerGlowTourElements() {
       props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canPrevious || props.popover?.disablePreviousButton === true,
-        hidden: props.popover?.hidePreviousButton === true,
-        label: this.getAttribute("back-label") ?? "Back step",
+        disabled:
+          (state.status === "active" && !state.canPrevious) ||
+          props.controls?.previous?.state === "disabled",
+        label: this.getAttribute("previous-label") ?? "Previous step",
       };
     }
   }
@@ -744,8 +836,9 @@ export function registerGlowTourElements() {
       props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canAdvance || props.popover?.disableAdvanceButton === true,
-        hidden: props.popover?.hideAdvanceButton === true,
+        disabled:
+          (state.status === "active" && !state.canAdvance) ||
+          props.controls?.advance?.state === "disabled",
         label: state.isLastStep
           ? (this.getAttribute("finish-label") ?? "Finish tour")
           : (this.getAttribute("advance-label") ?? "Advance step"),
@@ -758,13 +851,75 @@ export function registerGlowTourElements() {
 
     protected details(
       state: TourState<VanillaTourContent>,
-      _props: ReadonlyStepProps<VanillaTourContent>,
+      props: ReadonlyStepProps<VanillaTourContent>,
     ) {
       return {
-        disabled: !state.canCancel,
-        hidden: !state.canCancel,
+        disabled:
+          (state.status === "active" && !state.canCancel) ||
+          props.controls?.cancel?.state === "disabled",
         label: "Skip",
       };
+    }
+  }
+
+  class GlowTourDefault extends HTMLElement implements GlowTourDefaultElement {
+    private root?: GlowTourRootElement;
+    private tourValue: Tour | null = null;
+
+    get tour() {
+      return this.tourValue;
+    }
+
+    set tour(value: Tour | null) {
+      this.tourValue = value;
+      if (this.root) this.root.tour = value;
+    }
+
+    get idPrefix() {
+      return this.getAttribute("id-prefix") ?? undefined;
+    }
+
+    set idPrefix(value: string | undefined) {
+      if (value === undefined) this.removeAttribute("id-prefix");
+      else this.setAttribute("id-prefix", value);
+    }
+
+    static get observedAttributes() {
+      return ["id-prefix"];
+    }
+
+    connectedCallback() {
+      replayUpgradeProperty(this, "idPrefix");
+      replayUpgradeProperty(this, "tour");
+      if (this.root) return;
+      // Built once: moving the element keeps its tour UI and bindings.
+      const owner = this.ownerDocument;
+      const root = owner.createElement("glow-tour-root");
+      const popover = owner.createElement("glow-tour-popover");
+      const footer = owner.createElement("glow-tour-footer");
+      footer.append(
+        owner.createElement("glow-tour-cancel-trigger"),
+        owner.createElement("glow-tour-previous-trigger"),
+        owner.createElement("glow-tour-advance-trigger"),
+      );
+      popover.append(
+        owner.createElement("glow-tour-header"),
+        owner.createElement("glow-tour-content"),
+        footer,
+      );
+      root.append(
+        owner.createElement("glow-tour-overlay"),
+        owner.createElement("glow-tour-pointer"),
+        popover,
+      );
+      root.idPrefix = this.idPrefix;
+      root.tour = this.tourValue;
+      this.root = root;
+      this.append(root);
+    }
+
+    attributeChangedCallback() {
+      if (this.root) this.root.idPrefix = this.idPrefix;
     }
   }
 
@@ -775,10 +930,11 @@ export function registerGlowTourElements() {
     "glow-tour-footer": GlowTourFooter,
     "glow-tour-popover": GlowTourPopover,
     "glow-tour-pointer": GlowTourPointer,
-    "glow-tour-back-trigger": GlowTourBackTrigger,
+    "glow-tour-previous-trigger": GlowTourPreviousTrigger,
     "glow-tour-advance-trigger": GlowTourAdvanceTrigger,
     "glow-tour-cancel-trigger": GlowTourCancelTrigger,
     "glow-tour-overlay": GlowTourOverlay,
+    "glow-tour-default": GlowTourDefault,
   };
   for (const name of GLOW_TOUR_ELEMENT_NAMES) {
     const existing = registry.get(name);

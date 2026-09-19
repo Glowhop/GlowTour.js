@@ -7,13 +7,12 @@ GlowTour.js provides a complete programmatic API for controlling tours, observin
 
 ## Tour instance
 
-Every adapter's `createGlowTour()` function returns a tour controller. Keep this instance alive for your app's lifetime; it holds state, manages workflows, and dispatches events.
+Every adapter's `createGlowTour()` function returns a tour controller. It holds state, manages workflows, and dispatches events. In a component, the adapter's `useGlowTour()` (Angular: `injectGlowTour()`) returns the same controller; the examples below use the instance directly so they work in any framework.
 
 ```typescript
 import { createGlowTour } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
-// Reuse the same instance across your app
 ```
 
 ## Tour state
@@ -30,20 +29,7 @@ console.log(state.currentStep);   // Current step info (or null if not active)
 console.log(state.error);         // Error if status === "error"
 ```
 
-State includes:
-
-- `name` - Name of the running workflow
-- `totalSteps` - Total number of steps in the workflow
-- `currentStepIndex` - Index of the active step (0-based), or -1 if none
-- `status` - Current tour state
-- `currentStep` - Current step data
-- `direction` - Direction of the last navigation ("advance" or "previous")
-- `canAdvance` - Whether advancing is allowed
-- `canPrevious` - Whether going back is allowed
-- `canCancel` - Whether cancelling is allowed
-- `isFirstStep` - Whether the tour is on the first step
-- `isLastStep` - Whether the tour is on the last step
-- `error` - Error if the tour failed
+See [`tour.state.get()`](/docs/reference/tour#tourstateget) for every state field.
 
 ### Subscribing to changes
 
@@ -59,17 +45,17 @@ const unsubscribe = tour.state.subscribe((newState) => {
 unsubscribe();
 ```
 
-## Running tours
+## Starting and navigating
 
-### Basic run
+### Starting a tour
 
 ```typescript
 const workflow = tour.create("intro").step({ id: "step-1", /* ... */ }).build();
-await tour.run(workflow);
-console.log("Tour completed");
+await tour.start(workflow);
+console.log("First step is on screen");
 ```
 
-The `run()` method is async and resolves when the tour completes, is cancelled, or errors.
+`start()` resolves once the first step is on screen, not when the tour ends. It rejects if that first step fails. To react to the end of the tour, use the workflow's `onFinish` and `onCancel` callbacks, an `onEvent` listener for `tour:complete` and `tour:cancel`, or a `subscribe` listener that checks `status`. See [The promise trap](/docs/guides/handling-errors#the-promise-trap).
 
 ### Navigation commands
 
@@ -82,8 +68,8 @@ await tour.advance();
 // Go to the previous step
 await tour.previous();
 
-// Jump to a specific step by index
-await tour.goToStep(2);
+// Jump to a specific step by id
+await tour.goTo("billing");
 
 // Cancel and end the tour
 await tour.cancel();
@@ -113,24 +99,23 @@ const workflow = tour
   .build();
 ```
 
-## Transition callbacks
+## Step hooks
 
-React to step transitions. These are builder *methods* chained after a `.step()` call, not options
-inside it - they attach to the step that precedes them:
+Run code when a step is entered or left. These are builder *methods* chained after a `.step()` call,
+not options inside it - they attach to the step that precedes them:
 
 ```typescript
 const workflow = tour
-  .create("transitions")
+  .create("hooks")
   .step({
-    id: "step1-2",
+    id: "step1",
     target: "#step1",
     title: "First",
     content: "Step 1",
   })
-  .beforeAdvance(async (context) => {
-    console.log("About to advance from step 1");
+  .beforeLeave(async ({ direction }) => {
     // Perform async work, e.g., save user progress
-    await saveProgress();
+    if (direction === "advance") await saveProgress();
   })
   .step({
     id: "step2",
@@ -138,22 +123,120 @@ const workflow = tour
     title: "Second",
     content: "Step 2",
   })
-  .beforePrevious(async (context) => {
-    console.log("About to go back to step 1");
-  })
-  .step({
-    id: "step3",
-    target: "#step3",
-    title: "Third",
-    content: "Step 3",
-  })
-  .beforeCancel(async (context) => {
-    console.log("About to cancel the tour");
+  .beforeEnter(({ direction, props, initialProps }) => {
+    // Coming back from a later step: start again from the declared props.
+    if (direction === "previous") props.set(initialProps);
   })
   .build();
 ```
 
-`.beforeAdvance()`, `.beforePrevious()`, and `.beforeCancel()` can be async and will pause the transition until they resolve.
+- `.beforeEnter()` runs after the step's target is resolved and before the step is shown, so the props
+  it sets are the first ones rendered.
+- `.beforeLeave()` runs before `advance()`, `previous()`, `goTo()`, or finishing the tour. It does
+  not run on cancel: use the workflow's `onCancel` option, which receives the current step.
+- Both can be async and pause the transition until they resolve. `context.direction` tells which way
+  the tour is moving.
+- Both can stop the navigation with `context.abort()`, called synchronously or before their promise
+  resolves. The tour stays on the step it was on and emits no event. When the first step's
+  `beforeEnter` aborts, the tour goes back to `idle`, like an aborted `onStart`.
+
+```typescript
+.beforeLeave(({ abort, direction }) => {
+  // Keep the user here until the form is valid.
+  if (direction === "advance" && !form.checkValidity()) abort();
+})
+```
+
+Step props are not reset automatically: a value set with `context.props.set()` is still there when the
+tour comes back to the step, until the workflow runs again.
+
+## Updating step props
+
+`context.props` is a small store: `get()` reads the current props, `set()` replaces them, and
+`update()` merges a partial change into them:
+
+```typescript
+.do(({ props }) => {
+  // Only this field changes; the advance keys, the other controls, the title and the content are kept.
+  props.update({ controls: { advance: { state: "enabled" } } });
+})
+```
+
+- Fields left out of the change are kept.
+- `data` is merged key by key.
+- `overlay`, `popover`, `indicator`, `behavior`, and `controls` are merged the way step options merge
+  over the workflow defaults.
+- Arrays such as `placementTryOrder` or `keys` are replaced, never concatenated.
+- `classNames` is merged per component: a component named in the change gets exactly the classes
+  given.
+
+Pass a function to compute the change from the current props:
+
+```typescript
+props.update((current) => ({ data: { clicks: Number(current.data?.clicks ?? 0) + 1 } }));
+```
+
+To add a single class to the current ones, read them in the function form. They are a string or an
+array:
+
+```typescript
+props.update((current) => ({
+  classNames: { popover: [current.classNames?.popover ?? [], "popover-highlighted"].flat() },
+}));
+```
+
+`update()` validates and publishes once, like `set()`. To remove a value, use `set()`.
+
+## Changing behavior during a step
+
+`behavior` is part of the step props: `context.props.update({ behavior })` changes it while the
+tour runs, and `context.props.get().behavior` reads it. Like the other props, the value is kept
+when the tour comes back to the step, until the workflow runs again.
+
+Each field takes effect when GlowTour reads it:
+
+| Field | Read | A change made during the step |
+| --- | --- | --- |
+| `allowInteraction` | Continuously | Applies at once: the page becomes inert or usable again, focus leaves the target when interaction is blocked, and the indicator fades out or back in |
+| `allowScroll` | Continuously | Applies at once: page scroll is locked or released |
+| `overlayClick` | On each click on the dimmed area | Applies to the next click |
+| `autoFocus`, `autoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
+| `missingTarget` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
+
+`controls` works the same way: `context.props.update({ controls })` changes a command's `state` or
+its `keys` during the step. Both are read continuously: the button updates at once, and the keys
+apply to the next key press.
+
+A button the user may click only once:
+
+```typescript
+.step({
+  id: "pay",
+  target: "#pay",
+  title: "Pay",
+  content: "Click Pay to continue.",
+  behavior: { allowInteraction: true },
+  controls: { advance: { state: "disabled" } },
+  // Hides the Next button until the click, see "Hiding a control's button" in the builder reference.
+  classNames: { advance: "tour-hidden" },
+})
+.onTargetEvent("click", (_event, { props }) => {
+  props.update({
+    behavior: { allowInteraction: false },
+    controls: { advance: { state: "enabled" } },
+    classNames: { advance: [] },
+  });
+})
+```
+
+To start from the configured behavior on every visit, reset it in `beforeEnter`:
+
+```typescript
+.beforeEnter(({ props, initialProps }) => props.update({ behavior: initialProps.behavior }))
+```
+
+`props.set()` replaces every prop, `behavior` included: spread the current props to keep it, or the
+step runs without the behavior it was configured with.
 
 ## Step actions
 
@@ -256,20 +339,7 @@ Pass an array to bind the same handler to several events at once:
 
 ## Error handling
 
-Handle subscriber errors that don't crash the tour:
-
-```typescript
-const tour = createGlowTour({
-  onSubscriberError(error) {
-    console.error("A subscriber threw an error:", error);
-    // Log it, report it, but the tour continues
-  },
-});
-```
-
-State subscriber functions or step callback functions that throw are caught, normalized to `Error`, and reported to `onSubscriberError`. They do not fail the tour transition.
-
-A fatal error from the rendering layer (e.g., the popover component throws) will reject the command and set the tour state to `status === "error"` with the error details.
+A subscriber or step callback that throws is reported to `onSubscriberError` and does not fail the tour. A fatal error rejects the command and sets `status` to `"error"`. See [Handling errors](/docs/guides/handling-errors) for how to observe and recover from both.
 
 ## Example: complex tour
 
@@ -288,8 +358,9 @@ const workflow = tour
     onStart(context) {
       analytics.track("tour_started");
     },
-    onCancel(context) {
-      analytics.track("tour_cancelled");
+    onCancel({ step }) {
+      // The lifecycle context carries a snapshot of the step the user was on.
+      analytics.track("tour_cancelled", { step: step?.id });
     },
     onFinish(context) {
       analytics.track("tour_completed");
@@ -301,8 +372,8 @@ const workflow = tour
     title: "Welcome",
     content: "Let's get started!",
   })
-  .beforeAdvance(async () => {
-    await api.logEvent("welcome_seen");
+  .beforeLeave(async ({ direction }) => {
+    if (direction === "advance") await api.logEvent("welcome_seen");
   })
   .wait(500)
   .step({
@@ -323,16 +394,12 @@ const workflow = tour
     title: "You're ready!",
     content: "Explore your dashboard.",
   })
-  .beforeCancel(async (context) => {
-    // The transition context carries the step's props and its resolved target element.
-    await api.logEvent("cancelled_on", { step: context.title });
-  })
   .build();
 
 // Run the tour
-await tour.run(workflow);
+await tour.start(workflow);
 ```
 
 ---
 
-For the full workflow/step-building API and every option's default value, see the [Builder reference](/docs/reference/builder); for the controller API (`createGlowTour`, `tour.run`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).
+For the full workflow/step-building API and every option's default value, see the [Builder reference](/docs/reference/builder); for the controller API (`createGlowTour`, `tour.start`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).

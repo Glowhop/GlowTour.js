@@ -1,12 +1,12 @@
 import type {
   AnimationOptions,
-  EventHandler,
   StartOptions,
   StepActionInstruction,
+  StepHookAction,
   StepParameters,
-  StepTransitionAction,
+  TargetEventHandler,
 } from "../types";
-import { cloneStepProps, freezeStepProps } from "./step-props";
+import { cloneClassNames, cloneControls, cloneStepProps, freezeStepProps } from "./step-props";
 import type {
   ReadonlyStartOptions,
   StepProps,
@@ -17,14 +17,11 @@ import type {
 export interface WorkflowStepDraft<T> {
   id: string;
   target: StepParameters<T>["target"];
-  resetPropsOnEnter?: boolean;
   props: StepProps<T>;
-  behavior?: StepParameters<T>["behavior"];
   actions: StepActionInstruction<T>[];
-  eventHandlers: EventHandler<T>[];
-  advanceAction: StepTransitionAction<T> | null;
-  previousAction: StepTransitionAction<T> | null;
-  cancelAction: StepTransitionAction<T> | null;
+  targetEvents: TargetEventHandler<T>[];
+  beforeEnter: StepHookAction<T> | null;
+  beforeLeave: StepHookAction<T> | null;
 }
 
 function freezeRecord<T extends object>(value: T): Readonly<T> {
@@ -52,18 +49,6 @@ function freezePopover(options: StepParameters<unknown>["popover"]) {
       ...options,
       animation: freezeAnimation(options.animation),
       arrow: options.arrow && freezeRecord({ ...options.arrow }),
-      keyboardShortcuts:
-        options.keyboardShortcuts &&
-        freezeRecord({
-          previous:
-            options.keyboardShortcuts.previous &&
-            freezeRecord([...options.keyboardShortcuts.previous]),
-          advance:
-            options.keyboardShortcuts.advance &&
-            freezeRecord([...options.keyboardShortcuts.advance]),
-          cancel:
-            options.keyboardShortcuts.cancel && freezeRecord([...options.keyboardShortcuts.cancel]),
-        }),
       placementTryOrder: options.placementTryOrder && freezeRecord([...options.placementTryOrder]),
     })
   );
@@ -84,19 +69,11 @@ function freezeStep<T>(draft: WorkflowStepDraft<T>): WorkflowStepDefinition<T> {
   return freezeRecord({
     id: draft.id,
     target: draft.target,
-    resetPropsOnEnter: draft.resetPropsOnEnter,
     props: freezeStepProps(draft.props),
-    behavior:
-      draft.behavior &&
-      freezeRecord({
-        ...draft.behavior,
-        scroll: draft.behavior.scroll && freezeRecord({ ...draft.behavior.scroll }),
-      }),
     actions: freezeRecord(draft.actions.map((action) => action)),
-    eventHandlers: freezeRecord(draft.eventHandlers.map((handler) => freezeRecord({ ...handler }))),
-    advanceAction: draft.advanceAction,
-    previousAction: draft.previousAction,
-    cancelAction: draft.cancelAction,
+    targetEvents: freezeRecord(draft.targetEvents.map((handler) => freezeRecord({ ...handler }))),
+    beforeEnter: draft.beforeEnter,
+    beforeLeave: draft.beforeLeave,
   });
 }
 
@@ -106,10 +83,14 @@ function freezeOptions<T>(options: StartOptions<T>): ReadonlyStartOptions<T> {
     overlay: freezeOverlay(options.overlay),
     popover: freezePopover(options.popover),
     indicator: freezeIndicator(options.indicator),
+    classNames: cloneClassNames(options.classNames),
+    controls: cloneControls(options.controls),
     behavior:
       options.behavior &&
       freezeRecord({
         ...options.behavior,
+        missingTarget:
+          options.behavior.missingTarget && freezeRecord({ ...options.behavior.missingTarget }),
         scroll: options.behavior.scroll && freezeRecord({ ...options.behavior.scroll }),
       }),
   });
@@ -127,13 +108,13 @@ export function cloneWorkflowStepDraft<T>(
     ...definition,
     props: cloneStepProps(definition.props),
     actions: definition.actions.map((action) => action),
-    eventHandlers: [...definition.eventHandlers],
+    targetEvents: [...definition.targetEvents],
   };
 }
 
 /**
  * Validates that every step carries a non-empty id and that ids are unique.
- * Runs at construction time so a malformed workflow can never reach `run()`.
+ * Runs at construction time so a malformed workflow can never reach `start()`.
  */
 function assertUniqueStepIds<T>(name: string, drafts: readonly WorkflowStepDraft<T>[]): void {
   const seen = new Map<string, number>();

@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 describe("vue adapter browser behavior", () => {
-  test("hydrates server-rendered DefaultTour markup without a mismatch and stays interactive", async () => {
+  test("hydrates server-rendered GlowTourDefault markup without a mismatch and stays interactive", async () => {
     const [{ createSSRApp, h }, { renderToString }, runtime] = await Promise.all([
       import("vue"),
       import("@vue/server-renderer"),
@@ -74,7 +74,7 @@ describe("vue adapter browser behavior", () => {
       .create("hydrated")
       .step({ id: "step-1", content: "First", target, title: "First" })
       .build();
-    await tour.run(workflow);
+    await tour.start(workflow);
     assert.equal(container.querySelector("[data-glow-tour-content]")?.textContent, "First");
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     assert.equal(advance?.disabled, false);
@@ -140,7 +140,7 @@ describe("vue adapter browser behavior", () => {
       .build();
     const Observer = defineComponent({
       setup() {
-        const state = runtime.useTour();
+        const state = runtime.useGlowTourContext();
         return () => h("output", `${state.value.status}:${state.value.currentStepIndex}`);
       },
     });
@@ -149,13 +149,78 @@ describe("vue adapter browser behavior", () => {
         h(runtime.GlowTourRoot, { tour }, () => [h(runtime.GlowTourPopover), h(Observer)]),
     });
     app.mount(container);
-    await tour.run(workflow);
+    await tour.start(workflow);
     await nextTick();
     assert.equal(container.querySelector("output")?.textContent, "active:0");
     await tour.advance();
     await nextTick();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     app.unmount();
+  });
+
+  test("useGlowTour exposes state refs outside the root and disposes the tour it creates", async () => {
+    const [{ createApp, defineComponent, h, nextTick }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    let glow!: ReturnType<typeof runtime.useGlowTour>;
+    const app = createApp(
+      defineComponent({
+        setup() {
+          glow = runtime.useGlowTour();
+          return () => [
+            h("output", `${glow.status.value}:${glow.currentStepIndex.value}`),
+            h(runtime.GlowTourRoot, { tour: glow.tour }, () => h(runtime.GlowTourPopover)),
+          ];
+        },
+      }),
+    );
+    app.mount(container);
+    const workflow = glow
+      .create("use glow tour")
+      .step({ id: "first", content: "First", target, title: "First" })
+      .step({ id: "second", content: "Second", target, title: "Second" })
+      .build();
+    await glow.start(workflow);
+    await nextTick();
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await glow.advance();
+    await nextTick();
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    await glow.cancel();
+    await nextTick();
+    assert.equal(glow.status.value, "cancelled");
+    app.unmount();
+    assert.equal(glow.tour.state.get().status, "disposed");
+    container.remove();
+    target.remove();
+  });
+
+  test("useGlowTour never disposes a tour it is given", async () => {
+    const [{ createApp, defineComponent, h }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const tour = runtime.createGlowTour();
+    let glow!: ReturnType<typeof runtime.useGlowTour>;
+    const app = createApp(
+      defineComponent({
+        setup() {
+          glow = runtime.useGlowTour(tour);
+          return () => h("output", glow.status.value);
+        },
+      }),
+    );
+    app.mount(container);
+    assert.equal(glow.tour, tour);
+    app.unmount();
+    assert.equal(tour.state.get().status, "idle");
+    container.remove();
   });
 
   test("connects before an immediate run after synchronous mount", async () => {
@@ -166,7 +231,7 @@ describe("vue adapter browser behavior", () => {
     const app = createApp({ render: () => h(runtime.GlowTourRoot, { tour }) });
 
     app.mount(container);
-    await assert.doesNotReject(() => tour.run(tour.create("immediate mount").build()));
+    await assert.doesNotReject(() => tour.start(tour.create("immediate mount").build()));
     app.unmount();
   });
 
@@ -182,7 +247,7 @@ describe("vue adapter browser behavior", () => {
     const Runner = defineComponent({
       setup() {
         onMounted(() => {
-          mountedRun = tour.run(tour.create("descendant mount").build());
+          mountedRun = tour.start(tour.create("descendant mount").build());
         });
         return () => h("div");
       },
@@ -319,7 +384,7 @@ describe("vue adapter browser behavior", () => {
     await nextTick();
     await nextTick();
     assert.equal(container.querySelector("[data-glow-tour-root]")?.id, "second-root");
-    await assert.rejects(() => first.run(first.create("first").build()), /connected root/i);
+    await assert.rejects(() => first.start(first.create("first").build()), /connected root/i);
     app.unmount();
   });
 
@@ -397,8 +462,8 @@ describe("vue adapter browser behavior", () => {
 
     app.mount(container);
     await nextTick();
-    await outer.run(workflow(outer, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner", true));
+    await outer.start(workflow(outer, outerTarget, "outer"));
+    await inner.start(workflow(inner, innerTarget, "inner", true));
     const [outerAdvance, innerAdvance] = Array.from(
       container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
@@ -427,7 +492,7 @@ describe("vue adapter browser behavior", () => {
       .step({
         id: "step-6",
         content: "One",
-        popover: { keyboardShortcuts: { advance: ["N"] } },
+        controls: { advance: { keys: ["N"] } },
         target,
         title: "One",
       })
@@ -441,7 +506,7 @@ describe("vue adapter browser behavior", () => {
         h(runtime.GlowTourRoot, { tour }, () => [
           h(runtime.GlowTourPopover),
           h(runtime.GlowTourCancelTrigger),
-          h(runtime.GlowTourBackTrigger),
+          h(runtime.GlowTourPreviousTrigger),
           showAdvance.value
             ? h(runtime.GlowTourAdvanceTrigger, {
                 disabled: blockAdvance.value,
@@ -455,7 +520,7 @@ describe("vue adapter browser behavior", () => {
 
     app.mount(container);
     await nextTick();
-    await tour.run(workflow);
+    await tour.start(workflow);
     const firstBack = container.querySelector<HTMLButtonElement>(
       "[data-glow-tour-previous-trigger]",
     );
@@ -466,7 +531,7 @@ describe("vue adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     assert.equal(tour.state.get().status, "cancelled");
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     showAdvance.value = true;
     await nextTick();
     await new Promise((resolve) => window.setTimeout(resolve, 0));
@@ -526,11 +591,11 @@ describe("vue adapter browser behavior", () => {
 
     app.mount(container);
     await nextTick();
-    await tour.run(workflow);
+    await tour.start(workflow);
     activeProps.set((props) => ({
       ...props,
       content: "Updated content",
-      popover: { hideFooter: true, hideAdvanceButton: true },
+      controls: { advance: { state: "disabled" } },
       title: "Updated title",
     }));
     await nextTick();
@@ -539,11 +604,14 @@ describe("vue adapter browser behavior", () => {
       container.querySelector("[data-glow-tour-content]")?.textContent,
       "Updated content",
     );
-    assert.equal(container.querySelector("[data-glow-tour-footer]"), null);
+    assert.equal(
+      container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]")?.disabled,
+      true,
+    );
 
     activeProps.set((props) => ({
       ...props,
-      popover: { ...props.popover, hideFooter: false, hideAdvanceButton: false },
+      controls: { advance: { state: "enabled" } },
     }));
     await nextTick();
     assert.equal(

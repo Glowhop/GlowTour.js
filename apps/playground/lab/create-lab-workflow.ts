@@ -17,7 +17,8 @@ export function createLabWorkflow<TContent>(
       target: selectors.customEvent,
       title: content.title("append() + onTargetEvent<T>()"),
       content: content.paragraph(copy.appended),
-      popover: { hideAdvanceButton: true },
+      controls: { advance: { state: "disabled" } },
+      classNames: { advance: "lab-hidden" },
       behavior: { allowInteraction: true },
       data: { api: "append", appended: true },
     })
@@ -25,27 +26,35 @@ export function createLabWorkflow<TContent>(
       actions.log(`onTargetEvent<T> - source: ${targetEvent.detail.source}`);
       void context.advance();
     })
-    .beforePrevious(() => actions.log("onBack - sortie de la section ajoutée"))
-    .beforeCancel(() => actions.log("onCancel - étape ajoutée"))
+    .beforeLeave(({ direction }) =>
+      actions.log(`beforeLeave(${direction}) - sortie de la section ajoutée`),
+    )
     .build();
 
   return tour
     .create(workflow.name, {
       ...workflow.options,
       onStart: () => actions.log("create.onStart - workflow démarré"),
-      onCancel: () => actions.log("create.onCancel - workflow annulé"),
+      onCancel: ({ step }) => {
+        actions.cancelPending();
+        actions.log(`create.onCancel - workflow annulé sur ${step?.id}`);
+      },
       onFinish: () => actions.log("create.onFinish - API Lab terminé"),
+      onEvent: (tourEvent) =>
+        actions.log(`onEvent - ${tourEvent.type} (${tourEvent.stepId ?? "aucune étape"})`),
     })
     .step({
       id: "step-2",
       target: selectors.start,
       title: content.title("create() + step()"),
       content: content.paragraph(copy.intro),
-      popover: { hidePreviousButton: true },
+      controls: { previous: { state: "disabled" } },
+      classNames: { previous: "lab-hidden" },
       data: { api: "create", targetType: "selector" },
     })
-    .beforeAdvance(({ data }) => actions.log(`onAdvance - ${String(data?.api)}`))
-    .beforeCancel(() => actions.log("onCancel - étape d’introduction"))
+    .beforeLeave(({ direction, props }) =>
+      actions.log(`beforeLeave(${direction}) - ${String(props.get().data?.api)}`),
+    )
     .step({
       id: "step-3",
       target: elements.focusInput,
@@ -53,36 +62,39 @@ export function createLabWorkflow<TContent>(
       content: content.paragraph(copy.focus),
       overlay: { color: "#241a70", opacity: 0.62, padding: 9, radius: 0 },
       popover: { placementTryOrder: ["right", "bottom"], gap: 18 },
-      indicator: { disabled: false, placementTryOrder: ["left", "bottom"] },
+      indicator: { hidden: false, placementTryOrder: ["left", "bottom"] },
       behavior: {
         allowInteraction: true,
-        disableAutoFocus: true,
+        autoFocus: false,
         scroll: { behavior: "smooth", block: "center", inline: "center" },
       },
       data: { api: "focusTarget", targetType: "element" },
-      resetPropsOnEnter: false,
     })
     .focusTarget()
     .onTargetEvent("input", (ev, context) => {
       const value = ev.target instanceof HTMLInputElement ? ev.target.value : "";
-      context.props.set((current) => ({
-        ...current,
-        data: { ...current.data, event: ev.type },
-        content: content.paragraph(value),
-      }));
+      context.props.update({ data: { event: ev.type }, content: content.paragraph(value) });
     })
     .wait(timing.focusWait)
     .focusTarget()
-    .beforePrevious(() => actions.log("onBack - retour vers l’introduction"))
+    .beforeLeave(({ direction }) => {
+      if (direction === "previous") {
+        actions.log("beforeLeave(previous) - retour vers l’introduction");
+      }
+    })
     .step({
       id: "step-4",
       target: selectors.revealButton,
       title: content.title("clickTarget() + waitUntilElement()"),
       content: content.paragraph(copy.reveal),
-      popover: {
-        disableAdvanceButton: true,
-      },
+      controls: { advance: { state: "disabled" } },
+      // Overrides the workflow's "lab-popover" on this step.
+      classNames: { popover: "lab-popover-waiting", advance: ["lab-control-waiting"] },
       data: { api: "waitUntilElement" },
+    })
+    .beforeEnter(({ direction, props, initialProps }) => {
+      actions.log(`beforeEnter(${direction}) - props réinitialisées avant affichage`);
+      props.set(initialProps);
     })
     .clickTarget()
     .waitUntilElement(selectors.revealed, {
@@ -91,29 +103,18 @@ export function createLabWorkflow<TContent>(
     })
     .do((context) => {
       actions.log("waitUntilElement - cible révélée détectée");
-      context.props.set((current) => ({
-        ...current,
-        popover: { ...current.popover, disableAdvanceButton: false },
-        overlay: {
-          ...current.overlay,
-          color: "red",
-          opacity: 0.68,
-        },
-      }));
+      context.props.update({
+        controls: { advance: { state: "enabled" } },
+        overlay: { color: "red", opacity: 0.68 },
+        // Replaces the step's popover and advance classes; the other components keep theirs.
+        classNames: { popover: ["lab-popover", "lab-popover-revealed"], advance: [] },
+      });
 
       setTimeout(() => {
-        context.props.set((current) => ({
-          ...current,
-          popover: {
-            ...current.popover,
-            placementTryOrder: ["top", "bottom", "left", "right"],
-          },
-          overlay: {
-            ...current.overlay,
-            color: "green",
-            opacity: 0.68,
-          },
-        }));
+        context.props.update({
+          popover: { placementTryOrder: ["top", "bottom", "left", "right"] },
+          overlay: { color: "green", opacity: 0.68 },
+        });
       }, 1000);
     })
     .step({
@@ -125,9 +126,8 @@ export function createLabWorkflow<TContent>(
       title: content.title("TargetResolver + wait()"),
       content: content.paragraph(copy.resolver),
       behavior: {
-        disableAutoScroll: true,
-        missingTargetStrategy: "wait",
-        targetTimeout: timing.targetTimeout,
+        autoScroll: false,
+        missingTarget: { strategy: "wait", timeout: timing.targetTimeout },
       },
       data: { api: "wait", targetType: "resolver" },
     })
@@ -138,7 +138,12 @@ export function createLabWorkflow<TContent>(
       target: selectors.condition,
       title: content.title("waitUntil() + advance()"),
       content: content.paragraph(copy.condition),
-      popover: { hideFooter: true },
+      controls: {
+        advance: { state: "disabled" },
+        previous: { state: "disabled" },
+        cancel: { state: "disabled" },
+      },
+      classNames: { footer: "lab-hidden" },
       indicator: { animated: false, gap: 8 },
       data: { api: "waitUntil" },
     })
@@ -153,20 +158,16 @@ export function createLabWorkflow<TContent>(
     .do(() => actions.log("waitUntil - condition satisfaite"))
     .wait(timing.conditionAdvanceWait)
     .do(({ advance }) => advance())
-    .beforeCancel(() => actions.cancelPending())
     .step({
       id: "step-7",
       target: selectors.actions,
       title: content.title("action(): true | false"),
       content: content.paragraph(copy.actions),
-      popover: { disablePreviousButton: true, disableAdvanceButton: true },
+      controls: { previous: { state: "disabled" }, advance: { state: "disabled" } },
       data: { api: "action", result: false },
     })
     .do(({ props }) => {
-      props.set((current) => ({
-        ...current,
-        popover: { ...current.popover, disableAdvanceButton: false },
-      }));
+      props.update({ controls: { advance: { state: "enabled" } } });
       actions.log("action(true) - chaîne poursuivie");
       return true;
     })
@@ -191,13 +192,56 @@ export function createLabWorkflow<TContent>(
       target: selectors.clickAdvance,
       title: content.title("onTargetEvent('click')"),
       content: content.paragraph(copy.clickAdvance),
-      popover: { hideAdvanceButton: true },
+      controls: { advance: { state: "disabled" } },
+      classNames: { advance: "lab-hidden" },
       behavior: { allowInteraction: true },
       data: { api: "onTargetEvent", overload: "single" },
     })
     .onTargetEvent("click", (_targetEvent, context) => {
-      actions.log("onTargetEvent('click') - avance via le contexte");
-      void context.advance();
+      actions.log("onTargetEvent('click') - goTo('step-click-once') via le contexte");
+      void context.goTo("step-click-once");
+    })
+    .step({
+      id: "step-click-once",
+      target: selectors.clickOnce,
+      title: content.title("props.update({ behavior })"),
+      content: content.paragraph(copy.clickOnce),
+      controls: { advance: { state: "disabled" } },
+      classNames: { advance: "lab-hidden" },
+      behavior: { allowInteraction: true },
+      data: { api: "behavior.allowInteraction" },
+    })
+    .onTargetEvent("click", (_targetEvent, { props }) => {
+      actions.log(
+        "props.update({ behavior: { allowInteraction: false } }) - la cible ne répond plus",
+      );
+      props.update({
+        behavior: { allowInteraction: false },
+        data: { clicked: true },
+        controls: { advance: { state: "enabled" } },
+        classNames: { advance: [] },
+      });
+    })
+    .beforeLeave(({ abort, direction, props }) => {
+      if (direction !== "advance" || props.get().data?.clicked === true) return;
+      actions.log("beforeLeave.abort() - cliquez d’abord sur la cible");
+      abort();
+    })
+    .step({
+      id: "step-skipped",
+      target: selectors.missingTarget,
+      title: content.title("missingTarget: { strategy: 'skip' }"),
+      content: content.paragraph(copy.skipped),
+      behavior: { missingTarget: { strategy: "skip" } },
+      data: { api: "step:skip" },
+    })
+    .step({
+      id: "step-detached",
+      target: selectors.missingTarget,
+      title: content.title("missingTarget: { strategy: 'detached' }"),
+      content: content.paragraph(copy.detached),
+      behavior: { missingTarget: { strategy: "detached" }, overlayClick: "advance" },
+      data: { api: "missingTarget", strategy: "detached" },
     })
     .step({
       id: "step-10",
@@ -213,7 +257,6 @@ export function createLabWorkflow<TContent>(
       target: selectors.previous,
       title: content.title("previous()"),
       content: content.paragraph(copy.previous),
-      resetPropsOnEnter: false,
       data: { api: "previous", guarded: true },
     })
     .do(() => {
@@ -227,13 +270,22 @@ export function createLabWorkflow<TContent>(
     })
     .wait(timing.previousWait)
     .do(({ previous }) => previous())
-    .beforeAdvance(() => actions.log("onAdvance - sortie de la démonstration previous"))
+    .beforeLeave(({ direction }) => {
+      if (direction === "advance") {
+        actions.log("beforeLeave(advance) - sortie de la démonstration previous");
+      }
+    })
     .step({
       id: "step-12",
       target: selectors.autoAdvance,
       title: content.title("wait() + advance()"),
       content: content.paragraph(copy.autoAdvance),
-      popover: { hideFooter: true },
+      controls: {
+        advance: { state: "disabled" },
+        previous: { state: "disabled" },
+        cancel: { state: "disabled" },
+      },
+      classNames: { footer: "lab-hidden" },
       data: { api: "advance", automatic: true },
     })
     .do(() => actions.log("advance - transition automatique imminente"))
@@ -242,16 +294,14 @@ export function createLabWorkflow<TContent>(
     .step({
       id: "step-13",
       target: selectors.nomad,
-      title: content.title("missingTargetStrategy: 'wait'"),
+      title: content.title("missingTarget: { strategy: 'wait' }"),
       content: content.paragraph(copy.relocate),
       behavior: {
-        missingTargetStrategy: "wait",
-        targetTimeout: timing.targetTimeout,
+        missingTarget: { strategy: "wait", timeout: timing.targetTimeout },
       },
-      data: { api: "missingTargetStrategy", strategy: "wait" },
+      data: { api: "missingTarget", strategy: "wait" },
     })
     .do(() => actions.relocateTarget())
-    .beforeCancel(() => actions.cancelPending())
     .append(appendedWorkflow)
     .build();
 }

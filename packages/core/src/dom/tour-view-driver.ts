@@ -1,11 +1,13 @@
+import type { TourElementStep } from "../elements/base";
 import OverlayElement from "../elements/overlay";
 import PointerElement from "../elements/pointer";
 import PopoverElement from "../elements/popover";
 import type { ActiveStep } from "../runtime/active-step";
 import { FocusGuard } from "../state/focus-guard";
-import { focusableElementsOwnedBy } from "../state/focusable";
+import { FOCUSABLE_SELECTOR, focusableElementsOwnedBy } from "../state/focusable";
 import { ScrollLock } from "../state/scroll-lock";
-import type { TourDirection, TourEventSource } from "../types";
+import type { ResolvedPlacement, TourDirection, TourEventSource } from "../types";
+import { isControlAvailable } from "../utils/options";
 import {
   isElement,
   isHTMLElement,
@@ -43,6 +45,7 @@ export interface TourViewCommands {
   canAdvance(): boolean;
   canCancel(): boolean;
   canPrevious(): boolean;
+  goTo(id: string): Promise<void>;
   isAdvanceDisabled(): boolean;
   isCancelDisabled(): boolean;
   isPreviousDisabled(): boolean;
@@ -130,11 +133,30 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private modalDocument: Document | null = null;
   private modalRoot: HTMLElement | null = null;
   private overlay: OverlayElement | null = null;
-  private pendingKeyboardCommand: { command: TourViewCommand; generation: number } | null = null;
+  /** A command asked for while a visible popover was replaced, run once the new step is presented. */
+  private pendingCommand: {
+    command: TourViewCommand;
+    generation: number;
+    source: TourEventSource;
+  } | null = null;
   private pointer: PointerElement | null = null;
   private pendingFocusGeneration: number | null = null;
+  /**
+   * The last click a presented step's button handled. It bubbles on to the window after the
+   * command it ran started the next step, and must not be queued a second time there.
+   */
+  private handledTriggerClick: Event | null = null;
   private popover: PopoverElement | null = null;
   private presentationDirty = false;
+  /**
+   * The focus a clear gives back once the popover has faded out. Kept past a clear that a new show
+   * supersedes, so that tour returns focus there instead of to the fading popover.
+   */
+  private focusToRestore: HTMLElement | null = null;
+  /** The `allowInteraction` value the overlay, the page modality and the focus guard reflect. */
+  private appliedAllowInteraction = false;
+  /** Set when a live `allowInteraction` change started the pointer fade; the next frame clears it. */
+  private pointerFading = false;
   private rafId: number | null = null;
   private rafCancel: ((id: number) => void) | null = null;
   private root: HTMLElement | null = null;
@@ -197,7 +219,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
     const replaceVisiblePopover = this.active && onBeforePopoverAppear !== undefined;
-    let removeTransitionKeydown = () => {};
+    let removeTransitionListeners = () => {};
     try {
       this.cleanupStepResources();
       this.throwIfStale(generation, signal);
@@ -212,26 +234,45 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.lastViewport = null;
       this.presentationDirty = false;
       this.awaitingStepUi = true;
-      if (replaceVisiblePopover) {
-        const listener = (event: Event) =>
-          this.queueTransitionKeydown(event as KeyboardEvent, step, generation);
-        const currentWindow = this.getWindow();
-        if (typeof currentWindow?.addEventListener === "function") {
-          currentWindow.addEventListener("keydown", listener);
-          removeTransitionKeydown = () => currentWindow.removeEventListener("keydown", listener);
-        }
+      const modal = !step.allowsInteraction();
+      // Claimed before anything moves: a second modal tour fails without being presented.
+      if (modal) this.claimModal();
+      // Blocks the page until a modal step is presented, and queues shortcuts while a visible
+      // popover is replaced. On any other step it lets every key through.
+      const onKeydown = (event: Event) =>
+        this.queueTransitionKeydown(
+          event as KeyboardEvent,
+          step,
+          generation,
+          replaceVisiblePopover,
+        );
+      // The popover being replaced no longer takes pointer input, but Enter or Space on its focused
+      // button still clicks it: queue that button's command like a shortcut.
+      const onClick = (event: Event) => {
+        if (replaceVisiblePopover) this.queueTransitionClick(event, step, generation);
+      };
+      const currentWindow = this.getWindow();
+      if (typeof currentWindow?.addEventListener === "function") {
+        currentWindow.addEventListener("keydown", onKeydown);
+        currentWindow.addEventListener("click", onClick);
+        removeTransitionListeners = () => {
+          currentWindow.removeEventListener("keydown", onKeydown);
+          currentWindow.removeEventListener("click", onClick);
+        };
       }
       const target = step.target;
       if (!target) return;
       this.activeTarget = target;
 
-      this.syncModality(step.behavior?.allowInteraction === true);
+      // Before inerting the page: inert blurs the trigger that started the tour, and focus
+      // could no longer be restored to it.
+      this.focusGuard.captureInitialFocus(target, this.focusToRestore);
       const scrolling = this.beginTargetScroll(step, target, signal);
       this.throwIfStale(generation, signal);
-      this.initializeElements(step);
+      this.initializeElements(step, replaceVisiblePopover);
       // Read late, and again after the scroll: the rect the popover is placed
       // against has to be one that will not move again.
-      const resolveRect = () => target.getBoundingClientRect();
+      const resolveRect = () => presentationRect(step, target);
       await this.appear(
         resolveRect,
         step,
@@ -245,17 +286,22 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.lastTargetRect = snapshotRect(targetRect);
       this.lastViewport = snapshotViewport(target);
       this.active = true;
+      // Only now, as focus moves into the presented popover, like a native modal dialog. Inerting
+      // the page while the popover is still hidden pulls the screen reader's cursor out of the
+      // tree with nowhere to go, and VoiceOver then stays silent. Read live: `beforeEnter` or the
+      // entrance may have changed `behavior.allowInteraction` since the modal claim above.
+      this.syncModality(step.allowsInteraction());
       this.activateFocus(step, target, direction, generation);
       this.syncScrollLock(step);
       this.throwIfStale(generation, signal);
-      removeTransitionKeydown();
-      removeTransitionKeydown = () => {};
+      removeTransitionListeners();
+      removeTransitionListeners = () => {};
       this.attachStepResources(step, target, generation, signal);
     } catch (error) {
       if (this.isCurrentGeneration(generation)) this.releaseModality();
       throw error;
     } finally {
-      removeTransitionKeydown();
+      removeTransitionListeners();
       removeAbort();
     }
   }
@@ -265,10 +311,12 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.throwIfAborted(signal);
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
+    // Focus goes back once the popover has faded out, not in the task that lifts `inert` from the
+    // page: screen readers ignore focus moved onto content that just rejoined their tree.
     try {
       this.cleanupStepResources();
       this.releaseModality();
-      this.focusGuard.deactivate();
+      this.focusToRestore = this.focusGuard.release() ?? this.focusToRestore;
       this.scrollLock.deactivate();
       this.throwIfStale(generation, signal);
       this.active = false;
@@ -280,16 +328,21 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.currentSignal = null;
       this.lastTargetRect = null;
       this.lastViewport = null;
-      this.popover?.getElement()?.removeAttribute("aria-modal");
       await Promise.allSettled([
         this.overlay?.disappear() ?? Promise.resolve(),
         this.popover?.disappear() ?? Promise.resolve(),
         this.pointer?.disappear() ?? Promise.resolve(),
       ]);
-      this.throwIfStale(generation, signal);
     } finally {
+      // Superseded, the focus stays pending for the show or clear that replaced this one.
+      if (this.isCurrentGeneration(generation)) {
+        this.focusToRestore?.focus();
+        this.focusToRestore = null;
+      }
       removeAbort();
     }
+    // After restoring focus: restoring it may itself start the next tour.
+    this.throwIfStale(generation, signal);
   }
 
   releaseMount(): void {
@@ -342,35 +395,34 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const signal = this.currentSignal;
     if (this.disposed || !step || !target || !targetRect || !signal) return;
     this.activeTarget = target;
-    this.initializeElements(step);
+    this.initializeElements(step, false);
     this.awaitingStepUi = true;
     // Re-registration replays the entrance in place: no scroll, and the rect
     // is the one the step was already parked on rather than a fresh reading.
     await this.appear(() => targetRect as DOMRect, step, generation, null, false);
     this.throwIfStale(generation);
+    this.syncModality(step.allowsInteraction());
     this.activateFocus(step, target, this.direction, generation);
     this.syncScrollLock(step);
     this.throwIfStale(generation);
     this.attachStepResources(step, target, generation, signal);
   }
 
-  private initializeElements(step: ActiveStep<T>) {
-    const interactionAllowed = step.behavior?.allowInteraction === true;
+  private initializeElements(step: ActiveStep<T>, replaceVisiblePopover: boolean) {
+    const interactionAllowed = step.allowsInteraction();
     this.overlay?.initializeProps();
     this.overlay?.setAnimationOptions(
-      animationOptions(step, step.overlay, this.overlay.getElement()),
+      animationOptions(step, step.props.get().overlay, this.overlay.getElement()),
     );
     this.overlay?.setInteractionAllowed(interactionAllowed);
-    this.popover?.initializeProps();
+    this.appliedAllowInteraction = interactionAllowed;
+    this.popover?.initializeProps(!replaceVisiblePopover);
     this.popover?.setAnimationOptions(
-      animationOptions(step, step.popover, this.popover.getElement()),
+      animationOptions(step, step.props.get().popover, this.popover.getElement()),
     );
-    const popover = this.popover?.getElement();
-    if (isHTMLElement(popover, this.root ?? popover) && !interactionAllowed)
-      popover.setAttribute("aria-modal", "true");
     this.pointer?.initializeProps();
     this.pointer?.setAnimationOptions(
-      animationOptions(step, step.indicator, this.pointer.getElement()),
+      animationOptions(step, step.props.get().indicator, this.pointer.getElement()),
     );
   }
 
@@ -380,16 +432,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     }
 
+    this.claimModal();
+    const popover = this.popover?.getElement();
+    if (isHTMLElement(popover, this.root ?? popover)) popover.setAttribute("aria-modal", "true");
+
     const root = this.root;
-    if (!root) return;
+    if (!root || this.modalRoot === root) return;
     const document = root.ownerDocument;
-    const owner = ACTIVE_MODAL_BY_DOCUMENT.get(document);
-    if (owner && owner !== this.modalToken) {
-      throw new Error("GlowTour.js only supports one active modal tour per document");
-    }
-    ACTIVE_MODAL_BY_DOCUMENT.set(document, this.modalToken);
-    this.modalDocument = document;
-    if (this.modalRoot === root) return;
 
     this.restoreInertBranches();
     this.modalRoot = root;
@@ -404,6 +453,17 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       }
       branch = parent;
     }
+  }
+
+  private claimModal() {
+    const document = this.root?.ownerDocument;
+    if (!document) return;
+    const owner = ACTIVE_MODAL_BY_DOCUMENT.get(document);
+    if (owner && owner !== this.modalToken) {
+      throw new Error("GlowTour.js only supports one active modal tour per document");
+    }
+    ACTIVE_MODAL_BY_DOCUMENT.set(document, this.modalToken);
+    this.modalDocument = document;
   }
 
   private releaseModality() {
@@ -461,7 +521,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // While the page is travelling the tracking loop owns the cutout, so the
     // spotlight commits its geometry instead of animating towards a rect the
     // scroll is about to invalidate.
-    const spotlight = this.overlay?.moveToTarget(spotlightRect, step, scrolling !== null);
+    const spotlight = this.overlay?.moveToTarget(
+      spotlightRect,
+      this.elementProps(step),
+      scrolling !== null,
+    );
     // Started here rather than once the outgoing popover has faded: that fade
     // lasts about as long as the scroll itself, so tracking would only begin
     // as the page came to rest and the spotlight would sit at the target's
@@ -490,7 +554,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     hadVisiblePopover: boolean,
     onBeforePopoverAppear?: () => void | Promise<void>,
   ) {
-    if (hadVisiblePopover) await this.popover?.disappear();
+    if (hadVisiblePopover) await this.popover?.disappear(false);
     if (onBeforePopoverAppear) {
       await onBeforePopoverAppear();
       this.syncControlState(step);
@@ -510,14 +574,25 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   /** The popover and pointer entrance itself, started synchronously. */
   private enterStepUi(targetRect: DOMRect, step: ActiveStep<T>) {
-    const popoverPlacement = this.popover?.resolvePosition(targetRect, step).placement;
+    const popoverPlacement = this.popover?.resolvePosition(
+      targetRect,
+      this.elementProps(step),
+    ).placement;
     return Promise.all([
-      this.popover?.present(targetRect, step) ?? Promise.resolve(),
-      this.isPointerEnabled(step)
-        ? (this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement) ??
-          Promise.resolve())
-        : (this.pointer?.disappear() ?? Promise.resolve()),
+      this.popover?.present(targetRect, this.elementProps(step)) ?? Promise.resolve(),
+      this.presentPointer(targetRect, step, popoverPlacement) ?? Promise.resolve(),
     ]);
+  }
+
+  /** Fades the pointer in on the target, or out when the step does not show it. */
+  private presentPointer(
+    targetRect: DOMRect,
+    step: ActiveStep<T>,
+    popoverPlacement: ResolvedPlacement | undefined,
+  ) {
+    return this.isPointerEnabled(step)
+      ? this.pointer?.moveToTarget(targetRect, step.props.get(), true, popoverPlacement)
+      : this.pointer?.disappear();
   }
 
   private attachStepResources(
@@ -535,8 +610,15 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           return;
         }
         this.presentationDirty = true;
+        this.syncScrollLock(step);
+        if (step.allowsInteraction() === this.appliedAllowInteraction) return;
+        this.syncInteraction(step);
+        // The pointer fade has started: the next frame must not snap it with `syncVisibility`.
+        this.pointerFading = step.allowsInteraction() === this.appliedAllowInteraction;
       }),
     );
+    // A change made while the step was still entering is applied now that it is presented.
+    if (step.allowsInteraction() !== this.appliedAllowInteraction) this.syncInteraction(step);
     this.stepCleanups.push(
       this.commands?.subscribeCapabilities?.((active) => {
         if (!this.isCurrentGeneration(generation)) return;
@@ -545,7 +627,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           this.pendingFocusGeneration = null;
           this.focusGuard.focus();
         }
-        if (active) this.flushPendingKeyboardCommand(step, generation);
+        if (active) this.flushPendingCommand(step, generation);
       }) ?? (() => {}),
     );
     this.attachTargetResources(step, target, generation, signal);
@@ -582,13 +664,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
     signal: AbortSignal,
   ) {
-    for (const handler of step.definition.eventHandlers) {
+    if (step.detached) return;
+    for (const handler of step.definition.targetEvents) {
       const listener = (event: Event) => {
         if (!this.isCurrentGeneration(generation)) return;
         const context = Object.freeze({
           advance: () => this.commandForStep("advance", step, signal),
           cancel: () => this.commandForStep("cancel", step, signal),
+          goTo: async (id: string) => {
+            if (!signal.aborted && this.currentStep === step) await this.commands?.goTo(id);
+          },
           previous: () => this.commandForStep("previous", step, signal),
+          direction: step.direction,
+          initialProps: step.initialProps,
           props: step.props,
           signal,
           target,
@@ -669,7 +757,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (!this.awaitingStepUi) this.freezeForDisconnectedTarget(step, target, generation);
       return;
     }
-    const targetRect = target.getBoundingClientRect();
+    const targetRect = presentationRect(step, target);
     const targetSnapshot = snapshotRect(targetRect);
     const viewportSnapshot = snapshotViewport(target);
     const presentationChanged = this.presentationDirty;
@@ -681,19 +769,22 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       return;
     if (presentationChanged) {
       this.overlay?.setAnimationOptions(
-        animationOptions(step, step.overlay, this.overlay.getElement()),
+        animationOptions(step, step.props.get().overlay, this.overlay.getElement()),
       );
       this.popover?.setAnimationOptions(
-        animationOptions(step, step.popover, this.popover.getElement()),
+        animationOptions(step, step.props.get().popover, this.popover.getElement()),
       );
       this.pointer?.setAnimationOptions(
-        animationOptions(step, step.indicator, this.pointer.getElement()),
+        animationOptions(step, step.props.get().indicator, this.pointer.getElement()),
       );
       this.syncControlState(step);
       this.syncShortcutLabels(step);
     }
-    this.overlay?.updatePosition(targetRect, step, presentationChanged, (transition) =>
-      this.observeDynamicOperation(transition, generation),
+    this.overlay?.updatePosition(
+      targetRect,
+      this.elementProps(step),
+      presentationChanged,
+      (transition) => this.observeDynamicOperation(transition, generation),
     );
     // While the step's scroll is still running the spotlight tracks the target
     // on its own. The popover and the pointer have not entered yet and must
@@ -713,20 +804,29 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
     presentationChanged: boolean,
   ) {
-    const popoverPlacement = this.popover?.updatePosition(targetRect, step, (reposition) =>
-      this.observeDynamicOperation(reposition, generation),
+    const popoverPlacement = this.popover?.updatePosition(
+      targetRect,
+      this.elementProps(step),
+      (reposition) => this.observeDynamicOperation(reposition, generation),
     );
     if (presentationChanged) {
-      this.pointer?.syncVisibility(this.isPointerEnabled(step), targetRect, step, popoverPlacement);
+      if (this.pointerFading) this.pointerFading = false;
+      else
+        this.pointer?.syncVisibility(
+          this.isPointerEnabled(step),
+          targetRect,
+          step.props.get(),
+          popoverPlacement,
+        );
     } else if (this.isPointerEnabled(step)) {
       const pointer = this.pointer?.getElement();
       if (pointer?.getAttribute("aria-hidden") === "true") {
         this.observeDynamicOperation(
-          this.pointer?.moveToTarget(targetRect, step, true, popoverPlacement),
+          this.pointer?.moveToTarget(targetRect, step.props.get(), true, popoverPlacement),
           generation,
         );
       } else {
-        this.pointer?.updatePosition(targetRect, step, popoverPlacement);
+        this.pointer?.updatePosition(targetRect, step.props.get(), popoverPlacement);
       }
     } else if (this.pointer?.getElement()?.getAttribute("aria-hidden") !== "true") {
       this.observeDynamicOperation(this.pointer?.disappear(), generation);
@@ -755,48 +855,57 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       event.altKey
     )
       return;
-    if (event.key === "Tab" && step.behavior?.allowInteraction !== true) {
+    if (event.key === "Tab" && !step.allowsInteraction()) {
       this.loopFocus(event);
       return;
     }
-    const shortcuts = step.popover?.keyboardShortcuts;
-    if (
-      (shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key) &&
-      this.canCommand("cancel", step)
-    ) {
-      event.preventDefault();
-      void this.command("cancel", "keyboard");
-      return;
-    }
-    if (isEditable(event.target, this.root)) return;
-    if (
-      (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
-      this.canCommand("advance", step)
-    ) {
-      event.preventDefault();
-      void this.command("advance", "keyboard");
-    } else if (
-      (shortcuts?.previous ?? DEFAULT_SHORTCUTS.previous).includes(event.key) &&
-      this.canCommand("previous", step)
-    ) {
-      event.preventDefault();
-      void this.command("previous", "keyboard");
-    }
+    const command = this.keyboardCommand(event, step, (command) => this.canCommand(command, step));
+    if (!command) return;
+    event.preventDefault();
+    void this.command(command, "keyboard");
+  }
+
+  /**
+   * The keyboard shortcut a keydown asks for, if `available` allows it. `null` leaves the key to the
+   * browser, as Enter on a focused control is: on a tour button, the click it produces runs that
+   * button's own command after the consumer's click handlers, like a pointer click.
+   */
+  private keyboardCommand(
+    event: KeyboardEvent,
+    step: ActiveStep<T>,
+    available: (command: TourViewCommand) => boolean,
+  ): TourViewCommand | null {
+    if (activatesControl(event, this.root)) return null;
+    const controls = step.props.get().controls;
+    const shortcut = (command: TourViewCommand) =>
+      (controls?.[command]?.keys ?? DEFAULT_SHORTCUTS[command]).includes(event.key) &&
+      available(command);
+    // Escape cancels even from an editable field; the navigation shortcuts do not.
+    return shortcut("cancel")
+      ? "cancel"
+      : isEditable(event.target, this.root)
+        ? null
+        : shortcut("advance")
+          ? "advance"
+          : shortcut("previous")
+            ? "previous"
+            : null;
   }
 
   private handleOverlayClick(event: MouseEvent, step: ActiveStep<T>, target: HTMLElement) {
     if (this.currentStep !== step || event.defaultPrevented) return;
-    if (step.behavior?.allowInteraction === true) return;
+    if (step.allowsInteraction()) return;
     const path = event.composedPath();
     const popover = this.popover?.getElement();
     const pointer = this.pointer?.getElement();
+    // A detached step stands on the body, which every click path includes.
     if (
-      path.includes(target) ||
+      (!step.detached && path.includes(target)) ||
       (popover && path.includes(popover)) ||
       (pointer && path.includes(pointer))
     )
       return;
-    const overlayClick = step.behavior?.overlayClick ?? "none";
+    const overlayClick = step.props.get().behavior?.overlayClick ?? "none";
     if (overlayClick === "advance" && this.canCommand("advance", step)) {
       void this.command("advance", "overlay");
     } else if (overlayClick === "cancel" && this.canCommand("cancel", step)) {
@@ -804,7 +913,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
-  private queueTransitionKeydown(event: KeyboardEvent, step: ActiveStep<T>, generation: number) {
+  private queueTransitionKeydown(
+    event: KeyboardEvent,
+    step: ActiveStep<T>,
+    generation: number,
+    queue: boolean,
+  ) {
+    const target = event.target;
+    const root = this.root;
     if (
       !this.isCurrentGeneration(generation) ||
       event.defaultPrevented ||
@@ -814,30 +930,54 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       event.altKey
     )
       return;
-    const shortcuts = step.popover?.keyboardShortcuts;
-    let command: TourViewCommand | null = null;
-    if ((shortcuts?.cancel ?? DEFAULT_SHORTCUTS.cancel).includes(event.key)) command = "cancel";
-    else if (!isEditable(event.target, this.root)) {
-      if (
-        (shortcuts?.advance ?? DEFAULT_SHORTCUTS.advance).includes(event.key) &&
-        step.props.get().popover?.disableAdvanceButton !== true
-      )
-        command = "advance";
-      else if (
-        (shortcuts?.previous ?? DEFAULT_SHORTCUTS.previous).includes(event.key) &&
-        step.props.get().popover?.disablePreviousButton !== true
-      )
-        command = "previous";
+    // A modal step inerts the page only once presented. Until then keys must not act on the page,
+    // as inert would have prevented: a second Enter on the trigger would start the tour again.
+    if (
+      !step.allowsInteraction() &&
+      isHTMLElement(target, root) &&
+      target !== target.ownerDocument.body &&
+      !root?.contains(target)
+    ) {
+      event.preventDefault();
+      return;
     }
+    if (!queue) return;
+    const command = this.keyboardCommand(event, step, (command) =>
+      isControlAvailable(step.props.get(), command),
+    );
     if (!command) return;
     event.preventDefault();
-    this.pendingKeyboardCommand ??= { command, generation };
+    this.pendingCommand ??= { command, generation, source: "keyboard" };
   }
 
-  private flushPendingKeyboardCommand(step: ActiveStep<T>, generation: number) {
-    const pending = this.pendingKeyboardCommand;
+  /**
+   * Queues the command of a tour button clicked while a visible popover is replaced. Listening on
+   * the window runs after the consumer's own click handlers, so a prevented click queues nothing.
+   */
+  private queueTransitionClick(event: Event, step: ActiveStep<T>, generation: number) {
+    const scope = this.root ?? this.popover?.getElement();
+    if (
+      !this.isCurrentGeneration(generation) ||
+      event.defaultPrevented ||
+      event === this.handledTriggerClick ||
+      !isHTMLElement(scope, scope) ||
+      !isElement(event.target, scope)
+    )
+      return;
+    const match = this.findClickedTrigger(event.target, scope);
+    if (
+      !match ||
+      this.isLiveDisabled(match.trigger) ||
+      !isControlAvailable(step.props.get(), match.command)
+    )
+      return;
+    this.pendingCommand ??= { command: match.command, generation, source: "trigger" };
+  }
+
+  private flushPendingCommand(step: ActiveStep<T>, generation: number) {
+    const pending = this.pendingCommand;
     if (!pending || pending.generation !== generation) return;
-    this.pendingKeyboardCommand = null;
+    this.pendingCommand = null;
     queueMicrotask(() => {
       if (
         !this.isCurrentGeneration(generation) ||
@@ -845,7 +985,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         !this.canCommand(pending.command, step)
       )
         return;
-      void this.commandForGeneration(pending.command, generation, "keyboard");
+      void this.commandForGeneration(pending.command, generation, pending.source);
     });
   }
 
@@ -877,13 +1017,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   ) {
     const popover = this.popover?.getElement();
     if (!isHTMLElement(popover, this.root ?? popover)) return;
-    const autoFocus = step.behavior?.disableAutoFocus !== true;
+    const autoFocus = step.autoFocuses();
     const deferFocus = autoFocus && this.commands?.subscribeCapabilities !== undefined;
     if (deferFocus) this.pendingFocusGeneration = generation;
     this.focusGuard.activate({
       allowedTarget: target,
-      allowTargetInteraction: step.behavior?.allowInteraction === true,
-      autoFocus: autoFocus && !deferFocus,
+      allowTargetInteraction: step.allowsInteraction(),
+      autoFocus,
+      deferFocus,
       direction,
       fallback: this.root ?? popover.parentElement,
       popover,
@@ -891,7 +1032,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private syncScrollLock(step: ActiveStep<T>) {
-    if (step.allowScroll) {
+    if (step.allowsScroll()) {
       this.scrollLock.deactivate();
       return;
     }
@@ -899,17 +1040,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private syncShortcutLabels(step: ActiveStep<T>) {
-    for (const advance of this.findTriggers("advance")) {
-      syncKeyShortcuts(
-        advance,
-        step.popover?.keyboardShortcuts?.advance ?? DEFAULT_SHORTCUTS.advance,
-      );
-    }
-    for (const previous of this.findTriggers("previous")) {
-      syncKeyShortcuts(
-        previous,
-        step.popover?.keyboardShortcuts?.previous ?? DEFAULT_SHORTCUTS.previous,
-      );
+    for (const command of ["advance", "previous"] as const) {
+      const shortcuts = isControlAvailable(step.props.get(), command)
+        ? (step.props.get().controls?.[command]?.keys ?? DEFAULT_SHORTCUTS[command])
+        : [];
+      for (const trigger of this.findTriggers(command)) syncKeyShortcuts(trigger, shortcuts);
     }
   }
 
@@ -921,6 +1056,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       if (!isElement(event.target, scope)) return;
       const match = this.findClickedTrigger(event.target, scope);
       if (!match) return;
+      this.handledTriggerClick = event;
       this.deferTriggerCommand(match.command, event, step, generation, match.trigger);
     });
   }
@@ -990,18 +1126,22 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.syncControl(
         advance,
         this.commands?.isAdvanceDisabled() === true ||
-          step.props.get().popover?.disableAdvanceButton === true,
+          !isControlAvailable(step.props.get(), "advance"),
       );
     }
     for (const previous of this.findTriggers("previous")) {
       this.syncControl(
         previous,
         this.commands?.isPreviousDisabled() === true ||
-          step.props.get().popover?.disablePreviousButton === true,
+          !isControlAvailable(step.props.get(), "previous"),
       );
     }
     for (const cancel of this.findTriggers("cancel")) {
-      this.syncControl(cancel, this.commands?.isCancelDisabled() === true);
+      this.syncControl(
+        cancel,
+        this.commands?.isCancelDisabled() === true ||
+          !isControlAvailable(step.props.get(), "cancel"),
+      );
     }
   }
 
@@ -1046,19 +1186,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     step: ActiveStep<T>,
     trigger?: HTMLButtonElement | null,
   ) {
-    if (this.isConsumerDisabled(trigger ?? null)) return false;
-    if (command === "advance") {
-      return (
-        (this.commands?.canAdvance?.() ?? true) &&
-        step.props.get().popover?.disableAdvanceButton !== true
-      );
-    }
-    if (command === "previous") {
-      return (
-        (this.commands?.canPrevious?.() ?? true) &&
-        step.props.get().popover?.disablePreviousButton !== true
-      );
-    }
+    if (this.isConsumerDisabled(trigger ?? null) || !isControlAvailable(step.props.get(), command))
+      return false;
+    if (command === "advance") return this.commands?.canAdvance?.() ?? true;
+    if (command === "previous") return this.commands?.canPrevious?.() ?? true;
     return this.commands?.canCancel?.() ?? true;
   }
 
@@ -1084,14 +1215,24 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     );
   }
 
+  /**
+   * The props the overlay and popover render: the step's own, flagged when the step is detached so
+   * the overlay drops its cutout and the popover centers itself.
+   */
+  private elementProps(step: ActiveStep<T>): TourElementStep {
+    const props = step.props.get();
+    return step.detached ? { ...props, detached: true } : props;
+  }
+
   private isPointerEnabled(step: ActiveStep<T>) {
-    return step.behavior?.allowInteraction === true && step.indicator?.disabled !== true;
+    return step.allowsInteraction() && step.props.get().indicator?.hidden !== true;
   }
 
   private cleanupStepResources() {
     this.cancelScroll?.();
     this.cancelScroll = null;
     this.presentationDirty = false;
+    this.pointerFading = false;
     if (this.rafId !== null) this.rafCancel?.(this.rafId);
     this.rafId = null;
     this.rafCancel = null;
@@ -1146,14 +1287,57 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    * and to restore the step's own setting once retargeted.
    */
   private applyInteractionLock(step: ActiveStep<T>, locked: boolean) {
-    const allowed = !locked && step.behavior?.allowInteraction === true;
+    const allowed = !locked && step.allowsInteraction();
     this.overlay?.setInteractionAllowed(allowed);
     this.syncModality(allowed);
+  }
+
+  /** Applies the step's own interaction setting to the overlay, the page modality and the focus guard. */
+  private applyInteraction(step: ActiveStep<T>, target: HTMLElement) {
+    this.applyInteractionLock(step, false);
+    this.appliedAllowInteraction = step.allowsInteraction();
     const popover = this.popover?.getElement();
     if (isHTMLElement(popover, this.root ?? popover)) {
-      if (allowed) popover.removeAttribute("aria-modal");
-      else popover.setAttribute("aria-modal", "true");
+      this.focusGuard.update({
+        allowedTarget: target,
+        allowTargetInteraction: step.allowsInteraction(),
+        direction: this.direction,
+        fallback: this.root ?? popover.parentElement,
+        popover,
+      });
     }
+  }
+
+  /**
+   * Applies a `behavior.allowInteraction` changed through the step props while the step is on
+   * screen. A step still entering reads the new value when it presents, and a frozen one keeps
+   * interaction off until `retarget()` restores it. The indicator fades in or out instead of snapping.
+   */
+  private syncInteraction(step: ActiveStep<T>) {
+    const target = this.activeTarget;
+    if (
+      this.disposed ||
+      !this.active ||
+      this.frozen ||
+      this.awaitingStepUi ||
+      this.currentStep !== step ||
+      !target
+    )
+      return;
+    const focusWasInTarget = this.isFocusInsideTarget(target);
+    this.applyInteraction(step, target);
+    if (focusWasInTarget && !step.allowsInteraction() && step.autoFocuses())
+      this.focusGuard.focus();
+    const targetRect = target.getBoundingClientRect();
+    this.pointer?.cancelAnimations();
+    this.observeDynamicOperation(
+      this.presentPointer(
+        targetRect,
+        step,
+        this.popover?.resolvePosition(targetRect, this.elementProps(step)).placement,
+      ),
+      this.generation,
+    );
   }
 
   private isFocusInsideTarget(target: HTMLElement) {
@@ -1169,7 +1353,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    * and popover to the new rect on the next frame. Deliberately skips
    * `appear()` (no re-entrance animation) and `activateFocus()` (focus stays
    * where the user left it), only reclaiming it if it was on the target that
-   * just disappeared.
+   * just disappeared and the step auto focuses.
    */
   async retarget(step: ActiveStep<T>, signal: AbortSignal): Promise<void> {
     this.throwIfAborted(signal);
@@ -1179,22 +1363,16 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.frozen = false;
     this.currentSignal = signal;
     this.activeTarget = target;
-    this.applyInteractionLock(step, false);
+    this.applyInteraction(step, target);
     this.attachTargetResources(step, target, this.generation, signal);
-    const popover = this.popover?.getElement();
-    if (isHTMLElement(popover, this.root ?? popover)) {
-      this.focusGuard.update({
-        allowedTarget: target,
-        allowTargetInteraction: step.behavior?.allowInteraction === true,
-        direction: this.direction,
-        fallback: this.root ?? popover.parentElement,
-        popover,
-      });
+    // Without auto focus, focus lost with the removed target stays lost: the page owns it.
+    if (this.targetFocusedAtFreeze && step.autoFocuses()) {
+      // A step that detached, or no longer allows interaction, blocks the page: focus goes back
+      // into the popover instead of staying lost on the removed target.
+      if (step.allowsInteraction()) target.focus();
+      else this.focusGuard.focus();
     }
-    if (this.targetFocusedAtFreeze) {
-      this.targetFocusedAtFreeze = false;
-      if (step.behavior?.allowInteraction === true) target.focus();
-    }
+    this.targetFocusedAtFreeze = false;
     this.syncControlState(step);
     this.syncShortcutLabels(step);
     this.moveToRetargetedRect(step, target);
@@ -1212,14 +1390,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    */
   private moveToRetargetedRect(step: ActiveStep<T>, target: HTMLElement) {
     const generation = this.generation;
-    const targetRect = target.getBoundingClientRect();
-    this.observeDynamicOperation(this.overlay?.animateTo(targetRect, step), generation);
-    const placement = this.popover?.updatePosition(targetRect, step, (reposition) =>
-      this.observeDynamicOperation(reposition, generation),
+    const targetRect = presentationRect(step, target);
+    this.observeDynamicOperation(
+      this.overlay?.animateTo(targetRect, this.elementProps(step)),
+      generation,
+    );
+    const placement = this.popover?.updatePosition(
+      targetRect,
+      this.elementProps(step),
+      (reposition) => this.observeDynamicOperation(reposition, generation),
     );
     if (this.isPointerEnabled(step)) {
       this.observeDynamicOperation(
-        this.pointer?.moveToTarget(targetRect, step, true, placement),
+        this.pointer?.moveToTarget(targetRect, step.props.get(), true, placement),
         generation,
       );
     }
@@ -1231,7 +1414,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   private beginGeneration() {
     this.generation += 1;
-    this.pendingKeyboardCommand = null;
+    this.pendingCommand = null;
     this.pendingFocusGeneration = null;
     this.cancelElementAnimations();
     return this.generation;
@@ -1264,17 +1447,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    */
   private beginTargetScroll(step: ActiveStep<T>, target: HTMLElement, signal: AbortSignal) {
     this.throwIfAborted(signal);
-    if (step.behavior?.disableAutoScroll) return null;
+
+    if (step.detached || step.props.get().behavior?.autoScroll === false) return null;
+
     if (isInViewport(target.getBoundingClientRect(), target)) return null;
     const currentWindow = this.getWindow(target);
     if (!currentWindow) return null;
     const behavior = prefersReducedMotion(target)
       ? "instant"
-      : (step.behavior?.scroll?.behavior ?? "smooth");
+      : (step.props.get().behavior?.scroll?.behavior ?? "smooth");
     target.scrollIntoView({
       behavior,
-      block: step.behavior?.scroll?.block ?? "center",
-      inline: step.behavior?.scroll?.inline ?? "nearest",
+      block: step.props.get().behavior?.scroll?.block ?? "center",
+      inline: step.props.get().behavior?.scroll?.inline ?? "nearest",
     });
     // An instant scroll has already landed by the time the call returns.
     if (behavior === "instant") return null;
@@ -1387,6 +1572,18 @@ function animationOptions(
   };
 }
 
+/**
+ * The rect the presentation is placed against: the target's box, or an empty
+ * rect at the center of the viewport for a detached step, which the overlay
+ * draws without a cutout and the popover centers on.
+ */
+function presentationRect(step: { readonly detached?: boolean }, target: HTMLElement): DOMRect {
+  if (!step.detached) return target.getBoundingClientRect();
+  const viewport = viewportDimensions(target);
+  // Only the box itself is read: the snapshot derives the rest from it.
+  return { height: 0, left: viewport.width / 2, top: viewport.height / 2, width: 0 } as DOMRect;
+}
+
 function abortError() {
   return new DOMException("The operation was aborted", "AbortError");
 }
@@ -1452,6 +1649,14 @@ function sameViewport(left: ViewportSnapshot, right: ViewportSnapshot | null) {
 
 function finite(value: number, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
+}
+
+/** Whether a keydown is Enter on a focused control, which activates it and is left to the browser. */
+function activatesControl(event: KeyboardEvent, context?: Node | null) {
+  const target = event.target;
+  return (
+    event.key === "Enter" && isHTMLElement(target, context) && target.matches(FOCUSABLE_SELECTOR)
+  );
 }
 
 function isEditable(target: EventTarget | null, context?: Node | null) {

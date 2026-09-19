@@ -21,7 +21,7 @@ export interface DefaultTourAcceptanceFixture<TContent> {
   readonly name: string;
   readonly root: HTMLElement;
   readonly target: HTMLElement;
-  readonly tour: Pick<GlowTour<TContent>, "create" | "run" | "state">;
+  readonly tour: Pick<GlowTour<TContent>, "create" | "start" | "state">;
   content(value: string): TContent;
   settle(): Promise<void>;
   unmount(): Promise<void>;
@@ -147,16 +147,16 @@ export async function runAdapterAcceptance<TContent>(
   );
 
   let primaryProps!: StepContext<TContent>["props"];
-  await primaryTour.run(
+  await primaryTour.start(
     workflow(primaryTour, primaryTarget, `${name}-primary`, (props) => {
       primaryProps = props;
     }),
   );
   await assert.rejects(
-    () => secondaryTour.run(workflow(secondaryTour, secondaryTarget, `${name}-secondary-modal`)),
+    () => secondaryTour.start(workflow(secondaryTour, secondaryTarget, `${name}-secondary-modal`)),
     /only supports one active modal tour per document/,
   );
-  await secondaryTour.run(
+  await secondaryTour.start(
     workflow(secondaryTour, secondaryTarget, `${name}-secondary`, undefined, true),
   );
   await settle();
@@ -190,11 +190,11 @@ export async function runAdapterAcceptance<TContent>(
 
   await unmount();
   await assert.rejects(
-    () => primaryTour.run(primaryTour.create(`${name}-released`).build()),
+    () => primaryTour.start(primaryTour.create(`${name}-released`).build()),
     /connected root/i,
   );
   await assert.rejects(
-    () => secondaryTour.run(secondaryTour.create(`${name}-secondary-released`).build()),
+    () => secondaryTour.start(secondaryTour.create(`${name}-secondary-released`).build()),
     /connected root/i,
   );
 }
@@ -221,7 +221,7 @@ export async function runDefaultTourAcceptance<TContent>(
       .step({ id: "step-4", content: content("Second content"), target, title: content("Second title") })
       .build();
 
-  await tour.run(workflow());
+  await tour.start(workflow());
   await settle();
 
   assert.equal(root.matches("[data-glow-tour-root]"), true, `${name}: root selector`);
@@ -281,17 +281,202 @@ export async function runDefaultTourAcceptance<TContent>(
   await settle();
   assert.equal(tour.state.get().status, "finished", `${name}: advance finishes`);
 
-  await tour.run(workflow());
+  // beforeEnter runs before the step is shown, so the adapter never renders the declared props.
+  // The hook waits before setting props: a step shown too early would render in the meantime.
+  const renderedTexts: string[] = [];
+  const observer = new MutationObserver(() => renderedTexts.push(root.textContent ?? ""));
+  observer.observe(root, { characterData: true, childList: true, subtree: true });
+  await tour.start(
+    tour
+      .create(`${name} beforeEnter`)
+      .step({
+        id: "step-5",
+        content: content("Declared content"),
+        target,
+        title: content("Declared title"),
+      })
+      .beforeEnter(async ({ props }) => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        props.set((current) => ({
+          ...current,
+          content: content("Entered content"),
+          title: content("Entered title"),
+        }));
+      })
+      .build(),
+  );
   await settle();
+  renderedTexts.push(root.textContent ?? "");
+  observer.disconnect();
+  assert.match(root.textContent ?? "", /Entered title/, `${name}: beforeEnter title renders`);
+  assert.match(root.textContent ?? "", /Entered content/, `${name}: beforeEnter content renders`);
+  assert.equal(
+    renderedTexts.some((text) => /Declared (title|content)/.test(text)),
+    false,
+    `${name}: props set in beforeEnter render first`,
+  );
+
+  // The default tour keeps its footer and every trigger when every control is disabled; an adapter
+  // may drop an element or hide an ancestor.
+  const shown = (selector: string) => {
+    const element = root.querySelector(selector);
+    return element !== null && element.closest("[hidden]") === null;
+  };
+  const disabled = (selector: string) =>
+    root.querySelector<HTMLButtonElement>(selector)?.disabled === true;
+  await tour.start(
+    tour
+      .create(`${name} disabled controls`)
+      .step({
+        id: "step-6",
+        content: content("Disabled controls content"),
+        controls: {
+          advance: { state: "disabled" },
+          cancel: { state: "disabled" },
+          previous: { state: "disabled" },
+        },
+        target,
+        title: content("Disabled controls title"),
+      })
+      .build(),
+  );
+  await settle();
+  assert.match(root.textContent ?? "", /Disabled controls title/, `${name}: disabled controls step renders`);
+  assert.equal(shown("[data-glow-tour-footer]"), true, `${name}: footer kept with disabled controls`);
+  for (const control of ["advance", "previous", "cancel"] as const) {
+    const selector = `[data-glow-tour-${control}-trigger]`;
+    assert.equal(shown(selector), true, `${name}: disabled ${control} still rendered`);
+    assert.equal(disabled(selector), true, `${name}: disabled ${control}`);
+  }
+
+  // Without a title, the header is omitted and the content names the dialog.
+  await tour.start(
+    tour
+      .create(`${name} untitled`)
+      .step({ id: "step-7", content: content("Untitled content"), target })
+      .build(),
+  );
+  await settle();
+  assert.match(root.textContent ?? "", /Untitled content/, `${name}: untitled step renders`);
+  assert.equal(shown("[data-glow-tour-header]"), false, `${name}: header omitted without a title`);
+  assert.equal(
+    popover.getAttribute("aria-labelledby"),
+    description.id,
+    `${name}: content names an untitled dialog`,
+  );
+  assert.equal(popover.hasAttribute("aria-describedby"), false, `${name}: untitled description`);
+
+  // A step's classNames override the workflow ones per component, and they leave with the step.
+  const classTargets = {
+    overlay: "[data-glow-tour-overlay]",
+    pointer: "[data-glow-tour-pointer]",
+    popover: "[data-glow-tour-popover]",
+    header: "[data-glow-tour-header]",
+    content: "[data-glow-tour-content]",
+    footer: "[data-glow-tour-footer]",
+    previous: "[data-glow-tour-previous-trigger]",
+    advance: "[data-glow-tour-advance-trigger]",
+    cancel: "[data-glow-tour-cancel-trigger]",
+  } as const;
+  const classesOf = (slot: keyof typeof classTargets) =>
+    Array.from(requiredOwnedElement(root, classTargets[slot], name).classList).sort();
+  let classProps: StepContext<TContent>["props"] | undefined;
+  await tour.start(
+    tour
+      .create(`${name} classNames`, {
+        classNames: {
+          popover: "tour-popover",
+          advance: ["tour-control"],
+          header: "tour-header",
+          footer: "tour-footer",
+        },
+      })
+      .step({
+        id: "step-8",
+        content: content("Classes content"),
+        target,
+        title: content("Classes title"),
+        classNames: {
+          overlay: "step-overlay",
+          pointer: ["step-pointer"],
+          popover: ["step-popover"],
+          header: "step-header",
+          content: "step-content step-content-extra",
+          previous: "step-previous",
+          advance: "step-advance",
+          cancel: "step-cancel",
+        },
+      })
+      .do(({ props }) => {
+        classProps = props;
+      })
+      .step({ id: "step-9", content: content("Plain content"), target, title: content("Plain title") })
+      .build(),
+  );
+  await settle();
+  const expectedClasses = {
+    overlay: ["step-overlay"],
+    pointer: ["step-pointer"],
+    popover: ["step-popover"],
+    header: ["step-header"],
+    content: ["step-content", "step-content-extra"],
+    footer: ["tour-footer"],
+    previous: ["step-previous"],
+    advance: ["step-advance"],
+    cancel: ["step-cancel"],
+  };
+  for (const slot of Object.keys(classTargets) as (keyof typeof classTargets)[]) {
+    assert.deepEqual(classesOf(slot), expectedClasses[slot], `${name}: ${slot} step classes`);
+  }
+  classProps?.update({ classNames: { popover: "updated-popover" } });
+  await settle();
+  assert.deepEqual(classesOf("popover"), ["updated-popover"], `${name}: updated popover classes`);
+  assert.deepEqual(classesOf("header"), ["step-header"], `${name}: other classes kept`);
+  requiredOwnedElement(root, "[data-glow-tour-advance-trigger]", name).dispatchEvent(
+    new MouseEvent("click", { bubbles: true, cancelable: true }),
+  );
+  await settle();
+  assert.match(root.textContent ?? "", /Plain title/, `${name}: step without classNames renders`);
+  assert.deepEqual(classesOf("popover"), ["tour-popover"], `${name}: workflow classes only`);
+  assert.deepEqual(classesOf("advance"), ["tour-control"], `${name}: workflow control classes`);
+  assert.deepEqual(classesOf("header"), ["tour-header"], `${name}: workflow header classes`);
+  assert.deepEqual(classesOf("footer"), ["tour-footer"], `${name}: workflow footer classes`);
+  for (const slot of ["overlay", "pointer", "content", "previous", "cancel"] as const) {
+    assert.deepEqual(classesOf(slot), [], `${name}: ${slot} step classes removed`);
+  }
+  requiredOwnedElement(root, "[data-glow-tour-cancel-trigger]", name).dispatchEvent(
+    new MouseEvent("click", { bubbles: true, cancelable: true }),
+  );
+  await settle();
+  assert.equal(tour.state.get().status, "cancelled", `${name}: classNames tour cancelled`);
+
+  await tour.start(workflow());
+  await settle();
+  assert.equal(shown("[data-glow-tour-footer]"), true, `${name}: footer shown with enabled controls`);
+  assert.equal(
+    popover.getAttribute("aria-labelledby"),
+    root.querySelector("[data-glow-tour-header]")?.id,
+    `${name}: title names the dialog again`,
+  );
+  assert.equal(popover.getAttribute("aria-describedby"), description.id, `${name}: description back`);
   requiredOwnedElement(root, "[data-glow-tour-cancel-trigger]", name).dispatchEvent(
     new MouseEvent("click", { bubbles: true, cancelable: true }),
   );
   await settle();
   assert.equal(tour.state.get().status, "cancelled", `${name}: cancel cancels`);
+  // Tour state disables a trigger only while the tour is active. Outside of it, a start replacing
+  // the tour on screen would natively disable the focused trigger during its onStart and blur it.
+  for (const control of ["advance", "previous", "cancel"] as const) {
+    assert.equal(
+      disabled(`[data-glow-tour-${control}-trigger]`),
+      false,
+      `${name}: ${control} not disabled by an inactive tour`,
+    );
+  }
 
   await unmount();
   await assert.rejects(
-    () => tour.run(tour.create(`${name} released`).build()),
+    () => tour.start(tour.create(`${name} released`).build()),
     /connected root/i,
   );
 }

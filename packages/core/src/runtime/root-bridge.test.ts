@@ -243,11 +243,12 @@ describe("private root bridge", () => {
       "cancel",
       "create",
       "dispose",
-      "goToStep",
+      "goTo",
       "previous",
-      "run",
+      "start",
       "state",
     ]);
+    assert.equal("run" in tour, false);
     assert.equal("goAdvance" in tour, false);
     assert.equal("goPrevious" in tour, false);
     assert.equal("updateCurrentStep" in tour, false);
@@ -261,13 +262,13 @@ describe("private root bridge", () => {
     assert.deepEqual(Object.keys(runtime), ["createGlowTour"]);
   });
 
-  test("requires a root before run and uses the DOM driver after a root is connected", async () => {
+  test("requires a root before start and uses the DOM driver after a root is connected", async () => {
     const tour = createGlowTour<string>();
     const definition = tour.create("empty").build();
 
-    await assert.rejects(() => tour.run(definition), /connected root/i);
+    await assert.rejects(() => tour.start(definition), /connected root/i);
     rootBridge(tour).connectRoot({ root: root() });
-    await tour.run(definition);
+    await tour.start(definition);
     assert.equal(tour.state.get().status, "finished");
   });
 
@@ -275,7 +276,7 @@ describe("private root bridge", () => {
     const tour = createGlowTour<string>();
     rootBridge(tour).connectRoot({ root: root() });
 
-    await tour.run(tour.create("empty-without-popover").build());
+    await tour.start(tour.create("empty-without-popover").build());
 
     assert.equal(tour.state.get().status, "finished");
   });
@@ -293,7 +294,7 @@ describe("private root bridge", () => {
       .step({ id: "step-1", content: "content", target: () => root(), title: "title" })
       .build();
 
-    await assert.rejects(() => tour.run(definition), /connected popover/i);
+    await assert.rejects(() => tour.start(definition), /connected popover/i);
 
     assert.equal(onStartCalls, 0);
     assert.equal(tour.state.get().status, "idle");
@@ -309,14 +310,14 @@ describe("private root bridge", () => {
       .create("with-popover")
       .step({
         id: "step-2",
-        behavior: { missingTargetStrategy: "skip" },
+        behavior: { missingTarget: { strategy: "skip" } },
         content: "content",
         target: () => null,
         title: "title",
       })
       .build();
 
-    await tour.run(definition);
+    await tour.start(definition);
 
     assert.equal(tour.state.get().status, "finished");
   });
@@ -333,7 +334,7 @@ describe("private root bridge", () => {
 
     releasePopover();
 
-    await assert.rejects(() => tour.run(definition), /connected popover/i);
+    await assert.rejects(() => tour.start(definition), /connected popover/i);
     assert.equal(tour.state.get().status, "idle");
   });
 
@@ -343,7 +344,7 @@ describe("private root bridge", () => {
     const definition = tour.create("empty").build();
 
     assert.equal(binding.ids.root, "glow-tour-root");
-    await tour.run(definition);
+    await tour.start(definition);
     assert.equal(tour.state.get().status, "finished");
   });
 
@@ -411,7 +412,7 @@ describe("private root bridge", () => {
     const definition = tour.create("pending-run").build();
     let pendingRun: Promise<void> | null = null;
     mount.onSetAttribute = (name) => {
-      if (name === "id") pendingRun = tour.run(definition);
+      if (name === "id") pendingRun = tour.start(definition);
       if (name === "data-glow-tour-id-prefix") throw new Error("claim failed after pending run");
     };
 
@@ -504,12 +505,12 @@ describe("private root bridge", () => {
 
     assert.equal((second as unknown as MockElement).style.values.get("opacity"), "0");
     await assert.doesNotReject(() =>
-      tour.run(
+      tour.start(
         tour
           .create("replacement-popover")
           .step({
             id: "step-4",
-            behavior: { missingTargetStrategy: "skip" },
+            behavior: { missingTarget: { strategy: "skip" } },
             content: "content",
             target: () => null,
             title: "title",
@@ -626,15 +627,15 @@ describe("private root bridge", () => {
       .step({ id: "step-5", content: "content", target: () => target, title: "title" })
       .build();
 
-    await tour.run(definition);
+    await tour.start(definition);
     binding.release();
     assert.equal(animationFrameCancellations, 1);
     assert.equal(tour.state.get().status, "idle");
-    await assert.rejects(() => tour.run(definition), /connected root/i);
+    await assert.rejects(() => tour.start(definition), /connected root/i);
     const remount = root();
     const remountBinding = rootBridge(tour).connectRoot({ root: remount });
     releasePopover = remountBinding.bindPopover(child(remount));
-    await tour.run(definition);
+    await tour.start(definition);
     assert.equal(tour.state.get().status, "active");
   });
 
@@ -654,7 +655,7 @@ describe("private root bridge", () => {
       .step({ id: "step-6", content: "content", target: () => root(), title: "title" })
       .build();
 
-    await tour.run(definition);
+    await tour.start(definition);
 
     assert.equal(cancelCalls, 0);
     assert.equal(tour.state.get().status, "idle");
@@ -665,7 +666,7 @@ describe("private root bridge", () => {
     const resolverMount = root();
     const resolverBinding = rootBridge(resolverTour).connectRoot({ root: resolverMount });
     const releaseResolverPopover = resolverBinding.bindPopover(child(resolverMount));
-    await resolverTour.run(
+    await resolverTour.start(
       resolverTour
         .create("release-target", { onStart: releaseResolverPopover })
         .step({
@@ -688,9 +689,9 @@ describe("private root bridge", () => {
     const hookDefinition = hookTour
       .create("release-hook", { onStart: releaseHookPopover })
       .step({ id: "step-8", content: "content", target: () => root(), title: "title" })
-      .beforeAdvance(() => hookBinding.release())
+      .beforeLeave(() => hookBinding.release())
       .build();
-    await hookTour.run(hookDefinition);
+    await hookTour.start(hookDefinition);
     await hookTour.advance();
     assert.equal(hookTour.state.get().status, "idle");
   });
@@ -704,7 +705,7 @@ describe("private root bridge", () => {
       .create("release-remount", { onStart: () => releasePopover() })
       .step({ id: "step-9", content: "content", target: () => root(), title: "title" })
       .build();
-    await tour.run(definition);
+    await tour.start(definition);
     let remounts = 0;
     const unsubscribe = tour.state.subscribe((state) => {
       if (state.status !== "idle") return;
@@ -718,7 +719,7 @@ describe("private root bridge", () => {
     binding.release();
 
     assert.equal(remounts, 1);
-    await tour.run(definition);
+    await tour.start(definition);
     assert.equal(tour.state.get().status, "active");
     unsubscribe();
   });

@@ -12,8 +12,6 @@ import { createGlowTour as createCoreGlowTour } from "@glowhop/core-tour";
 export type VanillaTourContent = string | Node;
 /** Vanilla tour controller instance. */
 export type Tour = CoreGlowTour<VanillaTourContent>;
-/** Vanilla tour controller (alias for Tour). */
-export type VanillaGlowTour = Tour;
 /** Vanilla tour state snapshot. */
 export type TourState = CoreTourState<VanillaTourContent>;
 /** Vanilla step properties store. */

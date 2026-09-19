@@ -4,23 +4,20 @@ import {
   type ReadonlyStepProps,
   type WorkflowStepDefinition,
 } from "../definition";
-import type { StepPropsStore } from "../types";
-import {
-  mergeIndicatorOptions,
-  mergeOverlayOptions,
-  mergePopoverOptions,
-  mergeStepBehavior,
-} from "../utils/options";
+import type { StepPropsStore, TourDirection } from "../types";
+import { mergeStepProps } from "../utils/options";
 import { resolveTargetElement } from "../utils/utils";
 import { createStepPropsStore } from "./step-props-store";
 
 export class ActiveStep<T> {
   readonly initialProps: ReadonlyStepProps<T>;
   readonly props: StepPropsStore<T>;
-  readonly behavior;
   readonly animated: boolean | undefined;
-  readonly allowScroll: boolean;
   target: HTMLElement | null = null;
+  /** Shown without its target (`missingTarget.strategy: "detached"`); `target` is then the body. */
+  detached = false;
+  /** The navigation that last brought the tour to this step. */
+  direction: TourDirection = "advance";
 
   constructor(
     readonly definition: WorkflowStepDefinition<T>,
@@ -29,34 +26,28 @@ export class ActiveStep<T> {
     readonly path = "steps[0]",
     private readonly rootDocument?: Document,
   ) {
-    this.initialProps = freezeStepProps({
-      title: definition.props.title,
-      content: definition.props.content,
-      data: definition.props.data,
-      overlay: mergeOverlayOptions(defaults.overlay, definition.props.overlay),
-      popover: mergePopoverOptions(defaults.popover, definition.props.popover),
-      indicator: mergeIndicatorOptions(defaults.indicator, definition.props.indicator),
-    });
+    // The workflow options go in whole: freezeStepProps keeps only the step prop keys.
+    this.initialProps = freezeStepProps(mergeStepProps(defaults, definition.props));
     this.props = createStepPropsStore(this.initialProps, reportSubscriberError, path);
-    this.behavior = mergeStepBehavior(defaults.behavior, definition.behavior);
     this.animated = defaults.animated;
-    this.allowScroll = defaults.allowScroll !== false;
   }
 
-  reset() {
-    this.props.set(this.initialProps);
+  /**
+   * Reads `behavior.allowInteraction` live: `props.update({ behavior })` changes it while the step runs.
+   * A detached step has no target to interact with, so it always blocks the page.
+   */
+  allowsInteraction() {
+    return !this.detached && this.props.get().behavior?.allowInteraction === true;
   }
 
-  get overlay() {
-    return this.props.get().overlay;
+  /** Reads `behavior.autoFocus` live: `false` hands every focus move to the page. */
+  autoFocuses() {
+    return this.props.get().behavior?.autoFocus !== false;
   }
 
-  get popover() {
-    return this.props.get().popover;
-  }
-
-  get indicator() {
-    return this.props.get().indicator;
+  /** Reads `behavior.allowScroll` live: `props.update({ behavior })` changes it while the step runs. */
+  allowsScroll() {
+    return this.props.get().behavior?.allowScroll !== false;
   }
 
   async resolveTarget(signal: AbortSignal) {
@@ -65,6 +56,13 @@ export class ActiveStep<T> {
       { document: this.rootDocument, signal },
       this.path,
     );
+  }
+
+  /** Marks the step detached and returns the body it stands on, or `null` without a document. */
+  detach() {
+    const body = (this.rootDocument ?? globalThis.document)?.body ?? null;
+    this.detached = body !== null;
+    return body;
   }
 
   snapshot() {

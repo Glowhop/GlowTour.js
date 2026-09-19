@@ -1,11 +1,11 @@
 import type {
   BuiltinAction,
   ConfigValidationIssue,
-  EventHandlerConfig as CoreEventHandlerConfig,
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
-  TransitionActionRef as CoreTransitionActionRef,
+  StepHookActionRef as CoreStepHookActionRef,
+  TargetEventConfig as CoreTargetEventConfig,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -30,12 +30,12 @@ export { ConfigValidationError };
 export type WorkflowConfig = CoreWorkflowConfig<VueTourContent>;
 /** Vue step config: `StepConfig` pre-bound to `VueTourContent`. */
 export type StepConfig = CoreStepConfig<VueTourContent>;
-/** Vue event handler config: `EventHandlerConfig` pre-bound to `VueTourContent`. */
-export type EventHandlerConfig = CoreEventHandlerConfig<VueTourContent>;
+/** Vue target event config: `TargetEventConfig` pre-bound to `VueTourContent`. */
+export type TargetEventConfig = CoreTargetEventConfig<VueTourContent>;
 /** Vue step action reference: `StepActionRef` pre-bound to `VueTourContent`. */
 export type StepActionRef = CoreStepActionRef<VueTourContent>;
-/** Vue transition action reference: `TransitionActionRef` pre-bound to `VueTourContent`. */
-export type TransitionActionRef = CoreTransitionActionRef<VueTourContent>;
+/** Vue step hook reference: `StepHookActionRef` pre-bound to `VueTourContent`. */
+export type StepHookActionRef = CoreStepHookActionRef<VueTourContent>;
 /** Vue lifecycle action reference: `LifecycleActionRef` pre-bound to `VueTourContent`. */
 export type LifecycleActionRef = CoreLifecycleActionRef<VueTourContent>;
 /** Vue workflow definition produced from config, pre-bound to `VueTourContent`. */
@@ -43,7 +43,7 @@ export type WorkflowDefinitionFromConfig = CoreWorkflowDefinitionFromConfig<VueT
 
 /**
  * Builds a Vue `WorkflowDefinition` from a JSON-serializable config, pre-bound to
- * `VueTourContent` so the result is accepted by `createGlowTour().run(...)` with no generic
+ * `VueTourContent` so the result is accepted by `createGlowTour().start(...)` with no generic
  * and no cast.
  * @param config The parsed JSON (or equivalent plain object) to build from.
  * @param options Options; see `CreateWorkflowFromConfigOptions`.

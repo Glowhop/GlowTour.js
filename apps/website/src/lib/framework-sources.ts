@@ -3,7 +3,7 @@
 
 export const reactSource = `import { createRoot } from "react-dom/client";
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, DefaultTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
 
 const tour = createGlowTour();
 const workflow = tour
@@ -20,13 +20,13 @@ if (root) {
         <button
           id="welcome"
           type="button"
-          onClick={() => void tour.run(workflow)}
+          onClick={() => void tour.start(workflow)}
           style={{ padding: "10px 20px", fontSize: "16px" }}
         >
           Start tour
         </button>
       </div>
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </>,
   );
 }`;
@@ -42,7 +42,7 @@ const workflow = tour
   .build();
 
 function start() {
-  void tour.run(workflow);
+  void tour.start(workflow);
 }
 </script>
 
@@ -59,7 +59,7 @@ function start() {
 
 export const solidSource = `import { render } from "solid-js/web";
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, DefaultTour } from "@glowhop/solid-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/solid-tour";
 
 const tour = createGlowTour();
 const workflow = tour
@@ -77,13 +77,13 @@ if (appRoot) {
           <button
             id="welcome"
             type="button"
-            onClick={() => void tour.run(workflow)}
+            onClick={() => void tour.start(workflow)}
             style={{ padding: "10px 20px", "font-size": "16px" }}
           >
             Start tour
           </button>
         </div>
-        <DefaultTour tour={tour} />
+        <GlowTourDefault tour={tour} />
       </>
     ),
     appRoot,
@@ -121,13 +121,12 @@ export class AppComponent {
     .build();
 
   start() {
-    void this.tour.run(this.workflow);
+    void this.tour.start(this.workflow);
   }
 }`;
 
 export const vanillaSource = `import "@glowhop/styles-tour/default.css";
 import {
-  createDefaultTourElement,
   createGlowTour,
   registerGlowTourElements,
 } from "@glowhop/vanilla-tour";
@@ -144,8 +143,9 @@ const button = document.createElement("button");
 button.id = "welcome";
 button.type = "button";
 button.textContent = "Start tour";
-button.addEventListener("click", () => void tour.run(workflow));
+button.addEventListener("click", () => void tour.start(workflow));
 document.body.append(button);
 
-const root = createDefaultTourElement(tour);
+const root = document.createElement("glow-tour-default");
+root.tour = tour;
 document.body.append(root);`;

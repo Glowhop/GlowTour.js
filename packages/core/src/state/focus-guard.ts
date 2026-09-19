@@ -10,6 +10,8 @@ export interface FocusGuardScope {
   allowedTarget?: HTMLElement | null;
   allowTargetInteraction?: boolean;
   autoFocus?: boolean;
+  /** The caller focuses a control later: keep a focus already in scope until then. */
+  deferFocus?: boolean;
   fallback?: HTMLElement | null;
 }
 
@@ -44,22 +46,20 @@ export class FocusGuard {
     if (this.active && this.document !== document) this.deactivate();
     if (!this.active) {
       this.document = document;
-      this.initialFocus = isHTMLElement(this.document.activeElement, scope.popover)
-        ? this.document.activeElement
-        : null;
+      this.captureInitialFocus(scope.popover);
       this.document.addEventListener("focusin", this.handleFocusIn, true);
       this.active = true;
     }
 
     this.update(scope);
+    // Without auto focus the step never moves focus, even when `inert` left it on the body: the
+    // page owns it. The trap still keeps focus that later leaves the scope out of the page.
+    if (scope.autoFocus === false) return;
     const currentFocus = this.document?.activeElement;
-    if (
-      scope.autoFocus !== false ||
-      !isNode(currentFocus, scope.popover) ||
-      !this.isAllowed(currentFocus)
-    ) {
-      this.focusFallback();
+    if (scope.deferFocus && isNode(currentFocus, scope.popover) && this.isAllowed(currentFocus)) {
+      return;
     }
+    this.focusFallback();
   }
 
   update(scope: FocusGuardScope) {
@@ -74,10 +74,35 @@ export class FocusGuard {
     if (this.active) this.focusFallback();
   }
 
+  /**
+   * Remembers the element focus returns to when the guard deactivates. The driver calls it before
+   * making the rest of the page inert, because inerting an ancestor blurs the focused element.
+   * Does nothing once a focus is remembered or the guard is active. `pending` is a focus a clear
+   * could not give back before this show replaced it, and wins over the current focus.
+   */
+  captureInitialFocus(reference: HTMLElement, pending?: HTMLElement | null) {
+    if (this.active || this.initialFocus) return;
+    const activeElement = pending ?? ownerDocument(reference)?.activeElement;
+    this.initialFocus = isHTMLElement(activeElement, reference) ? activeElement : null;
+  }
+
   deactivate() {
-    if (!this.active) {
-      return;
+    const focusToRestore = this.release();
+    if (focusToRestore?.isConnected) {
+      focusToRestore.focus();
     }
+  }
+
+  /**
+   * Stops guarding and returns the element focus should go back to, without moving focus. Lets
+   * the caller restore it once the page has left `inert`: screen readers ignore focus moved onto
+   * content their accessibility tree has not caught up with yet.
+   */
+  release(): HTMLElement | null {
+    const focusToRestore = this.initialFocus;
+    // A capture from a show that never activated must not leak into the next tour.
+    this.initialFocus = null;
+    if (!this.active) return null;
 
     this.document?.removeEventListener("focusin", this.handleFocusIn, true);
     this.document = null;
@@ -86,13 +111,7 @@ export class FocusGuard {
     this.allowedTarget = null;
     this.allowTargetInteraction = false;
     this.restoreFallback();
-
-    const focusToRestore = this.initialFocus;
-    this.initialFocus = null;
-
-    if (focusToRestore?.isConnected) {
-      focusToRestore.focus();
-    }
+    return focusToRestore;
   }
 
   private isAllowed(target: Node) {
@@ -145,12 +164,11 @@ export class FocusGuard {
 
   private findFocusable(root: HTMLElement, direction: FocusDirection) {
     const candidates = focusableTourControls(root);
-    const selector =
-      direction === "advance"
-        ? "[data-glow-tour-advance-trigger]"
-        : "[data-glow-tour-previous-trigger]";
-
-    return candidates.find((candidate) => candidate.matches(selector)) ?? null;
+    const find = (trigger: FocusDirection) =>
+      candidates.find((candidate) => candidate.matches(`[data-glow-tour-${trigger}-trigger]`));
+    // Going back onto a step where Back is unavailable, typically the first one, lands on Advance:
+    // focus left on an unavailable control is a dead end, and NVDA re-reads the whole dialog.
+    return (direction === "previous" && find("previous")) || find("advance") || null;
   }
 }
 

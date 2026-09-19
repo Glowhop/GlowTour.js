@@ -1,6 +1,6 @@
 "use client";
 
-import { createGlowTour, DefaultTour } from "@glowhop/react-tour";
+import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
 import { useState } from "react";
 
 export default function Page() {
@@ -33,7 +33,7 @@ export default function Page() {
       <button
         id="start-tour-trigger"
         type="button"
-        onClick={() => void tour.run(workflow)}
+        onClick={() => void tour.start(workflow)}
         style={{ padding: "10px 20px", fontSize: 16 }}
       >
         Start tour
@@ -46,7 +46,7 @@ export default function Page() {
           Target two
         </div>
       </div>
-      <DefaultTour tour={tour} />
+      <GlowTourDefault tour={tour} />
     </main>
   );
 }

@@ -3,7 +3,6 @@ import { defineComponent, h, type PropType } from "vue";
 import type { VueTourContent } from "../glow-tour.js";
 import {
   GlowTourAdvanceTrigger,
-  GlowTourBackTrigger,
   GlowTourCancelTrigger,
   GlowTourContent,
   GlowTourFooter,
@@ -11,6 +10,7 @@ import {
   GlowTourOverlay,
   GlowTourPointer,
   GlowTourPopover,
+  GlowTourPreviousTrigger,
   GlowTourRoot,
 } from "./tour-components.js";
 
@@ -33,7 +33,7 @@ export const GlowTourDefault = /* @__PURE__ */ defineComponent({
           h(GlowTourContent),
           h(GlowTourFooter, null, () => [
             h(GlowTourCancelTrigger),
-            h(GlowTourBackTrigger),
+            h(GlowTourPreviousTrigger),
             h(GlowTourAdvanceTrigger),
           ]),
         ]),
