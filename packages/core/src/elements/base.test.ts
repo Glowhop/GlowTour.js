@@ -39,7 +39,7 @@ function createElement(
   return { animate } as unknown as HTMLElement;
 }
 
-function createAnimation(finished: Promise<void>) {
+function createAnimation(finished: Promise<void>, fill: FillMode = "forwards") {
   let cancelled = false;
   return {
     cancel() {
@@ -48,6 +48,7 @@ function createAnimation(finished: Promise<void>) {
     get cancelled() {
       return cancelled;
     },
+    effect: { getTiming: () => ({ fill }) },
     finished,
   } as unknown as Animation;
 }
@@ -229,6 +230,19 @@ describe("GlowTourElement animation support", () => {
     element.releaseFilled();
 
     assert.equal(animation.cancelled, true);
+  });
+
+  test("does not keep a finished animation that applies no fill", async () => {
+    const element = new TestElement(createElement());
+    const animation = createAnimation(Promise.resolve(), "none") as Animation & {
+      readonly cancelled: boolean;
+    };
+
+    assert.equal(await element.wait(animation), true);
+    element.releaseFilled();
+
+    // Not retained, so there is nothing to cancel: it no longer affects the element.
+    assert.equal(animation.cancelled, false);
   });
 
   test("leaves a cancelled animation out of the fills to release", async () => {
