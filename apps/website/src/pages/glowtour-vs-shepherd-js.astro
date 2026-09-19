@@ -1,4 +1,5 @@
 ---
+import ApiComparison from "../components/ApiComparison.astro";
 import ComparisonPage from "../components/ComparisonPage.astro";
 import ComparisonSection from "../components/ComparisonSection.astro";
 ---
@@ -9,9 +10,28 @@ import ComparisonSection from "../components/ComparisonSection.astro";
 */}
 <ComparisonPage
   competitor="shepherd"
-  title="GlowTour.js vs Shepherd.js - Product Tour Library Comparison"
-  description="GlowTour.js vs Shepherd.js: compare framework integrations, customization model, API ergonomics, accessibility and licensing (MIT vs AGPL-3.0)."
-  intro="Shepherd.js is a mature, framework-agnostic tour library; GlowTour.js is a newer one built around native framework adapters. They differ most in how they integrate with frameworks, how you customize the tour UI, how tours are defined, and how they are licensed."
+  title="Shepherd.js Alternative: GlowTour.js vs Shepherd.js"
+  description="Looking for a Shepherd.js alternative? Compare GlowTour.js and Shepherd.js across framework integrations, APIs, customization, accessibility and licensing."
+  intro="Shepherd.js is a mature, framework-agnostic tour library; GlowTour.js is a newer one built around native framework adapters. If you are looking for a Shepherd.js alternative, the biggest differences are framework integration, UI composition, workflow APIs and licensing."
+  glowtourBestFor="You want native framework adapters, a chainable workflow builder, component-level UI composition and an MIT license for commercial or open-source projects."
+  competitorBestFor="You prefer a mature framework-agnostic library with official wrappers and your project is compatible with Shepherd.js licensing terms."
+  faq={[
+    {
+      question: "Is GlowTour.js a Shepherd.js alternative?",
+      answer:
+        "Yes. Both create guided product tours across several frontend stacks. GlowTour.js focuses on native framework adapters, composable components and an MIT license; Shepherd.js offers a mature core with official wrappers.",
+    },
+    {
+      question: "What is the licensing difference between GlowTour.js and Shepherd.js?",
+      answer:
+        "GlowTour.js is MIT licensed. Shepherd.js is offered under AGPL-3.0 with a commercial license available. Review the current project licenses before choosing one for a commercial application.",
+    },
+    {
+      question: "Can I migrate a Shepherd.js tour to GlowTour.js?",
+      answer:
+        "The main concepts map directly: Shepherd steps become builder steps, attachTo targets become selectors, and tour controls map to the GlowTour instance. The APIs differ, so step definitions and callbacks need to be rewritten.",
+    },
+  ]}
 >
   <ComparisonSection
     id="framework-integrations"
@@ -57,6 +77,13 @@ import ComparisonSection from "../components/ComparisonSection.astro";
       definition any adapter can run, and accepts a JSON config for tours stored outside your code.
     </p>
   </ComparisonSection>
+
+
+  <ApiComparison
+    competitorName="Shepherd.js"
+    competitorCode={"import Shepherd from \"shepherd.js\";\n\nconst tour = new Shepherd.Tour();\n\ntour.addStep({\n  id: \"welcome\",\n  text: \"Start here\",\n  attachTo: {\n    element: \"#welcome\",\n    on: \"bottom\",\n  },\n});\n\ntour.start();"}
+    glowtourCode={"import { createGlowTour } from \"@glowhop/react-tour\";\n\nconst tour = createGlowTour();\nconst workflow = tour\n  .create(\"onboarding\")\n  .step({\n    id: \"welcome\",\n    target: \"#welcome\",\n    title: \"Welcome\",\n    content: \"Start here\",\n  })\n  .build();\n\nvoid tour.start(workflow);"}
+  />
 
   <ComparisonSection id="accessibility-licensing" heading="Accessibility and licensing">
     <p>
