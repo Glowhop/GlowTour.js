@@ -20,15 +20,8 @@ interface Props {
   faq: Array<{ question: string; answer: string }>;
 }
 
-const {
-  competitor,
-  title,
-  description,
-  intro,
-  glowtourBestFor,
-  competitorBestFor,
-  faq,
-} = Astro.props;
+const { competitor, title, description, intro, glowtourBestFor, competitorBestFor, faq } =
+  Astro.props;
 
 const glowtour = getLibrary("glowtour");
 const library = getLibrary(competitor);
