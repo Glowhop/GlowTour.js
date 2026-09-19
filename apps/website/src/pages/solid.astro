@@ -14,4 +14,32 @@ import { solidSource } from "../lib/framework-sources";
   guideHref="/docs/guides/solid"
   title="Solid Product Tour Library - GlowTour.js"
   description="Build accessible, SSR-safe product tours and guided onboarding for Solid with @glowhop/solid-tour, a typed step builder, and GlowTourDefault."
+  benefits={[
+  {
+    "title": "Solid-native components",
+    "description": "Use Solid components and a Context-scoped tour instance without adding a wrapper around another framework."
+  },
+  {
+    "title": "SolidStart verified",
+    "description": "Use the adapter in server-rendered applications with real render, hydration, and end-to-end coverage."
+  },
+  {
+    "title": "Fine-grained control",
+    "description": "Choose the ready-made GlowTourDefault UI or compose lower-level primitives with Solid's reactivity."
+  }
+]}
+  faq={[
+  {
+    "question": "How do I create a product tour in Solid?",
+    "answer": "Install @glowhop/solid-tour and @glowhop/styles-tour, create a tour and workflow, render GlowTourDefault with the tour, then start the workflow from a Solid event handler."
+  },
+  {
+    "question": "Does GlowTour.js work with SolidStart?",
+    "answer": "Yes. The Solid adapter is verified with server rendering and hydration in a SolidStart application. Start the workflow after the target elements have mounted in the browser."
+  },
+  {
+    "question": "Can I customize the Solid tour UI?",
+    "answer": "Yes. You can replace the default CSS theme or compose the Solid adapter's lower-level components for complete control over presentation."
+  }
+]}
 />
