@@ -14,4 +14,32 @@ import { vanillaSource } from "../lib/framework-sources";
   guideHref="/docs/guides/vanilla"
   title="Vanilla JavaScript Product Tour Library - GlowTour.js"
   description="Build accessible product tours and guided onboarding with vanilla JavaScript using @glowhop/vanilla-tour, native custom elements, and a typed step builder."
+  benefits={[
+  {
+    "title": "No framework required",
+    "description": "Use standards-based custom elements and the same typed workflow engine in any JavaScript application."
+  },
+  {
+    "title": "Small integration surface",
+    "description": "Register the elements once, assign the tour instance, and start workflows from normal DOM events."
+  },
+  {
+    "title": "Works with existing stacks",
+    "description": "Add guided onboarding to static sites, legacy applications, or framework-agnostic design systems."
+  }
+]}
+  faq={[
+  {
+    "question": "How do I create a product tour with vanilla JavaScript?",
+    "answer": "Install @glowhop/vanilla-tour and @glowhop/styles-tour, register the custom elements, create a tour and workflow, assign the tour to glow-tour-default, and start it from a DOM event."
+  },
+  {
+    "question": "Does GlowTour.js require React or another framework?",
+    "answer": "No. The vanilla adapter uses native custom elements, so it works without React, Vue, Angular, or Solid."
+  },
+  {
+    "question": "Can I customize the vanilla JavaScript tour UI?",
+    "answer": "Yes. Replace the default CSS theme or use the registered custom elements and core primitives to build a presentation that matches your application."
+  }
+]}
 />
