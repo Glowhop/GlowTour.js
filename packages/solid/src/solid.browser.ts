@@ -615,7 +615,8 @@ describe("solid adapter browser behavior", () => {
     );
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
 
-    assert.equal(advance?.disabled, true);
+    // An idle tour does not disable its triggers: tour state only counts while the tour is active.
+    assert.equal(advance?.disabled, false);
     await tour.start(workflow);
     assert.equal(advance?.disabled, false);
     assert.equal(advance?.textContent, "Continue");

@@ -114,7 +114,14 @@ export default abstract class GlowTourElement {
     } finally {
       stopWatchingVisibility();
       this.animations.delete(animation);
-      if (!this.released && !this.cancelledAnimations.has(animation)) {
+      // Only a fill that outlives the animation needs releasing: keeping every finished animation
+      // would retain the overlay's and the pointer's, which never fill, for as long as the root lives.
+      const fill = animation.effect?.getTiming?.().fill;
+      if (
+        !this.released &&
+        !this.cancelledAnimations.has(animation) &&
+        (fill === "forwards" || fill === "both")
+      ) {
         this.filledAnimations.add(animation);
       }
     }

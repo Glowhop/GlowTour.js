@@ -185,6 +185,8 @@ export class TourController<T> {
     this.error = null;
     this.commandSource = "api";
     this.retainedPresentation = retainedPresentation;
+    // A start this one supersedes may still hold its `tour:start`: that tour never began.
+    this.pendingTourStart = undefined;
 
     try {
       this.setStatus("starting");
@@ -256,6 +258,7 @@ export class TourController<T> {
     this.direction = "advance";
     this.error = null;
     this.retainedPresentation = null;
+    this.pendingTourStart = undefined;
     this.status = "disposed";
     this.publish(true);
     this.stateListeners.clear();
@@ -278,6 +281,7 @@ export class TourController<T> {
     this.direction = "advance";
     this.error = null;
     this.retainedPresentation = null;
+    this.pendingTourStart = undefined;
     this.status = "idle";
   }
 
@@ -291,7 +295,8 @@ export class TourController<T> {
    * Nothing is emitted before `beforeEnter` lets the navigation through, so an abort leaves no trace.
    * Then come the held `tour:start`, a `step:skip` per skipped step, and one `step:leave` for the
    * step being left. `lostStep` is the step whose target disappeared during recovery: it cannot stay
-   * on screen, so reaching the first-step boundary or an abort turns into its missing-target error.
+   * on screen, so skipping backward past the first step cancels the tour, and a `beforeEnter` abort
+   * turns into its missing-target error.
    */
   private async navigate(
     index: number,

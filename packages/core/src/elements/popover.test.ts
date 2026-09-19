@@ -619,6 +619,7 @@ describe("PopoverElement animation fallbacks", () => {
           animation.cancelled = true;
         },
         cancelled: false,
+        effect: { getTiming: () => ({ fill: "forwards" }) },
         finished: Promise.resolve(),
       };
       animations.push(animation);
