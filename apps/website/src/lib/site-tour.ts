@@ -151,16 +151,19 @@ function callout(symbol: string, ...children: (Node | string)[]): HTMLElement {
   );
 }
 
-/** Small cards with a large emoji, two per row. */
+/**
+ * Small cards with a large emoji, two per row. Tighter on narrow screens, where every pixel of
+ * popover height is taken from the target.
+ */
 function cards(...items: readonly (readonly [symbol: string, label: string])[]): HTMLUListElement {
   return element(
     "ul",
-    "m-0 grid list-none grid-cols-2 gap-1.5 p-0",
+    "m-0 grid list-none grid-cols-2 gap-1 p-0 sm:gap-1.5",
     ...items.map(([symbol, label]) =>
       element(
         "li",
-        "flex items-center gap-2 rounded-lg border border-(--glow-tour-color-border) px-2.5 py-2 text-sm",
-        element("span", "text-xl leading-none", emoji(symbol)),
+        "flex items-center gap-1.5 rounded-lg border border-(--glow-tour-color-border) px-2 py-1 text-xs sm:gap-2 sm:px-2.5 sm:py-2 sm:text-sm",
+        element("span", "text-base leading-none sm:text-xl", emoji(symbol)),
         label,
       ),
     ),
@@ -195,8 +198,6 @@ function content(...children: (Node | string)[]): HTMLDivElement {
 }
 
 export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
-  const frameworks = Object.keys(FRAMEWORK_LOGOS) as SiteTourFramework[];
-
   return tour
     .create(SITE_TOUR_NAME)
     .step({
@@ -276,11 +277,6 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
     .step({
       content: content(
         "Each framework gets a native adapter over one shared engine.",
-        pills(
-          ...frameworks.map(
-            (framework) => [logo(framework), FRAMEWORK_LOGOS[framework].label] as const,
-          ),
-        ),
         "The tour you are in uses the vanilla one, because this page is static HTML. Next stop: the React page 👉",
       ),
       id: "frameworks",
