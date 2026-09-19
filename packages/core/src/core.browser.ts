@@ -168,7 +168,7 @@ describe("core browser realm isolation", () => {
       .step({ id: "step-2", content: "Two", target: "#realm-target", title: "Two" })
       .build();
 
-    await tour.run(workflow);
+    await tour.start(workflow);
 
     assert.equal(tour.state.get().currentStep?.target, target);
     assert.equal(document.activeElement, advance);
@@ -230,7 +230,7 @@ describe("monitoring events through the public entry point", () => {
       .step({ id: "three", content: "Three", target: "#events-target", title: "Three" })
       .build();
 
-    await tour.run(workflow);
+    await tour.start(workflow);
 
     assert.deepEqual(
       events.map((event) => `${event.type}:${event.stepId}`),

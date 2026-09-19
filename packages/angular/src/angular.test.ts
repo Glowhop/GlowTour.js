@@ -46,7 +46,6 @@ describe("angular adapter contract", () => {
   test("exports an instance factory and standalone native components without legacy runtime values", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
       "GlowTourAdvanceTrigger",
-      "GlowTourBackTrigger",
       "GlowTourCancelTrigger",
       "GlowTourContent",
       "GlowTourDefault",
@@ -55,12 +54,15 @@ describe("angular adapter contract", () => {
       "GlowTourOverlay",
       "GlowTourPointer",
       "GlowTourPopover",
+      "GlowTourPreviousTrigger",
       "GlowTourRoot",
       "createGlowTour",
       "injectGlowTour",
+      "injectGlowTourContext",
     ]);
     assert.equal(typeof runtime.createGlowTour, "function");
     assert.equal(typeof runtime.injectGlowTour, "function");
+    assert.equal(typeof runtime.injectGlowTourContext, "function");
     assert.equal(typeof runtime.GlowTourDefault, "function");
 
     for (const component of [
@@ -72,7 +74,7 @@ describe("angular adapter contract", () => {
       runtime.GlowTourPopover,
       runtime.GlowTourOverlay,
       runtime.GlowTourPointer,
-      runtime.GlowTourBackTrigger,
+      runtime.GlowTourPreviousTrigger,
       runtime.GlowTourAdvanceTrigger,
       runtime.GlowTourCancelTrigger,
     ]) {

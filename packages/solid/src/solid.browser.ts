@@ -76,10 +76,10 @@ describe("solid adapter browser behavior", () => {
       import * as runtime from "./index.ts";
       const tour = runtime.createGlowTour();
       const html = renderToString(() =>
-        runtime.GlowTour.Root({
+        runtime.GlowTourRoot({
           tour,
           get children() {
-            return runtime.GlowTour.Popover({ children: "Hello" });
+            return runtime.GlowTourPopover({ children: "Hello" });
           },
         }),
       );
@@ -107,7 +107,7 @@ describe("solid adapter browser behavior", () => {
     document.body.append(container);
     assert.ok(container.querySelector("[data-glow-tour-root]"));
 
-    const [{ hydrate }, { createGlowTour, GlowTour }] = await Promise.all([
+    const [{ hydrate }, { createGlowTour, GlowTourPopover, GlowTourRoot }] = await Promise.all([
       import("solid-js/web"),
       import("./index"),
     ]);
@@ -119,10 +119,10 @@ describe("solid adapter browser behavior", () => {
       // numbering, which would desync client hydration from the server markup.
       hydrate(
         () =>
-          GlowTour.Root({
+          GlowTourRoot({
             tour,
             get children() {
-              return GlowTour.Popover({ children: "Hello" });
+              return GlowTourPopover({ children: "Hello" });
             },
           }),
         container,
@@ -139,17 +139,14 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("passes the shared default-tour acceptance contract", async () => {
-    const [{ createComponent }, { render }, { createGlowTour, DefaultTour }] = await Promise.all([
-      import("solid-js"),
-      import("solid-js/web"),
-      import("./index"),
-    ]);
+    const [{ createComponent }, { render }, { createGlowTour, GlowTourDefault }] =
+      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
     const tour = createGlowTour();
     const dispose = render(
-      () => createComponent(DefaultTour, { idPrefix: "solid-default", tour }),
+      () => createComponent(GlowTourDefault, { idPrefix: "solid-default", tour }),
       container,
     );
     const root = container.querySelector<HTMLElement>("[data-glow-tour-root]");
@@ -176,8 +173,11 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("exposes reactive tour state to descendants", async () => {
-    const [{ createComponent }, { Dynamic, render }, { createGlowTour, GlowTour, useTour }] =
-      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const [
+      { createComponent },
+      { Dynamic, render },
+      { createGlowTour, GlowTourPopover, GlowTourRoot, useGlowTourContext },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -188,7 +188,7 @@ describe("solid adapter browser behavior", () => {
       .step({ id: "step-2", content: "Second", target, title: "Second" })
       .build();
     function Observer() {
-      const state = useTour();
+      const state = useGlowTourContext();
       return createComponent(Dynamic, {
         component: "output",
         get children() {
@@ -198,27 +198,93 @@ describe("solid adapter browser behavior", () => {
     }
     const dispose = render(
       () =>
-        createComponent(GlowTour.Root, {
+        createComponent(GlowTourRoot, {
           tour,
           get children() {
-            return [createComponent(GlowTour.Popover, {}), createComponent(Observer, {})];
+            return [createComponent(GlowTourPopover, {}), createComponent(Observer, {})];
           },
         }),
       container,
     );
-    await tour.run(workflow);
+    await tour.start(workflow);
     assert.equal(container.querySelector("output")?.textContent, "active:0");
     await tour.advance();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
     dispose();
   });
 
-  test("keeps nested tour controls isolated from the outer root", async () => {
-    const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
+  test("useGlowTour exposes state accessors outside the root and disposes the tour it creates", async () => {
+    const [
+      { createComponent },
+      { Dynamic, render },
+      { GlowTourPopover, GlowTourRoot, useGlowTour },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    let glow!: ReturnType<typeof useGlowTour>;
+    function App() {
+      glow = useGlowTour();
+      return [
+        createComponent(Dynamic, {
+          component: "output",
+          get children() {
+            return `${glow.status()}:${glow.currentStepIndex()}`;
+          },
+        }),
+        createComponent(GlowTourRoot, {
+          tour: glow.tour,
+          get children() {
+            return createComponent(GlowTourPopover, {});
+          },
+        }),
+      ];
+    }
+    const dispose = render(() => createComponent(App, {}), container);
+    const workflow = glow
+      .create("use glow tour")
+      .step({ id: "first", content: "First", target, title: "First" })
+      .step({ id: "second", content: "Second", target, title: "Second" })
+      .build();
+    await glow.start(workflow);
+    assert.equal(container.querySelector("output")?.textContent, "active:0");
+    await glow.advance();
+    assert.equal(container.querySelector("output")?.textContent, "active:1");
+    await glow.cancel();
+    assert.equal(glow.status(), "cancelled");
+    dispose();
+    assert.equal(glow.tour.state.get().status, "disposed");
+    container.remove();
+    target.remove();
+  });
+
+  test("useGlowTour never disposes a tour it is given", async () => {
+    const [{ createComponent }, { render }, { createGlowTour, useGlowTour }] = await Promise.all([
       import("solid-js"),
       import("solid-js/web"),
       import("./index"),
     ]);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const tour = createGlowTour();
+    let glow!: ReturnType<typeof useGlowTour>;
+    function App() {
+      glow = useGlowTour(tour);
+      return glow.status();
+    }
+    const dispose = render(() => createComponent(App, {}), container);
+    assert.equal(glow.tour, tour);
+    dispose();
+    assert.equal(tour.state.get().status, "idle");
+    container.remove();
+  });
+
+  test("keeps nested tour controls isolated from the outer root", async () => {
+    const [
+      { createComponent },
+      { render },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const outerTarget = document.createElement("button");
     const innerTarget = document.createElement("button");
@@ -250,20 +316,20 @@ describe("solid adapter browser behavior", () => {
         .build();
     const dispose = render(
       () =>
-        createComponent(GlowTour.Root, {
+        createComponent(GlowTourRoot, {
           idPrefix: "outer",
           tour: outer,
           get children() {
             return [
-              createComponent(GlowTour.Popover, {}),
-              createComponent(GlowTour.AdvanceTrigger, {}),
-              createComponent(GlowTour.Root, {
+              createComponent(GlowTourPopover, {}),
+              createComponent(GlowTourAdvanceTrigger, {}),
+              createComponent(GlowTourRoot, {
                 idPrefix: "inner",
                 tour: inner,
                 get children() {
                   return [
-                    createComponent(GlowTour.Popover, {}),
-                    createComponent(GlowTour.AdvanceTrigger, {}),
+                    createComponent(GlowTourPopover, {}),
+                    createComponent(GlowTourAdvanceTrigger, {}),
                   ];
                 },
               }),
@@ -272,8 +338,8 @@ describe("solid adapter browser behavior", () => {
         }),
       container,
     );
-    await outer.run(workflow(outer, outerTarget, "outer"));
-    await inner.run(workflow(inner, innerTarget, "inner", true));
+    await outer.start(workflow(outer, outerTarget, "outer"));
+    await inner.start(workflow(inner, innerTarget, "inner", true));
     const [outerAdvance, innerAdvance] = Array.from(
       container.querySelectorAll<HTMLButtonElement>("[data-glow-tour-advance-trigger]"),
     );
@@ -289,8 +355,11 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("uses controller keyboard permission despite consumer-disabled advance trigger order", async () => {
-    const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
-      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const [
+      { createComponent, createSignal },
+      { render },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -305,18 +374,18 @@ describe("solid adapter browser behavior", () => {
     const dispose = render(() => {
       const [disabledFirst, updateDisabledFirst] = createSignal(true);
       setDisabledFirst = updateDisabledFirst;
-      let popover: ReturnType<typeof GlowTour.Popover> | undefined;
-      return createComponent(GlowTour.Root, {
+      let popover: ReturnType<typeof GlowTourPopover> | undefined;
+      return createComponent(GlowTourRoot, {
         tour,
         get children() {
-          popover ??= createComponent(GlowTour.Popover, {});
-          const disabled = createComponent(GlowTour.AdvanceTrigger, { disabled: true });
-          const enabled = createComponent(GlowTour.AdvanceTrigger, {});
+          popover ??= createComponent(GlowTourPopover, {});
+          const disabled = createComponent(GlowTourAdvanceTrigger, { disabled: true });
+          const enabled = createComponent(GlowTourAdvanceTrigger, {});
           return disabledFirst() ? [popover, disabled, enabled] : [popover, enabled, disabled];
         },
       });
     }, container);
-    await tour.run(workflow);
+    await tour.start(workflow);
     const disabled = container.querySelector<HTMLButtonElement>(
       "[data-glow-tour-consumer-disabled]",
     );
@@ -335,8 +404,18 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("delegates commands to controls that appear while a tour is active", async () => {
-    const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
-      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const [
+      { createComponent, createSignal },
+      { render },
+      {
+        createGlowTour,
+        GlowTourAdvanceTrigger,
+        GlowTourCancelTrigger,
+        GlowTourPopover,
+        GlowTourPreviousTrigger,
+        GlowTourRoot,
+      },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -350,22 +429,22 @@ describe("solid adapter browser behavior", () => {
     const dispose = render(() => {
       const [showAdvance, updateShowAdvance] = createSignal(false);
       setShowAdvance = updateShowAdvance;
-      let popover: ReturnType<typeof GlowTour.Popover> | undefined;
-      return createComponent(GlowTour.Root, {
+      let popover: ReturnType<typeof GlowTourPopover> | undefined;
+      return createComponent(GlowTourRoot, {
         tour,
         get children() {
-          popover ??= createComponent(GlowTour.Popover, {});
+          popover ??= createComponent(GlowTourPopover, {});
           return [
             popover,
-            createComponent(GlowTour.CancelTrigger, {}),
-            createComponent(GlowTour.BackTrigger, {}),
-            showAdvance() ? createComponent(GlowTour.AdvanceTrigger, {}) : null,
+            createComponent(GlowTourCancelTrigger, {}),
+            createComponent(GlowTourPreviousTrigger, {}),
+            showAdvance() ? createComponent(GlowTourAdvanceTrigger, {}) : null,
           ];
         },
       });
     }, container);
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     const firstBack = container.querySelector<HTMLButtonElement>(
       "[data-glow-tour-previous-trigger]",
     );
@@ -377,7 +456,7 @@ describe("solid adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().status, "cancelled");
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     await tour.advance();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     const back = container.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
@@ -398,8 +477,11 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("keeps native disabled, consumer marker, and aria-disabled coherent when disabled toggles", async () => {
-    const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
-      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const [
+      { createComponent, createSignal },
+      { render },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const target = document.createElement("button");
     document.body.append(container, target);
@@ -413,12 +495,12 @@ describe("solid adapter browser behavior", () => {
     const dispose = render(() => {
       const [disabled, updateDisabled] = createSignal(true);
       setDisabled = updateDisabled;
-      return createComponent(GlowTour.Root, {
+      return createComponent(GlowTourRoot, {
         tour,
         get children() {
           return [
-            createComponent(GlowTour.Popover, {}),
-            createComponent(GlowTour.AdvanceTrigger, {
+            createComponent(GlowTourPopover, {}),
+            createComponent(GlowTourAdvanceTrigger, {
               get disabled() {
                 return disabled();
               },
@@ -428,7 +510,7 @@ describe("solid adapter browser behavior", () => {
       });
     }, container);
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     assert.equal(advance?.disabled, true);
     assert.equal(advance?.getAttribute("data-glow-tour-consumer-disabled"), "true");
@@ -447,25 +529,32 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("connects an injected instance and applies one coherent root ID family", async () => {
-    const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("solid-js"),
-      import("solid-js/web"),
-      import("./index"),
-    ]);
+    const [
+      { createComponent },
+      { render },
+      {
+        createGlowTour,
+        GlowTourAdvanceTrigger,
+        GlowTourContent,
+        GlowTourHeader,
+        GlowTourPopover,
+        GlowTourRoot,
+      },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     document.body.append(container);
     const tour = createGlowTour();
 
     const dispose = render(
       () =>
-        createComponent(GlowTour.Root, {
+        createComponent(GlowTourRoot, {
           tour,
           get children() {
             return [
-              createComponent(GlowTour.Popover, { children: "Popover" }),
-              createComponent(GlowTour.Header, {}),
-              createComponent(GlowTour.Content, {}),
-              createComponent(GlowTour.AdvanceTrigger, {}),
+              createComponent(GlowTourPopover, { children: "Popover" }),
+              createComponent(GlowTourHeader, {}),
+              createComponent(GlowTourContent, {}),
+              createComponent(GlowTourAdvanceTrigger, {}),
             ];
           },
         }),
@@ -492,11 +581,11 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("updates trigger state after a tour becomes active and reaches its final step", async () => {
-    const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("solid-js"),
-      import("solid-js/web"),
-      import("./index"),
-    ]);
+    const [
+      { createComponent },
+      { render },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     document.body.append(container);
     const target = document.createElement("button");
@@ -510,12 +599,12 @@ describe("solid adapter browser behavior", () => {
 
     const dispose = render(
       () =>
-        createComponent(GlowTour.Root, {
+        createComponent(GlowTourRoot, {
           tour,
           get children() {
             return [
-              createComponent(GlowTour.Popover, {}),
-              createComponent(GlowTour.AdvanceTrigger, {
+              createComponent(GlowTourPopover, {}),
+              createComponent(GlowTourAdvanceTrigger, {
                 finishLabel: "Complete",
                 advanceLabel: "Continue",
               }),
@@ -526,8 +615,9 @@ describe("solid adapter browser behavior", () => {
     );
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
 
-    assert.equal(advance?.disabled, true);
-    await tour.run(workflow);
+    // An idle tour does not disable its triggers: tour state only counts while the tour is active.
+    assert.equal(advance?.disabled, false);
+    await tour.start(workflow);
     assert.equal(advance?.disabled, false);
     assert.equal(advance?.textContent, "Continue");
     advance?.click();
@@ -538,8 +628,11 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("replaces the root tour subscription and commands when its reactive tour prop changes", async () => {
-    const [{ createComponent, createSignal }, { render }, { createGlowTour, GlowTour }] =
-      await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const [
+      { createComponent, createSignal },
+      { render },
+      { createGlowTour, GlowTourAdvanceTrigger, GlowTourContent, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     document.body.append(container);
     const target = document.createElement("button");
@@ -558,31 +651,32 @@ describe("solid adapter browser behavior", () => {
 
     const dispose = render(
       () =>
-        createComponent(GlowTour.Root, {
+        createComponent(GlowTourRoot, {
           get tour() {
             return tour();
           },
           get children() {
             return [
-              createComponent(GlowTour.Popover, {}),
-              createComponent(GlowTour.Content, {}),
-              createComponent(GlowTour.AdvanceTrigger, {}),
+              createComponent(GlowTourPopover, {}),
+              createComponent(GlowTourContent, {}),
+              createComponent(GlowTourAdvanceTrigger, {}),
             ];
           },
         }),
       container,
     );
 
-    await first.tour.run(firstWorkflow);
+    await first.tour.start(firstWorkflow);
     assert.equal(container.textContent, "First tourFinish tour");
-    assert.equal(first.subscriptions, 2);
+    // Popover (title-dependent dialog relations), content and trigger each subscribe.
+    assert.equal(first.subscriptions, 3);
 
     setTour(second.tour);
     await Promise.resolve();
     assert.equal(first.unsubscriptions, first.subscriptions);
-    assert.equal(second.subscriptions, 2);
+    assert.equal(second.subscriptions, 3);
 
-    await second.tour.run(secondWorkflow);
+    await second.tour.start(secondWorkflow);
     assert.equal(container.textContent, "Second tourFinish tour");
     container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]")?.click();
     await new Promise((resolve) => window.setTimeout(resolve, 10));
@@ -593,11 +687,18 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("does not execute consumer-disabled trigger commands", async () => {
-    const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("solid-js"),
-      import("solid-js/web"),
-      import("./index"),
-    ]);
+    const [
+      { createComponent },
+      { render },
+      {
+        createGlowTour,
+        GlowTourAdvanceTrigger,
+        GlowTourCancelTrigger,
+        GlowTourPopover,
+        GlowTourPreviousTrigger,
+        GlowTourRoot,
+      },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     document.body.append(container);
     const target = document.createElement("button");
@@ -610,21 +711,21 @@ describe("solid adapter browser behavior", () => {
       .build();
     const dispose = render(
       () =>
-        createComponent(GlowTour.Root, {
+        createComponent(GlowTourRoot, {
           tour,
           get children() {
             return [
-              createComponent(GlowTour.Popover, {}),
-              createComponent(GlowTour.BackTrigger, { disabled: true }),
-              createComponent(GlowTour.AdvanceTrigger, { disabled: true }),
-              createComponent(GlowTour.CancelTrigger, { disabled: true }),
+              createComponent(GlowTourPopover, {}),
+              createComponent(GlowTourPreviousTrigger, { disabled: true }),
+              createComponent(GlowTourAdvanceTrigger, { disabled: true }),
+              createComponent(GlowTourCancelTrigger, { disabled: true }),
             ];
           },
         }),
       container,
     );
 
-    await tour.run(workflow);
+    await tour.start(workflow);
     const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
     const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
     assert.equal(advance?.disabled, true);
@@ -646,11 +747,18 @@ describe("solid adapter browser behavior", () => {
   });
 
   test("passes the shared adapter acceptance contract with sibling roots", async () => {
-    const [{ createComponent }, { render }, { createGlowTour, GlowTour }] = await Promise.all([
-      import("solid-js"),
-      import("solid-js/web"),
-      import("./index"),
-    ]);
+    const [
+      { createComponent },
+      { render },
+      {
+        createGlowTour,
+        GlowTourAdvanceTrigger,
+        GlowTourContent,
+        GlowTourHeader,
+        GlowTourPopover,
+        GlowTourRoot,
+      },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
     const container = document.createElement("div");
     const primaryTarget = document.createElement("button");
     const secondaryTarget = document.createElement("button");
@@ -659,27 +767,27 @@ describe("solid adapter browser behavior", () => {
     const secondaryTour = createGlowTour();
     const dispose = render(
       () => [
-        createComponent(GlowTour.Root, {
+        createComponent(GlowTourRoot, {
           idPrefix: "solid-primary",
           tour: primaryTour,
           get children() {
             return [
-              createComponent(GlowTour.Popover, {}),
-              createComponent(GlowTour.Header, {}),
-              createComponent(GlowTour.Content, {}),
-              createComponent(GlowTour.AdvanceTrigger, {}),
+              createComponent(GlowTourPopover, {}),
+              createComponent(GlowTourHeader, {}),
+              createComponent(GlowTourContent, {}),
+              createComponent(GlowTourAdvanceTrigger, {}),
             ];
           },
         }),
-        createComponent(GlowTour.Root, {
+        createComponent(GlowTourRoot, {
           idPrefix: "solid-secondary",
           tour: secondaryTour,
           get children() {
             return [
-              createComponent(GlowTour.Popover, {}),
-              createComponent(GlowTour.Header, {}),
-              createComponent(GlowTour.Content, {}),
-              createComponent(GlowTour.AdvanceTrigger, {}),
+              createComponent(GlowTourPopover, {}),
+              createComponent(GlowTourHeader, {}),
+              createComponent(GlowTourContent, {}),
+              createComponent(GlowTourAdvanceTrigger, {}),
             ];
           },
         }),
@@ -705,15 +813,15 @@ describe("solid adapter browser behavior", () => {
         try {
           dispose = render(
             () =>
-              createComponent(GlowTour.Root, {
+              createComponent(GlowTourRoot, {
                 idPrefix: "solid-duplicate",
                 tour: primaryTour,
                 get children() {
                   return [
-                    createComponent(GlowTour.Popover, {}),
-                    createComponent(GlowTour.Header, {}),
-                    createComponent(GlowTour.Content, {}),
-                    createComponent(GlowTour.AdvanceTrigger, {}),
+                    createComponent(GlowTourPopover, {}),
+                    createComponent(GlowTourHeader, {}),
+                    createComponent(GlowTourContent, {}),
+                    createComponent(GlowTourAdvanceTrigger, {}),
                   ];
                 },
               }),

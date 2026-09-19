@@ -73,7 +73,7 @@ class TourRootBinding<T> implements AdapterRootBinding {
     return this.popover !== null;
   }
 
-  get document() {
+  getDocument() {
     return this.root.ownerDocument;
   }
 
@@ -223,11 +223,11 @@ export function attachRootBridge<T>(
   });
   return {
     assertCanRun(workflow: WorkflowDefinition<T>) {
-      if (!binding) throw new Error("Glow tour requires a connected root before run()");
+      if (!binding) throw new Error("Glow tour requires a connected root before start()");
       if (workflow.steps.length > 0 && !binding.hasPopover()) {
-        throw new Error("Glow tour requires a connected popover before run()");
+        throw new Error("Glow tour requires a connected popover before start()");
       }
-      return binding.document;
+      return binding.getDocument();
     },
     release() {
       binding?.release();

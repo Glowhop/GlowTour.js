@@ -2,11 +2,11 @@ import type { AngularTourContent } from "@glowhop/angular-tour";
 import type {
   BuiltinAction,
   ConfigValidationIssue,
-  EventHandlerConfig as CoreEventHandlerConfig,
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
-  TransitionActionRef as CoreTransitionActionRef,
+  StepHookActionRef as CoreStepHookActionRef,
+  TargetEventConfig as CoreTargetEventConfig,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -30,12 +30,12 @@ export { ConfigValidationError };
 export type WorkflowConfig = CoreWorkflowConfig<AngularTourContent>;
 /** Angular step config: `StepConfig` pre-bound to `AngularTourContent`. */
 export type StepConfig = CoreStepConfig<AngularTourContent>;
-/** Angular event handler config: `EventHandlerConfig` pre-bound to `AngularTourContent`. */
-export type EventHandlerConfig = CoreEventHandlerConfig<AngularTourContent>;
+/** Angular target event config: `TargetEventConfig` pre-bound to `AngularTourContent`. */
+export type TargetEventConfig = CoreTargetEventConfig<AngularTourContent>;
 /** Angular step action reference: `StepActionRef` pre-bound to `AngularTourContent`. */
 export type StepActionRef = CoreStepActionRef<AngularTourContent>;
-/** Angular transition action reference: `TransitionActionRef` pre-bound to `AngularTourContent`. */
-export type TransitionActionRef = CoreTransitionActionRef<AngularTourContent>;
+/** Angular step hook reference: `StepHookActionRef` pre-bound to `AngularTourContent`. */
+export type StepHookActionRef = CoreStepHookActionRef<AngularTourContent>;
 /** Angular lifecycle action reference: `LifecycleActionRef` pre-bound to `AngularTourContent`. */
 export type LifecycleActionRef = CoreLifecycleActionRef<AngularTourContent>;
 /** Angular workflow definition produced from config, pre-bound to `AngularTourContent`. */
@@ -43,7 +43,7 @@ export type WorkflowDefinitionFromConfig = CoreWorkflowDefinitionFromConfig<Angu
 
 /**
  * Builds an Angular `WorkflowDefinition` from a JSON-serializable config, pre-bound to
- * `AngularTourContent` so the result is accepted by `createGlowTour().run(...)` with no generic
+ * `AngularTourContent` so the result is accepted by `createGlowTour().start(...)` with no generic
  * and no cast.
  * @param config The parsed JSON (or equivalent plain object) to build from.
  * @param options Options; see `CreateWorkflowFromConfigOptions`.

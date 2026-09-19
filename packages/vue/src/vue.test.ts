@@ -31,8 +31,8 @@ void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTou
 describe("vue adapter contract", () => {
   test("exports an instance factory and named native components without legacy runtime values", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
+      "GlowTour",
       "GlowTourAdvanceTrigger",
-      "GlowTourBackTrigger",
       "GlowTourCancelTrigger",
       "GlowTourContent",
       "GlowTourDefault",
@@ -41,12 +41,15 @@ describe("vue adapter contract", () => {
       "GlowTourOverlay",
       "GlowTourPointer",
       "GlowTourPopover",
+      "GlowTourPreviousTrigger",
       "GlowTourRoot",
       "createGlowTour",
-      "useTour",
+      "useGlowTour",
+      "useGlowTourContext",
     ]);
     assert.equal(typeof runtime.createGlowTour, "function");
-    assert.equal(typeof runtime.useTour, "function");
+    assert.equal(typeof runtime.useGlowTour, "function");
+    assert.equal(typeof runtime.useGlowTourContext, "function");
     assert.equal(typeof runtime.GlowTourDefault, "object");
 
     for (const component of [
@@ -58,7 +61,7 @@ describe("vue adapter contract", () => {
       runtime.GlowTourPopover,
       runtime.GlowTourOverlay,
       runtime.GlowTourPointer,
-      runtime.GlowTourBackTrigger,
+      runtime.GlowTourPreviousTrigger,
       runtime.GlowTourAdvanceTrigger,
       runtime.GlowTourCancelTrigger,
     ]) {
@@ -76,6 +79,32 @@ describe("vue adapter contract", () => {
     ]) {
       assert.equal(legacy in runtime, false, `${legacy} must not be public`);
     }
+  });
+
+  test("exposes the composition components under the GlowTour namespace", () => {
+    assert.deepEqual(Object.keys(runtime.GlowTour).sort(), [
+      "AdvanceTrigger",
+      "CancelTrigger",
+      "Content",
+      "Footer",
+      "Header",
+      "Overlay",
+      "Pointer",
+      "Popover",
+      "PreviousTrigger",
+      "Root",
+    ]);
+    assert.equal(runtime.GlowTour.AdvanceTrigger, runtime.GlowTourAdvanceTrigger);
+    assert.equal(runtime.GlowTour.CancelTrigger, runtime.GlowTourCancelTrigger);
+    assert.equal(runtime.GlowTour.Content, runtime.GlowTourContent);
+    assert.equal(runtime.GlowTour.Footer, runtime.GlowTourFooter);
+    assert.equal(runtime.GlowTour.Header, runtime.GlowTourHeader);
+    assert.equal(runtime.GlowTour.Overlay, runtime.GlowTourOverlay);
+    assert.equal(runtime.GlowTour.Pointer, runtime.GlowTourPointer);
+    assert.equal(runtime.GlowTour.Popover, runtime.GlowTourPopover);
+    assert.equal(runtime.GlowTour.PreviousTrigger, runtime.GlowTourPreviousTrigger);
+    assert.equal(runtime.GlowTour.Root, runtime.GlowTourRoot);
+    assert.equal("Default" in runtime.GlowTour, false);
   });
 
   test("imports without DOM globals for SSR", () => {
@@ -135,11 +164,26 @@ describe("vue adapter contract", () => {
       assert.equal(
         emittedSource.match(/\/\* @__PURE__ \*\/ defineComponent\d*\(/g)?.length,
         11,
-        "every exported presentation component must be marked pure in the flattened entry",
+        "every presentation component must be marked pure in the flattened entry",
       );
     } finally {
       rmSync(directory, { force: true, recursive: true });
     }
+  });
+
+  test("renders the namespaced composition like the named components", async () => {
+    const render = (root: typeof runtime.GlowTourRoot, popover: typeof runtime.GlowTourPopover) =>
+      renderToString(
+        createSSRApp({
+          render: () =>
+            h(root, { tour: runtime.createGlowTour() }, () => h(popover, null, () => "Content")),
+        }),
+      );
+
+    const html = await render(runtime.GlowTour.Root, runtime.GlowTour.Popover);
+    assert.match(html, /data-glow-tour-root/);
+    assert.match(html, /data-glow-tour-popover/);
+    assert.equal(html, await render(runtime.GlowTourRoot, runtime.GlowTourPopover));
   });
 
   test("renders a root boundary without client-generated IDs during SSR", async () => {
@@ -159,8 +203,8 @@ describe("vue adapter contract", () => {
     assert.doesNotMatch(html, /aria-describedby/);
   });
 
-  test("renders the idle presentation into the DefaultTour markup before any binding runs", async () => {
-    // The bug this guards: DefaultTour renders overlay/pointer/popover
+  test("renders the idle presentation into the GlowTourDefault markup before any binding runs", async () => {
+    // The bug this guards: GlowTourDefault renders overlay/pointer/popover
     // unconditionally, and the idle (out-of-flow, invisible) presentation used
     // to be applied only imperatively by each core element's initializeProps()
     // once an adapter binds it, leaving server-rendered markup fully visible.
@@ -195,8 +239,8 @@ describe("vue adapter contract", () => {
   });
 
   test("exposes label overrides without legacy previous props", () => {
-    assert.equal("backLabel" in (runtime.GlowTourBackTrigger.props ?? {}), true);
-    assert.equal("previousLabel" in (runtime.GlowTourBackTrigger.props ?? {}), false);
+    assert.equal("previousLabel" in (runtime.GlowTourPreviousTrigger.props ?? {}), true);
+    assert.equal("backLabel" in (runtime.GlowTourPreviousTrigger.props ?? {}), false);
     assert.equal("advanceLabel" in (runtime.GlowTourAdvanceTrigger.props ?? {}), true);
     assert.equal("finishLabel" in (runtime.GlowTourAdvanceTrigger.props ?? {}), true);
     assert.equal("cancelLabel" in (runtime.GlowTourCancelTrigger.props ?? {}), false);

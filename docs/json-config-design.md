@@ -5,9 +5,10 @@ tested code, exposed through the `@glowhop/core-tour/config` entry point.
 
 ## Format
 
-A `WorkflowConfig<T = string>` is a plain JSON object: a `name`, the usual tour-level
+A `WorkflowConfig<T = string>` is a plain JSON object: a format `version` (`"1.1"`, independent of
+the package version), a `name`, the usual tour-level
 display/behavior options, and `steps`. Every step carries a required `id`, unique within the
-workflow - it is what `run(workflow, { startAt })` resolves against, so it is validated at build
+workflow - it is what `start(workflow, { startAt })` resolves against, so it is validated at build
 time like any other required field. Content (`title`/`content`) is generic over `T`, defaulting
 to `string` for the untrusted-JSON path (`JSON.parse()` output). No i18n either way; put
 translation keys in `content` and interpolation params in `data`. `target` is a CSS selector
@@ -18,22 +19,22 @@ string only.
 lifecycle hooks use it contravariantly). A non-generic, `string`-only format would produce
 `WorkflowDefinition<string>`, which is neither assignable to nor from `WorkflowDefinition<ReactNode>`
 - even though `string` is a valid `ReactNode` - locking every framework adapter out of the config
-path (see decision #3 in `HANDOFF-serializable-config.md`). Instantiating with the adapter's
+path. Instantiating with the adapter's
 content type (`createWorkflowFromConfig<ReactNode>(...)`) fixes this with no cast.
 
 Runtime validation of `title`/`content` cannot know what `T` is, so it stays strict by default -
 plain strings only - regardless of the type parameter. Pass `options.validateContent` (see
 "Validating a generic `T`" below) to accept `T`'s actual shape.
 
-`actions` (per step) and `eventHandlers[].action` accept a `StepActionRef`: either a `BuiltinAction`
-object or an inline function (same-runtime JS only, not serializable). `advanceAction`/
-`previousAction`/`cancelAction` and the tour-level `onStart`/`onCancel`/`onFinish` hooks accept only
-a plain function - see "Mapping problems" below for why.
+`actions` (per step) and `targetEvents[].action` accept a `StepActionRef`: either a `BuiltinAction`
+object or an inline function (same-runtime JS only, not serializable). `beforeEnter`/`beforeLeave`
+and the tour-level `onStart`/`onCancel`/`onFinish` hooks accept only a plain function - see
+"Mapping problems" below for why.
 
 ```jsonc
 {
+  "version": "1.1",
   "name": "onboarding",
-  "cancellable": true,
   "steps": [
     {
       "id": "invite",
@@ -45,7 +46,7 @@ a plain function - see "Mapping problems" below for why.
         { "type": "waitUntilElement", "selector": "#invite-button", "timeout": 5000 },
         { "type": "clickTarget" }
       ],
-      "eventHandlers": [
+      "targetEvents": [
         {
           "event": "click",
           "action": { "type": "focusTarget" }
@@ -65,8 +66,8 @@ a plain function - see "Mapping problems" below for why.
 
 A hand-authored config with no functions at all is 100% JSON - `BuiltinAction` alone covers
 delays, waiting for an element, and clicking/focusing the target, which is the bulk of real tours.
-`advanceAction`/`previousAction`/`cancelAction` and the lifecycle hooks require JS (see below), so a
-config using them is a same-runtime JS object, not a wire-transportable JSON document.
+`beforeEnter`/`beforeLeave` and the lifecycle hooks require JS (see below), so a config using them is
+a same-runtime JS object, not a wire-transportable JSON document.
 
 ## Entry-point / bundle wiring
 
@@ -92,35 +93,37 @@ escape hatch for exactly these cases. **The registry has been removed entirely**
 string-id form of `ActionRef` anywhere in the format. The remaining gaps are accepted tradeoffs,
 not deferred problems:
 
-1. **`BuiltinAction` only makes sense for `actions[]` / `eventHandlers[].action`.**
+1. **`BuiltinAction` only makes sense for `actions[]` / `targetEvents[].action`.**
    `wait`/`waitUntilElement`/`clickTarget`/`focusTarget` all assume a `StepContext`-shaped context
    (`target: HTMLElement`, `signal`, navigation methods) - which is what `actions[]` and
-   `eventHandlers[].action` get (`StepEventContext<T>` is literally `StepContext<T>`). But
-   `advanceAction`/`previousAction`/`cancelAction` receive a `BeforeActionStepContext` (`target`
-   only, no `signal`, no navigation) and `onStart`/`onCancel`/`onFinish` receive a
-   `LifecycleHookContext` (**no `target` at all** - only `step: TourCurrentStep<T> | null`).
+   `targetEvents[].action` get (`StepEventContext<T>` is literally `StepContext<T>`). But
+   `beforeEnter`/`beforeLeave` receive a `StepHookContext` (`target` and `signal`, no navigation,
+   and they run while a transition is in progress, so a `wait` would stall it and `clickTarget`
+   would act on a step that is not shown yet or is being left) and `onStart`/`onCancel`/`onFinish`
+   receive a `LifecycleHookContext` (**no `target` at all** - only
+   `step: TourCurrentStep<T> | null`).
 
    Resolved by **splitting `ActionRef` per slot family** instead of keeping one generic union, each
    generic over the config's content type `T`:
    - `StepActionRef<T> = BuiltinAction | StepAction<T>` - for `actions[]` and
-     `eventHandlers[].action`.
-   - `TransitionActionRef<T> = StepTransitionAction<T>` - for
-     `advanceAction`/`previousAction`/`cancelAction`. Plain function type, no builtin variant.
+     `targetEvents[].action`.
+   - `StepHookActionRef<T> = StepHookAction<T>` - for `beforeEnter`/`beforeLeave`. Plain function
+     type, no builtin variant.
    - `LifecycleActionRef<T> = (context: LifecycleHookContext<T>) => void | Promise<void>`
      - for `onStart`/`onCancel`/`onFinish`. Plain function type, no builtin variant.
 
-   TypeScript now rejects a `BuiltinAction` in a transition or lifecycle slot at compile time; the
+   TypeScript now rejects a `BuiltinAction` in a step hook or lifecycle slot at compile time; the
    validator rejects it at runtime for raw (untyped) JSON input.
 
-2. **Transition and lifecycle hooks are not expressible in JSON at all.** With the registry gone,
-   `TransitionActionRef` and `LifecycleActionRef` collapse to plain function types - there is no
+2. **Step and lifecycle hooks are not expressible in JSON at all.** With the registry gone,
+   `StepHookActionRef` and `LifecycleActionRef` collapse to plain function types - there is no
    JSON-object form for either, and there never will be one without reintroducing a registry
    (which was removed for a different reason - see point 3). **This is an accepted limitation**: a
-   config that uses `advanceAction`/`previousAction`/`cancelAction`/`onStart`/`onCancel`/`onFinish`
-   is not wire-transportable JSON. The documented workaround (see `docs/json-config.md`) is to bind
-   app-side behavior through the `data` field's ids instead: an `eventHandlers[].action` (or
+   config that uses `beforeEnter`/`beforeLeave`/`onStart`/`onCancel`/`onFinish` is not
+   wire-transportable JSON. The documented workaround (see `docs/json-config.md`) is to bind
+   app-side behavior through the `data` field's ids instead: an `targetEvents[].action` (or
    `actions[]`) builtin/function can call `context.props.get().data` to look up state, but the
-   transition/lifecycle decision itself still has to live in the same-runtime JS object.
+   step hook/lifecycle decision itself still has to live in the same-runtime JS object.
 
 3. **No registry, therefore no `waitUntil`.** The builder's `.waitUntil(predicate, options)` takes
    an arbitrary function; there is no way to reference one from JSON without a registry. Since the
@@ -139,7 +142,7 @@ not deferred problems:
 
 5. **`onTargetEvent`'s multi-event overload has no clean single-shape config equivalent.**
    The builder accepts one event name, an array of names, or a custom event name, all bound to one
-   callback. `EventHandlerConfig.event` is typed `string | readonly string[]` to cover the first
+   callback. `TargetEventConfig.event` is typed `string | readonly string[]` to cover the first
    two; `createWorkflowFromConfig` registers the resolved action once per event name (a loop over
    `step.onTargetEvent(event, callback)`), which is behaviorally identical to the builder's own
    array handling. A custom `Event` subtype's payload can't be expressed in JSON anyway (the
@@ -151,7 +154,7 @@ not deferred problems:
    `packages/core/src/definition/types.ts`) has no such field and this module doesn't touch it.
    `WorkflowDefinitionFromConfig<T>` is declared as `WorkflowDefinition<T> & { source }` (via
    `interface ... extends`), so it stays assignable anywhere a plain `WorkflowDefinition<T>` is
-   expected (e.g. `GlowTour<T>.run()`), and `.source` is only visible to code that imports from
+   expected (e.g. `GlowTour<T>.start()`), and `.source` is only visible to code that imports from
    `@glowhop/core-tour/config` specifically. `source` contains a recursively frozen copy of the
    config containers, not the caller's own objects, so the config stays reusable and editable to
    build a variant. Rich `title`/`content` values, functions, and non-plain framework objects are
@@ -170,13 +173,13 @@ not deferred problems:
 ## Files
 
 - `packages/core/src/config/types.ts` - `WorkflowConfig`, `StepConfig`, `BuiltinAction`,
-  `StepActionRef`, `TransitionActionRef`, `LifecycleActionRef`, `EventHandlerConfig`,
+  `StepActionRef`, `StepHookActionRef`, `LifecycleActionRef`, `TargetEventConfig`,
   `ConfigValidationIssue`, `ConfigValidationError`, `WorkflowDefinitionFromConfig`.
 - `packages/core/src/config/validate.ts` - `validateWorkflowConfig` plus private
   `validate*Shape`/`assertNoUnknownKeys` helpers.
 - `packages/core/src/config/from-config.ts` - `createWorkflowFromConfig` plus private
-  `applyStepConfig`/`applyStepActionRef`/`applyBuiltinAction`/`applyEventHandler`/
-  `resolveEventHandlerAction`/`deepFreeze` helpers.
+  `applyStepConfig`/`applyStepActionRef`/`applyBuiltinAction`/`applyTargetEvent`/
+  `resolveTargetEventAction`/`deepFreeze` helpers.
 - `packages/core/src/config/index.ts` - barrel, exported via the `@glowhop/core-tour/config` entry
   point.
 - `packages/core/src/config/validate.test.ts`, `packages/core/src/config/from-config.test.ts` -

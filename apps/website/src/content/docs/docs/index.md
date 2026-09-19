@@ -37,7 +37,7 @@ Deepen your understanding with our guides:
 Look up complete API documentation:
 
 - **[Builder](/docs/reference/builder)** - Workflow/step builder API and every option's default
-- **[Tour](/docs/reference/tour)** - Tour controller API (`createGlowTour`, `tour.run`, `tour.state`, …)
+- **[Tour](/docs/reference/tour)** - Tour controller API (`createGlowTour`, `tour.start`, `tour.state`, …)
 - **[React](/docs/reference/react)** - React adapter API
 - **[Vue](/docs/reference/vue)** - Vue adapter API
 - **[Solid](/docs/reference/solid)** - Solid adapter API

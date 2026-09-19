@@ -15,6 +15,8 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "GlowTour.js",
+      // src/pages/404.astro serves every missing page, docs included.
+      disable404Route: true,
       favicon: "/favicon.png",
       logo: {
         src: "./public/glow-tour-logo.png",
@@ -80,6 +82,7 @@ export default defineConfig({
             { label: "Vue", link: "/docs/reference/vue" },
           ],
         },
+        { label: "Migrating to 1.4", link: "/docs/migration/1-4" },
         { label: "Compatibility", link: "/docs/compatibility" },
       ],
     }),

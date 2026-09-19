@@ -1,16 +1,12 @@
 import "@glowhop/styles-tour/default.css";
-import {
-  createDefaultTourElement,
-  createGlowTour,
-  registerGlowTourElements,
-} from "@glowhop/vanilla-tour";
+import { createGlowTour, registerGlowTourElements } from "@glowhop/vanilla-tour";
 
 registerGlowTourElements();
 
 const tour = createGlowTour();
 const workflow = tour
   .create("welcome")
-  .step({ target: "#welcome", title: "Welcome", content: "Hello world!" })
+  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello world!" })
   .build();
 
 // Create a container
@@ -29,11 +25,12 @@ button.type = "button";
 button.textContent = "Start tour";
 button.style.padding = "10px 20px";
 button.style.fontSize = "16px";
-button.addEventListener("click", () => void tour.run(workflow));
+button.addEventListener("click", () => void tour.start(workflow));
 container.append(button);
 
 document.body.append(container);
 
 // Create and append the tour component
-const root = createDefaultTourElement(tour);
+const root = document.createElement("glow-tour-default");
+root.tour = tour;
 document.body.append(root);

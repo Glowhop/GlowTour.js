@@ -21,15 +21,32 @@ their framework's rendering model, not in which attributes are applied.
 
 | Element | Attributes |
 | --- | --- |
-| Popover (`data-glow-tour-popover`) | `role="dialog"`, `aria-labelledby` (title id), `aria-describedby` (description id), `aria-modal="true"` while the step disallows target interaction |
+| Popover (`data-glow-tour-popover`) | `role="dialog"`, `aria-labelledby` (title id, or description id when the step has no title), `aria-describedby` (description id, only when the step has a title), `aria-modal="true"` while the step disallows target interaction |
 | Description content | `aria-live="polite"` so step text changes are announced |
 | Overlay/backdrop | `role="presentation"`, `aria-hidden` |
 | Pointer/indicator | `aria-hidden="true"` (decorative) |
 | Advance / Previous / Cancel triggers | `aria-controls` (popover id), `aria-label`, `aria-disabled`, `aria-keyshortcuts` (reflects the active step's keyboard shortcuts, see below) |
 
-The tour root also marks inert/`aria-hidden` sibling branches of the document while a step
-disallows outside interaction, and clears that state when the tour becomes non-modal or ends
-(`releaseModality()` in `tour-view-driver.ts`).
+The tour root also marks sibling branches of the document `inert` while a step disallows outside
+interaction, and clears that state when the tour becomes non-modal or ends (`syncModality()` and
+`releaseModality()` in `tour-view-driver.ts`).
+
+Timing is part of the contract, because real screen readers lose track otherwise:
+
+- `aria-modal` and the `inert` branches are applied in `show()` right before `activateFocus()`, as
+  focus moves into the presented popover, like a native modal dialog. Inerting the page while the
+  popover is still hidden left VoiceOver with nothing to read.
+- `clear()` releases the focus guard with `FocusGuard.release()` and restores focus only after the
+  popover has faded out. Moving focus in the same task that lifts `inert` was not announced.
+- Between two steps the popover is not hidden from assistive technology:
+  `initializeProps(false)` and `disappear(false)` on the popover keep it
+  exposed so the live region announces the new content and `inert` never blurs the focused
+  trigger. Pointer input is blocked with `pointer-events: none` during the fade instead, because
+  the controller ignores commands while transitioning.
+- Tour state never natively disables a trigger during a step transition: the React, Solid and Vue
+  triggers skip `canAdvance` / `canPrevious` while `status` is `"transitioning"`, and the vanilla
+  (`capabilityDisabled`) and Angular (`unavailableWhileActive()`) triggers only apply them while
+  `active`. A trigger natively disabled during a transition loses focus.
 
 ## Keyboard shortcut contract
 
@@ -41,13 +58,22 @@ diverge from, and none of the adapter `tour-components.ts(x)` files add one.
 
 | Key(s) | Command | Notes |
 | --- | --- | --- |
-| `Escape` | Cancel / dismiss | Only fires when the tour is cancellable (`canCommand("cancel", step)`) |
+| `Escape` | Cancel / dismiss | Only fires when cancelling is currently allowed for the step (`canCommand("cancel", step)`) |
 | `Enter`, `ArrowRight` | Advance | Only fires when advancing is currently allowed for the step |
 | `ArrowLeft`, `Backspace` | Previous | Only fires when going back is currently allowed for the step |
 | `Tab` | Focus loop | While the step disallows outside interaction, Tab is trapped within the popover instead of triggering a shortcut |
 
-Per-step overrides are supported via `step.popover?.keyboardShortcuts`; when a step doesn't
-override a command, the defaults above apply. Shortcuts are ignored while:
+`Enter` on a focused control is never the advance shortcut: it is left to the browser
+(`activatesControl()` in `tour-view-driver.ts`, used by both `handleKeydown` and the keydowns
+queued during a step transition). On a tour trigger, the click the browser produces runs that
+trigger's own command through the delegated click handler, after the consumer's own `onClick`, so a
+click the consumer prevents does nothing from the keyboard either. While a visible popover is being
+replaced, that click is queued like a shortcut (`queueTransitionClick()`). A disabled or
+`aria-disabled` trigger does nothing.
+
+Workflow and per-step overrides are supported via `controls.<command>.keys`; when neither
+overrides a command, the defaults above apply. Shortcuts are ignored while:
+- the matching control's `state` is `"hidden"` or `"disabled"` in `step.controls` (`isControlAvailable()`), which also removes the trigger's `aria-keyshortcuts`,
 - a modifier key (`ctrlKey`/`metaKey`/`altKey`) is held,
 - the event is part of IME composition (`isComposing`),
 - the event was already handled (`defaultPrevented`),
@@ -70,6 +96,19 @@ keyboard actually does.
    was first activated (the tour's trigger element) - but only if that element is still connected
    to the document.
 
+Entering a step focuses its Advance trigger, or its Previous trigger when navigating back. When
+that Previous trigger is unavailable, the guard falls back to Advance (`findFocusable()` in
+`focus-guard.ts`): focus left on an unavailable control is a dead end, and NVDA re-reads the whole
+dialog when the focused control changes state.
+
+With `behavior.autoFocus: false`, entering a step never picks a trigger. Focus already in scope
+(the popover, or the target on an interactive step) stays, and so does focus anywhere on the page
+while the step allows interaction, because the page is not inert then. Focus the page lost, which
+on a modal step is always the case for focus outside the popover since `inert` blurs it, goes to
+the popover itself (`focusFallback(false)`), which the library already renders with
+`tabindex="-1"`. The dialog is still announced and `Tab` still reaches its triggers. Only step
+entry reads the option: focus redirected later by the trap still lands on a trigger.
+
 The guard is activated once per tour (the first `show()` call marks `initialFocus`) and stays
 active across step transitions; it is only deactivated - restoring focus - when the tour view is
 cleared. `driver.clear()` is invoked by every exit path in `tour-controller.ts`:
@@ -85,6 +124,28 @@ being trapped. Coverage: `packages/core/src/state/focus-guard.test.ts` includes
 `"restores the initially focused element when deactivated"`.
 
 ## Verification notes
+
+- Real screen readers: `apps/screen-readers` renders the same three-step tour with every adapter.
+  `.github/workflows/screen-readers.yml` drives VoiceOver (macOS runners, WebKit and Chromium)
+  and NVDA (Windows runners, Chromium and Firefox) through it with Guidepup
+  (`tests/voiceover.pw.ts`, `tests/nvda.pw.ts`, shared `tests/scenario.ts`) on pull requests that
+  touch `packages/**`, weekly, and on demand. VoiceOver with Chromium is left out of pull requests
+  (weekly and on demand only): it is the slowest pairing, the least stable, and the least used. Spoken transcripts are uploaded as artifacts. The
+  first fully green run was on commit `5ecc980` (PR #87). The scenario was then extended (Back,
+  reading cursor backwards, reopening and finishing with Enter, content read once with NVDA) and
+  passed on commit `9d617a4`: 20 of 20 adapter and pairing combinations, one of them (Vanilla,
+  VoiceOver with Chromium) only on retry, when VoiceOver did not announce the restored focus on
+  the first attempt. The limitations the transcripts show, and why the scenario tolerates them,
+  are in the user-facing guide ("Known limitations") and in the comments of `tests/scenario.ts`.
+- Harness pitfalls found while building it, so they are not rediscovered: Guidepup's default
+  `capture: "initial"` drops phrases announced after the first page of output (dialog opening,
+  live region, restored focus), so the suites capture everything; a Playwright `focus()` moves
+  neither screen reader's cursor, so the trigger is reached with `Tab` through the screen reader;
+  and `Shift+Tab` from the first focusable element leaves the page for the browser toolbar.
+- Accessibility tree: `apps/screen-readers/tests/accessibility-tree.pw.ts` runs in the `ci.yml`
+  "Accessibility tree" job on Chromium, Firefox and WebKit. It covers the dialog name and
+  description, modality (including Chromium's native tree through CDP), the persistent live
+  region during step transitions, keyboard navigation and focus restoration.
 
 - Focus restoration and keyboard-shortcut wiring were verified by reading
   `packages/core/src/dom/tour-view-driver.ts`, `packages/core/src/state/focus-guard.ts`, and

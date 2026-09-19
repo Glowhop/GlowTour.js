@@ -13,7 +13,7 @@ Creates a tour controller instance. Inherited from Core.
 
 **Signature**:
 ```typescript
-function createGlowTour(options?: GlowTourOptions): VanillaGlowTour
+function createGlowTour(options?: GlowTourOptions): Tour
 ```
 
 ### `registerGlowTourElements()`
@@ -33,34 +33,29 @@ registerGlowTourElements();
 // Elements are now available: glow-tour-root, glow-tour-overlay, etc.
 ```
 
-### `createDefaultTourElement(tour)`
+## Custom elements
 
-Creates a pre-composed tour element tree (overlay, popover, pointer, buttons).
+### `glow-tour-default`
 
-**Signature**:
-```typescript
-function createDefaultTourElement(
-  tour: VanillaGlowTour,
-  options?: CreateDefaultTourElementOptions
-): GlowTourRootElement
-```
+A complete tour: a `glow-tour-root` with the overlay, pointer, popover, header, content, footer and the three controls. The structure is built the first time the element is connected.
 
-**Returns**: A `glow-tour-root` custom element ready to append to the DOM
+**Properties**:
+- `tour: Tour | null` - The tour instance
+- `idPrefix: string | undefined` - Prefix for internal element IDs, also set with the `id-prefix` attribute
 
 **Usage**:
 ```typescript
-const root = createDefaultTourElement(tour);
-document.body.append(root);
+const element = document.createElement("glow-tour-default");
+element.tour = tour;
+document.body.append(element);
 ```
-
-## Custom elements
 
 ### `glow-tour-root`
 
 Root container for the entire tour.
 
 **Properties**:
-- `tour: VanillaGlowTour` - Set the tour instance
+- `tour: Tour` - Set the tour instance
 
 **Usage**:
 ```typescript
@@ -102,7 +97,7 @@ Footer area containing navigation buttons.
 
 ### `glow-tour-pointer`
 
-Decorative indicator/arrow pointing to the target.
+Decorative pointer indicator next to the target (not the popover arrow).
 
 **Properties**:
 - `directionContent: PointerDirectionContent` - Custom content for pointer directions
@@ -165,7 +160,7 @@ footer.append(button);
 **Properties**:
 - `disabled: boolean` - Disable the button
 
-### `glow-tour-back-trigger`
+### `glow-tour-previous-trigger`
 
 "Previous" button to go back to the previous step.
 
@@ -185,7 +180,7 @@ const GLOW_TOUR_ELEMENT_NAMES: readonly [
   "glow-tour-footer",
   "glow-tour-popover",
   "glow-tour-pointer",
-  "glow-tour-back-trigger",
+  "glow-tour-previous-trigger",
   "glow-tour-advance-trigger",
   "glow-tour-cancel-trigger",
   "glow-tour-overlay",
@@ -212,44 +207,9 @@ All custom elements follow standard DOM patterns:
 - Attributes: Standard HTML attributes for styling (class, style, data-*)
 - Children: Append/append child elements normally
 
-## Complete example
-
-```typescript
-import { registerGlowTourElements, createGlowTour } from "@glowhop/vanilla-tour";
-
-registerGlowTourElements();
-
-const tour = createGlowTour();
-
-// Create elements
-const root = document.createElement("glow-tour-root");
-root.tour = tour;
-
-const overlay = document.createElement("glow-tour-overlay");
-const popover = document.createElement("glow-tour-popover");
-
-const header = document.createElement("glow-tour-header");
-const content = document.createElement("glow-tour-content");
-const footer = document.createElement("glow-tour-footer");
-
-const advanceBtn = document.createElement("glow-tour-advance-trigger");
-const cancelBtn = document.createElement("glow-tour-cancel-trigger");
-
-// Compose the tree
-footer.append(cancelBtn, advanceBtn);
-popover.append(header, content, footer);
-root.append(overlay, popover);
-
-document.body.append(root);
-
-// Now you can run tours
-const workflow = tour.create("demo").step({ id: "step-1", /* ... */ }).build();
-await tour.run(workflow);
-```
-
 ## Types
 
-- `VanillaGlowTour` - Tour controller
+- `Tour` - Tour controller
 - `VanillaTourContent` - Content type for `title` and `content`: `string | Node`
 - `TourState` - Tour state
 - `WorkflowDefinition` - Immutable workflow
@@ -257,4 +217,4 @@ await tour.run(workflow);
 - `GlowTourRootElement` - Root element type
 - `GlowTourPointerElement` - Pointer element type
 - `PointerDirectionContent` - Content configuration for pointer directions
-- `CreateDefaultTourElementOptions` - Options for `createDefaultTourElement`
+- `GlowTourDefaultElement` - Default tour element type

@@ -1,8 +1,71 @@
 @import "tailwindcss";
 
+/*
+ * Playground colors. Every page is painted with these tokens, so the global theme toggle
+ * (`src/theme.ts`) repaints the app with the same `data-glow-tour-theme` value the tour reads.
+ */
+:root,
+:root[data-glow-tour-theme="light"] {
+  --pg-bg: #f5f7f2;
+  --pg-surface: #ffffff;
+  --pg-surface-muted: #eaf2ef;
+  --pg-border: #cbd6d0;
+  --pg-border-subtle: #dce4df;
+  --pg-text: #1e2428;
+  --pg-text-strong: #241f31;
+  --pg-text-muted: #5c6863;
+  --pg-text-faint: #948ba9;
+  --pg-accent: #1f6f5b;
+  --pg-accent-hover: #1a5f4e;
+  --pg-on-accent: #ffffff;
+  --pg-on-lab-accent: #ffffff;
+  --pg-invert-bg: #1e2428;
+  --pg-invert-text: #ffffff;
+  --pg-lab-accent: #4c35fd;
+  --pg-lab-accent-hover: #3720e8;
+  --pg-lab-accent-soft: #eeeaff;
+  --pg-lab-accent-border: #cfc6ff;
+  --pg-lab-accent-ring: rgba(76, 53, 253, 0.18);
+  --pg-ok-bg: #dcfce8;
+  --pg-ok-text: #14733b;
+  --pg-error-bg: #fee2e2;
+  --pg-error-text: #b42318;
+  --pg-shadow: 0 14px 44px rgba(39, 28, 75, 0.06);
+  color-scheme: light;
+}
+
+:root[data-glow-tour-theme="dark"] {
+  --pg-bg: #101418;
+  --pg-surface: #181e23;
+  --pg-surface-muted: #1f262c;
+  --pg-border: #2f3a41;
+  --pg-border-subtle: #262f35;
+  --pg-text: #e7edea;
+  --pg-text-strong: #f2f6f4;
+  --pg-text-muted: #a3b1ac;
+  --pg-text-faint: #7d8a86;
+  --pg-accent: #5fd0ad;
+  --pg-accent-hover: #7addbd;
+  --pg-on-accent: #06231b;
+  --pg-on-lab-accent: #17123a;
+  --pg-invert-bg: #e7edea;
+  --pg-invert-text: #101418;
+  --pg-lab-accent: #a99bff;
+  --pg-lab-accent-hover: #bdb2ff;
+  --pg-lab-accent-soft: #241f3a;
+  --pg-lab-accent-border: #3d3363;
+  --pg-lab-accent-ring: rgba(169, 155, 255, 0.25);
+  --pg-ok-bg: #10331f;
+  --pg-ok-text: #7ee0a5;
+  --pg-error-bg: #3a1c1c;
+  --pg-error-text: #ff9d95;
+  --pg-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
 :root {
-  color: #1e2428;
-  background: #f5f7f2;
+  color: var(--pg-text);
+  background: var(--pg-bg);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
@@ -36,22 +99,22 @@ body {
 
 .launcher a,
 .back-link {
-  color: #1f6f5b;
+  color: var(--pg-accent);
   font-weight: 700;
   text-decoration: none;
 }
 
 .launcher nav a {
-  background: #ffffff;
-  border: 1px solid #cbd6d0;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
   border-radius: 8px;
   padding: 18px;
 }
 
 .app-panel {
   align-items: start;
-  background: #ffffff;
-  border: 1px solid #cbd6d0;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
   border-radius: 8px;
   display: grid;
   gap: 18px;
@@ -60,9 +123,9 @@ body {
 }
 
 .target-pill {
-  background: #1e2428;
+  background: var(--pg-invert-bg);
   border-radius: 6px;
-  color: #ffffff;
+  color: var(--pg-invert-text);
   display: inline-flex;
   font-weight: 650;
   justify-self: start;
@@ -70,17 +133,18 @@ body {
 }
 
 .target-button {
-  background: #1e2428;
-  border: 1px solid #1e2428;
+  background: var(--pg-invert-bg);
+  border: 1px solid var(--pg-invert-bg);
   border-radius: 6px;
-  color: #ffffff;
+  color: var(--pg-invert-text);
   font-weight: 650;
   padding: 10px 12px;
 }
 
 .target-button:hover {
-  background: #1f6f5b;
-  border-color: #1f6f5b;
+  background: var(--pg-accent);
+  border-color: var(--pg-accent);
+  color: var(--pg-on-accent);
 }
 
 @keyframes shrink {
@@ -100,14 +164,14 @@ body {
 }
 
 .target-button:focus {
-  outline: 2px solid #1f6f5b;
+  outline: 2px solid var(--pg-accent);
   outline-offset: 2px;
 }
 
 .primary {
-  background: #1f6f5b;
-  border-color: #1f6f5b;
-  color: #ffffff;
+  background: var(--pg-accent);
+  border-color: var(--pg-accent);
+  color: var(--pg-on-accent);
 }
 
 .shell {
@@ -143,12 +207,12 @@ h2 {
 
 .topbar p,
 .panel-head p {
-  color: #5c6863;
+  color: var(--pg-text-muted);
   margin-top: 4px;
 }
 
 .tabs {
-  border-bottom: 1px solid #cbd6d0;
+  border-bottom: 1px solid var(--pg-border);
   display: flex;
   gap: 6px;
   overflow-x: auto;
@@ -162,10 +226,39 @@ h2 {
 }
 
 .tab.is-active {
-  background: #ffffff;
-  border-color: #cbd6d0;
-  border-bottom-color: #ffffff;
-  color: #1f6f5b;
+  background: var(--pg-surface);
+  border-color: var(--pg-border);
+  border-bottom-color: var(--pg-surface);
+  color: var(--pg-accent);
+}
+
+/* The global light/dark switch, mounted on every page by `src/theme.ts`. */
+.pg-theme-toggle {
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
+  border-radius: 999px;
+  bottom: 16px;
+  box-shadow: var(--pg-shadow);
+  color: var(--pg-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 0 16px;
+  position: fixed;
+  right: 16px;
+  z-index: 10;
+}
+
+.pg-theme-toggle:hover {
+  border-color: var(--pg-accent);
+  color: var(--pg-accent);
+}
+
+.pg-theme-toggle:focus-visible {
+  outline: 2px solid var(--pg-accent);
+  outline-offset: 2px;
 }
 
 .panel {
@@ -207,8 +300,8 @@ h2 {
 .target {
   align-items: center;
   aspect-ratio: 16 / 9;
-  background: #ffffff;
-  border: 1px solid #cbd6d0;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
   border-radius: 8px;
   display: flex;
   justify-content: center;
@@ -217,21 +310,21 @@ h2 {
 }
 
 .target.alt {
-  background: #eaf2ef;
+  background: var(--pg-surface-muted);
 }
 
 .target span {
-  background: #1e2428;
+  background: var(--pg-invert-bg);
   border-radius: 6px;
-  color: #ffffff;
+  color: var(--pg-invert-text);
   display: inline-flex;
   font-weight: 650;
   padding: 10px 12px;
 }
 
 .inspector {
-  background: #ffffff;
-  border: 1px solid #cbd6d0;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
   border-radius: 8px;
   min-height: 260px;
   padding: 16px;
@@ -249,7 +342,7 @@ dl > div {
 }
 
 dt {
-  color: #5c6863;
+  color: var(--pg-text-muted);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -261,7 +354,7 @@ dd {
 }
 
 .render-output {
-  border-top: 1px solid #dce4df;
+  border-top: 1px solid var(--pg-border-subtle);
   margin-top: 16px;
   padding-top: 16px;
 }

@@ -3,7 +3,7 @@ title: Compatibility
 description: Framework versions and SSR support verified for each adapter.
 ---
 
-GlowTour.js is in `dev`. The versions listed are the current peer contracts and are not a promise of support for older major versions.
+The versions listed are the current peer contracts and are not a promise of support for older major versions.
 
 ## Framework contracts
 
@@ -13,14 +13,28 @@ GlowTour.js is in `dev`. The versions listed are the current peer contracts and 
 | Vue | 3.3+ (`^3.3.0`) | `@glowhop/vue-tour` |
 | Solid | 1.8+ (`^1.8.0`) | `@glowhop/solid-tour` |
 | Angular | 18+ (`^18.0.0`) | `@glowhop/angular-tour` |
-| Vanilla/Browser | Modern DOM APIs | `@glowhop/vanilla-tour` |
+| Vanilla/Browser | See [Browsers](#browsers) | `@glowhop/vanilla-tour` |
 
 **Notes**:
 
 - **React 18/19**: The range was verified by static analysis of adapter code. No version-gated APIs are used below these versions.
 - **Vue/Solid**: The floor versions were verified by reading actual API usage in the adapters.
 - **Angular 18+**: The floor is 18 rather than 17 because the adapter uses the stable `@if`/`@for` control-flow blocks, which only reached stable status in Angular 18.
-- **Vanilla**: Requires modern browser support for custom elements and Shadow DOM (Chrome 77+, Firefox 63+, Safari 13+, Edge 79+).
+- **Vanilla**: Relies on custom elements, without Shadow DOM. See [Browsers](#browsers).
+
+## Browsers
+
+**Tested in CI**: the current Chromium, Firefox, and WebKit engines shipped by Playwright run the accessibility-tree suite for every adapter. The SSR apps are tested in Chromium. Screen reader tests drive VoiceOver with WebKit and Chromium, and NVDA with Chromium and Firefox. Older browser versions are not tested.
+
+**Required browser features**: every package uses them without a fallback.
+
+- ES2022 syntax: the packages are not transpiled for older browsers
+- `structuredClone`, used to copy each step's `data`
+- `MutationObserver` and `requestAnimationFrame`
+- the `inert` attribute, which keeps the page out of reach during a modal step
+- custom elements, for `@glowhop/vanilla-tour` only
+
+**Minimum versions**: none are guaranteed. GlowTour.js targets current evergreen browsers; a browser that supports every feature above is expected to work, but only the engines listed as tested are verified.
 
 ## Core module
 
@@ -36,47 +50,7 @@ GlowTour.js is in `dev`. The versions listed are the current peer contracts and 
 | Angular | Yes | Yes | Angular SSR production app |
 | Vanilla | Not applicable | Not applicable | DOM-free import only |
 
-## Detailed SSR status
-
-### React
-
-**Server rendering**: `DefaultTour` renders via `react-dom/server`'s `renderToString` with no DOM globals present.
-
-**Hydration**: `react-dom/client`'s `hydrateRoot` hydrates the server-rendered markup with zero console errors and an interactive tour.
-
-**Real-world verified**: A production Next.js app serves the same markup, loads in the browser, and runs end-to-end with Playwright-driven tests - zero hydration errors.
-
-### Vue
-
-**Server rendering**: The packaged root renders via `@vue/server-renderer`'s `renderToString`.
-
-**Hydration**: `createSSRApp(...).mount()` hydrates the markup with no hydration-mismatch warnings and an interactive tour.
-
-**Real-world verified**: A production Nuxt app hydrates cleanly and is interactive end-to-end.
-
-### Solid
-
-**Server rendering**: The packaged root renders via `solid-js/web`'s server build.
-
-**Hydration**: The browser build's `hydrate()` attaches without throwing or duplicating nodes.
-
-**Real-world verified**: A production SolidStart app hydrates cleanly and is interactive end-to-end.
-
-**Hydration-key constraint**: A package-level test deliberately invokes components as plain functions on both server and client, making it sensitive to Solid's internal hydration key numbering. This is an artificial scenario to document the constraint, not a real-world risk: `DefaultTour` (which invokes every child consistently via `createComponent(...)`) used in a normal SolidStart app (whose JSX compiler invokes components consistently on both sides) hydrates without issues. The production SolidStart app confirms this.
-
-### Angular
-
-**Server rendering**: `GlowTourDefault` renders through `@angular/ssr`'s `CommonEngine` in a production build.
-
-**Hydration**: `provideClientHydration()` reuses the server markup non-destructively, with no NG05xx hydration errors and an interactive tour.
-
-**Real-world verified**: A production Angular 18 SSR app runs end-to-end with Playwright-driven tests. Unlike React, Vue and Solid, there is no additional package-level render test.
-
-### Vanilla
-
-**Server rendering**: Not applicable. Custom elements don't render on the server; they only upgrade once connected to a live DOM.
-
-**Hydration**: Not applicable in the string-render sense. The package is DOM-free to import; registration and mounting happen only in the browser. If you pre-render static HTML and append custom elements on the client, it works as expected.
+See the [SSR guide](/docs/guides/ssr) for setup and hydration details per framework.
 
 ## Single instance contract
 

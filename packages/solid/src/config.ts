@@ -1,11 +1,11 @@
 import type {
   BuiltinAction,
   ConfigValidationIssue,
-  EventHandlerConfig as CoreEventHandlerConfig,
   LifecycleActionRef as CoreLifecycleActionRef,
   StepActionRef as CoreStepActionRef,
   StepConfig as CoreStepConfig,
-  TransitionActionRef as CoreTransitionActionRef,
+  StepHookActionRef as CoreStepHookActionRef,
+  TargetEventConfig as CoreTargetEventConfig,
   WorkflowConfig as CoreWorkflowConfig,
   WorkflowDefinitionFromConfig as CoreWorkflowDefinitionFromConfig,
   CreateWorkflowFromConfigOptions,
@@ -30,12 +30,12 @@ export { ConfigValidationError };
 export type WorkflowConfig = CoreWorkflowConfig<SolidTourContent>;
 /** Solid step config: `StepConfig` pre-bound to `SolidTourContent`. */
 export type StepConfig = CoreStepConfig<SolidTourContent>;
-/** Solid event handler config: `EventHandlerConfig` pre-bound to `SolidTourContent`. */
-export type EventHandlerConfig = CoreEventHandlerConfig<SolidTourContent>;
+/** Solid target event config: `TargetEventConfig` pre-bound to `SolidTourContent`. */
+export type TargetEventConfig = CoreTargetEventConfig<SolidTourContent>;
 /** Solid step action reference: `StepActionRef` pre-bound to `SolidTourContent`. */
 export type StepActionRef = CoreStepActionRef<SolidTourContent>;
-/** Solid transition action reference: `TransitionActionRef` pre-bound to `SolidTourContent`. */
-export type TransitionActionRef = CoreTransitionActionRef<SolidTourContent>;
+/** Solid step hook reference: `StepHookActionRef` pre-bound to `SolidTourContent`. */
+export type StepHookActionRef = CoreStepHookActionRef<SolidTourContent>;
 /** Solid lifecycle action reference: `LifecycleActionRef` pre-bound to `SolidTourContent`. */
 export type LifecycleActionRef = CoreLifecycleActionRef<SolidTourContent>;
 /** Solid workflow definition produced from config, pre-bound to `SolidTourContent`. */
@@ -43,7 +43,7 @@ export type WorkflowDefinitionFromConfig = CoreWorkflowDefinitionFromConfig<Soli
 
 /**
  * Builds a Solid `WorkflowDefinition` from a JSON-serializable config, pre-bound to
- * `SolidTourContent` so the result is accepted by `createGlowTour().run(...)` with no generic
+ * `SolidTourContent` so the result is accepted by `createGlowTour().start(...)` with no generic
  * and no cast.
  * @param config The parsed JSON (or equivalent plain object) to build from.
  * @param options Options; see `CreateWorkflowFromConfigOptions`.

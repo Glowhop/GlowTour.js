@@ -267,13 +267,13 @@ describe("PopoverElement positioning", () => {
     });
   });
 
-  test("accepts a clamped candidate without an arrow when arrow.disabled is true", () => {
+  test("accepts a clamped candidate without an arrow when arrow.hidden is true", () => {
     const popover = new PopoverElement(new MockElement(100, 60) as unknown as HTMLElement);
 
     assert.deepEqual(
       popover.resolvePosition(
         rect(270, 80, 20, 20),
-        createStep(["bottom"], { arrow: { disabled: true } }),
+        createStep(["bottom"], { arrow: { hidden: true } }),
       ),
       { arrowOffset: null, placement: "bottom", x: 186, y: 114 },
     );
@@ -302,6 +302,15 @@ describe("PopoverElement positioning", () => {
     });
   });
 
+  test("centers a detached step even when a placement fits", () => {
+    const popover = new PopoverElement(new MockElement(100, 50) as unknown as HTMLElement);
+
+    assert.deepEqual(
+      popover.resolvePosition(rect(10, 10, 20, 20), { ...createStep(["bottom"]), detached: true }),
+      { arrowOffset: null, placement: "center", x: 100, y: 75 },
+    );
+  });
+
   test("publishes placement, arrow offset and hidden state with the transform", () => {
     const element = new MockElement(100, 60);
     const popover = new TestPopoverElement(element as unknown as HTMLElement);
@@ -313,7 +322,7 @@ describe("PopoverElement positioning", () => {
     assert.equal(element.attributes.has("data-glow-tour-arrow-hidden"), false);
     assert.equal(element.styles.get("--glow-tour-arrow-offset"), "16px");
 
-    popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"], { arrow: { disabled: true } }));
+    popover.getStyles(rect(20, 80, 20, 20), createStep(["bottom"], { arrow: { hidden: true } }));
     assert.equal(element.attributes.has("data-glow-tour-arrow-hidden"), true);
     assert.equal(element.styles.has("--glow-tour-arrow-offset"), false);
   });
@@ -536,13 +545,13 @@ describe("PopoverElement arrow stylesheet", () => {
     assert.equal(document.styles[0]?.nonce, "csp-nonce-123");
   });
 
-  test("skips injection when disableAutoStyles is set", () => {
+  test("skips injection when autoStyles is false", () => {
     const document = new MockStyleRoot(9);
     const element = new MockElement(100, 60, document);
 
     new TestPopoverElement(element as unknown as HTMLElement).getStyles(
       rect(20, 80, 20, 20),
-      createStep(["bottom"], { arrow: { disableAutoStyles: true } }),
+      createStep(["bottom"], { arrow: { autoStyles: false } }),
     );
 
     assert.equal(document.styles.length, 0);
@@ -578,5 +587,59 @@ describe("PopoverElement animation fallbacks", () => {
     assert.equal(element.attributes.get("aria-hidden"), "true");
     assert.equal(element.attributes.get("inert"), "true");
     assert.equal(element.styles.has("transform"), false);
+  });
+
+  test("keeps the popover exposed to assistive technology when fading out for a step change", async () => {
+    const element = new MockElement(100, 60);
+    const popover = new PopoverElement(element as unknown as HTMLElement);
+    element.style.setProperty("transform", "translate(14px, 114px)");
+    element.animate = () => {
+      throw new Error("unsupported animation");
+    };
+
+    await popover.disappear(false);
+
+    assert.equal(element.styles.get("opacity"), "0");
+    assert.equal(element.styles.get("pointer-events"), "none");
+    assert.equal(element.attributes.has("aria-hidden"), false);
+    assert.equal(element.attributes.has("inert"), false);
+
+    await popover.present(rect(20, 80, 20, 20), createStep(["bottom"]));
+
+    assert.equal(element.styles.get("opacity"), "1");
+    assert.equal(element.styles.has("pointer-events"), false);
+  });
+
+  test("drops a finished fade-out's fill before presenting again without animation", async () => {
+    const element = new MockElement(100, 60);
+    const animations: { cancelled: boolean }[] = [];
+    element.animate = () => {
+      const animation = {
+        cancel() {
+          animation.cancelled = true;
+        },
+        cancelled: false,
+        effect: { getTiming: () => ({ fill: "forwards" }) },
+        finished: Promise.resolve(),
+      };
+      animations.push(animation);
+      return animation as unknown as Animation;
+    };
+    const popover = new PopoverElement(element as unknown as HTMLElement);
+
+    await popover.present(rect(20, 80, 20, 20), createStep(["bottom"]));
+    await popover.disappear();
+
+    // A second tour with `animated: false` writes `opacity: 1` without animating, so nothing would
+    // otherwise supersede the fade-out's `fill: "forwards"` and the popover would stay invisible.
+    popover.setAnimationOptions({ disabled: true });
+    await popover.present(rect(20, 80, 20, 20), createStep(["bottom"]));
+
+    assert.equal(animations.length, 2);
+    assert.deepEqual(
+      animations.map((animation) => animation.cancelled),
+      [true, true],
+    );
+    assert.equal(element.styles.get("opacity"), "1");
   });
 });

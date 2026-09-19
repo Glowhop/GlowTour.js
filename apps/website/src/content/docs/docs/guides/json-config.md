@@ -9,16 +9,28 @@ The config API ships as a separate entry point, so applications using only the b
 
 ## Quick start
 
-Import the config entry point for your framework, load a JSON object, then run the generated workflow:
+Import the config entry point for your framework, load a JSON object, then run the generated workflow on a tour that is rendered by the adapter. This React example uses `useGlowTour()`; other adapters follow the same pattern with their own [component setup](/docs/getting-started):
 
-```typescript
-import { createGlowTour } from "@glowhop/react-tour";
+```tsx
+import "@glowhop/styles-tour/default.css";
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 import { createWorkflowFromConfig } from "@glowhop/react-tour/config";
 
-const config = await fetch("/tours/onboarding.json").then((response) => response.json());
-const workflow = createWorkflowFromConfig(config);
+export function OnboardingTour() {
+  const { tour, start } = useGlowTour();
 
-await createGlowTour().run(workflow);
+  async function startTour() {
+    const config = await fetch("/tours/onboarding.json").then((response) => response.json());
+    await start(createWorkflowFromConfig(config));
+  }
+
+  return (
+    <>
+      <button onClick={() => void startTour()}>Start tour</button>
+      <GlowTourDefault tour={tour} />
+    </>
+  );
+}
 ```
 
 `createWorkflowFromConfig` accepts `unknown`, validates the complete configuration, and throws a `ConfigValidationError` before building when anything is invalid.
@@ -28,7 +40,7 @@ await createGlowTour().run(workflow);
 ```jsonc
 {
   "name": "onboarding",
-  "cancellable": true,
+  "version": "1.1",
   "overlay": { "opacity": 0.55 },
   "popover": { "gap": 16 },
   "steps": [
@@ -42,7 +54,7 @@ await createGlowTour().run(workflow);
         { "type": "waitUntilElement", "selector": "#invite-button", "timeout": 5000 },
         { "type": "clickTarget" }
       ],
-      "eventHandlers": [
+      "targetEvents": [
         { "event": "click", "action": { "type": "focusTarget" } }
       ]
     },
@@ -57,11 +69,11 @@ await createGlowTour().run(workflow);
 }
 ```
 
-- `name` and `steps` are required.
-- Every step requires `id`, `target`, `title`, and `content`. Step ids must be unique within the workflow; they are what [`run(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
+- `version`, `name`, and `steps` are required. `version` is the version of the config format, currently `"1.1"`.
+- Every step requires `id`, `target`, and `content`; `title` is optional. Step ids must be unique within the workflow; they are what [`start(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
 - `target` is a CSS selector. Function and `HTMLElement` targets remain builder-only.
 - `title` and `content` are strings for JSON loaded from a CMS or API.
-- `overlay`, `popover`, `indicator`, and `behavior` use the same options as the builder, globally or per step.
+- `overlay`, `popover`, `indicator`, `behavior`, and `classNames` use the same options as the builder, globally or per step. A step's `classNames` entry overrides the global one for the same component, as described in [Class name options](/docs/reference/builder#class-name-options).
 - `data` accepts `string`, `number`, `boolean`, and `null` values.
 
 Unknown keys, invalid nested options, and unsupported values are rejected rather than silently ignored.
@@ -75,8 +87,10 @@ import type { WorkflowConfig } from "@glowhop/react-tour/config";
 
 const config: WorkflowConfig = {
   name: "onboarding",
+  version: "1.1",
   steps: [
     {
+      id: "invite-button",
       target: "#invite-button",
       title: "Invite your team",
       content: "Send an invite to get started.",
@@ -95,7 +109,7 @@ Keep this object declarative when it must be transported as JSON. `WorkflowConfi
 
 ### Built-in actions
 
-`actions[]` and `eventHandlers[].action` accept declarative action objects:
+`actions[]` and `targetEvents[].action` accept declarative action objects:
 
 | `type` | Fields | Builder equivalent |
 | --- | --- | --- |
@@ -130,15 +144,17 @@ This makes CMS payloads and generated configuration easier to diagnose in one pa
 
 Plain JSON covers targets, presentation options, data, and built-in actions. Same-runtime configuration objects can additionally contain functions, but they can no longer be transported as JSON.
 
-`actions[]` and `eventHandlers[].action` accept an inline function:
+`actions[]` and `targetEvents[].action` accept an inline function:
 
 ```typescript
 import type { WorkflowConfig } from "@glowhop/react-tour/config";
 
 const config: WorkflowConfig = {
   name: "onboarding",
+  version: "1.1",
   steps: [
     {
+      id: "invite-button",
       target: "#invite-button",
       title: "Invite your team",
       content: "Send an invite to get started.",
@@ -155,17 +171,21 @@ const config: WorkflowConfig = {
 const workflow = createWorkflowFromConfig(config);
 ```
 
-`advanceAction`, `previousAction`, and `cancelAction`, plus `onStart`, `onCancel`, and `onFinish`, accept only functions. Built-in actions cannot run in those contexts.
+`beforeEnter` and `beforeLeave` (the config form of `.beforeEnter()` and `.beforeLeave()`), plus `onStart`, `onCancel`, and `onFinish`, accept only functions. Built-in actions cannot run in those contexts.
 
 For CMS-driven behavior, keep an identifier in `data` and attach the implementation in application code:
 
 ```typescript
-const config = {
+import { type StepConfig, validateWorkflowConfig, type WorkflowConfig } from "@glowhop/react-tour/config";
+
+const parsed = validateWorkflowConfig(await fetch("/tours/onboarding.json").then((response) => response.json()));
+const config: WorkflowConfig = {
   ...parsed,
-  steps: parsed.steps.map((step) => ({
+  steps: parsed.steps.map((step): StepConfig => ({
     ...step,
-    advanceAction: (context: BeforeActionStepContext<string>) => {
-      analytics.track(String(context.data?.trackingId ?? "unknown-step"));
+    beforeLeave: ({ direction, props }) => {
+      if (direction !== "advance") return;
+      analytics.track(String(props.get().data?.trackingId ?? "unknown-step"));
     },
   })),
 };
@@ -181,15 +201,7 @@ Framework adapters expose pre-bound config entry points:
 - `@glowhop/angular-tour/config`
 - `@glowhop/vanilla-tour/config`
 
-For direct core usage, import from `@glowhop/core-tour/config`:
-
-```typescript
-import { createGlowTour } from "@glowhop/core-tour";
-import { createWorkflowFromConfig } from "@glowhop/core-tour/config";
-
-const workflow = createWorkflowFromConfig(config);
-await createGlowTour<string>().run(workflow);
-```
+`@glowhop/core-tour/config` is the unbound entry point for custom integrations that render the tour themselves. The core has no UI of its own: a workflow run on a bare `createGlowTour()` from `@glowhop/core-tour` shows nothing unless your integration renders it. With an adapter, use the adapter's entry point above.
 
 Each entry point also exports the config types, `ConfigValidationError`, and `validateWorkflowConfig`.
 
@@ -201,8 +213,10 @@ The default validation requires string values because that is the safe format fo
 const workflow = createWorkflowFromConfig(
   {
     name: "onboarding",
+    version: "1.1",
     steps: [
       {
+        id: "invite-button",
         target: "#invite-button",
         title: <b>Invite your team</b>,
         content: "Send an invite to get started.",

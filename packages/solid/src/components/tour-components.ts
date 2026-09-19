@@ -1,4 +1,9 @@
-import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
+import type {
+  ClassValue,
+  GlowTour as CoreGlowTour,
+  TourClassNames,
+  TourState,
+} from "@glowhop/core-tour";
 import {
   type AdapterRootBinding,
   connectGlowTourRoot,
@@ -23,11 +28,9 @@ import {
   Show,
   splitProps,
   useContext,
-  type ValidComponent,
 } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import type { SolidTourContent } from "../glow-tour";
-import { DefaultTour } from "./default-tour";
 
 type Tour = CoreGlowTour<SolidTourContent>;
 type RootProps = ParentProps<
@@ -36,9 +39,7 @@ type RootProps = ParentProps<
     tour: Tour;
   }
 >;
-type ElementProps = ParentProps<
-  Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref"> & { as?: ValidComponent }
->;
+type ElementProps = ParentProps<Omit<JSX.HTMLAttributes<HTMLElement>, "id" | "ref">>;
 type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 type OverlayProps = ParentProps<Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "ref">>;
 /** Content displayed in the pointer indicator for each direction. */
@@ -57,14 +58,13 @@ const DEFAULT_POINTER_DIRECTION_CONTENT: Required<PointerDirectionContent> = {
 };
 
 type PointerProps = Omit<JSX.HTMLAttributes<HTMLElement>, "aria-hidden" | "children" | "ref"> & {
-  as?: ValidComponent;
   directionContent?: PointerDirectionContent;
 };
 type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type"> & {
   children?: (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => JSX.Element;
   disabled?: boolean;
 };
-type BackTriggerProps = ButtonProps & { backLabel?: string };
+type PreviousTriggerProps = ButtonProps & { previousLabel?: string };
 type AdvanceTriggerProps = ButtonProps & { finishLabel?: string; advanceLabel?: string };
 type CancelTriggerProps = ButtonProps;
 type ButtonClickEvent = MouseEvent & { currentTarget: HTMLButtonElement; target: Element };
@@ -76,15 +76,16 @@ interface TourContextValue {
 
 const TourContext = createContext<TourContextValue>();
 
-function useTourContext() {
+function useTourScope() {
   const context = useContext(TourContext);
   if (!context) {
-    throw new Error("GlowTour components must be rendered inside <GlowTour.Root tour={...}>.");
+    throw new Error("GlowTour components must be rendered inside <GlowTourRoot tour={...}>.");
   }
   return context;
 }
 
-function useTourSnapshot(tour: () => Tour) {
+/** @internal Reactive snapshot of a tour's state, shared with `useGlowTour`. */
+export function useTourSnapshot(tour: () => Tour) {
   const [snapshot, setSnapshot] = createSignal<TourState<SolidTourContent>>(tour().state.get());
   createEffect(() => {
     const activeTour = tour();
@@ -96,19 +97,19 @@ function useTourSnapshot(tour: () => Tour) {
 }
 
 /**
- * Solid hook that returns the current tour state.
+ * Reads the state of the tour rendered by the enclosing `<GlowTourRoot>`.
  *
- * Must be called inside a component rendered within `<GlowTour.Root>`.
+ * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns The current tour state.
  */
-export function useTour(): Accessor<TourState<SolidTourContent>> {
-  return useTourSnapshot(useTourContext().tour);
+export function useGlowTourContext(): Accessor<TourState<SolidTourContent>> {
+  return useTourSnapshot(useTourScope().tour);
 }
 
 function useBoundElement<T extends Element>(
   bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
-  const context = useTourContext();
+  const context = useTourScope();
   const [element, setElement] = createSignal<T | null>(null);
   createEffect(() => {
     const activeBinding = context.binding();
@@ -123,15 +124,29 @@ function currentStep(snapshot: TourState<SolidTourContent>) {
   return snapshot.currentStep?.currentProps ?? null;
 }
 
+/** Joins the component's own classes with the ones the current step adds to it. */
+function joinClassNames(...values: (ClassValue | undefined)[]) {
+  return values.flat().filter(Boolean).join(" ") || undefined;
+}
+
+/** Reads the component's `class` followed by the current step's `classNames[slot]`. */
+function stepClass(
+  snapshot: Accessor<TourState<SolidTourContent>>,
+  slot: keyof TourClassNames,
+  className: string | undefined,
+) {
+  return joinClassNames(className, currentStep(snapshot())?.classNames?.[slot]);
+}
+
 /**
  * Root component that must wrap all other tour components.
  *
  * Manages tour initialization and connects the tour instance to the DOM.
- * All other tour components (Overlay, Pointer, Popover, etc.) must be rendered inside this root.
+ * All other tour components (GlowTourOverlay, GlowTourPointer, GlowTourPopover, etc.) must be rendered inside this root.
  * @param props Component props including the tour instance and optional ID prefix.
  * @returns The root provider component.
  */
-export function Root(props: RootProps): JSX.Element {
+export function GlowTourRoot(props: RootProps): JSX.Element {
   const [local, other] = splitProps(props, ["children", "idPrefix", "tour"]);
   const [element, setElement] = createSignal<HTMLElement | null>(null);
   const [binding, setBinding] = createSignal<AdapterRootBinding | null>(null);
@@ -178,29 +193,37 @@ export function Root(props: RootProps): JSX.Element {
 /**
  * The popover container that displays step content.
  *
- * Renders as a `<section>` by default, but can be customized via the `as` prop.
- * Should contain Header, Content, and Footer components.
- * @param props HTML attributes and the `as` prop for customizing the container element.
+ * Renders as a `<section>`.
+ * Should contain GlowTourHeader, GlowTourContent, and GlowTourFooter components.
+ * @param props HTML attributes and children.
  * @returns The popover container.
  */
-export function Popover(props: ElementProps): JSX.Element {
-  const context = useTourContext();
-  const [local, other] = splitProps(props, ["as", "children"]);
+export function GlowTourPopover(props: ElementProps): JSX.Element {
+  const context = useTourScope();
+  const snapshot = useTourSnapshot(context.tour);
+  // Without a title, the content names the dialog instead of describing it.
+  const titled = () => {
+    const step = currentStep(snapshot());
+    return !step || step.title != null;
+  };
+  const [local, other] = splitProps(props, ["children"]);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPopover(element));
 
   return createComponent(
     Dynamic,
     mergeProps(other, {
       get "aria-describedby"() {
-        return context.binding()?.ids.description;
+        return titled() ? context.binding()?.ids.description : undefined;
       },
       "aria-hidden": POPOVER_IDLE_ATTRIBUTES["aria-hidden"],
       get "aria-labelledby"() {
-        return context.binding()?.ids.title;
+        const ids = context.binding()?.ids;
+        return titled() ? ids?.title : ids?.description;
       },
-      get component() {
-        return local.as ?? "section";
+      get class() {
+        return stepClass(snapshot, "popover", other.class);
       },
+      component: "section",
       "data-glow-tour-popover": "",
       get id() {
         return context.binding()?.ids.popover;
@@ -224,22 +247,33 @@ export function Popover(props: ElementProps): JSX.Element {
  * @param props HTML attributes.
  * @returns The step title header.
  */
-export function Header(props: ContentProps): JSX.Element {
-  const context = useTourContext();
+export function GlowTourHeader(props: ContentProps): JSX.Element {
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
-  return createComponent(
-    Dynamic,
-    mergeProps(props, {
-      component: "header",
-      "data-glow-tour-header": "",
-      get id() {
-        return context.binding()?.ids.title;
-      },
-      get children() {
-        return currentStep(snapshot())?.title ?? null;
-      },
-    }),
-  );
+  return Show({
+    get when() {
+      const step = currentStep(snapshot());
+      return !step || step.title != null;
+    },
+    get children() {
+      return createComponent(
+        Dynamic,
+        mergeProps(props, {
+          get class() {
+            return stepClass(snapshot, "header", props.class);
+          },
+          component: "header",
+          "data-glow-tour-header": "",
+          get id() {
+            return context.binding()?.ids.title;
+          },
+          get children() {
+            return currentStep(snapshot())?.title ?? null;
+          },
+        }),
+      );
+    },
+  });
 }
 
 /**
@@ -247,13 +281,16 @@ export function Header(props: ContentProps): JSX.Element {
  * @param props HTML attributes.
  * @returns The step content area.
  */
-export function Content(props: ContentProps): JSX.Element {
-  const context = useTourContext();
+export function GlowTourContent(props: ContentProps): JSX.Element {
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   return createComponent(
     Dynamic,
     mergeProps(props, {
       "aria-live": "polite",
+      get class() {
+        return stepClass(snapshot, "content", props.class);
+      },
       component: "div",
       "data-glow-tour-content": "",
       get id() {
@@ -268,27 +305,21 @@ export function Content(props: ContentProps): JSX.Element {
 
 /**
  * The footer section of the popover, typically containing navigation buttons.
- * Automatically hidden if configured via `popover.hideFooter`.
  * @param props HTML attributes and children.
- * @returns The footer container, or null if hidden.
+ * @returns The footer container.
  */
-export function Footer(props: ElementProps): JSX.Element {
-  const context = useTourContext();
-  const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      return !currentStep(snapshot())?.popover?.hideFooter;
-    },
-    get children() {
-      return createComponent(
-        Dynamic,
-        mergeProps(props, {
-          component: "footer",
-          "data-glow-tour-footer": "",
-        }),
-      );
-    },
-  });
+export function GlowTourFooter(props: ElementProps): JSX.Element {
+  const snapshot = useTourSnapshot(useTourScope().tour);
+  return createComponent(
+    Dynamic,
+    mergeProps(props, {
+      get class() {
+        return stepClass(snapshot, "footer", props.class);
+      },
+      component: "footer",
+      "data-glow-tour-footer": "",
+    }),
+  );
 }
 
 /**
@@ -297,8 +328,9 @@ export function Footer(props: ElementProps): JSX.Element {
  * @param props SVG attributes.
  * @returns The overlay SVG element.
  */
-export function Overlay(props: OverlayProps): JSX.Element {
+export function GlowTourOverlay(props: OverlayProps): JSX.Element {
   const [local, other] = splitProps(props, ["children", "viewBox"]);
+  const snapshot = useTourSnapshot(useTourScope().tour);
   const ref = useBoundElement<SVGSVGElement>((binding, element) => binding.bindOverlay(element));
   const path = createComponent(Dynamic, {
     component: "path",
@@ -313,6 +345,9 @@ export function Overlay(props: OverlayProps): JSX.Element {
     Dynamic,
     mergeProps(other, {
       "aria-hidden": true,
+      get class() {
+        return stepClass(snapshot, "overlay", other.class);
+      },
       component: "svg",
       "data-glow-tour-allow-interaction":
         OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"],
@@ -338,12 +373,13 @@ export function Overlay(props: OverlayProps): JSX.Element {
 /**
  * A pointer/indicator that visually highlights the target element.
  * Displays directional content (emoji or custom content) based on pointer position.
- * Renders as a `<div>` by default, but can be customized via the `as` prop.
- * @param props HTML attributes, the `as` prop for customizing the container, and `directionContent`.
+ * Renders as a `<div>`.
+ * @param props HTML attributes and `directionContent`.
  * @returns The pointer indicator element.
  */
-export function Pointer(props: PointerProps): JSX.Element {
-  const [local, other] = splitProps(props, ["as", "directionContent"]);
+export function GlowTourPointer(props: PointerProps): JSX.Element {
+  const [local, other] = splitProps(props, ["directionContent"]);
+  const snapshot = useTourSnapshot(useTourScope().tour);
   const ref = useBoundElement<HTMLElement>((binding, element) => binding.bindPointer(element));
   const directions = (
     Object.keys(DEFAULT_POINTER_DIRECTION_CONTENT) as Array<keyof PointerDirectionContent>
@@ -361,9 +397,10 @@ export function Pointer(props: PointerProps): JSX.Element {
     Dynamic,
     mergeProps(other, {
       "aria-hidden": POINTER_IDLE_ATTRIBUTES["aria-hidden"],
-      get component() {
-        return local.as ?? "div";
+      get class() {
+        return stepClass(snapshot, "pointer", other.class);
       },
+      component: "div",
       "data-glow-tour-pointer": "",
       ref,
       get style() {
@@ -381,7 +418,7 @@ function Trigger(
     marker: "cancel" | "advance" | "previous";
   },
 ): JSX.Element {
-  const context = useTourContext();
+  const context = useTourScope();
   const [local, other] = splitProps(props, ["children", "capabilityDisabled", "label", "marker"]);
   const buttonProps = mergeProps(other, {
     get "aria-controls"() {
@@ -428,106 +465,84 @@ function Trigger(
 
 /**
  * Button that navigates to the previous step.
- * Automatically hidden or disabled based on tour state.
- * @param props Button props and an optional `backLabel` for the button text.
- * @returns The back button, or null if hidden.
+ * Automatically disabled based on tour state.
+ * @param props Button props and an optional `previousLabel` for the button text.
+ * @returns The back button.
  */
-export function BackTrigger(props: BackTriggerProps): JSX.Element {
-  const context = useTourContext();
+export function GlowTourPreviousTrigger(props: PreviousTriggerProps): JSX.Element {
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      const step = currentStep(snapshot());
-      return !step?.popover?.hidePreviousButton;
-    },
-    get children() {
-      return Trigger(
-        mergeProps(props, {
-          get capabilityDisabled() {
-            return (
-              !snapshot().canPrevious ||
-              currentStep(snapshot())?.popover?.disablePreviousButton === true
-            );
-          },
-          label: props.backLabel ?? "Back step",
-          marker: "previous" as const,
-        }),
-      );
-    },
-  });
+  return Trigger(
+    mergeProps(props, {
+      // Tour state disables a trigger only while the tour is active: disabling it natively outside
+      // of that, as a replacing start does, would blur the focused trigger.
+      get capabilityDisabled() {
+        return (
+          (snapshot().status === "active" && !snapshot().canPrevious) ||
+          currentStep(snapshot())?.controls?.previous?.state === "disabled"
+        );
+      },
+      label: props.previousLabel ?? "Previous step",
+      get class() {
+        return stepClass(snapshot, "previous", props.class);
+      },
+      marker: "previous" as const,
+    }),
+  );
 }
 
 /**
  * Button that navigates to the next step, or finishes the tour on the last step.
- * Automatically hidden or disabled based on tour state.
+ * Automatically disabled based on tour state.
  * @param props Button props, an optional `advanceLabel` for non-final steps, and `finishLabel` for the final step.
- * @returns The advance button, or null if hidden.
+ * @returns The advance button.
  */
-export function AdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
-  const context = useTourContext();
+export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element {
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      return !currentStep(snapshot())?.popover?.hideAdvanceButton;
-    },
-    get children() {
-      return Trigger(
-        mergeProps(props, {
-          get capabilityDisabled() {
-            return (
-              !snapshot().canAdvance ||
-              currentStep(snapshot())?.popover?.disableAdvanceButton === true
-            );
-          },
-          get label() {
-            return snapshot().isLastStep
-              ? (props.finishLabel ?? "Finish tour")
-              : (props.advanceLabel ?? "Advance step");
-          },
-          marker: "advance" as const,
-        }),
-      );
-    },
-  });
+  return Trigger(
+    mergeProps(props, {
+      get capabilityDisabled() {
+        return (
+          (snapshot().status === "active" && !snapshot().canAdvance) ||
+          currentStep(snapshot())?.controls?.advance?.state === "disabled"
+        );
+      },
+      get label() {
+        return snapshot().isLastStep
+          ? (props.finishLabel ?? "Finish tour")
+          : (props.advanceLabel ?? "Advance step");
+      },
+      get class() {
+        return stepClass(snapshot, "advance", props.class);
+      },
+      marker: "advance" as const,
+    }),
+  );
 }
 
 /**
  * Button that cancels the tour.
- * Automatically hidden if the tour is not cancellable.
+ * Automatically disabled based on tour state.
  * @param props Button props.
- * @returns The cancel button, or null if the tour cannot be cancelled.
+ * @returns The cancel button.
  */
-export function CancelTrigger(props: CancelTriggerProps): JSX.Element {
-  const context = useTourContext();
+export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
-  return Show({
-    get when() {
-      return snapshot().canCancel;
-    },
-    get children() {
-      return Trigger(
-        mergeProps(props, {
-          get capabilityDisabled() {
-            return !snapshot().canCancel;
-          },
-          label: "Skip",
-          marker: "cancel" as const,
-        }),
-      );
-    },
-  });
+  return Trigger(
+    mergeProps(props, {
+      get capabilityDisabled() {
+        return (
+          (snapshot().status === "active" && !snapshot().canCancel) ||
+          currentStep(snapshot())?.controls?.cancel?.state === "disabled"
+        );
+      },
+      label: "Skip",
+      get class() {
+        return stepClass(snapshot, "cancel", props.class);
+      },
+      marker: "cancel" as const,
+    }),
+  );
 }
-
-export const GlowTour = {
-  Default: DefaultTour,
-  Root,
-  Popover,
-  Header,
-  Content,
-  Footer,
-  Overlay,
-  Pointer,
-  BackTrigger,
-  AdvanceTrigger,
-  CancelTrigger,
-};

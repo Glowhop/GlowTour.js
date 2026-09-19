@@ -1,6 +1,7 @@
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { WorkflowBuilder } from "../builder";
+import type { TourControls } from "../types";
 import { ActiveStep } from "./active-step";
 
 function createRealmDocument() {
@@ -44,19 +45,18 @@ async function withGlobalHTMLElement<T>(
 function definition(options: {
   indicator?: { gap?: number };
   popover?: {
-    arrow?: { color?: string; disabled?: boolean; edgePadding?: number; size?: number };
-    hideFooter?: boolean;
+    arrow?: { color?: string; hidden?: boolean; edgePadding?: number; size?: number };
     gap?: number;
   };
+  controls?: TourControls;
 }) {
   return new WorkflowBuilder<string>("active-step", {
     indicator: { gap: 22 },
     popover: {
-      arrow: { color: "var(--workflow-arrow)", disabled: true, edgePadding: 18, size: 12 },
-      disableAdvanceButton: true,
-      hideFooter: true,
+      arrow: { color: "var(--workflow-arrow)", hidden: true, edgePadding: 18, size: 12 },
       gap: 18,
     },
+    controls: { advance: { state: "disabled", keys: ["n"] }, cancel: { state: "disabled" } },
   })
     .step({ id: "step-1", content: "content", target: "#target", title: "title", ...options })
     .build();
@@ -67,14 +67,14 @@ describe("ActiveStep presentation options", () => {
     const workflow = definition({});
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
-    assert.equal(step.indicator?.gap, 22);
-    assert.equal(step.popover?.gap, 18);
-    assert.deepEqual(step.popover?.arrow, {
+    assert.equal(step.props.get().indicator?.gap, 22);
+    assert.equal(step.props.get().popover?.gap, 18);
+    assert.deepEqual(step.props.get().popover?.arrow, {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "var(--workflow-arrow)",
-      disableAutoStyles: undefined,
-      disabled: true,
+      autoStyles: undefined,
+      hidden: true,
       edgePadding: 18,
       size: 12,
       styleNonce: undefined,
@@ -84,54 +84,97 @@ describe("ActiveStep presentation options", () => {
   test("keeps step presentation overrides above workflow defaults", () => {
     const workflow = definition({
       indicator: { gap: 8 },
-      popover: { arrow: { color: "#4c35fd", disabled: false, size: 20 }, gap: 6 },
+      popover: { arrow: { color: "#4c35fd", hidden: false, size: 20 }, gap: 6 },
     });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
-    assert.equal(step.indicator?.gap, 8);
-    assert.equal(step.popover?.gap, 6);
-    assert.deepEqual(step.popover?.arrow, {
+    assert.equal(step.props.get().indicator?.gap, 8);
+    assert.equal(step.props.get().popover?.gap, 6);
+    assert.deepEqual(step.props.get().popover?.arrow, {
       borderRadius: undefined,
       borderWidth: undefined,
       color: "#4c35fd",
-      disableAutoStyles: undefined,
-      disabled: false,
+      autoStyles: undefined,
+      hidden: false,
       edgePadding: 18,
       size: 20,
       styleNonce: undefined,
     });
   });
 
-  test("stores effective presentation props and resets nested mutations", () => {
-    const workflow = definition({ popover: { gap: 6, hideFooter: false } });
+  test("stores effective presentation props and restores nested mutations from initial props", () => {
+    const workflow = definition({
+      popover: { gap: 6 },
+      controls: { cancel: { state: "enabled" } },
+    });
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
-    assert.equal(step.props.get().popover?.disableAdvanceButton, true);
-    assert.equal(step.props.get().popover?.hideFooter, false);
+    assert.equal(step.props.get().controls?.advance?.state, "disabled");
+    assert.equal(step.props.get().controls?.cancel?.state, "enabled");
     assert.equal(step.snapshot().currentProps.popover?.gap, 6);
 
     step.props.set((props) => ({
       ...props,
-      popover: { ...props.popover, disableAdvanceButton: false, hideFooter: true },
+      controls: { advance: { state: "enabled" }, cancel: { state: "disabled" } },
     }));
-    assert.equal(step.snapshot().currentProps.popover?.disableAdvanceButton, false);
-    assert.equal(step.snapshot().currentProps.popover?.hideFooter, true);
+    assert.equal(step.snapshot().currentProps.controls?.advance?.state, "enabled");
+    assert.equal(step.snapshot().currentProps.controls?.cancel?.state, "disabled");
 
-    step.reset();
-    assert.equal(step.props.get().popover?.disableAdvanceButton, true);
-    assert.equal(step.props.get().popover?.hideFooter, false);
+    step.props.set(step.initialProps);
+    assert.equal(step.props.get().controls?.advance?.state, "disabled");
+    assert.equal(step.props.get().controls?.cancel?.state, "enabled");
   });
 
-  test("resets from its immutable initial definition", () => {
+  test("merges step controls over the workflow ones field by field", () => {
+    const workflow = definition({ controls: { advance: { state: "enabled" } } });
+    const step = new ActiveStep(workflow.steps[0], workflow.options);
+
+    assert.deepEqual(step.props.get().controls?.advance, { state: "enabled", keys: ["n"] });
+    assert.deepEqual(step.props.get().controls?.cancel, { state: "disabled", keys: undefined });
+    assert.equal(step.props.get().controls?.previous, undefined);
+    assert.equal(Object.isFrozen(step.props.get().controls?.advance?.keys), true);
+
+    step.props.update({ controls: { advance: { keys: [] } } });
+    assert.deepEqual(step.props.get().controls?.advance, { state: "enabled", keys: [] });
+  });
+
+  test("restores from its immutable initial definition", () => {
     const workflow = definition({});
     const step = new ActiveStep(workflow.steps[0], workflow.options);
 
     step.props.set((props) => ({ ...props, data: { version: 2 } }));
-    step.reset();
+    step.props.set(step.initialProps);
 
     assert.equal(Object.isFrozen(step.initialProps), true);
     assert.deepEqual(step.props.get().data, undefined);
     assert.deepEqual(workflow.steps[0]?.props.data, undefined);
+  });
+});
+
+describe("ActiveStep scroll", () => {
+  test("allows scrolling by default and reads behavior.allowScroll live", () => {
+    const workflow = new WorkflowBuilder<string>("active-step", {
+      behavior: { allowScroll: false },
+    })
+      .step({ id: "locked", content: "content", target: "#target", title: "title" })
+      .step({
+        id: "free",
+        content: "content",
+        target: "#target",
+        title: "title",
+        behavior: { allowScroll: true },
+      })
+      .build();
+    const locked = new ActiveStep(workflow.steps[0], workflow.options);
+    const free = new ActiveStep(workflow.steps[1], workflow.options);
+    const unset = new ActiveStep(definition({}).steps[0], definition({}).options);
+
+    assert.equal(locked.allowsScroll(), false);
+    assert.equal(free.allowsScroll(), true);
+    assert.equal(unset.allowsScroll(), true);
+
+    locked.props.update({ behavior: { allowScroll: true } });
+    assert.equal(locked.allowsScroll(), true);
   });
 });
 

@@ -267,14 +267,14 @@ import "@angular/compiler";
 import * as CoreTour from "@glowhop/core-tour";
 import * as CoreAdapter from "@glowhop/core-tour/adapter";
 import {
-  DefaultTour as ReactDefaultTour,
-  GlowTour as ReactGlowTour,
+  GlowTourDefault as ReactGlowTourDefault,
+  GlowTourRoot as ReactGlowTourRoot,
   createGlowTour as createReactGlowTour,
 } from "@glowhop/react-tour";
 import { GlowTourDefault as VueGlowTourDefault, GlowTourRoot as VueGlowTourRoot } from "@glowhop/vue-tour";
 import { GlowTourDefault as AngularGlowTourDefault, GlowTourRoot as AngularGlowTourRoot } from "@glowhop/angular-tour";
-import { DefaultTour as SolidDefaultTour, GlowTour as SolidGlowTour } from "@glowhop/solid-tour";
-import { createDefaultTourElement, createGlowTour } from "@glowhop/vanilla-tour";
+import { GlowTourDefault as SolidGlowTourDefault, GlowTourRoot as SolidGlowTourRoot } from "@glowhop/solid-tour";
+import { GLOW_TOUR_ELEMENT_NAMES, createGlowTour } from "@glowhop/vanilla-tour";
 import { registerGlowTourElements } from "@glowhop/vanilla-tour/auto";
 
 assert.deepEqual(Object.keys(CoreTour), ["createGlowTour"]);
@@ -290,18 +290,16 @@ assert.deepEqual(Object.keys(CoreAdapter), [
   "styleRecordToCamelCase",
   "styleRecordToCssText",
 ]);
-assert.equal(typeof ReactGlowTour.Root, "function");
-assert.equal(typeof ReactDefaultTour, "function");
-assert.equal(ReactGlowTour.Default, ReactDefaultTour);
+assert.equal(typeof ReactGlowTourRoot, "function");
+assert.equal(typeof ReactGlowTourDefault, "function");
 assert.equal(typeof VueGlowTourRoot, "object");
 assert.equal(typeof VueGlowTourDefault, "object");
 assert.equal(typeof AngularGlowTourRoot, "function");
 assert.equal(typeof AngularGlowTourDefault, "function");
-assert.equal(typeof SolidGlowTour.Root, "function");
-assert.equal(typeof SolidDefaultTour, "function");
-assert.equal(SolidGlowTour.Default, SolidDefaultTour);
+assert.equal(typeof SolidGlowTourRoot, "function");
+assert.equal(typeof SolidGlowTourDefault, "function");
 assert.equal(typeof createGlowTour, "function");
-assert.equal(typeof createDefaultTourElement, "function");
+assert.equal(GLOW_TOUR_ELEMENT_NAMES.includes("glow-tour-default"), true);
 assert.equal(typeof registerGlowTourElements, "function");
 `,
   );
@@ -310,9 +308,9 @@ assert.equal(typeof registerGlowTourElements, "function");
     `import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { DefaultTour, createGlowTour } from "@glowhop/react-tour";
+import { GlowTourDefault, createGlowTour } from "@glowhop/react-tour";
 
-const markup = renderToStaticMarkup(createElement(DefaultTour, { tour: createGlowTour() }));
+const markup = renderToStaticMarkup(createElement(GlowTourDefault, { tour: createGlowTour() }));
 
 assert.match(markup, /data-glow-tour-root/);
 assert.match(markup, /data-glow-tour-popover/);
@@ -328,7 +326,7 @@ import type {
   TourState as ReactTourState,
   WorkflowDefinition as ReactWorkflowDefinition,
 } from "@glowhop/react-tour";
-import { GlowTour as ReactGlowTour, createGlowTour as createReactGlowTour } from "@glowhop/react-tour";
+import { GlowTourRoot as ReactGlowTourRoot, createGlowTour as createReactGlowTour } from "@glowhop/react-tour";
 import type {
   StepPropsStore as VueStepPropsStore,
   Tour as VueTour,
@@ -353,7 +351,7 @@ import type {
   WorkflowDefinition as SolidWorkflowDefinition,
 } from "@glowhop/solid-tour";
 import {
-  GlowTour as SolidGlowTour,
+  GlowTourRoot as SolidGlowTourRoot,
   createGlowTour as createSolidGlowTour,
 } from "@glowhop/solid-tour";
 import type {
@@ -391,7 +389,7 @@ const workflow = createCoreGlowTour<string>()
   .step({ content: "Content", id: "step-1", target: "#target", title: "Title" })
   .wait(0)
   .do(() => true)
-  .beforeAdvance(() => {})
+  .beforeLeave(() => {})
   .build();
 void workflow;
 void reactTour;
@@ -414,10 +412,10 @@ void vanillaTour;
 void vanillaState;
 void vanillaStep;
 void vanillaWorkflow;
-void ReactGlowTour;
+void ReactGlowTourRoot;
 void VueGlowTourRoot;
 void AngularGlowTourRoot;
-void SolidGlowTour;
+void SolidGlowTourRoot;
 void createGlowTour;
 void registerGlowTourElements;
 `,

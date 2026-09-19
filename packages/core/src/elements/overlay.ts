@@ -154,7 +154,8 @@ export default class OverlayElement extends GlowTourElement {
       position,
       paintedBoxDimensions(this.element),
       {
-        padding: step.overlay?.padding ?? DEFAULT_OVERLAY_PADDING,
+        // Detached, the cutout collapses to nothing and the backdrop covers the screen.
+        padding: step.detached ? 0 : (step.overlay?.padding ?? DEFAULT_OVERLAY_PADDING),
         radius: step.overlay?.radius ?? DEFAULT_OVERLAY_RADIUS,
       },
       this.element,

@@ -1,7 +1,9 @@
 // biome-ignore-all assist/source/organizeImports: The removed export needs its own expected-error import.
 import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
+// @ts-expect-error BeforeActionStepContext was replaced by StepHookContext.
 import type { BeforeActionStepContext } from "../index";
+import type { StepHookContext } from "../index";
 // @ts-expect-error DynamicStepProps is no longer part of the public type contract.
 import type { DynamicStepProps } from "../types";
 import type {
@@ -11,6 +13,7 @@ import type {
   StepContext,
   StepParameters,
   StepPropsStore,
+  TourControl,
 } from "../types";
 import { WorkflowBuilder } from "./index";
 
@@ -30,19 +33,41 @@ type StoredStepProps = ReturnType<StepPropsStore<string>["get"]>;
 const removedTarget: keyof StoredStepProps = "target";
 // @ts-expect-error Lifecycle configuration must not be exposed through context.props.
 const removedResetPropsOnEnter: keyof StoredStepProps = "resetPropsOnEnter";
-// @ts-expect-error Static behavior must not be exposed through context.props.
-const removedBehavior: keyof StoredStepProps = "behavior";
+// Behavior is a dynamic step prop.
+const _storedBehavior: keyof StoredStepProps = "behavior";
 
-const popoverOptions: PopoverOptions = {
-  disableAdvanceButton: true,
-  disablePreviousButton: true,
-  hideAdvanceButton: true,
+const controlOptions: StartOptions<string> = {
+  controls: {
+    advance: { state: "enabled", keys: ["n"] },
+    cancel: { state: "disabled" },
+    previous: { state: "disabled", keys: [] },
+  },
+};
+// Controls are a dynamic step prop.
+const _storedControls: keyof StoredStepProps = "controls";
+const removedPopoverControls: PopoverOptions = {
+  // @ts-expect-error Control states moved to the root controls option.
+  controls: { advance: "hidden" },
+};
+const removedCancellableOption: StartOptions<string> = {
+  // @ts-expect-error The cancel control replaces cancellable.
+  cancellable: false,
+};
+const removedHiddenControlState: TourControl = {
+  // @ts-expect-error A control is enabled or disabled: hide its button with classNames.
+  state: "hidden",
+};
+const removedKeyboardOption: StepBehavior = {
+  // @ts-expect-error Keyboard shortcuts moved to controls.<command>.keys.
+  keyboard: { advance: ["n"] },
+};
+const removedFooterOption: PopoverOptions = {
+  // @ts-expect-error Footer visibility follows controls.
   hideFooter: true,
-  hidePreviousButton: true,
 };
 const behaviorOptions: StepBehavior = {
-  disableAutoFocus: true,
-  disableAutoScroll: true,
+  autoFocus: false,
+  autoScroll: false,
   scroll: { behavior: "smooth", block: "center", inline: "nearest" },
 };
 const removedStepScroll: StepParameters<string> = {
@@ -56,46 +81,66 @@ const removedStartScroll: StartOptions<string> = {
   // @ts-expect-error Scroll configuration now belongs to behavior.scroll.
   scroll: { behavior: "smooth" },
 };
+const removedStartAllowScroll: StartOptions<string> = {
+  // @ts-expect-error The scroll lock is a step behavior now: behavior.allowScroll.
+  allowScroll: false,
+};
+const removedResetOption: StepParameters<string> = {
+  content: "Content",
+  id: "step",
+  target: "#target",
+  title: "Title",
+  // @ts-expect-error Props are no longer reset on enter; reset them in beforeEnter instead.
+  resetPropsOnEnter: false,
+};
 
 void removedProgressOption;
 void removedButtonOption;
 void removedTarget;
 void removedResetPropsOnEnter;
-void removedBehavior;
-void popoverOptions;
+void _storedBehavior;
+void controlOptions;
+void _storedControls;
+void removedPopoverControls;
+void removedHiddenControlState;
+void removedCancellableOption;
+void removedKeyboardOption;
+void removedFooterOption;
 void behaviorOptions;
 void removedStepScroll;
 void removedStartScroll;
+void removedStartAllowScroll;
+void removedResetOption;
 void (null as DynamicStepProps<string> | null);
+void (null as BeforeActionStepContext<string> | null);
 
-function assertBeforeActionContext(context: BeforeActionStepContext<string>) {
+function assertStepHookContext(context: StepHookContext<string>) {
   const target: HTMLElement = context.target;
-  const title: string = context.title;
-  const content: string = context.content;
-  const data: Readonly<Record<string, string | number | boolean | null>> | undefined = context.data;
+  const direction: "advance" | "previous" = context.direction;
+  const title: string | undefined = context.initialProps.title;
+  const signal: AbortSignal = context.signal;
+  context.props.set((current) => current);
 
-  // @ts-expect-error Transition hook snapshots must not be assignable.
-  context.title = "Changed";
-  // @ts-expect-error Nested transition hook options must be readonly.
-  if (context.popover) context.popover.hideFooter = true;
-  // @ts-expect-error Transition hooks must not expose the mutable props store.
-  context.props;
-  // @ts-expect-error Transition hooks must not expose action navigation commands.
+  // @ts-expect-error Initial props must stay readonly.
+  context.initialProps.title = "Changed";
+  // @ts-expect-error Nested initial props must stay readonly.
+  if (context.initialProps.popover) context.initialProps.popover.gap = 1;
+  // @ts-expect-error Hooks run during a transition and must not expose navigation commands.
   context.advance;
-  // @ts-expect-error Transition hooks must not expose the action abort signal.
-  context.signal;
-  // @ts-expect-error Lifecycle configuration is not part of the hook snapshot.
-  context.resetPropsOnEnter;
-  // @ts-expect-error Static behavior is not part of the hook snapshot.
+  // @ts-expect-error Hooks run during a transition and must not expose navigation commands.
+  context.previous;
+  // @ts-expect-error Hooks run during a transition and must not expose navigation commands.
+  context.cancel;
+  // @ts-expect-error Static behavior is not part of the hook context.
   context.behavior;
 
   void target;
+  void direction;
   void title;
-  void content;
-  void data;
+  void signal;
 }
 
-void assertBeforeActionContext;
+void assertStepHookContext;
 
 function workflow(name = "builder") {
   return new WorkflowBuilder<string>(name).step({
@@ -107,12 +152,12 @@ function workflow(name = "builder") {
 }
 
 describe("WorkflowBuilder public contract", () => {
-  test("types every transition hook with the readonly before-action context", () => {
-    const callback = (context: BeforeActionStepContext<string>) => {
-      assert.equal(typeof context.title, "string");
+  test("types beforeEnter and beforeLeave with the step hook context", () => {
+    const callback = (context: StepHookContext<string>) => {
+      assert.equal(typeof context.direction, "string");
     };
 
-    workflow().beforeAdvance(callback).beforePrevious(callback).beforeCancel(callback);
+    workflow().beforeEnter(callback).beforeLeave(callback);
   });
 
   test("builds a frozen definition through the canonical fluent methods", () => {
@@ -121,34 +166,29 @@ describe("WorkflowBuilder public contract", () => {
       .wait(1)
       .do(() => true)
       .onTargetEvent(["click", "keydown"], callback)
-      .beforeAdvance(() => {})
-      .beforePrevious(() => {})
-      .beforeCancel(() => {})
+      .beforeEnter(() => {})
+      .beforeLeave(() => {})
       .do(({ advance }) => advance())
       .build();
 
     assert.equal(Object.isFrozen(definition), true);
     assert.equal(Object.isFrozen(definition.steps[0].actions), true);
     assert.deepEqual(
-      definition.steps[0].eventHandlers.map(({ event }) => event),
+      definition.steps[0].targetEvents.map(({ event }) => event),
       ["click", "keydown"],
     );
-    assert.equal(definition.steps[0].eventHandlers[0].callback, callback);
+    assert.equal(definition.steps[0].targetEvents[0].callback, callback);
   });
 
-  test("keeps resetPropsOnEnter outside dynamic step props", () => {
-    const definition = new WorkflowBuilder<string>("static-reset-policy")
-      .step({
-        id: "step-2",
-        content: "Content",
-        resetPropsOnEnter: false,
-        target: "#target",
-        title: "Title",
-      })
-      .build();
+  test("stores step hooks on the definition, outside dynamic step props", () => {
+    const enter = () => {};
+    const leave = () => {};
+    const definition = workflow("step-hooks").beforeEnter(enter).beforeLeave(leave).build();
 
-    assert.equal(definition.steps[0].resetPropsOnEnter, false);
-    assert.equal("resetPropsOnEnter" in definition.steps[0].props, false);
+    assert.equal(definition.steps[0].beforeEnter, enter);
+    assert.equal(definition.steps[0].beforeLeave, leave);
+    assert.equal("beforeEnter" in definition.steps[0].props, false);
+    assert.equal("resetPropsOnEnter" in definition.steps[0], false);
   });
 
   test("does not retain former builder aliases", () => {
@@ -167,6 +207,9 @@ describe("WorkflowBuilder public contract", () => {
       "onEvent",
       "onAdvance",
       "on",
+      "beforeAdvance",
+      "beforePrevious",
+      "beforeCancel",
     ]) {
       assert.equal(alias in step, false, alias);
     }
@@ -187,6 +230,9 @@ function createContext(
     advance: async () => {},
     cancel: async () => {},
     previous: async () => {},
+    goTo: async () => {},
+    direction: "advance",
+    initialProps: { content: "", title: "" },
     props: {} as StepContext<string>["props"],
     signal,
     target,
@@ -229,11 +275,11 @@ describe("StepBuilder.onTargetEvent", () => {
       .build();
 
     assert.deepEqual(
-      workflow.steps[0].eventHandlers.map(({ event }) => event),
+      workflow.steps[0].targetEvents.map(({ event }) => event),
       ["click", "keydown"],
     );
-    assert.equal(workflow.steps[0].eventHandlers[0].callback, callback);
-    assert.equal(workflow.steps[0].eventHandlers[1].callback, callback);
+    assert.equal(workflow.steps[0].targetEvents[0].callback, callback);
+    assert.equal(workflow.steps[0].targetEvents[1].callback, callback);
   });
 });
 
@@ -425,20 +471,23 @@ describe("StepBuilder lifecycle", () => {
     });
     step.build();
 
-    assert.throws(() => step.beforeAdvance(() => {}), /StepBuilder is no longer active/);
+    assert.throws(() => step.beforeLeave(() => {}), /StepBuilder is no longer active/);
   });
 });
 
 describe("StepBuilder.append", () => {
   test("appends an immutable workflow definition", () => {
+    const enter = () => {};
+    const leave = () => {};
     const reusable = new WorkflowBuilder<string>("reusable")
       .step({
         id: "step-18",
         content: "Reusable",
-        resetPropsOnEnter: false,
         target: "#reusable",
         title: "Reusable",
       })
+      .beforeEnter(enter)
+      .beforeLeave(leave)
       .build();
     const workflow = new WorkflowBuilder<string>("composed")
       .step({ id: "step-19", content: "First", target: "#first", title: "First" })
@@ -449,8 +498,8 @@ describe("StepBuilder.append", () => {
       workflow.steps.map((step) => step.props.title),
       ["First", "Reusable"],
     );
-    assert.equal(workflow.steps[1].resetPropsOnEnter, false);
-    assert.equal("resetPropsOnEnter" in workflow.steps[1].props, false);
+    assert.equal(workflow.steps[1].beforeEnter, enter);
+    assert.equal(workflow.steps[1].beforeLeave, leave);
   });
 
   test("rejects an empty workflow definition", () => {

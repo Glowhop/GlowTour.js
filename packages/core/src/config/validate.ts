@@ -2,14 +2,15 @@ import type { ConfigValidationIssue, WorkflowConfig } from "./types";
 import { ConfigValidationError } from "./types";
 
 const TOP_LEVEL_KEYS = [
+  "version",
   "name",
-  "cancellable",
-  "allowScroll",
   "overlay",
   "popover",
   "indicator",
   "animated",
   "behavior",
+  "controls",
+  "classNames",
   "onStart",
   "onCancel",
   "onFinish",
@@ -19,60 +20,62 @@ const TOP_LEVEL_KEYS = [
 const STEP_KEYS = [
   "id",
   "target",
-  "resetPropsOnEnter",
   "overlay",
   "popover",
   "indicator",
   "behavior",
+  "controls",
+  "classNames",
   "title",
   "content",
   "data",
   "actions",
-  "eventHandlers",
-  "advanceAction",
-  "previousAction",
-  "cancelAction",
+  "targetEvents",
+  "beforeEnter",
+  "beforeLeave",
 ] as const;
 
 const EVENT_HANDLER_KEYS = ["event", "action"] as const;
 
 const ANIMATION_KEYS = ["duration", "easing"] as const;
 const OVERLAY_KEYS = ["animated", "animation", "color", "opacity", "padding", "radius"] as const;
-const INDICATOR_KEYS = ["animated", "animation", "disabled", "gap", "placementTryOrder"] as const;
-const POPOVER_KEYS = [
-  "animated",
-  "animation",
-  "placementTryOrder",
-  "arrow",
-  "hideFooter",
-  "disablePreviousButton",
-  "hidePreviousButton",
-  "disableAdvanceButton",
-  "hideAdvanceButton",
-  "gap",
-  "keyboardShortcuts",
+const INDICATOR_KEYS = ["animated", "animation", "hidden", "gap", "placementTryOrder"] as const;
+const POPOVER_KEYS = ["animated", "animation", "placementTryOrder", "arrow", "gap"] as const;
+const CONTROL_KEYS = ["advance", "previous", "cancel"] as const;
+const CONTROL_FIELD_KEYS = ["state", "keys"] as const;
+const CLASS_NAME_KEYS = [
+  "overlay",
+  "popover",
+  "pointer",
+  "header",
+  "content",
+  "footer",
+  ...CONTROL_KEYS,
 ] as const;
 const POPOVER_ARROW_KEYS = [
-  "disabled",
+  "hidden",
   "color",
   "size",
   "borderWidth",
   "borderRadius",
   "edgePadding",
   "styleNonce",
-  "disableAutoStyles",
+  "autoStyles",
 ] as const;
-const KEYBOARD_SHORTCUT_KEYS = ["previous", "advance", "cancel"] as const;
+const MISSING_TARGET_KEYS = ["strategy", "timeout"] as const;
 const BEHAVIOR_KEYS = [
   "allowInteraction",
-  "disableAutoFocus",
-  "disableAutoScroll",
-  "missingTargetStrategy",
+  "allowScroll",
+  "autoFocus",
+  "autoScroll",
+  "missingTarget",
   "scroll",
-  "targetTimeout",
   "overlayClick",
 ] as const;
 const SCROLL_KEYS = ["behavior", "block", "inline"] as const;
+
+/** The config format version this release reads. */
+const CONFIG_VERSION = "1.1";
 
 const BUILTIN_ACTION_KEYS: Record<string, readonly string[]> = {
   wait: ["type", "ms"],
@@ -155,16 +158,20 @@ function validateWorkflowConfigShape(
 
   assertNoUnknownKeys(value, TOP_LEVEL_KEYS, "", issues);
 
+  if (value.version !== CONFIG_VERSION) {
+    issues.push({ path: "version", message: `version must be "${CONFIG_VERSION}"` });
+  }
+
   if (typeof value.name !== "string" || value.name.length === 0) {
     issues.push({ path: "name", message: "name must be a non-empty string" });
   }
-  validateOptionalBoolean("cancellable", value.cancellable, issues);
-  validateOptionalBoolean("allowScroll", value.allowScroll, issues);
   validateOptionalBoolean("animated", value.animated, issues);
   validateOverlayShape("overlay", value.overlay, issues);
   validatePopoverShape("popover", value.popover, issues);
   validateIndicatorShape("indicator", value.indicator, issues);
   validateBehaviorShape("behavior", value.behavior, issues);
+  validateControlsShape("controls", value.controls, issues);
+  validateClassNamesShape("classNames", value.classNames, issues);
   validateLifecycleActionRefShape("onStart", value.onStart, issues);
   validateLifecycleActionRefShape("onCancel", value.onCancel, issues);
   validateLifecycleActionRefShape("onFinish", value.onFinish, issues);
@@ -190,8 +197,8 @@ function validateWorkflowConfigShape(
 }
 
 /**
- * Validates a single `StepConfig`: required `target`/`title`/`content`, no unknown/extra keys,
- * and recurses into `actions`, `eventHandlers`, and the transition action refs.
+ * Validates a single `StepConfig`: required `target`/`content`, optional `title`, no unknown keys,
+ * and recurses into `actions`, `targetEvents`, and the transition action refs.
  * @param value The candidate step value.
  * @param path Error path prefix for this step, e.g. `steps[2]`.
  * @param issues Collector for every issue found.
@@ -221,15 +228,17 @@ function validateStepConfigShape(
       message: "target must be a non-empty CSS selector string",
     });
   }
-  const titleError = validateContent(value.title, `${path}.title`);
+  const titleError =
+    value.title === undefined ? null : validateContent(value.title, `${path}.title`);
   if (titleError) issues.push({ path: `${path}.title`, message: titleError });
   const contentError = validateContent(value.content, `${path}.content`);
   if (contentError) issues.push({ path: `${path}.content`, message: contentError });
-  validateOptionalBoolean(`${path}.resetPropsOnEnter`, value.resetPropsOnEnter, issues);
   validateOverlayShape(`${path}.overlay`, value.overlay, issues);
   validatePopoverShape(`${path}.popover`, value.popover, issues);
   validateIndicatorShape(`${path}.indicator`, value.indicator, issues);
   validateBehaviorShape(`${path}.behavior`, value.behavior, issues);
+  validateControlsShape(`${path}.controls`, value.controls, issues);
+  validateClassNamesShape(`${path}.classNames`, value.classNames, issues);
   validateDataShape(`${path}.data`, value.data, issues);
 
   if (value.actions !== undefined) {
@@ -242,35 +251,34 @@ function validateStepConfigShape(
     }
   }
 
-  if (value.eventHandlers !== undefined) {
-    if (!Array.isArray(value.eventHandlers)) {
-      issues.push({ path: `${path}.eventHandlers`, message: "eventHandlers must be an array" });
+  if (value.targetEvents !== undefined) {
+    if (!Array.isArray(value.targetEvents)) {
+      issues.push({ path: `${path}.targetEvents`, message: "targetEvents must be an array" });
     } else {
-      for (const [index, handler] of value.eventHandlers.entries()) {
-        validateEventHandlerConfigShape(handler, `${path}.eventHandlers[${index}]`, issues);
+      for (const [index, handler] of value.targetEvents.entries()) {
+        validateTargetEventConfigShape(handler, `${path}.targetEvents[${index}]`, issues);
       }
     }
   }
 
-  validateTransitionActionRefShape(`${path}.advanceAction`, value.advanceAction, issues);
-  validateTransitionActionRefShape(`${path}.previousAction`, value.previousAction, issues);
-  validateTransitionActionRefShape(`${path}.cancelAction`, value.cancelAction, issues);
+  validateHookActionRefShape(`${path}.beforeEnter`, value.beforeEnter, issues);
+  validateHookActionRefShape(`${path}.beforeLeave`, value.beforeLeave, issues);
 }
 
 /**
- * Validates a single `EventHandlerConfig`: `event` (string or non-empty string array), no
+ * Validates a single `TargetEventConfig`: `event` (string or non-empty string array), no
  * unknown/extra keys, and its `action`.
  * @param value The candidate event handler value.
- * @param path Error path prefix, e.g. `steps[2].eventHandlers[0]`.
+ * @param path Error path prefix, e.g. `steps[2].targetEvents[0]`.
  * @param issues Collector for every issue found.
  */
-function validateEventHandlerConfigShape(
+function validateTargetEventConfigShape(
   value: unknown,
   path: string,
   issues: ConfigValidationIssue[],
 ): void {
   if (!isPlainObject(value)) {
-    issues.push({ path, message: "Event handler must be a plain object" });
+    issues.push({ path, message: "Target event must be a plain object" });
     return;
   }
 
@@ -293,7 +301,7 @@ function validateEventHandlerConfigShape(
 }
 
 /**
- * Validates a `StepActionRef` (`actions[]` / `eventHandlers[].action`): a function is always
+ * Validates a `StepActionRef` (`actions[]` / `targetEvents[].action`): a function is always
  * accepted as-is, and a plain object with a `type` field is validated as a `BuiltinAction`.
  * Anything else — including a string, since there is no registry — is a validation error.
  * @param value The candidate action ref value.
@@ -317,16 +325,15 @@ function validateStepActionRefShape(
 }
 
 /**
- * Validates a `TransitionActionRef` (`advanceAction`/`previousAction`/`cancelAction`) or a
- * `LifecycleActionRef` (`onStart`/`onCancel`/`onFinish`): only a function is valid. Neither
- * `BeforeActionStepContext` (no `signal`/navigation) nor `LifecycleHookContext` (no `target` at
- * all) supports any `BuiltinAction` verb, and there is no registry, so any non-function value —
- * including a builtin action object — is rejected.
- * @param path Error path for this ref, e.g. `steps[2].advanceAction`.
+ * Validates a `StepHookActionRef` (`beforeEnter`/`beforeLeave`) or a `LifecycleActionRef`
+ * (`onStart`/`onCancel`/`onFinish`): only a function is valid. Built-in actions describe a step's
+ * own action sequence, not hooks, and there is no registry, so any non-function value (including a
+ * builtin action object) is rejected.
+ * @param path Error path for this ref, e.g. `steps[2].beforeLeave`.
  * @param value The candidate ref value, or `undefined` if not set.
  * @param issues Collector for every issue found.
  */
-function validateTransitionActionRefShape(
+function validateHookActionRefShape(
   path: string,
   value: unknown,
   issues: ConfigValidationIssue[],
@@ -339,13 +346,13 @@ function validateTransitionActionRefShape(
   });
 }
 
-/** See {@link validateTransitionActionRefShape} — lifecycle hooks share the same restriction. */
+/** See {@link validateHookActionRefShape}: lifecycle hooks share the same restriction. */
 function validateLifecycleActionRefShape(
   path: string,
   value: unknown,
   issues: ConfigValidationIssue[],
 ): void {
-  validateTransitionActionRefShape(path, value, issues);
+  validateHookActionRefShape(path, value, issues);
 }
 
 /**
@@ -516,7 +523,7 @@ function validateIndicatorShape(
   }
   assertNoUnknownKeys(value, INDICATOR_KEYS, path, issues);
   validateBaseOptionsShape(path, value, issues);
-  validateOptionalBoolean(`${path}.disabled`, value.disabled, issues);
+  validateOptionalBoolean(`${path}.hidden`, value.hidden, issues);
   validateOptionalFiniteNonNegative(`${path}.gap`, value.gap, issues);
   validateOptionalStringArray(`${path}.placementTryOrder`, value.placementTryOrder, issues, [
     "top",
@@ -537,30 +544,14 @@ function validatePopoverArrowShape(
     return;
   }
   assertNoUnknownKeys(value, POPOVER_ARROW_KEYS, path, issues);
-  validateOptionalBoolean(`${path}.disabled`, value.disabled, issues);
+  validateOptionalBoolean(`${path}.hidden`, value.hidden, issues);
   validateOptionalString(`${path}.color`, value.color, issues);
   validateOptionalFiniteNonNegative(`${path}.size`, value.size, issues);
   validateOptionalFiniteNonNegative(`${path}.borderWidth`, value.borderWidth, issues);
   validateOptionalFiniteNonNegative(`${path}.borderRadius`, value.borderRadius, issues);
   validateOptionalFiniteNonNegative(`${path}.edgePadding`, value.edgePadding, issues);
   validateOptionalString(`${path}.styleNonce`, value.styleNonce, issues);
-  validateOptionalBoolean(`${path}.disableAutoStyles`, value.disableAutoStyles, issues);
-}
-
-function validateKeyboardShortcutsShape(
-  path: string,
-  value: unknown,
-  issues: ConfigValidationIssue[],
-): void {
-  if (value === undefined) return;
-  if (!isPlainObject(value)) {
-    issues.push({ path, message: "must be an object" });
-    return;
-  }
-  assertNoUnknownKeys(value, KEYBOARD_SHORTCUT_KEYS, path, issues);
-  for (const key of KEYBOARD_SHORTCUT_KEYS) {
-    validateOptionalStringArray(`${path}.${key}`, value[key], issues);
-  }
+  validateOptionalBoolean(`${path}.autoStyles`, value.autoStyles, issues);
 }
 
 function validatePopoverShape(path: string, value: unknown, issues: ConfigValidationIssue[]): void {
@@ -578,13 +569,73 @@ function validatePopoverShape(path: string, value: unknown, issues: ConfigValida
     "right",
   ]);
   validatePopoverArrowShape(`${path}.arrow`, value.arrow, issues);
-  validateOptionalBoolean(`${path}.hideFooter`, value.hideFooter, issues);
-  validateOptionalBoolean(`${path}.disablePreviousButton`, value.disablePreviousButton, issues);
-  validateOptionalBoolean(`${path}.hidePreviousButton`, value.hidePreviousButton, issues);
-  validateOptionalBoolean(`${path}.disableAdvanceButton`, value.disableAdvanceButton, issues);
-  validateOptionalBoolean(`${path}.hideAdvanceButton`, value.hideAdvanceButton, issues);
   validateOptionalFiniteNonNegative(`${path}.gap`, value.gap, issues);
-  validateKeyboardShortcutsShape(`${path}.keyboardShortcuts`, value.keyboardShortcuts, issues);
+}
+
+function validateClassNamesShape(
+  path: string,
+  value: unknown,
+  issues: ConfigValidationIssue[],
+): void {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    issues.push({ path, message: "must be an object" });
+    return;
+  }
+  assertNoUnknownKeys(value, CLASS_NAME_KEYS, path, issues);
+  for (const key of CLASS_NAME_KEYS) {
+    // A string is accepted as is; anything else must be an array of strings.
+    if (typeof value[key] !== "string") {
+      validateOptionalStringArray(`${path}.${key}`, value[key], issues);
+    }
+  }
+}
+
+function validateControlsShape(
+  path: string,
+  value: unknown,
+  issues: ConfigValidationIssue[],
+): void {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    issues.push({ path, message: "must be an object" });
+    return;
+  }
+  assertNoUnknownKeys(value, CONTROL_KEYS, path, issues);
+  for (const key of CONTROL_KEYS) {
+    validateControlShape(`${path}.${key}`, value[key], issues);
+  }
+}
+
+function validateControlShape(path: string, value: unknown, issues: ConfigValidationIssue[]): void {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    issues.push({ path, message: "must be an object" });
+    return;
+  }
+  assertNoUnknownKeys(value, CONTROL_FIELD_KEYS, path, issues);
+  validateOptionalEnum(`${path}.state`, value.state, ["enabled", "disabled"], issues);
+  validateOptionalStringArray(`${path}.keys`, value.keys, issues);
+}
+
+function validateMissingTargetShape(
+  path: string,
+  value: unknown,
+  issues: ConfigValidationIssue[],
+): void {
+  if (value === undefined) return;
+  if (!isPlainObject(value)) {
+    issues.push({ path, message: "must be an object" });
+    return;
+  }
+  assertNoUnknownKeys(value, MISSING_TARGET_KEYS, path, issues);
+  validateOptionalEnum(
+    `${path}.strategy`,
+    value.strategy,
+    ["wait", "skip", "error", "detached"],
+    issues,
+  );
+  validateOptionalFiniteNonNegative(`${path}.timeout`, value.timeout, issues);
 }
 
 function validateScrollShape(path: string, value: unknown, issues: ConfigValidationIssue[]): void {
@@ -616,16 +667,11 @@ function validateBehaviorShape(
   }
   assertNoUnknownKeys(value, BEHAVIOR_KEYS, path, issues);
   validateOptionalBoolean(`${path}.allowInteraction`, value.allowInteraction, issues);
-  validateOptionalBoolean(`${path}.disableAutoFocus`, value.disableAutoFocus, issues);
-  validateOptionalBoolean(`${path}.disableAutoScroll`, value.disableAutoScroll, issues);
-  validateOptionalEnum(
-    `${path}.missingTargetStrategy`,
-    value.missingTargetStrategy,
-    ["wait", "skip", "error"],
-    issues,
-  );
+  validateOptionalBoolean(`${path}.allowScroll`, value.allowScroll, issues);
+  validateOptionalBoolean(`${path}.autoFocus`, value.autoFocus, issues);
+  validateOptionalBoolean(`${path}.autoScroll`, value.autoScroll, issues);
+  validateMissingTargetShape(`${path}.missingTarget`, value.missingTarget, issues);
   validateScrollShape(`${path}.scroll`, value.scroll, issues);
-  validateOptionalFiniteNonNegative(`${path}.targetTimeout`, value.targetTimeout, issues);
   validateOptionalEnum(
     `${path}.overlayClick`,
     value.overlayClick,

@@ -83,11 +83,11 @@ test("adapter guides cover the documented quick-start and advanced concerns", ()
       expect(readme.toLowerCase()).toContain(term.toLowerCase());
     }
   }
-  expect(read("packages/react/README.md")).toContain("<button type=\"button\" onClick={() => void tour.run(workflow)}>");
+  expect(read("packages/react/README.md")).toContain("<button type=\"button\" onClick={() => void tour.start(workflow)}>");
   expect(read("packages/vue/README.md")).toContain("@click=\"start\"");
   expect(read("packages/angular/README.md")).toContain('<button type="button" (click)="start()">');
   expect(read("packages/angular/README.md")).toContain('<glow-tour-default [tour]="tour" />');
-  expect(read("packages/solid/README.md")).toContain("onClick={() => void tour.run(workflow)}");
+  expect(read("packages/solid/README.md")).toContain("onClick={() => void tour.start(workflow)}");
   expect(read("packages/vanilla/README.md")).toContain("startButton.addEventListener(\"click\"");
 });
 

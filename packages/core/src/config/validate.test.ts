@@ -5,6 +5,7 @@ import { validateWorkflowConfig } from "./validate";
 
 function minimalConfig() {
   return {
+    version: "1.1",
     name: "onboarding",
     steps: [{ id: "s1", target: "#target", title: "Title", content: "Content" }],
   };
@@ -28,6 +29,7 @@ describe("validateWorkflowConfig", () => {
 
   test("accepts every builtin action shape and mixed inline functions", () => {
     const config = {
+      version: "1.1",
       name: "onboarding",
       onStart: () => {},
       steps: [
@@ -44,13 +46,12 @@ describe("validateWorkflowConfig", () => {
             { type: "focusTarget" },
             () => true,
           ],
-          eventHandlers: [
+          targetEvents: [
             { event: "click", action: { type: "focusTarget" } },
             { event: ["keydown", "keyup"], action: () => {} },
           ],
-          advanceAction: () => {},
-          previousAction: () => {},
-          cancelAction: () => {},
+          beforeEnter: () => {},
+          beforeLeave: () => {},
         },
       ],
     };
@@ -65,9 +66,20 @@ describe("validateWorkflowConfig", () => {
     assert.ok(issues.some((issue) => issue.path === "steps[0].target"));
   });
 
-  test("rejects a config still carrying the removed schemaVersion field as an unknown key", () => {
-    const issues = issuesOf({ ...minimalConfig(), schemaVersion: 1 });
-    assert.ok(issues.some((issue) => issue.path === "schemaVersion"));
+  test("accepts a step without a title", () => {
+    const { title: _title, ...step } = minimalConfig().steps[0];
+    const config = { ...minimalConfig(), steps: [step] };
+    assert.equal(validateWorkflowConfig(config), config);
+  });
+
+  test("requires the config format version", () => {
+    const { version: _version, ...withoutVersion } = minimalConfig();
+    for (const config of [withoutVersion, { ...minimalConfig(), version: "1.0" }]) {
+      assert.deepEqual(
+        issuesOf(config).map((issue) => [issue.path, issue.message]),
+        [["version", 'version must be "1.1"']],
+      );
+    }
   });
 
   test("rejects an unknown top-level key", () => {
@@ -89,13 +101,39 @@ describe("validateWorkflowConfig", () => {
     assert.ok(issues.some((issue) => issue.path === "name"));
   });
 
-  test("rejects a builtin action used as a transition hook", () => {
+  test("rejects a builtin action used as a step hook", () => {
     const config = minimalConfig();
     const issues = issuesOf({
       ...config,
-      steps: [{ ...config.steps[0], advanceAction: { type: "clickTarget" } }],
+      steps: [
+        {
+          ...config.steps[0],
+          beforeEnter: { type: "focusTarget" },
+          beforeLeave: { type: "clickTarget" },
+        },
+      ],
     });
-    assert.ok(issues.some((issue) => issue.path === "steps[0].advanceAction"));
+    assert.ok(issues.some((issue) => issue.path === "steps[0].beforeEnter"));
+    assert.ok(issues.some((issue) => issue.path === "steps[0].beforeLeave"));
+  });
+
+  test("rejects the removed transition hook and reset keys as unknown step keys", () => {
+    const config = minimalConfig();
+    const removedKeys = ["advanceAction", "previousAction", "cancelAction", "resetPropsOnEnter"];
+    const issues = issuesOf({
+      ...config,
+      steps: [
+        {
+          ...config.steps[0],
+          advanceAction: () => {},
+          cancelAction: () => {},
+          previousAction: () => {},
+          resetPropsOnEnter: false,
+        },
+      ],
+    });
+    const paths = issues.map((issue) => issue.path);
+    for (const key of removedKeys) assert.ok(paths.includes(`steps[0].${key}`));
   });
 
   test("rejects a builtin action used as a lifecycle hook", () => {
@@ -141,16 +179,16 @@ describe("validateWorkflowConfig", () => {
       },
       popover: {
         placementTryOrder: ["top", "diagonal"],
-        arrow: { disabled: "no", size: -1 },
-        keyboardShortcuts: { advance: ["Enter", 42] },
+        arrow: { hidden: "no", size: -1 },
       },
-      indicator: { disabled: "no", gap: -1 },
+      indicator: { hidden: "no", gap: -1 },
       behavior: {
         allowInteraction: "yes",
-        missingTargetStrategy: "retry",
+        allowScroll: "no",
+        missingTarget: { strategy: "retry", timeout: -1 },
         scroll: { behavior: "instant" },
-        targetTimeout: -1,
       },
+      controls: { advance: { keys: ["Enter", 42], state: "gone" }, next: {} },
     });
 
     const paths = issues.map((issue) => issue.path);
@@ -161,18 +199,47 @@ describe("validateWorkflowConfig", () => {
       "overlay.animation.easing",
       "overlay.animation.extra",
       "popover.placementTryOrder[1]",
-      "popover.arrow.disabled",
+      "popover.arrow.hidden",
       "popover.arrow.size",
-      "popover.keyboardShortcuts.advance[1]",
-      "indicator.disabled",
+      "indicator.hidden",
       "indicator.gap",
       "behavior.allowInteraction",
-      "behavior.missingTargetStrategy",
+      "behavior.allowScroll",
+      "behavior.missingTarget.strategy",
+      "behavior.missingTarget.timeout",
       "behavior.scroll.behavior",
-      "behavior.targetTimeout",
+      "controls.advance.keys[1]",
+      "controls.advance.state",
+      "controls.next",
     ]) {
       assert.ok(paths.includes(path), `missing validation issue for ${path}`);
     }
+  });
+
+  test("rejects cancellable: the cancel control replaces it", () => {
+    assert.deepEqual(issuesOf({ ...minimalConfig(), cancellable: false }), [
+      { path: "cancellable", message: "Unknown key: cancellable" },
+    ]);
+  });
+
+  test("accepts only enabled and disabled as a control state", () => {
+    for (const state of ["enabled", "disabled"]) {
+      const config = { ...minimalConfig(), controls: { cancel: { state } } };
+      assert.equal(validateWorkflowConfig(config), config);
+    }
+    for (const state of ["visible", "hidden"]) {
+      assert.deepEqual(issuesOf({ ...minimalConfig(), controls: { cancel: { state } } }), [
+        { path: "controls.cancel.state", message: "must be one of: enabled, disabled" },
+      ]);
+    }
+  });
+
+  test("rejects allowScroll as a workflow key: it lives in behavior", () => {
+    assert.deepEqual(issuesOf({ ...minimalConfig(), allowScroll: false }), [
+      { path: "allowScroll", message: "Unknown key: allowScroll" },
+    ]);
+    const config = { ...minimalConfig(), behavior: { allowScroll: false } };
+    assert.equal(validateWorkflowConfig(config), config);
   });
 
   test("validates nested options on individual steps", () => {
@@ -183,7 +250,7 @@ describe("validateWorkflowConfig", () => {
         {
           ...config.steps[0],
           overlay: { color: 42 },
-          popover: { hideFooter: "yes" },
+          controls: { advance: { state: "gone" }, cancel: "hidden" },
           indicator: { placementTryOrder: ["center"] },
           behavior: { overlayClick: "close" },
         },
@@ -192,7 +259,8 @@ describe("validateWorkflowConfig", () => {
 
     const paths = issues.map((issue) => issue.path);
     assert.ok(paths.includes("steps[0].overlay.color"));
-    assert.ok(paths.includes("steps[0].popover.hideFooter"));
+    assert.ok(paths.includes("steps[0].controls.advance.state"));
+    assert.ok(paths.includes("steps[0].controls.cancel"));
     assert.ok(paths.includes("steps[0].indicator.placementTryOrder[0]"));
     assert.ok(paths.includes("steps[0].behavior.overlayClick"));
   });
@@ -216,7 +284,7 @@ describe("validateWorkflowConfig", () => {
           target: "#other",
           title: "Title",
           content: "Content",
-          advanceAction: { type: "wait", ms: 1 },
+          beforeLeave: { type: "wait", ms: 1 },
         },
       ],
     });
@@ -225,7 +293,7 @@ describe("validateWorkflowConfig", () => {
     assert.ok(paths.includes("bogus"));
     assert.ok(paths.includes("name"));
     assert.ok(paths.includes("steps[0].target"));
-    assert.ok(paths.includes("steps[1].advanceAction"));
+    assert.ok(paths.includes("steps[1].beforeLeave"));
     assert.ok(issues.length >= 4);
   });
 
@@ -241,6 +309,7 @@ describe("validateWorkflowConfig", () => {
   });
   test("reports a missing step id", () => {
     const issues = issuesOf({
+      version: "1.1",
       name: "onboarding",
       steps: [{ target: "#target", title: "T", content: "C" }],
     });
@@ -250,6 +319,7 @@ describe("validateWorkflowConfig", () => {
 
   test("reports a duplicate step id, naming the step that already uses it", () => {
     const issues = issuesOf({
+      version: "1.1",
       name: "onboarding",
       steps: [
         { id: "same", target: "#a", title: "T", content: "C" },
@@ -260,5 +330,30 @@ describe("validateWorkflowConfig", () => {
     const duplicate = issues.find((issue) => issue.path === "steps[1].id");
     assert.ok(duplicate);
     assert.match(duplicate.message, /already used by steps\[0\]/);
+  });
+
+  test("accepts classNames as strings or string arrays on the workflow and its steps", () => {
+    const config = {
+      ...minimalConfig(),
+      classNames: { popover: "tour-popover", advance: ["primary", "large"] },
+      steps: [{ ...minimalConfig().steps[0], classNames: { overlay: [], cancel: "ghost" } }],
+    };
+    assert.equal(validateWorkflowConfig(config), config);
+  });
+
+  test("rejects invalid classNames", () => {
+    const config = {
+      ...minimalConfig(),
+      classNames: { popover: 1, arrow: "arrow" },
+      steps: [{ ...minimalConfig().steps[0], classNames: { header: ["ok", 2] } }],
+    };
+    assert.deepEqual(
+      issuesOf(config).map((issue) => [issue.path, issue.message]),
+      [
+        ["classNames.arrow", "Unknown key: arrow"],
+        ["classNames.popover", "must be an array"],
+        ["steps[0].classNames.header[1]", "must be a string"],
+      ],
+    );
   });
 });

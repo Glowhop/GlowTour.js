@@ -103,7 +103,7 @@ const features = [
   {
     title: "Lifecycle callbacks",
     description:
-      "onStart, onCancel, onFinish at the workflow level; beforeAdvance, beforePrevious, beforeCancel per step.",
+      "onStart, onCancel, onFinish at the workflow level; beforeEnter and beforeLeave per step.",
   },
   {
     title: "Step actions",
@@ -203,7 +203,7 @@ const jsonLd = {
         link also means no layout shift while the tour script loads.
       */}
       <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
-        <Button href="#examples" data-site-tour-start>Take the tour</Button>
+        <Button data-site-tour-start>Take the tour</Button>
         <Button href="/docs/getting-started" variant="secondary">Documentation</Button>
       </div>
       <InstallLine class="mt-6" />

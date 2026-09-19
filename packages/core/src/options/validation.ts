@@ -75,15 +75,16 @@ function validateIndicator(
 
 function validateBehavior(
   path: string,
-  behavior: { readonly targetTimeout?: number } | undefined,
+  behavior: { readonly missingTarget?: { readonly timeout?: number } } | undefined,
 ): void {
-  validateFiniteNonNegative(`${path}.targetTimeout`, behavior?.targetTimeout);
+  validateFiniteNonNegative(`${path}.missingTarget.timeout`, behavior?.missingTarget?.timeout);
 }
 
 export function validateStepProps<T>(path: string, props: ReadonlyStepProps<T>): void {
   validateOverlay(`${path}.overlay`, props.overlay);
   validatePopover(`${path}.popover`, props.popover);
   validateIndicator(`${path}.indicator`, props.indicator);
+  validateBehavior(`${path}.behavior`, props.behavior);
 }
 
 export function validateWorkflowOptions<T>(workflow: WorkflowDefinition<T>): void {
@@ -92,8 +93,6 @@ export function validateWorkflowOptions<T>(workflow: WorkflowDefinition<T>): voi
   validateIndicator("options.indicator", workflow.options.indicator);
   validateBehavior("options.behavior", workflow.options.behavior);
   for (const [index, step] of workflow.steps.entries()) {
-    const path = `steps[${index}]`;
-    validateBehavior(`${path}.behavior`, step.behavior);
-    validateStepProps(path, step.props);
+    validateStepProps(`steps[${index}]`, step.props);
   }
 }

@@ -23,6 +23,8 @@ import {
   type Ref,
   type ShallowRef,
   shallowRef,
+  toValue,
+  type WatchSource,
   watch,
 } from "vue";
 import type { VueTourContent } from "../glow-tour.js";
@@ -55,7 +57,7 @@ function componentName(name: string) {
   return `GlowTour${name}`;
 }
 
-function useTourContext() {
+function useTourScope() {
   const context = inject(TOUR_CONTEXT);
   if (!context) {
     throw new Error("GlowTour components must be rendered inside <GlowTourRoot tour={...}>.");
@@ -63,8 +65,9 @@ function useTourContext() {
   return context;
 }
 
-function useTourSnapshot(tour: Ref<Tour>) {
-  const snapshot = shallowRef<TourState<VueTourContent>>(tour.value.state.get());
+/** @internal Reactive snapshot of a tour's state, shared with `useGlowTour`. */
+export function useTourSnapshot(tour: WatchSource<Tour>) {
+  const snapshot = shallowRef<TourState<VueTourContent>>(toValue(tour).state.get());
   watch(
     tour,
     (activeTour, _previousTour, onCleanup) => {
@@ -77,17 +80,17 @@ function useTourSnapshot(tour: Ref<Tour>) {
 }
 
 /**
- * Retrieves the current tour state snapshot.
- * Must be called within a GlowTourRoot component context.
+ * Reads the state of the tour rendered by the enclosing `GlowTourRoot`.
+ * Use it to build tour UI inside the root; use `useGlowTour` to run a tour from a component.
  * @returns A reactive shallow ref containing the current tour state.
  */
-export function useTour(): ShallowRef<TourState<VueTourContent>> {
-  const { tour } = useTourContext();
+export function useGlowTourContext(): ShallowRef<TourState<VueTourContent>> {
+  const { tour } = useTourScope();
   return useTourSnapshot(tour);
 }
 
 function useStep() {
-  const context = useTourContext();
+  const context = useTourScope();
   const snapshot = useTourSnapshot(context.tour);
   return () => snapshot.value.currentStep?.currentProps ?? null;
 }
@@ -95,7 +98,7 @@ function useStep() {
 function useBoundElement<T extends Element>(
   bind: (binding: AdapterRootBinding, element: T) => () => void,
 ) {
-  const context = useTourContext();
+  const context = useTourScope();
   const element = shallowRef<T | null>(null);
   watch(
     [context.binding, element],
@@ -177,14 +180,21 @@ export const GlowTourHeader = /* @__PURE__ */ defineComponent({
   name: componentName("Header"),
   inheritAttrs: false,
   setup(_props, { attrs }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const step = useStep();
-    return () =>
-      h(
+    return () => {
+      const current = step();
+      if (current && current.title == null) return null;
+      return h(
         "header",
-        mergeProps(attrs, { "data-glow-tour-header": "", id: context.binding.value?.ids.title }),
-        [step()?.title ?? null],
+        mergeProps(attrs, {
+          class: current?.classNames?.header,
+          "data-glow-tour-header": "",
+          id: context.binding.value?.ids.title,
+        }),
+        [current?.title ?? null],
       );
+    };
   },
 });
 
@@ -194,13 +204,14 @@ export const GlowTourContent = /* @__PURE__ */ defineComponent({
   inheritAttrs: false,
   props: { ariaLive: { default: "polite", type: String } },
   setup(props, { attrs }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const step = useStep();
     return () =>
       h(
         "div",
         mergeProps(attrs, {
           "aria-live": props.ariaLive,
+          class: step()?.classNames?.content,
           "data-glow-tour-content": "",
           id: context.binding.value?.ids.description,
         }),
@@ -209,16 +220,18 @@ export const GlowTourContent = /* @__PURE__ */ defineComponent({
   },
 });
 
-/** Footer component containing action buttons. Conditionally rendered based on tour step configuration. */
+/** Footer component containing action buttons. */
 export const GlowTourFooter = /* @__PURE__ */ defineComponent({
   name: componentName("Footer"),
   inheritAttrs: false,
   setup(_props, { attrs, slots }) {
     const step = useStep();
     return () =>
-      step()?.popover?.hideFooter
-        ? null
-        : h("footer", mergeProps(attrs, { "data-glow-tour-footer": "" }), slots.default?.());
+      h(
+        "footer",
+        mergeProps(attrs, { class: step()?.classNames?.footer, "data-glow-tour-footer": "" }),
+        slots.default?.(),
+      );
   },
 });
 
@@ -228,17 +241,23 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
   inheritAttrs: false,
   props: { role: { default: "dialog", type: String } },
   setup(props, { attrs, slots }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPopover(activeElement),
     );
-    return () =>
-      h(
+    const step = useStep();
+    return () => {
+      const current = step();
+      // Without a title, the content names the dialog instead of describing it.
+      const titled = !current || current.title != null;
+      const ids = context.binding.value?.ids;
+      return h(
         "section",
         mergeProps({ style: POPOVER_IDLE_STYLE }, attrs, {
-          "aria-describedby": context.binding.value?.ids.description,
+          "aria-describedby": titled ? ids?.description : undefined,
           "aria-hidden": POPOVER_IDLE_ATTRIBUTES["aria-hidden"],
-          "aria-labelledby": context.binding.value?.ids.title,
+          "aria-labelledby": titled ? ids?.title : ids?.description,
+          class: current?.classNames?.popover,
           "data-glow-tour-popover": "",
           id: context.binding.value?.ids.popover,
           inert: POPOVER_IDLE_ATTRIBUTES.inert,
@@ -248,6 +267,7 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
         }),
         slots.default?.(),
       );
+    };
   },
 });
 
@@ -262,12 +282,14 @@ export const GlowTourPointer = /* @__PURE__ */ defineComponent({
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPointer(activeElement),
     );
+    const step = useStep();
     return () => {
       const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...props.directionContent };
       return h(
         "div",
         mergeProps({ style: POINTER_IDLE_STYLE }, attrs, {
           "aria-hidden": POINTER_IDLE_ATTRIBUTES["aria-hidden"],
+          class: step()?.classNames?.pointer,
           "data-glow-tour-pointer": "",
           ref: element,
         }),
@@ -294,11 +316,13 @@ export const GlowTourOverlay = /* @__PURE__ */ defineComponent({
     const element = useBoundElement<SVGSVGElement>((binding, activeElement) =>
       binding.bindOverlay(activeElement),
     );
+    const step = useStep();
     return () =>
       h(
         "svg",
         mergeProps({ style: OVERLAY_IDLE_STYLE }, attrs, {
           "aria-hidden": props.ariaHidden,
+          class: step()?.classNames?.overlay,
           "data-glow-tour-allow-interaction":
             OVERLAY_IDLE_ATTRIBUTES["data-glow-tour-allow-interaction"],
           "data-glow-tour-overlay": "",
@@ -331,7 +355,8 @@ function trigger(
   attrs: Record<string, unknown>,
   slots: { default?: (props: Record<string, unknown>) => VNodeChild[] },
 ) {
-  const context = useTourContext();
+  const context = useTourScope();
+  const step = useStep();
   return () => {
     const consumerDisabled = isConsumerDisabled(attrs);
     const disabled = capabilityDisabled() || consumerDisabled;
@@ -339,6 +364,7 @@ function trigger(
       "aria-controls": context.binding.value?.ids.popover,
       "aria-disabled": disabled ? "true" : "false",
       "aria-label": attrs["aria-label"] ?? ariaLabel() ?? label(),
+      class: step()?.classNames?.[marker],
       "data-glow-tour-cancel-trigger": marker === "cancel" ? "" : undefined,
       "data-glow-tour-consumer-disabled": consumerDisabled ? "true" : undefined,
       "data-glow-tour-advance-trigger": marker === "advance" ? "" : undefined,
@@ -351,23 +377,27 @@ function trigger(
 }
 
 /** Button component for navigating to the previous step in the tour. */
-export const GlowTourBackTrigger = /* @__PURE__ */ defineComponent({
-  name: componentName("BackTrigger"),
+export const GlowTourPreviousTrigger = /* @__PURE__ */ defineComponent({
+  name: componentName("PreviousTrigger"),
   inheritAttrs: false,
-  props: { ariaLabel: { type: String }, backLabel: { type: String } },
+  props: { ariaLabel: { type: String }, previousLabel: { type: String } },
   setup(props, { attrs, slots }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const snapshot = useTourSnapshot(context.tour);
     const step = useStep();
     const renderTrigger = trigger(
       "previous",
-      () => !snapshot.value.canPrevious || step()?.popover?.disablePreviousButton === true,
-      () => props.backLabel ?? "Back step",
+      // Tour state disables a trigger only while the tour is active: disabling it natively outside
+      // of that, as a replacing start does, would blur the focused trigger.
+      () =>
+        (snapshot.value.status === "active" && !snapshot.value.canPrevious) ||
+        step()?.controls?.previous?.state === "disabled",
+      () => props.previousLabel ?? "Previous step",
       () => props.ariaLabel,
       attrs,
       slots,
     );
-    return () => (step()?.popover?.hidePreviousButton ? null : renderTrigger());
+    return renderTrigger;
   },
 });
 
@@ -381,12 +411,14 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
     advanceLabel: { type: String },
   },
   setup(props, { attrs, slots }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const snapshot = useTourSnapshot(context.tour);
     const step = useStep();
     const renderTrigger = trigger(
       "advance",
-      () => !snapshot.value.canAdvance || step()?.popover?.disableAdvanceButton === true,
+      () =>
+        (snapshot.value.status === "active" && !snapshot.value.canAdvance) ||
+        step()?.controls?.advance?.state === "disabled",
       () => {
         return snapshot.value.isLastStep
           ? (props.finishLabel ?? "Finish tour")
@@ -396,7 +428,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
       attrs,
       slots,
     );
-    return () => (step()?.popover?.hideAdvanceButton ? null : renderTrigger());
+    return renderTrigger;
   },
 });
 
@@ -406,16 +438,19 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
   inheritAttrs: false,
   props: { ariaLabel: { type: String } },
   setup(props, { attrs, slots }) {
-    const context = useTourContext();
+    const context = useTourScope();
     const snapshot = useTourSnapshot(context.tour);
+    const step = useStep();
     const renderTrigger = trigger(
       "cancel",
-      () => !snapshot.value.canCancel,
+      () =>
+        (snapshot.value.status === "active" && !snapshot.value.canCancel) ||
+        step()?.controls?.cancel?.state === "disabled",
       () => "Skip",
       () => props.ariaLabel,
       attrs,
       slots,
     );
-    return () => (snapshot.value.canCancel ? renderTrigger() : null);
+    return renderTrigger;
   },
 });

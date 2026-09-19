@@ -1,6 +1,8 @@
 import type { IndicatorOptions, OverlayOptions, PopoverOptions } from "../types";
 
 export interface TourElementStep {
+  /** No target: the popover is centered and the backdrop has no cutout. */
+  readonly detached?: boolean;
   readonly indicator?: IndicatorOptions;
   readonly overlay?: OverlayOptions;
   readonly popover?: PopoverOptions;
@@ -11,6 +13,13 @@ const DEFAULT_ANIMATION_EASING = "ease-out";
 
 export default abstract class GlowTourElement {
   private readonly animations = new Set<Animation>();
+  /**
+   * Animations that ran to completion and whose `fill: "forwards"` still applies.
+   *
+   * They keep overriding the element's inline styles, so a presentation that writes its state
+   * without animating would be painted with the previous animation's last frame instead.
+   */
+  private readonly filledAnimations = new Set<Animation>();
   private readonly cancelledAnimations = new WeakSet<Animation>();
   private released = false;
   constructor(
@@ -105,10 +114,35 @@ export default abstract class GlowTourElement {
     } finally {
       stopWatchingVisibility();
       this.animations.delete(animation);
+      // Only a fill that outlives the animation needs releasing: keeping every finished animation
+      // would retain the overlay's and the pointer's, which never fill, for as long as the root lives.
+      const fill = animation.effect?.getTiming?.().fill;
+      if (
+        !this.released &&
+        !this.cancelledAnimations.has(animation) &&
+        (fill === "forwards" || fill === "both")
+      ) {
+        this.filledAnimations.add(animation);
+      }
     }
   }
 
-  protected abstract _disappear(): Promise<void>;
+  /**
+   * Drops what finished animations still impose on the element.
+   *
+   * Every animation is followed by the inline styles that record the state it landed on, so
+   * releasing the fill leaves the element exactly as it looks. Without this, a fade-out that
+   * finished keeps forcing `opacity: 0` over the inline `opacity: 1` of the next presentation,
+   * and an unanimated one never starts an animation of its own to take the fill over.
+   */
+  protected _releaseFilledAnimations() {
+    for (const animation of this.filledAnimations) {
+      this._cancelAnimation(animation);
+    }
+    this.filledAnimations.clear();
+  }
+
+  protected abstract _disappear(hideFromAssistiveTechnology?: boolean): Promise<void>;
 
   protected abstract _getNextStyles(position: DOMRect, step: TourElementStep): Keyframe;
 
@@ -120,8 +154,12 @@ export default abstract class GlowTourElement {
     return this.released ? null : this.element;
   }
 
-  disappear() {
-    return this._disappear();
+  /**
+   * Fades the element out. The popover stays exposed to assistive technology when passed `false`,
+   * for a step change: its live region then announces the new step and focus stays in it.
+   */
+  disappear(hideFromAssistiveTechnology?: boolean) {
+    return this._disappear(hideFromAssistiveTechnology);
   }
 
   release() {
@@ -136,6 +174,7 @@ export default abstract class GlowTourElement {
       this._cancelAnimation(animation);
     }
     this.animations.clear();
+    this._releaseFilledAnimations();
   }
 
   protected _cancelAnimation(animation: Animation) {

@@ -24,6 +24,21 @@ const glowTourOptions: GlowTourOptions = {
 };
 void [tour, tourState, stepPropsStore, workflowDefinition, startOptions, glowTourOptions];
 
+// Components render a fixed element that core binds to: none of them takes an `as` prop.
+type FooterProps = Parameters<typeof runtime.GlowTourFooter>[0];
+type PopoverProps = Parameters<typeof runtime.GlowTourPopover>[0];
+type PointerProps = Parameters<typeof runtime.GlowTourPointer>[0];
+const footerProps: FooterProps = { class: "tour-footer" };
+const popoverProps: PopoverProps = { class: "tour-popover" };
+const pointerProps: PointerProps = { class: "tour-pointer", directionContent: { top: "^" } };
+// @ts-expect-error GlowTourFooter has no `as` prop.
+const footerWithAs: FooterProps = { as: "div" };
+// @ts-expect-error GlowTourPopover has no `as` prop.
+const popoverWithAs: PopoverProps = { as: "div" };
+// @ts-expect-error GlowTourPointer has no `as` prop.
+const pointerWithAs: PointerProps = { as: "span" };
+void [footerProps, popoverProps, pointerProps, footerWithAs, popoverWithAs, pointerWithAs];
+
 describe("solid adapter contract", () => {
   test("forwards subscriber error handlers to the core tour", () => {
     const errors: Error[] = [];
@@ -45,27 +60,26 @@ describe("solid adapter contract", () => {
 
   test("exports an instance factory and component namespace without legacy runtime values", () => {
     assert.deepEqual(Object.keys(runtime).sort(), [
-      "AdvanceTrigger",
-      "BackTrigger",
-      "CancelTrigger",
-      "Content",
-      "DefaultTour",
-      "Footer",
       "GlowTour",
-      "Header",
-      "Overlay",
-      "Pointer",
-      "Popover",
-      "Root",
+      "GlowTourAdvanceTrigger",
+      "GlowTourCancelTrigger",
+      "GlowTourContent",
+      "GlowTourDefault",
+      "GlowTourFooter",
+      "GlowTourHeader",
+      "GlowTourOverlay",
+      "GlowTourPointer",
+      "GlowTourPopover",
+      "GlowTourPreviousTrigger",
+      "GlowTourRoot",
       "createGlowTour",
-      "useTour",
+      "useGlowTour",
+      "useGlowTourContext",
     ]);
     assert.equal(typeof runtime.createGlowTour, "function");
-    assert.equal(typeof runtime.GlowTour, "object");
-    assert.equal(typeof runtime.useTour, "function");
-    assert.equal(typeof runtime.DefaultTour, "function");
-    assert.equal(typeof runtime.GlowTour.Default, "function");
-    assert.equal(runtime.GlowTour.Default, runtime.DefaultTour);
+    assert.equal(typeof runtime.useGlowTour, "function");
+    assert.equal(typeof runtime.useGlowTourContext, "function");
+    assert.equal(typeof runtime.GlowTourDefault, "function");
 
     for (const legacy of [
       "Builder",
@@ -80,13 +94,56 @@ describe("solid adapter contract", () => {
     }
   });
 
+  test("exposes the composition components under the GlowTour namespace", () => {
+    assert.deepEqual(Object.keys(runtime.GlowTour).sort(), [
+      "AdvanceTrigger",
+      "CancelTrigger",
+      "Content",
+      "Footer",
+      "Header",
+      "Overlay",
+      "Pointer",
+      "Popover",
+      "PreviousTrigger",
+      "Root",
+    ]);
+    assert.equal(runtime.GlowTour.AdvanceTrigger, runtime.GlowTourAdvanceTrigger);
+    assert.equal(runtime.GlowTour.CancelTrigger, runtime.GlowTourCancelTrigger);
+    assert.equal(runtime.GlowTour.Content, runtime.GlowTourContent);
+    assert.equal(runtime.GlowTour.Footer, runtime.GlowTourFooter);
+    assert.equal(runtime.GlowTour.Header, runtime.GlowTourHeader);
+    assert.equal(runtime.GlowTour.Overlay, runtime.GlowTourOverlay);
+    assert.equal(runtime.GlowTour.Pointer, runtime.GlowTourPointer);
+    assert.equal(runtime.GlowTour.Popover, runtime.GlowTourPopover);
+    assert.equal(runtime.GlowTour.PreviousTrigger, runtime.GlowTourPreviousTrigger);
+    assert.equal(runtime.GlowTour.Root, runtime.GlowTourRoot);
+    assert.equal("Default" in runtime.GlowTour, false);
+  });
+
+  test("renders the namespaced composition like the named components", () => {
+    const render = (root: typeof runtime.GlowTourRoot, popover: typeof runtime.GlowTourPopover) =>
+      renderToString(() =>
+        root({
+          tour: runtime.createGlowTour(),
+          get children() {
+            return popover({ children: "Content" });
+          },
+        }),
+      );
+
+    const html = render(runtime.GlowTour.Root, runtime.GlowTour.Popover);
+    assert.match(html, /data-glow-tour-root/);
+    assert.match(html, /data-glow-tour-popover/);
+    assert.equal(html, render(runtime.GlowTourRoot, runtime.GlowTourPopover));
+  });
+
   test("renders a root boundary without client-generated IDs during SSR", () => {
     const tour = runtime.createGlowTour();
     const html = renderToString(() =>
-      runtime.GlowTour.Root({
+      runtime.GlowTourRoot({
         tour,
         get children() {
-          return runtime.GlowTour.Popover({ children: "Content" });
+          return runtime.GlowTourPopover({ children: "Content" });
         },
       }),
     );
@@ -97,13 +154,13 @@ describe("solid adapter contract", () => {
     assert.doesNotMatch(html, /aria-describedby/);
   });
 
-  test("renders the idle presentation into the DefaultTour markup before any binding runs", () => {
-    // The bug this guards: DefaultTour renders overlay/pointer/popover
+  test("renders the idle presentation into the GlowTourDefault markup before any binding runs", () => {
+    // The bug this guards: GlowTourDefault renders overlay/pointer/popover
     // unconditionally, and the idle (out-of-flow, invisible) presentation used
     // to be applied only imperatively by each core element's initializeProps()
     // once an adapter binds it, leaving server-rendered markup fully visible.
     const tour = runtime.createGlowTour();
-    const html = renderToString(() => runtime.DefaultTour({ idPrefix: "solid-idle", tour }));
+    const html = renderToString(() => runtime.GlowTourDefault({ idPrefix: "solid-idle", tour }));
 
     const popoverMatch = html.match(/<section[^>]*data-glow-tour-popover[^>]*>/);
     assert.ok(popoverMatch, "expected a rendered popover section");
@@ -129,20 +186,22 @@ describe("solid adapter contract", () => {
   });
 
   test("exposes every instance-scoped component including cancellation", () => {
-    for (const [namespaceComponent, namedComponent] of [
-      [runtime.GlowTour.Root, runtime.Root],
-      [runtime.GlowTour.Header, runtime.Header],
-      [runtime.GlowTour.Content, runtime.Content],
-      [runtime.GlowTour.Footer, runtime.Footer],
-      [runtime.GlowTour.Popover, runtime.Popover],
-      [runtime.GlowTour.Overlay, runtime.Overlay],
-      [runtime.GlowTour.Pointer, runtime.Pointer],
-      [runtime.GlowTour.BackTrigger, runtime.BackTrigger],
-      [runtime.GlowTour.AdvanceTrigger, runtime.AdvanceTrigger],
-      [runtime.GlowTour.CancelTrigger, runtime.CancelTrigger],
+    for (const component of [
+      runtime.GlowTourRoot,
+      runtime.GlowTourHeader,
+      runtime.GlowTourContent,
+      runtime.GlowTourFooter,
+      runtime.GlowTourPopover,
+      runtime.GlowTourOverlay,
+      runtime.GlowTourPointer,
+      runtime.GlowTourPreviousTrigger,
+      runtime.GlowTourAdvanceTrigger,
+      runtime.GlowTourCancelTrigger,
     ]) {
-      assert.equal(typeof namespaceComponent, "function");
-      assert.equal(namedComponent, namespaceComponent);
+      assert.equal(typeof component, "function");
+    }
+    for (const removed of ["Root", "BackTrigger", "DefaultTour"]) {
+      assert.equal(removed in runtime, false, `${removed} must not be exported`);
     }
   });
 });

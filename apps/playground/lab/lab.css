@@ -21,14 +21,14 @@
 }
 
 .lab-header p {
-  color: #665f79;
+  color: var(--pg-text-muted);
   font-size: 16px;
   margin-top: 12px;
   max-width: 620px;
 }
 
 .lab-back-link {
-  color: #4c35fd;
+  color: var(--pg-lab-accent);
   display: inline-flex;
   font-size: 14px;
   font-weight: 700;
@@ -38,7 +38,7 @@
 
 .lab-eyebrow,
 .lab-panel-kicker {
-  color: #4c35fd;
+  color: var(--pg-lab-accent);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -63,29 +63,29 @@
 }
 
 .lab-primary-button {
-  background: #4c35fd;
-  border-color: #4c35fd;
-  color: #fff;
+  background: var(--pg-lab-accent);
+  border-color: var(--pg-lab-accent);
+  color: var(--pg-on-lab-accent);
 }
 
 .lab-primary-button:hover {
-  background: #3720e8;
-  border-color: #3720e8;
+  background: var(--pg-lab-accent-hover);
+  border-color: var(--pg-lab-accent-hover);
 }
 
 .lab-secondary-button {
-  background: #fff;
-  border-color: #ded9ee;
-  color: #332c46;
+  background: var(--pg-surface);
+  border-color: var(--pg-border);
+  color: var(--pg-text-strong);
 }
 
 .lab-status-badge,
 .lab-count-badge,
 .lab-card-state {
   align-items: center;
-  background: #eeeaff;
+  background: var(--pg-lab-accent-soft);
   border-radius: 999px;
-  color: #4c35fd;
+  color: var(--pg-lab-accent);
   display: inline-flex;
   font-size: 11px;
   font-weight: 800;
@@ -95,13 +95,13 @@
 }
 
 .lab-status-badge[data-status="active"] {
-  background: #dcfce8;
-  color: #14733b;
+  background: var(--pg-ok-bg);
+  color: var(--pg-ok-text);
 }
 
 .lab-status-badge[data-status="error"] {
-  background: #fee2e2;
-  color: #b42318;
+  background: var(--pg-error-bg);
+  color: var(--pg-error-text);
 }
 
 .lab-workspace {
@@ -113,10 +113,10 @@
 
 .lab-targets-section,
 .lab-panel {
-  background: #fff;
-  border: 1px solid #e5e1ef;
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
   border-radius: 18px;
-  box-shadow: 0 14px 44px rgba(39, 28, 75, 0.06);
+  box-shadow: var(--pg-shadow);
 }
 
 .lab-targets-section {
@@ -137,13 +137,13 @@
 
 .lab-section-heading h2,
 .lab-panel-heading h2 {
-  color: #241f31;
+  color: var(--pg-text-strong);
   font-size: 18px;
   margin-top: 4px;
 }
 
 .lab-section-heading > span {
-  color: #766e88;
+  color: var(--pg-text-muted);
   font-size: 12px;
 }
 
@@ -155,8 +155,8 @@
 
 .lab-target-card {
   align-content: center;
-  background: #f8f7fc;
-  border: 1px solid #e8e4f1;
+  background: var(--pg-surface-muted);
+  border: 1px solid var(--pg-border);
   border-radius: 14px;
   display: grid;
   gap: 12px;
@@ -167,14 +167,14 @@
 
 .lab-target-card > span:not(.lab-card-number),
 .lab-target-card > label {
-  color: #332c46;
+  color: var(--pg-text-strong);
   font-size: 14px;
   font-weight: 750;
 }
 
 .lab-target-card button,
 .lab-target-card input {
-  border: 1px solid #d8d2e6;
+  border: 1px solid var(--pg-border);
   border-radius: 9px;
   font-size: 12px;
   min-height: 38px;
@@ -182,27 +182,27 @@
 }
 
 .lab-target-card button {
-  background: #fff;
-  color: #4c35fd;
+  background: var(--pg-surface);
+  color: var(--pg-lab-accent);
   font-weight: 750;
 }
 
 .lab-target-card input {
-  background: #fff;
-  color: #241f31;
+  background: var(--pg-surface);
+  color: var(--pg-text-strong);
   padding: 0 11px;
 }
 
 .lab-target-card button:hover,
 .lab-target-card button:focus-visible,
 .lab-target-card input:focus {
-  border-color: #4c35fd;
-  outline: 2px solid rgba(76, 53, 253, 0.18);
+  border-color: var(--pg-lab-accent);
+  outline: 2px solid var(--pg-lab-accent-ring);
   outline-offset: 2px;
 }
 
 .lab-card-number {
-  color: #6e677d;
+  color: var(--pg-text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   font-weight: 800;
@@ -216,7 +216,7 @@
 }
 
 .lab-revealed-target {
-  color: #14733b;
+  color: var(--pg-ok-text);
   font-size: 12px;
 }
 
@@ -237,9 +237,9 @@
 }
 
 .lab-relocate-slot-away {
-  border: 1px dashed #cfc6ff;
+  border: 1px dashed var(--pg-lab-accent-border);
   border-radius: 9px;
-  color: #766e88;
+  color: var(--pg-text-muted);
   font-size: 11px;
   justify-content: center;
   padding: 0 12px;
@@ -257,28 +257,28 @@
 }
 
 .lab-relocate-delay output {
-  color: #5b47d6;
+  color: var(--pg-lab-accent);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   font-weight: 750;
 }
 
 .lab-relocate-hint {
-  color: #766e88;
+  color: var(--pg-text-muted);
   font-size: 11px;
   line-height: 1.4;
 }
 
 .lab-final-card {
-  background: #eeeaff;
-  border-color: #cfc6ff;
+  background: var(--pg-lab-accent-soft);
+  border-color: var(--pg-lab-accent-border);
   grid-column: span 2;
 }
 
 .lab-final-card button {
-  background: #4c35fd;
-  border-color: #4c35fd;
-  color: #fff;
+  background: var(--pg-lab-accent);
+  border-color: var(--pg-lab-accent);
+  color: var(--pg-on-lab-accent);
 }
 
 .lab-sidebar {
@@ -300,7 +300,7 @@
 }
 
 .lab-inspector-list > div {
-  border-top: 1px solid #eeeaf5;
+  border-top: 1px solid var(--pg-border-subtle);
   gap: 6px;
   padding: 12px 0;
 }
@@ -310,19 +310,19 @@
 }
 
 .lab-inspector-list dt {
-  color: #7a728b;
+  color: var(--pg-text-muted);
   font-size: 10px;
 }
 
 .lab-inspector-list dd {
-  color: #332c46;
+  color: var(--pg-text-strong);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   font-weight: 700;
 }
 
 .lab-empty-log {
-  color: #797289;
+  color: var(--pg-text-muted);
   font-size: 13px;
   line-height: 1.5;
   margin-top: 18px;
@@ -343,20 +343,20 @@
 }
 
 .lab-log-list li {
-  border-top: 1px solid #eeeaf5;
+  border-top: 1px solid var(--pg-border-subtle);
   display: grid;
   gap: 4px;
   padding: 11px 0;
 }
 
 .lab-log-list time {
-  color: #948ba9;
+  color: var(--pg-text-faint);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
 }
 
 .lab-log-list span {
-  color: #443c56;
+  color: var(--pg-text);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -416,4 +416,29 @@
   .lab-final-card {
     grid-column: auto;
   }
+}
+
+/* classNames: "lab-popover" comes from the workflow, step-4 overrides it with its own classes. */
+.lab-popover {
+  --glow-tour-radius: 14px;
+}
+
+.lab-popover-waiting {
+  --glow-tour-color-border: #f59e0b;
+  border-style: dashed;
+}
+
+.lab-popover-revealed {
+  --glow-tour-color-border: #16a34a;
+  border-width: 2px;
+}
+
+.lab-control-waiting {
+  cursor: progress;
+}
+
+/* classNames recipe: hides a control's button or the whole footer. The root attribute outranks
+   the default theme's display rule. */
+[data-glow-tour-root] .lab-hidden {
+  display: none;
 }

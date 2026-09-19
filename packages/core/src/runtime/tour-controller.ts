@@ -3,13 +3,14 @@ import type { WorkflowDefinition } from "../definition";
 import { DomTourViewDriver, type TourViewDriver } from "../dom/tour-view-driver";
 import { validateWorkflowOptions } from "../options/validation";
 import type {
-  BeforeActionStepContext,
   GlowTour,
   GlowTourOptions,
   LifecycleHookContext,
   RunOptions,
   StartOptions,
   StepContext,
+  StepHookAction,
+  StepHookContext,
   TourDirection,
   TourEvent,
   TourEventListener,
@@ -18,6 +19,7 @@ import type {
   TourState,
   TourStatus,
 } from "../types";
+import { isControlAvailable } from "../utils/options";
 import { abortableDelay, abortError } from "./abort";
 import { ActiveStep } from "./active-step";
 import { attachRootBridge } from "./root-bridge";
@@ -25,31 +27,24 @@ import { attachRootBridge } from "./root-bridge";
 const DEFAULT_TARGET_TIMEOUT = 3000;
 /**
  * How long a step stays frozen on its last known position after its target
- * disappears from the DOM, before the configured `missingTargetStrategy`
+ * disappears from the DOM, before the configured `missingTarget.strategy`
  * takes over. Covers the dominant case — a framework remounting the target
  * within a frame or two — without a visible unmount/remount flicker. Not
  * configurable: it is a presentation detail of the recovery, not a policy
- * choice; `missingTargetStrategy` and `targetTimeout` remain the only knobs.
+ * choice; `missingTarget.strategy` and `missingTarget.timeout` remain the only knobs.
  * Exported for the test suite's timing assertions only.
  */
 export const TARGET_LOSS_GRACE_MS = 150;
 const DISPOSED_ERROR_MESSAGE = "Tour controller is disposed";
 
 /**
- * Resolves `RunOptions.startAt` to a step index. Throws rather than silently
- * falling back to the first step: a stale id means the caller's stored position
- * no longer matches the workflow, and restarting an onboarding from the
- * beginning without saying so is a bug the end user sees.
+ * Resolves a step id (`RunOptions.startAt`, `goTo()`) to its index. Throws rather than silently
+ * falling back: a stale id means the caller's stored position no longer matches the workflow, and
+ * restarting an onboarding, or jumping nowhere, without saying so is a bug the end user sees.
  */
-function resolveStartIndex<T>(
-  workflow: WorkflowDefinition<T>,
-  startAt: string | undefined,
-): number {
-  if (startAt === undefined) return 0;
-  const index = workflow.steps.findIndex((step) => step.id === startAt);
-  if (index === -1) {
-    throw new Error(`Workflow "${workflow.name}" has no step with id "${startAt}" to start at.`);
-  }
+function resolveStepIndex<T>(workflow: WorkflowDefinition<T>, id: string): number {
+  const index = workflow.steps.findIndex((step) => step.id === id);
+  if (index === -1) throw new Error(`Workflow "${workflow.name}" has no step with id "${id}".`);
   return index;
 }
 
@@ -102,6 +97,11 @@ export class TourController<T> {
   private readonly stepPropsSubscriptions: Array<() => void> = [];
   private tourStartedAt = 0;
   private stepEnteredAt = 0;
+  /**
+   * The step `tour:start` names, while that event is held back. It is emitted just before the
+   * first event that can no longer be taken back, so a start that a `beforeEnter` aborts emits nothing.
+   */
+  private pendingTourStart: ActiveStep<T> | null | undefined;
   private commandSource: TourEventSource = "api";
 
   readonly state = Object.freeze({
@@ -128,6 +128,7 @@ export class TourController<T> {
       canCancel: () => this.status === "active" && this.isCancelAvailable(),
       canPrevious: () => this.canNavigate("previous"),
       cancel: (source) => this.cancel(source),
+      goTo: (id) => this.goTo(id),
       isAdvanceDisabled: () => !this.isPresentedAdvanceAvailable(),
       isCancelDisabled: () => !this.isPresentedCancelAvailable(),
       isPreviousDisabled: () => !this.isPresentedPreviousAvailable(),
@@ -153,10 +154,11 @@ export class TourController<T> {
     return new WorkflowBuilder<T>(name, options);
   }
 
-  async run(workflow: WorkflowDefinition<T>, runOptions: RunOptions = {}) {
+  async start(workflow: WorkflowDefinition<T>, runOptions: RunOptions = {}) {
     this.assertNotDisposed();
     validateWorkflowOptions(workflow);
-    const startIndex = resolveStartIndex(workflow, runOptions.startAt);
+    const startIndex =
+      runOptions.startAt === undefined ? 0 : resolveStepIndex(workflow, runOptions.startAt);
     const rootDocument = this.options.assertCanRun?.(workflow) ?? undefined;
     const retainedPresentation = this.capturePresentation();
     const operation = this.beginOperation();
@@ -183,6 +185,8 @@ export class TourController<T> {
     this.error = null;
     this.commandSource = "api";
     this.retainedPresentation = retainedPresentation;
+    // A start this one supersedes may still hold its `tour:start`: that tour never began.
+    this.pendingTourStart = undefined;
 
     try {
       this.setStatus("starting");
@@ -193,16 +197,16 @@ export class TourController<T> {
       await workflow.options.onStart?.(startContext);
       this.assertCurrent(operation);
       if (isStartAborted()) {
-        this.resetToIdle();
+        await this.resetToIdle(operation);
         return;
       }
       this.tourStartedAt = Date.now();
-      this.emit("tour:start", this.steps[startIndex] ?? null, 0);
+      this.pendingTourStart = this.steps[startIndex] ?? null;
       if (this.steps.length === 0) {
         await this.finish(operation);
         return;
       }
-      await this.enter(startIndex, "advance", operation);
+      await this.navigate(startIndex, "advance", operation);
     } catch (error) {
       await this.handleFailure(error, operation);
     }
@@ -218,14 +222,17 @@ export class TourController<T> {
     await this.transitionFromPublic("previous", undefined, source);
   }
 
-  async goToStep(index: number) {
+  async goTo(id: string) {
     this.assertNotDisposed();
-    if (this.status === "starting" || this.status === "transitioning") return;
-    if (index < 0 || index >= this.steps.length) {
-      throw new Error(`Step index ${index} is out of bounds`);
-    }
-    const direction = index > this.index ? "advance" : "previous";
-    await this.transitionFromPublic(direction, index, "api");
+    const workflow = this.workflow;
+    if (!workflow || this.status === "starting" || this.status === "transitioning") return;
+    const index = resolveStepIndex(workflow, id);
+    await this.transitionFromPublic(this.directionTo(index), index, "api");
+  }
+
+  /** The direction of a jump from the current step to the step at `index`. */
+  private directionTo(index: number): TourDirection {
+    return index > this.index ? "advance" : "previous";
   }
 
   async cancel(source: TourEventSource = "api") {
@@ -251,6 +258,7 @@ export class TourController<T> {
     this.direction = "advance";
     this.error = null;
     this.retainedPresentation = null;
+    this.pendingTourStart = undefined;
     this.status = "disposed";
     this.publish(true);
     this.stateListeners.clear();
@@ -273,6 +281,7 @@ export class TourController<T> {
     this.direction = "advance";
     this.error = null;
     this.retainedPresentation = null;
+    this.pendingTourStart = undefined;
     this.status = "idle";
   }
 
@@ -281,23 +290,58 @@ export class TourController<T> {
     if (!this.disposed) this.publish();
   }
 
-  private async enter(index: number, direction: TourDirection, operation: number): Promise<void> {
-    // The direction is set first on purpose: `step:leave` must report the
-    // navigation that causes the departure, not the one that brought the user in.
-    this.direction = direction;
-    this.emitStepLeave(this.currentStep());
-    this.setStatus("transitioning");
+  /**
+   * Moves to the step at `index`, or further in `direction` past steps skipped for a missing target.
+   * Nothing is emitted before `beforeEnter` lets the navigation through, so an abort leaves no trace.
+   * Then come the held `tour:start`, a `step:skip` per skipped step, and one `step:leave` for the
+   * step being left. `lostStep` is the step whose target disappeared during recovery: it cannot stay
+   * on screen, so skipping backward past the first step cancels the tour, and a `beforeEnter` abort
+   * turns into its missing-target error.
+   */
+  private async navigate(
+    index: number,
+    direction: TourDirection,
+    operation: number,
+    lostStep?: ActiveStep<T>,
+  ): Promise<void> {
+    const from = this.currentStep();
+    // `transition()` already published it after running `beforeLeave`.
+    if (this.status !== "transitioning") this.setStatus("transitioning");
     this.assertCurrent(operation);
-    const step = this.steps[index];
-    if (!step) throw new Error(`Step index ${index} is out of bounds`);
-    if (step.definition.resetPropsOnEnter !== false) step.reset();
-    const target = await this.resolveTarget(step, operation);
-    this.assertCurrent(operation);
-    if (!target) {
-      await this.advancePastMissingTarget(index, direction, operation);
+    const skipped: ActiveStep<T>[] = [];
+    let step = this.steps[index];
+    let target: HTMLElement | null = null;
+    while (step) {
+      target = await this.resolveTarget(step, operation);
+      this.assertCurrent(operation);
+      if (target) break;
+      skipped.push(step);
+      index += direction === "advance" ? 1 : -1;
+      step = this.steps[index];
+    }
+    if (!step || !target) {
+      // Leaving the step reports this navigation; staying on it keeps the direction that brought it.
+      if (index >= this.steps.length || lostStep) this.direction = direction;
+      if (index >= this.steps.length) await this.finish(operation, skipped);
+      else if (!lostStep) this.setStatus("active");
+      else await this.cancelCurrent(operation);
       return;
     }
     step.target = target;
+    step.direction = direction;
+    // Runs before the step is committed and shown, so props set here are the first ones rendered.
+    if (await this.runStepHook(step.definition.beforeEnter, step, operation, direction)) {
+      if (lostStep) throw this.missingTargetError(lostStep);
+      if (from) this.setStatus("active");
+      else await this.resetToIdle(operation);
+      return;
+    }
+    // Committed before `step:leave`: that event reports the navigation that causes the departure,
+    // not the one that brought the user in.
+    this.direction = direction;
+    this.flushTourStart();
+    for (const skippedStep of skipped) this.emit("step:skip", skippedStep, 0);
+    this.emitStepLeave(from);
     let committed = false;
     const commitStep = () => {
       this.assertCurrent(operation);
@@ -338,27 +382,37 @@ export class TourController<T> {
     if (!step) return;
     this.setStatus("transitioning");
     this.assertCurrent(operation);
-    const hook =
-      direction === "advance" ? step.definition.advanceAction : step.definition.previousAction;
-    await hook?.(this.createBeforeActionStepContext(step));
-    this.assertCurrent(operation);
+    if (await this.runStepHook(step.definition.beforeLeave, step, operation, direction)) {
+      this.setStatus("active");
+      return;
+    }
+    // `canNavigate` already refuses going back from the first step.
+    await this.navigate(
+      destination ?? this.index + (direction === "advance" ? 1 : -1),
+      direction,
+      operation,
+    );
+  }
 
-    if (destination !== undefined) {
-      await this.enter(destination, direction, operation);
-      return;
-    }
-    if (direction === "advance") {
-      const nextIndex = this.index + 1;
-      if (nextIndex >= this.steps.length) await this.finish(operation);
-      else await this.enter(nextIndex, direction, operation);
-      return;
-    }
-    if (this.index === 0) {
-      if (this.canCancel()) await this.cancelCurrent(operation);
-      else this.setStatus("active");
-      return;
-    }
-    await this.enter(this.index - 1, direction, operation);
+  /** Runs `beforeEnter` or `beforeLeave`, and tells whether it called `abort()` before settling. */
+  private async runStepHook(
+    hook: StepHookAction<T> | null,
+    step: ActiveStep<T>,
+    operation: number,
+    direction: TourDirection,
+  ) {
+    if (!hook) return false;
+    let aborted = false;
+    await hook(
+      Object.freeze({
+        ...this.createStepHookContext(step, operation, direction),
+        abort: () => {
+          aborted = true;
+        },
+      }),
+    );
+    this.assertCurrent(operation);
+    return aborted;
   }
 
   private async runActions(operation: number) {
@@ -384,14 +438,18 @@ export class TourController<T> {
 
   private async resolveTarget(step: ActiveStep<T>, operation: number) {
     const signal = this.signalFor(operation);
-    const strategy = step.behavior?.missingTargetStrategy ?? "error";
-    const timeout = step.behavior?.targetTimeout ?? DEFAULT_TARGET_TIMEOUT;
+    const missingTarget = step.props.get().behavior?.missingTarget;
+    const strategy = missingTarget?.strategy ?? "error";
+    const timeout = missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
     const startedAt = Date.now();
+    step.detached = false;
     while (true) {
       const target = await step.resolveTarget(signal);
       this.assertCurrent(operation);
       if (target) return target;
       if (strategy === "skip") return null;
+      const body = strategy === "detached" && step.detach();
+      if (body) return body;
       if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
         throw this.missingTargetError(step);
       }
@@ -403,7 +461,7 @@ export class TourController<T> {
   /**
    * Repeatedly re-resolves `step.target` until it succeeds or `budgetMs`
    * elapses, polling every 16ms like `resolveTarget`. Unlike `resolveTarget`
-   * it never applies `missingTargetStrategy` itself — callers decide what a
+   * it never applies `missingTarget.strategy` itself — callers decide what a
    * timed-out budget means (grace period vs. a "wait" strategy's own
    * timeout), so the same polling loop serves both.
    */
@@ -444,39 +502,41 @@ export class TourController<T> {
     const operation = this.beginOperation();
     try {
       this.assertCurrent(operation);
-      const recoveredDuringGrace = await this.pollForTarget(step, operation, TARGET_LOSS_GRACE_MS);
+      let recovered = await this.pollForTarget(step, operation, TARGET_LOSS_GRACE_MS);
       this.assertCurrent(operation);
-      if (recoveredDuringGrace) {
-        step.target = recoveredDuringGrace;
-        await this.driver.retarget(step, this.signalFor(operation));
+      if (!recovered) {
+        const strategy = step.props.get().behavior?.missingTarget?.strategy ?? "error";
+        if (strategy === "skip") {
+          await this.navigate(
+            index + (direction === "advance" ? 1 : -1),
+            direction,
+            operation,
+            step,
+          );
+          return;
+        }
+        // The grace period counts against the "wait" budget rather than
+        // extending it — a longer configured timeout is the only way to wait
+        // longer overall, `missingTarget.timeout` is never silently doubled.
+        recovered =
+          strategy === "detached"
+            ? step.detach()
+            : strategy === "wait"
+              ? await this.pollForTarget(
+                  step,
+                  operation,
+                  (step.props.get().behavior?.missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT) -
+                    TARGET_LOSS_GRACE_MS,
+                )
+              : null;
         this.assertCurrent(operation);
-        // The status doesn't change (still "active"), but the step's target
-        // did — publish so consumers reading `currentStep.target` see it.
-        this.publish();
-        return;
+        if (!recovered) throw this.missingTargetError(step);
       }
-
-      const strategy = step.behavior?.missingTargetStrategy ?? "error";
-      if (strategy === "skip") {
-        await this.advancePastRecoveryMissingTarget(step, index, direction, operation);
-        return;
-      }
-      if (strategy !== "wait") throw this.missingTargetError(step);
-
-      // The grace period counts against the "wait" budget rather than
-      // extending it — a longer configured timeout is the only way to wait
-      // longer overall, `targetTimeout` is never silently doubled.
-      const timeout = step.behavior?.targetTimeout ?? DEFAULT_TARGET_TIMEOUT;
-      const recoveredAfterWait = await this.pollForTarget(
-        step,
-        operation,
-        Math.max(0, timeout - TARGET_LOSS_GRACE_MS),
-      );
-      this.assertCurrent(operation);
-      if (!recoveredAfterWait) throw this.missingTargetError(step);
-      step.target = recoveredAfterWait;
+      step.target = recovered;
       await this.driver.retarget(step, this.signalFor(operation));
       this.assertCurrent(operation);
+      // The status doesn't change (still "active"), but the step's target
+      // did — publish so consumers reading `currentStep.target` see it.
       this.publish();
     } catch (error) {
       try {
@@ -489,38 +549,11 @@ export class TourController<T> {
     }
   }
 
-  private async advancePastMissingTarget(
-    index: number,
-    direction: TourDirection,
-    operation: number,
-  ) {
-    const nextIndex = direction === "advance" ? index + 1 : index - 1;
-    if (nextIndex >= this.steps.length) await this.finish(operation);
-    else if (nextIndex < 0) {
-      if (this.canCancel()) await this.cancelCurrent(operation);
-      else this.setStatus("active");
-    } else await this.enter(nextIndex, direction, operation);
-  }
-
-  private async advancePastRecoveryMissingTarget(
-    step: ActiveStep<T>,
-    index: number,
-    direction: TourDirection,
-    operation: number,
-  ) {
-    const nextIndex = direction === "advance" ? index + 1 : index - 1;
-    if (nextIndex >= this.steps.length) await this.finish(operation);
-    else if (nextIndex < 0) {
-      if (this.canCancel()) await this.cancelCurrent(operation);
-      else throw this.missingTargetError(step);
-    } else await this.enter(nextIndex, direction, operation);
-  }
-
   private missingTargetError(step: ActiveStep<T>) {
     return new Error(`Missing target at ${step.path}: ${String(step.definition.target)}`);
   }
 
-  private async finish(operation: number) {
+  private async finish(operation: number, skipped: readonly ActiveStep<T>[] = []) {
     this.assertCurrent(operation);
     const step = this.currentStep();
     const { context, isAborted } = this.createLifecycleHookContext(step);
@@ -528,9 +561,11 @@ export class TourController<T> {
     this.assertCurrent(operation);
     if (isAborted()) {
       if (step) this.setStatus("active");
-      else this.resetToIdle();
+      else await this.resetToIdle(operation);
       return;
     }
+    this.flushTourStart();
+    for (const skippedStep of skipped) this.emit("step:skip", skippedStep, 0);
     this.emitStepLeave(step);
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
@@ -542,10 +577,6 @@ export class TourController<T> {
 
   private async cancelCurrent(operation: number) {
     const step = this.currentStep();
-    if (step?.definition.cancelAction) {
-      await step.definition.cancelAction(this.createBeforeActionStepContext(step));
-    }
-    this.assertCurrent(operation);
     const { context, isAborted } = this.createLifecycleHookContext(step);
     await this.workflow?.options.onCancel?.(context);
     this.assertCurrent(operation);
@@ -553,6 +584,7 @@ export class TourController<T> {
       this.setStatus("active");
       return;
     }
+    this.flushTourStart();
     this.emitStepLeave(step);
     await this.driver.clear(this.signalFor(operation));
     this.assertCurrent(operation);
@@ -577,16 +609,22 @@ export class TourController<T> {
   }
 
   /**
-   * Restores the controller to its pre-`run()` idle state. Used when an
-   * aborted lifecycle hook prevents the tour from ever becoming active
-   * (`onStart` abort, and the zero-step `onFinish` abort edge case).
+   * Restores the controller to its pre-`start()` idle state. Used when an
+   * aborted hook prevents the tour from ever becoming active (`onStart`, the
+   * first step's `beforeEnter`, and the zero-step `onFinish` edge case). A
+   * tour this `start()` replaced is still on screen, so it is cleared first.
    */
-  private resetToIdle() {
+  private async resetToIdle(operation: number) {
+    if (this.retainedPresentation) {
+      await this.driver.clear(this.signalFor(operation));
+      this.assertCurrent(operation);
+    }
     this.workflow = null;
     this.releaseStepPropsSubscriptions();
     this.steps = [];
     this.index = -1;
     this.retainedPresentation = null;
+    this.pendingTourStart = undefined;
     this.setStatus("idle");
   }
 
@@ -598,6 +636,7 @@ export class TourController<T> {
     this.setStatus("error");
     // No `step:leave` here: the step was not left, the tour died on it. The
     // event names that step so the pair still reconciles in an analytics funnel.
+    this.flushTourStart();
     this.emit("tour:error", this.currentStep(), Date.now() - this.tourStartedAt, error);
     if (!this.isCurrent(operation)) throw error;
     try {
@@ -619,8 +658,8 @@ export class TourController<T> {
     operation: number,
     onControl?: () => void,
   ): StepContext<T> {
-    if (!step.target) throw new Error("Cannot create a step context without a target");
     return Object.freeze({
+      ...this.createStepHookContext(step, operation, step.direction),
       advance: async () => {
         onControl?.();
         this.assertCurrent(operation);
@@ -631,21 +670,32 @@ export class TourController<T> {
         this.assertCurrent(operation);
         if (this.canCancel()) await this.cancelCurrent(operation);
       },
+      goTo: async (id: string) => {
+        onControl?.();
+        this.assertCurrent(operation);
+        if (!this.workflow) return;
+        const index = resolveStepIndex(this.workflow, id);
+        await this.transition(this.directionTo(index), operation, index);
+      },
       previous: async () => {
         onControl?.();
         this.assertCurrent(operation);
         await this.transition("previous", operation);
       },
-      props: step.props,
-      signal: this.signalFor(operation),
-      target: step.target,
     });
   }
 
-  private createBeforeActionStepContext(step: ActiveStep<T>): BeforeActionStepContext<T> {
+  private createStepHookContext(
+    step: ActiveStep<T>,
+    operation: number,
+    direction: TourDirection,
+  ): Omit<StepHookContext<T>, "abort"> {
     if (!step.target) throw new Error("Cannot create a step context without a target");
     return Object.freeze({
-      ...step.props.get(),
+      direction,
+      initialProps: step.initialProps,
+      props: step.props,
+      signal: this.signalFor(operation),
       target: step.target,
     });
   }
@@ -696,13 +746,11 @@ export class TourController<T> {
   }
 
   private isAdvanceButtonAvailable() {
-    const props = this.currentStep()?.props.get();
-    return props !== undefined && props.popover?.disableAdvanceButton !== true;
+    return isControlAvailable(this.currentStep()?.props.get(), "advance");
   }
 
   private isPreviousButtonAvailable() {
-    const props = this.currentStep()?.props.get();
-    return props !== undefined && props.popover?.disablePreviousButton !== true && this.index > 0;
+    return isControlAvailable(this.currentStep()?.props.get(), "previous") && this.index > 0;
   }
 
   private isCancelAvailable() {
@@ -728,12 +776,7 @@ export class TourController<T> {
   }
 
   private canCancel() {
-    return (
-      (this.workflow?.options.cancellable ?? true) &&
-      this.status !== "finished" &&
-      this.status !== "cancelled" &&
-      this.status !== "error"
-    );
+    return this.status !== "finished" && this.status !== "cancelled" && this.status !== "error";
   }
 
   private setStatus(status: TourStatus) {
@@ -804,6 +847,14 @@ export class TourController<T> {
     } catch (error) {
       this.reportSubscriberError(error);
     }
+  }
+
+  /** Emits the held `tour:start` once, before the first event that can no longer be taken back. */
+  private flushTourStart() {
+    const step = this.pendingTourStart;
+    if (step === undefined) return;
+    this.pendingTourStart = undefined;
+    this.emit("tour:start", step, 0);
   }
 
   /** Emits `step:leave` for the step being left, with the time spent on it. */
@@ -900,9 +951,9 @@ export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
     cancel: () => controller.cancel(),
     create: (name, options) => controller.create(name, options),
     dispose: () => controller.dispose(),
-    goToStep: (index) => controller.goToStep(index),
+    goTo: (id) => controller.goTo(id),
     previous: () => controller.previous(),
-    run: (workflow, runOptions) => controller.run(workflow, runOptions),
+    start: (workflow, runOptions) => controller.start(workflow, runOptions),
     state: controller.state,
   };
   bridge = attachRootBridge(

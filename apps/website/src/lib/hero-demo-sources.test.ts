@@ -17,15 +17,13 @@ import { examples } from "./examples";
 const CITED_OPTIONS = [
   "allowInteraction",
   "allowScroll",
-  "cancellable",
-  "disableAdvanceButton",
-  "disableAutoFocus",
-  "disableAutoScroll",
-  "hideFooter",
-  "missingTargetStrategy",
+  "autoFocus",
+  "autoScroll",
+  "classNames",
+  "controls",
+  "missingTarget",
   "overlayClick",
   "placementTryOrder",
-  "targetTimeout",
 ] as const;
 
 function quotedTitles(source: string): readonly string[] {
@@ -74,7 +72,7 @@ describe("hero demo sources", () => {
       });
 
       test("every option it names is set by the demo", () => {
-        // The whole definition, not just the steps: cancellable and allowScroll are start options.
+        // The whole definition, not just the steps: controls and the default behavior are start options.
         const keys = definedKeys(example.workflow);
         for (const option of CITED_OPTIONS) {
           if (!example.source.includes(`${option}:`)) continue;

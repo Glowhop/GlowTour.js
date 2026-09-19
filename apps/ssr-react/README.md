@@ -12,13 +12,13 @@ UI.
 
 - `app/page.tsx` is a client component (`"use client"`) that builds a
   two-step tour with `createGlowTour()` and renders the packaged
-  `DefaultTour` component, wired to a trigger button and two target
+  `GlowTourDefault` component, wired to a trigger button and two target
   elements.
 - `next build && next start` runs the app in production mode, the same way a
   real deployment would.
 - `tests/ssr-hydration.pw.ts` (Playwright) proves three things end-to-end:
   1. **SSR**: fetching the page HTML directly (no JS execution) already
-     contains the trigger, both step targets, and the `DefaultTour` markup
+     contains the trigger, both step targets, and the `GlowTourDefault` markup
      (`data-glow-tour-root`, `data-glow-tour-popover`).
   2. **Clean hydration**: loading the page in a real headless browser
      produces no hydration-related console or page errors.

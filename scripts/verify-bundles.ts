@@ -40,8 +40,13 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // animation on WebKit, where `d` cannot be animated by the engine, then
     // from 20.75 KiB for freezing a step on its last position while a lost
     // target comes back instead of tearing the presentation down, then from
-    // 21 KiB for presenting a step while its scroll is still travelling.
-    gzipBudget: 21.5 * KIB,
+    // 21 KiB for presenting a step while its scroll is still travelling, then
+    // from 21.5 KiB for applying a `behavior.allowInteraction` changed through
+    // the step props live (modality, focus, pointer fade) on the step, then
+    // from 21.75 KiB for the `"detached"` missing-target strategy (a centered
+    // popover over a backdrop without a cutout), then from 22 KiB for keeping
+    // the focus to restore when a new tour replaces one still fading out.
+    gzipBudget: 22.25 * KIB,
     name: "Core index",
     outputExtension: "js",
   },
@@ -55,7 +60,10 @@ export const bundleScenarios: readonly BundleScenario[] = [
   {
     entry: 'export { createWorkflowFromConfig } from "@glowhop/core-tour/config";',
     externalPackages: [],
-    gzipBudget: 5.25 * KIB,
+    // Raised from 5.25 KiB for validating and passing on the `classNames`
+    // option, after sharing its class arrays instead of copying them and
+    // reusing the string-array validator.
+    gzipBudget: 5.5 * KIB,
     name: "Core config",
     outputExtension: "js",
   },

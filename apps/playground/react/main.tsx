@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { type LabContentFactory, mountLab } from "../lab";
 import "../lab/lab.css";
 import "../src/styles.css";
+import "../src/theme";
 
 const root = document.querySelector<HTMLElement>("#react-root");
 if (!root) throw new Error("Missing #react-root");
@@ -27,7 +28,7 @@ reactRoot.render(
       <GlowTour.Content />
       <GlowTour.Footer className="border border-amber-200">
         <GlowTour.CancelTrigger />
-        <GlowTour.BackTrigger />
+        <GlowTour.PreviousTrigger />
         <GlowTour.AdvanceTrigger />
       </GlowTour.Footer>
     </GlowTour.Popover>
