@@ -14,4 +14,32 @@ import { reactSource } from "../lib/framework-sources";
   guideHref="/docs/guides/react"
   title="React Product Tour Library - GlowTour.js"
   description="Build accessible, SSR-safe product tours and guided onboarding for React 18/19 with @glowhop/react-tour, a typed step builder, and GlowTourDefault."
+  benefits={[
+  {
+    "title": "React-native rendering",
+    "description": "Use React components and a Context-scoped instance instead of wrapping an imperative DOM library."
+  },
+  {
+    "title": "React 18 and 19 support",
+    "description": "Run the same typed tour workflow in current React applications, with SSR-safe behavior for Next.js."
+  },
+  {
+    "title": "Composable by design",
+    "description": "Use GlowTourDefault immediately or compose the lower-level React primitives into your own interface."
+  }
+]}
+  faq={[
+  {
+    "question": "How do I create a product tour in React?",
+    "answer": "Install @glowhop/react-tour and @glowhop/styles-tour, create a tour and workflow with createGlowTour(), render GlowTourDefault with that tour, then start the workflow from any React event handler."
+  },
+  {
+    "question": "Does GlowTour.js work with Next.js?",
+    "answer": "Yes. Keep tour creation and rendering in a client component, import the default theme once, and render GlowTourDefault near your application root. The React adapter is tested against server rendering and hydration."
+  },
+  {
+    "question": "Can I customize the React tour UI?",
+    "answer": "Yes. You can replace the default theme with your own CSS or compose the React adapter's lower-level components when you need full control over the popover, overlay, pointer, and controls."
+  }
+]}
 />
