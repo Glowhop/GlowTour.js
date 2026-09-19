@@ -3,9 +3,6 @@
 
 <h1 align="center">GlowTour.js</h1>
 
-> [!WARNING]
-> Based on the feedback we’ve gathered, GlowTour.js v1.4 will introduce significant breaking changes. These changes will provide a more sustainable and flexible foundation, along with a first-class developer experience.
-
 <p align="center">
   <strong>Guided product tours, onboarding walkthroughs and feature spotlights - one engine, five frameworks.</strong>
 </p>
