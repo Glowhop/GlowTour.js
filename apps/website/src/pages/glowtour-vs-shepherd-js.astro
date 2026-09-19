@@ -1,5 +1,4 @@
 ---
-import ApiComparison from "../components/ApiComparison.astro";
 import ComparisonPage from "../components/ComparisonPage.astro";
 import ComparisonSection from "../components/ComparisonSection.astro";
 ---
@@ -77,13 +76,6 @@ import ComparisonSection from "../components/ComparisonSection.astro";
       definition any adapter can run, and accepts a JSON config for tours stored outside your code.
     </p>
   </ComparisonSection>
-
-
-  <ApiComparison
-    competitorName="Shepherd.js"
-    competitorCode={"import Shepherd from \"shepherd.js\";\n\nconst tour = new Shepherd.Tour();\n\ntour.addStep({\n  id: \"welcome\",\n  text: \"Start here\",\n  attachTo: {\n    element: \"#welcome\",\n    on: \"bottom\",\n  },\n});\n\ntour.start();"}
-    glowtourCode={"import { createGlowTour } from \"@glowhop/react-tour\";\n\nconst tour = createGlowTour();\nconst workflow = tour\n  .create(\"onboarding\")\n  .step({\n    id: \"welcome\",\n    target: \"#welcome\",\n    title: \"Welcome\",\n    content: \"Start here\",\n  })\n  .build();\n\nvoid tour.start(workflow);"}
-  />
 
   <ComparisonSection id="accessibility-licensing" heading="Accessibility and licensing">
     <p>

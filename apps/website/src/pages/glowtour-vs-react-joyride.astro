@@ -1,5 +1,4 @@
 ---
-import ApiComparison from "../components/ApiComparison.astro";
 import ComparisonPage from "../components/ComparisonPage.astro";
 import ComparisonSection from "../components/ComparisonSection.astro";
 ---
@@ -66,15 +65,6 @@ import ComparisonSection from "../components/ComparisonSection.astro";
       for theming.
     </p>
   </ComparisonSection>
-
-
-  <ApiComparison
-    competitorName="React Joyride"
-    competitorCode={"import Joyride from \"react-joyride\";\n\nconst steps = [\n  {\n    target: \"#welcome\",\n    title: \"Welcome\",\n    content: \"Start here\",\n  },\n];\n\nexport function Tour() {\n  return <Joyride steps={steps} />;\n}"}
-    competitorLang="tsx"
-    glowtourCode={"import {\n  createGlowTour,\n  GlowTourDefault,\n} from \"@glowhop/react-tour\";\n\nconst tour = createGlowTour();\nconst workflow = tour\n  .create(\"onboarding\")\n  .step({\n    id: \"welcome\",\n    target: \"#welcome\",\n    title: \"Welcome\",\n    content: \"Start here\",\n  })\n  .build();\n\nexport function Tour() {\n  return <GlowTourDefault tour={tour} />;\n}"}
-    glowtourLang="tsx"
-  />
 
   <ComparisonSection id="accessibility-ssr-licensing" heading="Accessibility, SSR and licensing">
     <p>

@@ -1,5 +1,4 @@
 ---
-import ApiComparison from "../components/ApiComparison.astro";
 import ComparisonPage from "../components/ComparisonPage.astro";
 import ComparisonSection from "../components/ComparisonSection.astro";
 ---
@@ -80,13 +79,6 @@ import ComparisonSection from "../components/ComparisonSection.astro";
       same tour can come from a JSON config when it is stored outside your code.
     </p>
   </ComparisonSection>
-
-
-  <ApiComparison
-    competitorName="Driver.js"
-    competitorCode={"import { driver } from \"driver.js\";\n\nconst tour = driver({\n  steps: [\n    {\n      element: \"#welcome\",\n      popover: {\n        title: \"Welcome\",\n        description: \"Start here\",\n      },\n    },\n  ],\n});\n\ntour.drive();"}
-    glowtourCode={"import { createGlowTour } from \"@glowhop/react-tour\";\n\nconst tour = createGlowTour();\nconst workflow = tour\n  .create(\"onboarding\")\n  .step({\n    id: \"welcome\",\n    target: \"#welcome\",\n    title: \"Welcome\",\n    content: \"Start here\",\n  })\n  .build();\n\nvoid tour.start(workflow);"}
-  />
 
   <ComparisonSection id="accessibility-licensing" heading="Accessibility and licensing">
     <p>
