@@ -118,7 +118,7 @@
   display: flex;
   flex-direction: column;
   font: inherit;
-  gap: calc(var(--glow-tour-spacing, 8px) * 1.5);
+  gap: calc(var(--glow-tour-spacing, 8px) * 2);
   max-height: calc(100dvh - (var(--glow-tour-viewport-gap, 16px) * 2));
   max-width: calc(100vw - (var(--glow-tour-viewport-gap, 16px) * 2));
   overflow: visible;
