@@ -88,20 +88,9 @@ export default defineConfig({
     }),
     react(),
     icon(),
-    // Search engines drop <lastmod>-less entries into a "crawl whenever" bucket; stamping the
-    // build date on every URL is honest here because the whole site is rebuilt from source on
-    // each deploy. Priorities rank the marketing entry points above deep reference pages.
-    sitemap({
-      serialize(item) {
-        const path = new URL(item.url).pathname;
-        return {
-          ...item,
-          lastmod: new Date().toISOString(),
-          changefreq: path.startsWith("/docs") ? "weekly" : "monthly",
-          priority: path === "/" ? 1 : path.startsWith("/docs/reference") ? 0.5 : 0.8,
-        };
-      },
-    }),
+    // Only publish URL data we can keep accurate. A deployment date is not a meaningful
+    // modification date for every page, and search engines calculate crawl priority themselves.
+    sitemap(),
   ],
   vite: {
     plugins: [tailwindcss()],
