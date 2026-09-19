@@ -387,8 +387,10 @@ export const GlowTourPreviousTrigger = /* @__PURE__ */ defineComponent({
     const step = useStep();
     const renderTrigger = trigger(
       "previous",
+      // Tour state disables a trigger only while the tour is active: disabling it natively outside
+      // of that, as a replacing start does, would blur the focused trigger.
       () =>
-        (snapshot.value.status !== "transitioning" && !snapshot.value.canPrevious) ||
+        (snapshot.value.status === "active" && !snapshot.value.canPrevious) ||
         step()?.controls?.previous?.state === "disabled",
       () => props.previousLabel ?? "Previous step",
       () => props.ariaLabel,
@@ -415,7 +417,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
     const renderTrigger = trigger(
       "advance",
       () =>
-        (snapshot.value.status !== "transitioning" && !snapshot.value.canAdvance) ||
+        (snapshot.value.status === "active" && !snapshot.value.canAdvance) ||
         step()?.controls?.advance?.state === "disabled",
       () => {
         return snapshot.value.isLastStep
@@ -442,7 +444,7 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
     const renderTrigger = trigger(
       "cancel",
       () =>
-        (snapshot.value.status !== "transitioning" && !snapshot.value.canCancel) ||
+        (snapshot.value.status === "active" && !snapshot.value.canCancel) ||
         step()?.controls?.cancel?.state === "disabled",
       () => "Skip",
       () => props.ariaLabel,

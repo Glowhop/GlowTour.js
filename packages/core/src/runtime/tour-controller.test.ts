@@ -3427,6 +3427,68 @@ describe("monitoring events", () => {
       .build();
   }
 
+  describe("a start superseded while its tour:start is held back", () => {
+    function waitingWorkflow(tour: TourController<string>) {
+      return tour
+        .create("waiting")
+        .step({
+          id: "missing",
+          behavior: { missingTarget: { strategy: "wait", timeout: 1000 } },
+          content: "one",
+          target: () => null,
+          title: "one",
+        })
+        .build();
+    }
+
+    test("does not report it for a replacing start whose onStart throws", async () => {
+      const { events, onEvent } = recorder();
+      const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+      const waiting = tour.start(waitingWorkflow(tour));
+      await flushMicrotasks();
+
+      const failing = tour
+        .create("failing", {
+          onStart: () => {
+            throw new Error("onStart failed");
+          },
+        })
+        .step({ id: "welcome", content: "one", target: targetResolver, title: "one" })
+        .build();
+      await assert.rejects(() => tour.start(failing), /onStart failed/);
+      await waiting;
+
+      assert.deepEqual(
+        events.map((event) => event.type),
+        ["tour:error"],
+      );
+    });
+
+    test("does not report it for a replacing start cancelled during onStart", async () => {
+      const { events, onEvent } = recorder();
+      const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });
+      const waiting = tour.start(waitingWorkflow(tour));
+      await flushMicrotasks();
+
+      const onStart = deferred<void>();
+      const replacing = tour
+        .create("replacing", { onStart: () => onStart.promise })
+        .step({ id: "welcome", content: "one", target: targetResolver, title: "one" })
+        .build();
+      const starting = tour.start(replacing);
+      await flushMicrotasks();
+      await tour.cancel();
+      onStart.resolve();
+      await starting;
+      await waiting;
+
+      assert.equal(
+        events.some((event) => event.type === "tour:start"),
+        false,
+      );
+    });
+  });
+
   test("emits the full sequence of a completed tour, in order", async () => {
     const { events, onEvent } = recorder();
     const tour = new TourController<string>(new NoopTourViewDriver(), { onEvent });

@@ -12,9 +12,11 @@ test("server renders target/trigger markup before any JS runs", async ({ baseURL
   expect(html).toMatch(/id="tour-status">idle</);
 
   // The default tour popover markup is always present (for animation/layout), but the tour
-  // has not been started yet, so its trigger buttons are disabled.
-  expect(html).toContain("data-glow-tour-popover");
-  expect(html).toContain("data-glow-tour-advance-trigger disabled");
+  // has not been started yet: the popover is inert and hidden from assistive technology. Tour
+  // state only disables a trigger while the tour is active, so the idle triggers are enabled.
+  expect(html).toMatch(/data-glow-tour-popover inert/);
+  expect(html).toContain("data-glow-tour-advance-trigger");
+  expect(html).not.toMatch(/<button[^>]*data-glow-tour-advance-trigger[^>]*\sdisabled/);
 });
 
 test("hydrates without console errors/warnings and the tour is interactive", async ({ page }) => {
