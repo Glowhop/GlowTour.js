@@ -671,6 +671,14 @@ describe("react adapter browser behavior", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     assert.equal(tour.state.get().currentStepIndex, 0);
 
+    // From the keyboard too: Enter is left to the browser, whose click the consumer prevents.
+    const enter = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "Enter" });
+    advance?.dispatchEvent(enter);
+    assert.equal(enter.defaultPrevented, false);
+    advance?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    assert.equal(tour.state.get().currentStepIndex, 0);
+
     await React.act(async () => root.unmount());
   });
 

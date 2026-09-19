@@ -75,7 +75,7 @@ beginnings - it is always `0`.
 
 | Value | What the user did |
 | --- | --- |
-| `"trigger"` | Clicked the advance, previous, or cancel (Skip) button |
+| `"trigger"` | Activated the advance, previous, or cancel (Skip) button, with a pointer or with `Enter` or `Space` |
 | `"keyboard"` | Used a keyboard shortcut |
 | `"overlay"` | Clicked the dimmed backdrop |
 | `"api"` | Nothing - your own code called `advance()`, `previous()`, `goTo()` or `cancel()`, including from inside a step action |

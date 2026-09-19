@@ -1712,7 +1712,7 @@ describe("DomTourViewDriver", () => {
     await Promise.resolve();
     assert.deepEqual(calls, ["advance", "cancel"]);
   });
-  test("runs the focused tour button's own command on Enter", async () => {
+  test("leaves Enter on a focused tour button to the click it produces", async () => {
     for (const [marker, command] of [
       ["data-glow-tour-previous-trigger", "previous"],
       ["data-glow-tour-cancel-trigger", "cancel"],
@@ -1733,14 +1733,79 @@ describe("DomTourViewDriver", () => {
       step.target = createTarget() as unknown as HTMLElement;
       await driver.show(step, "advance", new AbortController().signal);
 
-      // Enter activates the focused button: on Back it must not move forward.
-      window.dispatchEvent(new MockKeyboardEvent("keydown", { key: "Enter", target: trigger }));
-      await Promise.resolve();
+      // Enter is not the advance shortcut on a button: the browser turns it into a click.
+      const keydown = new MockKeyboardEvent("keydown", { key: "Enter", target: trigger });
+      window.dispatchEvent(keydown);
+      await flushMicrotasks();
+      assert.equal(keydown.defaultPrevented, false);
+      assert.deepEqual(calls, []);
 
+      // That click runs the button's own command: on Back it must not move forward.
+      trigger.dispatchEvent(new MockEvent("click"));
+      await flushMicrotasks();
       assert.deepEqual(calls, [command]);
       driver.dispose();
     }
   });
+  test("runs nothing on Enter when the consumer prevents the tour button's click", async () => {
+    const { calls, driver, elements } = installDriver(),
+      step = createStep();
+    step.target = createTarget() as unknown as HTMLElement;
+    await driver.show(step, "advance", new AbortController().signal);
+    elements.advance.addEventListener("click", (event) => event.preventDefault());
+
+    window.dispatchEvent(
+      new MockKeyboardEvent("keydown", { key: "Enter", target: elements.advance }),
+    );
+    elements.advance.dispatchEvent(new MockEvent("click"));
+    await flushMicrotasks();
+
+    assert.deepEqual(calls, []);
+  });
+  for (const prevented of [false, true]) {
+    test(`${prevented ? "drops" : "queues"} a${prevented ? " prevented" : ""} keyboard click on a tour button while a visible popover is replaced`, async () => {
+      const commandState = createToggleableCommands();
+      const sources: string[] = [];
+      const driver = new DomTourViewDriver<string>({
+        ...commandState.commands,
+        previous: async (source) => void sources.push(`previous:${source}`),
+      });
+      const elements = createElements();
+      driver.registerRoot(elements.root as unknown as HTMLElement);
+      driver.registerPopover(elements.popover as unknown as HTMLElement);
+      driver.registerOverlay(elements.overlay as unknown as SVGSVGElement);
+      driver.registerPointer(elements.pointer as unknown as HTMLElement);
+      const target = createTarget();
+      const firstStep = createStep();
+      const secondStep = createStep();
+      firstStep.target = target as unknown as HTMLElement;
+      secondStep.target = target as unknown as HTMLElement;
+      await driver.show(firstStep, "advance", new AbortController().signal);
+
+      commandState.setActive(false);
+      animationMode = "controlled";
+      const animationStart = createdAnimations.length;
+      const showing = driver.show(secondStep, "advance", new AbortController().signal, () => {});
+      await flushMicrotasks();
+      createdAnimations[animationStart]?.resolve();
+      await flushMicrotasks();
+
+      const keydown = new MockKeyboardEvent("keydown", { key: "Enter", target: elements.back });
+      window.dispatchEvent(keydown);
+      assert.equal(keydown.defaultPrevented, false);
+      // The click Enter produces reaches the window after the consumer's own handlers.
+      const click = new MockEvent("click", { target: elements.back });
+      if (prevented) click.preventDefault();
+      window.dispatchEvent(click);
+
+      resolveAnimations(animationStart);
+      await showing;
+      commandState.setActive(true);
+      await flushMicrotasks();
+      assert.deepEqual(sources, prevented ? [] : ["previous:trigger"]);
+      assert.deepEqual(commandState.calls, []);
+    });
+  }
   test("leaves Enter on other popover controls to the browser", async () => {
     const { calls, driver, elements } = installDriver(),
       control = document.createElement("button"),
