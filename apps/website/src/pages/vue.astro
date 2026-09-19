@@ -14,4 +14,32 @@ import { vueSource } from "../lib/framework-sources";
   guideHref="/docs/guides/vue"
   title="Vue Product Tour Library - GlowTour.js"
   description="Build accessible, SSR-safe product tours and guided onboarding for Vue 3 with @glowhop/vue-tour, a typed step builder, and GlowTourDefault."
+  benefits={[
+  {
+    "title": "Native Vue components",
+    "description": "Use Vue 3 components and a provide/inject-scoped tour instance that fits the Composition API."
+  },
+  {
+    "title": "Nuxt-ready integration",
+    "description": "Render tours safely in SSR applications and start them after the target UI is available on the client."
+  },
+  {
+    "title": "Flexible presentation",
+    "description": "Start with GlowTourDefault, customize the theme, or compose the Vue primitives for a bespoke experience."
+  }
+]}
+  faq={[
+  {
+    "question": "How do I create a product tour in Vue?",
+    "answer": "Install @glowhop/vue-tour and @glowhop/styles-tour, create the tour and workflow in script setup, add GlowTourDefault to the template, and call tour.start() from a Vue event handler."
+  },
+  {
+    "question": "Does GlowTour.js work with Nuxt?",
+    "answer": "Yes. Render GlowTourDefault from a client-side component and start workflows only after their target elements are mounted. The Vue adapter is tested against server rendering and hydration in Nuxt."
+  },
+  {
+    "question": "Can I customize the Vue tour UI?",
+    "answer": "Yes. Replace the default theme with your own CSS or compose the Vue adapter's primitives when you need to control the popover, overlay, pointer, and navigation."
+  }
+]}
 />
