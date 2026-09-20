@@ -184,17 +184,6 @@ button:not(:disabled),
 }
 
 /*
- * The long-content example demonstrates that the popover caps its height and scrolls its content.
- * The library's own cap is the viewport, which on a tall screen leaves the text short of
- * overflowing - the demo would show a full-height popover and no scroll at all. Capping the
- * popover here keeps the demo honest on any window size; `:where()` in the default theme makes
- * this a zero-specificity override.
- */
-.demo-long-content [data-glow-tour-popover] {
-  max-height: min(320px, calc(100dvh - (var(--glow-tour-viewport-gap, 16px) * 2)));
-}
-
-/*
  * "Custom theme" example. Every visual choice below is CSS on an ancestor of the tour - the demo
  * renders the same <DefaultTour /> as the rest of the gallery. The `--glow-tour-*` tokens are
  * declared at zero specificity in the default theme, so a plain class wins by proximity, and the

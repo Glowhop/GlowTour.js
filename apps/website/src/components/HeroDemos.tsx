@@ -14,7 +14,6 @@ import {
   useGlowTourContext,
 } from "@glowhop/react-tour";
 import { Bell, Rocket, Trash2, UserPlus } from "lucide-react";
-import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { Avatar, DemoCard, FakeField, SkeletonLine } from "./demo-ui";
 
@@ -738,52 +737,7 @@ export function ThemeDemo() {
   );
 }
 
-// 11. Long content in a narrow popover ---------------------------------------
-
-const longContentTour = createGlowTour();
-export const longContentWorkflow = longContentTour
-  .create("hero-long-content")
-  .step({
-    id: "long-content-target",
-    target: "#hero-long-content-target",
-    title: "A step with a lot to say",
-    content:
-      "The popover never grows past the viewport: it caps its own height and scrolls its content, keeping the header and the footer buttons in place. That matters on a short window or a phone, where an unbounded popover would push its own Next button off-screen. This demo caps the popover at 320px instead, so you can see that scroll on a tall screen too; the width comes the same way, from --glow-tour-popover-width set to 260px on the wrapper around this demo rather than in the library. The rest of this paragraph exists only to make the scroll real rather than described. A step's content is whatever your framework renders, so it can be a paragraph, a list, an image, or a whole component; the popover does not try to measure or truncate it. It gives the content the room that is left once the header and footer are laid out, then lets it scroll inside that box. Scrolling is contained, too: reaching the end of the content does not start scrolling the page behind the tour. On a short viewport the same step simply gets a smaller box and more scrolling, which is the behaviour you want when someone opens your onboarding on a laptop with a browser window half the height of yours.",
-  })
-  .build();
-
-export function LongContentDemo() {
-  return (
-    <div
-      className="demo-long-content flex w-full flex-col items-center gap-4"
-      style={{ "--glow-tour-popover-width": "260px" } as CSSProperties}
-    >
-      <DemoCard className="p-5">
-        <h4 className="text-sm font-semibold text-text">Release notes</h4>
-        <div className="mt-4 space-y-2">
-          <SkeletonLine />
-          <SkeletonLine width="80%" />
-          <SkeletonLine width="60%" />
-        </div>
-        <div className="mt-4 flex justify-end border-t border-border pt-4">
-          <button id="hero-long-content-target" type="button" className={primaryButtonClass}>
-            Read the notes
-          </button>
-        </div>
-      </DemoCard>
-      <button
-        type="button"
-        onClick={() => void longContentTour.start(longContentWorkflow)}
-        className={runButtonClass}
-      >
-        Run this demo
-      </button>
-      <GlowTourDefault tour={longContentTour} />
-    </div>
-  );
-}
-
-// 12. A fully re-skinned tour, from CSS alone ---------------------------------
+// 11. A fully re-skinned tour, from CSS alone ---------------------------------
 
 const customThemeTour = createGlowTour();
 export const customThemeWorkflow = customThemeTour
@@ -844,7 +798,7 @@ export function CustomThemeDemo() {
   );
 }
 
-// 13. A target that leaves the page and comes back somewhere else -------------
+// 12. A target that leaves the page and comes back somewhere else -------------
 
 const relocateTargetTour = createGlowTour();
 export const relocateTargetWorkflow = relocateTargetTour
