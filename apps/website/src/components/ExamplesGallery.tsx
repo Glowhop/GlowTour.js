@@ -240,7 +240,7 @@ export function ExamplesGallery({ codeHtml, labels }: ExamplesGalleryProps) {
         )}
       </div>
 
-      <div className="mt-6 rounded-glow border border-border p-6 shadow-glow">
+      <div className="mt-6">
         <h3 className="text-sm font-semibold text-accent">{active.title}</h3>
         <p className="mt-1 text-sm text-text-muted">{active.description}</p>
         <div className="mt-5 grid gap-6 lg:grid-cols-2">
