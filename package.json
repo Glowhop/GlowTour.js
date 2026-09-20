@@ -28,11 +28,11 @@
   },
   "devDependencies": {
     "@angular/compiler-cli": "18.2.14",
-    "@biomejs/biome": "^2.5.12",
-    "@changesets/cli": "3.0.2",
+    "@biomejs/biome": "^2.5.14",
+    "@changesets/cli": "3.0.3",
     "@types/bun": "^1.4.2",
     "ng-packagr": "18.2.1",
     "typescript": "5.5.4",
-    "yaml": "2.9.0"
+    "yaml": "2.9.1"
   }
 }
