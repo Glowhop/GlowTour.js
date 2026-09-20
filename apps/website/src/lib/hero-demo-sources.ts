@@ -323,29 +323,6 @@ const workflow = tour
 
 tour.start(workflow);`;
 
-export const longContentSource = `const tour = createGlowTour();
-
-const workflow = tour
-  .create("release-notes")
-  .step({
-    id: "read-notes",
-    target: "#read-notes",
-    title: "A step with a lot to say",
-    content: "The popover caps its height and scrolls its content, so the footer "
-      + "buttons stay reachable on a short window.",
-  })
-  .build();
-
-// Every token can be overridden from any ancestor of the tour. The default
-// max-height is the viewport; this demo caps it lower so the scroll is visible
-// on any screen:
-//   .demo-long-content [data-glow-tour-popover] { max-height: min(320px, 100dvh); }
-<div className="demo-long-content" style={{ "--glow-tour-popover-width": "260px" }}>
-  <GlowTourDefault tour={tour} />
-</div>;
-
-tour.start(workflow);`;
-
 export const customThemeSource = `const tour = createGlowTour();
 
 const workflow = tour
