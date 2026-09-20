@@ -13,7 +13,7 @@
     "@glowhop/solid-tour": "workspace:*",
     "@glowhop/styles-tour": "workspace:*",
     "@solidjs/router": "^1.0.0",
-    "@solidjs/start": "^2.0.4",
+    "@solidjs/start": "^2.0.5",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
