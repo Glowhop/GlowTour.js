@@ -323,7 +323,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
     .step({
       behavior: acrossPageBoundary,
       content: content(
-        "Every one of these runs on this page, beside its source:",
+        "The picker lists every example, each one running on this page beside its source:",
         cards(
           ["📍", "Placement"],
           ["⏳", "Async data"],
