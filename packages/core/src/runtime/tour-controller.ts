@@ -20,6 +20,7 @@ import type {
   TourStatus,
 } from "../types";
 import { isControlAvailable } from "../utils/options";
+import { isPendingTarget } from "../utils/utils";
 import { abortableDelay, abortError } from "./abort";
 import { ActiveStep } from "./active-step";
 import { attachRootBridge } from "./root-bridge";
@@ -90,6 +91,11 @@ export class TourController<T> {
   private recoveringTarget: HTMLElement | null = null;
   private operationToken = 0;
   private publicationRevision = 0;
+  /**
+   * The operation currently parked on a target that has not resolved yet, or `null`. The step being
+   * left is still on screen while a navigation waits, so the wait is reported on its presentation.
+   */
+  private awaitingTargetOperation: number | null = null;
   private operation: AbortController | null = null;
   private disposed = false;
   private retainedPresentation: TourPresentation<T> | null = null;
@@ -129,7 +135,8 @@ export class TourController<T> {
       canPrevious: () => this.canNavigate("previous"),
       cancel: (source) => this.cancel(source),
       goTo: (id) => this.goTo(id),
-      isAdvanceDisabled: () => !this.isPresentedAdvanceAvailable(),
+      isAdvanceDisabled: () =>
+        this.awaitingTargetOperation !== null || !this.isPresentedAdvanceAvailable(),
       isCancelDisabled: () => !this.isPresentedCancelAvailable(),
       isPreviousDisabled: () => !this.isPresentedPreviousAvailable(),
       previous: (source) => this.previous(source),
@@ -443,19 +450,40 @@ export class TourController<T> {
     const timeout = missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
     const startedAt = Date.now();
     step.detached = false;
-    while (true) {
-      const target = await step.resolveTarget(signal);
-      this.assertCurrent(operation);
-      if (target) return target;
-      if (strategy === "skip") return null;
-      const body = strategy === "detached" && step.detach();
-      if (body) return body;
-      if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
-        throw this.missingTargetError(step);
+    try {
+      while (true) {
+        const pending = step.resolveTarget(signal);
+        // An async resolver, and the "wait" retries below, are the two waits a step can impose.
+        if (isPendingTarget(pending)) this.setAwaitingTarget(operation, true);
+        const target = await pending;
+        this.assertCurrent(operation);
+        if (target) return target;
+        if (strategy === "skip") return null;
+        const body = strategy === "detached" && step.detach();
+        if (body) return body;
+        if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
+          throw this.missingTargetError(step);
+        }
+        this.setAwaitingTarget(operation, true);
+        await abortableDelay(16, signal);
+        this.assertCurrent(operation);
       }
-      await abortableDelay(16, signal);
-      this.assertCurrent(operation);
+    } finally {
+      this.setAwaitingTarget(operation, false);
     }
+  }
+
+  /**
+   * Reports a navigation waiting on the next step's target. The presentation on screen still
+   * belongs to the step being left, so the driver marks that popover and disables its advance
+   * control until the target settles. Keyed by operation: a superseded navigation never clears the
+   * wait its replacement declared. The freeze of a target lost mid-step is deliberately not a wait
+   * here, see `recoverDisconnectedTarget`.
+   */
+  private setAwaitingTarget(operation: number, awaiting: boolean) {
+    if ((this.awaitingTargetOperation === operation) === awaiting) return;
+    this.awaitingTargetOperation = awaiting ? operation : null;
+    this.driver.setTargetPending?.(awaiting);
   }
 
   /**

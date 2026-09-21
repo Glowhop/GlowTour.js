@@ -259,3 +259,117 @@ describe("monitoring events through the public entry point", () => {
     binding.release();
   });
 });
+
+describe("waiting for an async target", () => {
+  test("marks the presented popover and disables its advance control until the target resolves", async () => {
+    const tour = createGlowTour<string>();
+    const document = rootWindow.document as unknown as Document;
+    const root = document.createElement("section");
+    const target = document.createElement("button");
+    const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const popover = document.createElement("aside");
+    const advance = document.createElement("button");
+    const cancel = document.createElement("button");
+
+    target.id = "awaiting-target";
+    // Adapters put this attribute on the root element they render; a hand-built
+    // root has to do it too, or its triggers are not recognised as ours.
+    root.setAttribute("data-glow-tour-root", "");
+    advance.setAttribute("data-glow-tour-advance-trigger", "");
+    cancel.setAttribute("data-glow-tour-cancel-trigger", "");
+    target.getBoundingClientRect = () => rectangle(10, 20, 30, 40);
+    popover.getBoundingClientRect = () => rectangle(0, 0, 100, 60);
+    overlay.append(path);
+    popover.append(advance, cancel);
+    root.append(overlay, popover);
+    document.body.append(target, root);
+
+    const binding = connectGlowTourRoot(tour, { idPrefix: "awaiting", root });
+    binding.bindOverlay(overlay);
+    binding.bindPopover(popover);
+
+    let resolveTarget!: (element: HTMLElement | null) => void;
+    const pending = new Promise<HTMLElement | null>((resolve) => {
+      resolveTarget = resolve;
+    });
+    const workflow = tour
+      .create("awaiting", { animated: false })
+      .step({ id: "one", content: "One", target: "#awaiting-target", title: "One" })
+      .step({ id: "two", content: "Two", target: () => pending, title: "Two" })
+      .build();
+
+    await tour.start(workflow);
+
+    assert.equal(popover.hasAttribute("data-glow-tour-awaiting-target"), false);
+    assert.equal(advance.disabled, false);
+
+    const advancing = tour.advance();
+    await waitFor(
+      () => popover.hasAttribute("data-glow-tour-awaiting-target"),
+      "the popover to report the wait",
+    );
+    assert.equal(advance.disabled, true);
+    assert.equal(advance.getAttribute("aria-disabled"), "true");
+    assert.equal(cancel.disabled, false);
+    // Still the step the user asked to leave: nothing has moved on yet.
+    assert.equal(tour.state.get().currentStep?.id, "one");
+
+    resolveTarget(target);
+    await advancing;
+
+    assert.equal(tour.state.get().currentStep?.id, "two");
+    assert.equal(popover.hasAttribute("data-glow-tour-awaiting-target"), false);
+    assert.equal(advance.disabled, false);
+    assert.equal(advance.getAttribute("aria-disabled"), "false");
+
+    binding.release();
+  });
+
+  test("leaves a synchronous target's transition unmarked", async () => {
+    const tour = createGlowTour<string>();
+    const document = rootWindow.document as unknown as Document;
+    const root = document.createElement("section");
+    const target = document.createElement("button");
+    const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const popover = document.createElement("aside");
+    const advance = document.createElement("button");
+    const marks: string[] = [];
+
+    target.id = "sync-target";
+    root.setAttribute("data-glow-tour-root", "");
+    advance.setAttribute("data-glow-tour-advance-trigger", "");
+    target.getBoundingClientRect = () => rectangle(10, 20, 30, 40);
+    popover.getBoundingClientRect = () => rectangle(0, 0, 100, 60);
+    overlay.append(path);
+    popover.append(advance);
+    root.append(overlay, popover);
+    document.body.append(target, root);
+
+    const binding = connectGlowTourRoot(tour, { idPrefix: "sync", root });
+    binding.bindOverlay(overlay);
+    binding.bindPopover(popover);
+    // Recorded rather than sampled: the attribute of an instant transition would be set and
+    // removed within the same task, and a test reading it between awaits would never see it.
+    const setAttribute = popover.setAttribute.bind(popover);
+    popover.setAttribute = (name: string, value: string) => {
+      if (name === "data-glow-tour-awaiting-target") marks.push(name);
+      setAttribute(name, value);
+    };
+
+    const workflow = tour
+      .create("sync", { animated: false })
+      .step({ id: "one", content: "One", target: "#sync-target", title: "One" })
+      .step({ id: "two", content: "Two", target: () => target, title: "Two" })
+      .build();
+
+    await tour.start(workflow);
+    await tour.advance();
+
+    assert.equal(tour.state.get().currentStep?.id, "two");
+    assert.deepEqual(marks, []);
+
+    binding.release();
+  });
+});

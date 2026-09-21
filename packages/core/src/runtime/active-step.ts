@@ -50,8 +50,9 @@ export class ActiveStep<T> {
     return this.props.get().behavior?.allowScroll !== false;
   }
 
-  async resolveTarget(signal: AbortSignal) {
-    return await resolveTargetElement(
+  /** Returns the target, or the promise to wait on when the resolver is async. */
+  resolveTarget(signal: AbortSignal) {
+    return resolveTargetElement(
       this.definition.target,
       { document: this.rootDocument, signal },
       this.path,

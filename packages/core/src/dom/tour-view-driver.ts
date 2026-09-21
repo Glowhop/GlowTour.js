@@ -73,6 +73,12 @@ export interface TourViewDriver<T> {
    * than throw.
    */
   retarget(step: ActiveStep<T>, signal: AbortSignal): Promise<void> | void;
+  /**
+   * Reports that the navigation under way is waiting for the next step's
+   * target to resolve. The presented step has not left yet, so its popover is
+   * the one that carries the wait.
+   */
+  setTargetPending?(pending: boolean): void;
   dispose(): void;
   releaseMount?(): void;
   setCommands?(commands: TourViewCommands): void;
@@ -148,6 +154,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private handledTriggerClick: Event | null = null;
   private popover: PopoverElement | null = null;
   private presentationDirty = false;
+  /** True while the controller waits for the next step's target, see `setTargetPending`. */
+  private targetPending = false;
   /**
    * The focus a clear gives back once the popover has faded out. Kept past a clear that a new show
    * supersedes, so that tour returns focus there instead of to the fading popover.
@@ -207,6 +215,32 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.pointer = element ? new PointerElement(element) : null;
     this.pointer?.initializeProps();
     this.refreshRegisteredElements();
+  }
+
+  /**
+   * Flags the presented popover as waiting for the next step's target, and
+   * disables its advance control for as long as the wait lasts: the step the
+   * user asked to leave stays on screen, and an advance that is already
+   * refused by the controller must not keep looking available. Cleared by the
+   * controller when the target settles, and by any teardown.
+   */
+  setTargetPending(pending: boolean): void {
+    if (this.disposed || this.targetPending === pending) return;
+    this.targetPending = pending;
+    this.popover?.setAwaitingTarget(pending);
+    const step = this.currentStep;
+    if (!step) return;
+    // A browser drops the focus of a control it sees disabled, and it drops it on the body:
+    // outside a page the tour made inert, with nothing to tab back from. Read before the sync,
+    // moved after it so the guard skips the control it just disabled, and left alone on a step
+    // that handed focus to the page.
+    const focused = this.popover?.getElement()?.ownerDocument.activeElement;
+    const refocus =
+      pending &&
+      step.autoFocuses() &&
+      this.findTriggers("advance").includes(focused as HTMLButtonElement);
+    this.syncControlState(step);
+    if (refocus) this.focusGuard.focus();
   }
 
   async show(
@@ -311,6 +345,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.throwIfAborted(signal);
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
+    this.setTargetPending(false);
     // Focus goes back once the popover has faded out, not in the task that lifts `inert` from the
     // page: screen readers ignore focus moved onto content that just rejoined their tree.
     try {
@@ -347,6 +382,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   releaseMount(): void {
     if (this.disposed) return;
+    this.setTargetPending(false);
     this.beginGeneration();
     this.cleanupStepResources();
     this.releaseModality();

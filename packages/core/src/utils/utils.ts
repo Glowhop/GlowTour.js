@@ -123,22 +123,37 @@ export function roundedRectPath(
   ].join(" ");
 }
 
-export async function resolveTargetElement(
+/** Whether a target resolution is still pending, i.e. the resolver returned a promise. */
+export function isPendingTarget(
+  value: HTMLElement | null | Promise<HTMLElement | null>,
+): value is Promise<HTMLElement | null> {
+  return typeof (value as Promise<HTMLElement | null> | null)?.then === "function";
+}
+
+/**
+ * Resolves a step's target. Deliberately not `async`: a selector or an element target settles
+ * synchronously, and only a resolver that returns a promise hands back something to wait on.
+ * Callers use {@link isPendingTarget} to tell the two apart, and a tour that has to wait says so.
+ */
+export function resolveTargetElement(
   target: TargetResolver,
   options: { readonly document?: Document; readonly signal: AbortSignal },
   path = "target",
-): Promise<HTMLElement | null> {
+): HTMLElement | null | Promise<HTMLElement | null> {
   const rootDocument = options.document;
+  const validate = (element: HTMLElement | null) =>
+    rootDocument ? validateTargetElement(element, rootDocument, path) : element;
   if (typeof target === "string") {
-    const element = rootDocument
-      ? rootDocument.querySelector<HTMLElement>(target)
-      : typeof document === "undefined"
-        ? null
-        : document.querySelector<HTMLElement>(target);
-    return rootDocument ? validateTargetElement(element, rootDocument, path) : element;
+    return validate(
+      rootDocument
+        ? rootDocument.querySelector<HTMLElement>(target)
+        : typeof document === "undefined"
+          ? null
+          : document.querySelector<HTMLElement>(target),
+    );
   } else if (typeof target === "function") {
-    const element = await target({ signal: options.signal });
-    return rootDocument ? validateTargetElement(element, rootDocument, path) : element;
+    const element = target({ signal: options.signal });
+    return isPendingTarget(element) ? element.then(validate) : validate(element);
   }
   if (rootDocument) return validateTargetElement(target, rootDocument, path);
   return typeof HTMLElement !== "undefined" && target instanceof HTMLElement ? target : null;
