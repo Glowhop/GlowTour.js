@@ -31,7 +31,7 @@ import { vueSource } from "../lib/framework-sources";
   faq={[
   {
     "question": "How do I create a product tour in Vue?",
-    "answer": "Install @glowhop/vue-tour and @glowhop/styles-tour, create the tour and workflow in script setup, add GlowTourDefault to the template, and call tour.start() from a Vue event handler."
+    "answer": "Install @glowhop/vue-tour and @glowhop/styles-tour, call useGlowTour() in script setup, build a workflow with create(), render GlowTourDefault with the returned tour, then call start() from a Vue event handler."
   },
   {
     "question": "Does GlowTour.js work with Nuxt?",
