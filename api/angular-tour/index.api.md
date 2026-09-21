@@ -21,6 +21,7 @@ class GlowTourAdvanceTrigger extends GlowTourTrigger {
 
 class GlowTourCancelTrigger extends GlowTourTrigger {
     ariaLabel: string | undefined;
+    cancelLabel: string | undefined;
     disabled: boolean;
     isDisabled: Signal<boolean>;
     label: Signal<string>;

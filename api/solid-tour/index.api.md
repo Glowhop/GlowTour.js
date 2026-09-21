@@ -8,7 +8,7 @@ import type { Accessor, JSX, ParentProps } from "solid-js";
 
 function createGlowTour(options?: GlowTourOptions): Tour;
 
-const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => JSX.Element; CancelTrigger: (props: ButtonProps) => JSX.Element; Content: (props: ContentProps) => JSX.Element; Footer: (props: ElementProps) => JSX.Element; Header: (props: ContentProps) => JSX.Element; Overlay: (props: OverlayProps) => JSX.Element; Pointer: (props: PointerProps) => JSX.Element; Popover: (props: ElementProps) => JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => JSX.Element; Root: (props: RootProps) => JSX.Element; };
+const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => JSX.Element; CancelTrigger: (props: CancelTriggerProps) => JSX.Element; Content: (props: ContentProps) => JSX.Element; Footer: (props: ElementProps) => JSX.Element; Header: (props: ContentProps) => JSX.Element; Overlay: (props: OverlayProps) => JSX.Element; Pointer: (props: PointerProps) => JSX.Element; Popover: (props: ElementProps) => JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => JSX.Element; Root: (props: RootProps) => JSX.Element; };
 
 function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element;
 
@@ -80,7 +80,9 @@ type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" 
     disabled?: boolean;
 };
 
-type CancelTriggerProps = ButtonProps;
+type CancelTriggerProps = ButtonProps & {
+    cancelLabel?: string;
+};
 
 type ContentProps = Omit<JSX.HTMLAttributes<HTMLElement>, "children" | "id">;
 

@@ -436,7 +436,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
 export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
   name: componentName("CancelTrigger"),
   inheritAttrs: false,
-  props: { ariaLabel: { type: String } },
+  props: { ariaLabel: { type: String }, cancelLabel: { type: String } },
   setup(props, { attrs, slots }) {
     const context = useTourScope();
     const snapshot = useTourSnapshot(context.tour);
@@ -446,7 +446,7 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
       () =>
         (snapshot.value.status === "active" && !snapshot.value.canCancel) ||
         step()?.controls?.cancel?.state === "disabled",
-      () => "Skip",
+      () => props.cancelLabel ?? "Skip",
       () => props.ariaLabel,
       attrs,
       slots,

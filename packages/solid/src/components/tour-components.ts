@@ -66,7 +66,7 @@ type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "children" 
 };
 type PreviousTriggerProps = ButtonProps & { previousLabel?: string };
 type AdvanceTriggerProps = ButtonProps & { finishLabel?: string; advanceLabel?: string };
-type CancelTriggerProps = ButtonProps;
+type CancelTriggerProps = ButtonProps & { cancelLabel?: string };
 type ButtonClickEvent = MouseEvent & { currentTarget: HTMLButtonElement; target: Element };
 
 interface TourContextValue {
@@ -524,7 +524,7 @@ export function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): JSX.Element 
 /**
  * Button that cancels the tour.
  * Automatically disabled based on tour state.
- * @param props Button props.
+ * @param props Button props and an optional `cancelLabel` for the button text.
  * @returns The cancel button.
  */
 export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
@@ -538,7 +538,9 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps): JSX.Element {
           currentStep(snapshot())?.controls?.cancel?.state === "disabled"
         );
       },
-      label: "Skip",
+      get label() {
+        return props.cancelLabel ?? "Skip";
+      },
       get class() {
         return stepClass(snapshot, "cancel", props.class);
       },

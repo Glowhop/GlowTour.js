@@ -774,6 +774,31 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(generatedButton.textContent, "Finished");
   });
 
+  test("labels the cancel trigger from cancel-label, and falls back to Skip", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    const element = root(tour, "cancel-label");
+    element.innerHTML =
+      '<glow-tour-popover></glow-tour-popover><glow-tour-cancel-trigger></glow-tour-cancel-trigger><glow-tour-cancel-trigger cancel-label="Leave the tour" data-labelled></glow-tour-cancel-trigger>';
+    document.body.append(target, element);
+    await settle();
+    await tour.start(
+      tour
+        .create("cancel label")
+        .step({ id: "step-cancel-label", content: "One", target, title: "One" })
+        .build(),
+    );
+    await settle();
+
+    const [fallback, labelled] = Array.from(
+      element.querySelectorAll<HTMLButtonElement>("[data-glow-tour-cancel-trigger]"),
+    );
+    assert.equal(fallback?.textContent, "Skip");
+    assert.equal(fallback?.getAttribute("aria-label"), "Skip");
+    assert.equal(labelled?.textContent, "Leave the tour");
+    assert.equal(labelled?.getAttribute("aria-label"), "Leave the tour");
+  });
+
   test("delegates Cancel, Back, late Advance, host disabled state, prevented clicks, and custom shortcuts", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");

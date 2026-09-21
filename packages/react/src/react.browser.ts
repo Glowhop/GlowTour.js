@@ -586,6 +586,52 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => root.unmount());
   });
 
+  test("labels the cancel trigger with cancelLabel, and falls back to Skip", async () => {
+    const [
+      React,
+      { createRoot },
+      { createGlowTour, GlowTourCancelTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("cancel label")
+      .step({ id: "step-cancel-label", content: "First", target, title: "First" })
+      .build();
+    const root = createRoot(container);
+    let setCancelLabel!: (label: string | undefined) => void;
+    const Harness = () => {
+      const [cancelLabel, updateCancelLabel] = React.useState<string | undefined>(undefined);
+      setCancelLabel = updateCancelLabel;
+      return React.createElement(
+        GlowTourRoot,
+        { tour },
+        React.createElement(GlowTourPopover, null),
+        React.createElement(GlowTourCancelTrigger, { cancelLabel }),
+      );
+    };
+
+    await React.act(async () => {
+      root.render(React.createElement(Harness));
+    });
+    await React.act(async () => {
+      await tour.start(workflow);
+    });
+    const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
+    assert.equal(cancel?.textContent, "Skip");
+    assert.equal(cancel?.getAttribute("aria-label"), "Skip");
+
+    await React.act(async () => {
+      setCancelLabel("Leave the tour");
+    });
+    assert.equal(cancel?.textContent, "Leave the tour");
+    assert.equal(cancel?.getAttribute("aria-label"), "Leave the tour");
+
+    await React.act(async () => root.unmount());
+  });
+
   test("composes custom child and wrapper click handlers before navigation", async () => {
     const [
       React,

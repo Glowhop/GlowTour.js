@@ -208,7 +208,7 @@ Navigation button container. Selector: `glow-tour-footer`.
 | --- | --- | --- |
 | `GlowTourPreviousTrigger` | `glow-tour-previous-trigger` | `previousLabel?: string` (default `"Previous step"`), `ariaLabel?: string`, `disabled: boolean` |
 | `GlowTourAdvanceTrigger` | `glow-tour-advance-trigger` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), `ariaLabel?: string`, `disabled: boolean` |
-| `GlowTourCancelTrigger` | `glow-tour-cancel-trigger` | `ariaLabel?: string`, `disabled: boolean`. Its label is `"Skip"` |
+| `GlowTourCancelTrigger` | `glow-tour-cancel-trigger` | `ariaLabel?: string`, `cancelLabel?: string` (default `"Skip"`), `disabled: boolean` |
 
 Each trigger renders a `<button>`. The label is the button text and, without `ariaLabel`, its accessible name. Projected content replaces the button text. `disabled` accepts a boolean attribute and adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder#hiding-a-controls-button).
 

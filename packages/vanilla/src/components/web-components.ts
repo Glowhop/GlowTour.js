@@ -857,7 +857,7 @@ export function registerGlowTourElements() {
         disabled:
           (state.status === "active" && !state.canCancel) ||
           props.controls?.cancel?.state === "disabled",
-        label: "Skip",
+        label: this.getAttribute("cancel-label") ?? "Skip",
       };
     }
   }

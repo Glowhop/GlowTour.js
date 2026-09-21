@@ -56,7 +56,7 @@ type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children
 };
 type PreviousTriggerProps = ButtonProps & { previousLabel?: string };
 type AdvanceTriggerProps = ButtonProps & { finishLabel?: string; advanceLabel?: string };
-type CancelTriggerProps = ButtonProps;
+type CancelTriggerProps = ButtonProps & { cancelLabel?: string };
 
 interface TourContextValue {
   readonly binding: AdapterRootBinding | null;
@@ -458,10 +458,10 @@ export function GlowTourAdvanceTrigger({
 /**
  * Button that cancels the tour.
  * Automatically disabled based on tour state.
- * @param props Button props.
+ * @param props Button props and an optional `cancelLabel` for the button text.
  * @returns The cancel button.
  */
-export function GlowTourCancelTrigger(props: CancelTriggerProps) {
+export function GlowTourCancelTrigger({ cancelLabel, ...props }: CancelTriggerProps) {
   const { tour } = useTourScope();
   const snapshot = useTourSnapshot(tour);
   const control = useStep(snapshot)?.controls?.cancel?.state;
@@ -471,7 +471,7 @@ export function GlowTourCancelTrigger(props: CancelTriggerProps) {
       capabilityDisabled={
         (snapshot.status === "active" && !snapshot.canCancel) || control === "disabled"
       }
-      label="Skip"
+      label={cancelLabel ?? "Skip"}
       marker="cancel"
     />
   );

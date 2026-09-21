@@ -741,7 +741,7 @@ describe("angular adapter browser behavior", () => {
           <glow-tour-popover />
           <glow-tour-previous-trigger [previousLabel]="previousLabel" [disabled]="disabled" />
           <glow-tour-advance-trigger [finishLabel]="finishLabel" [advanceLabel]="advanceLabel" [disabled]="disabled" (click)="onAdvanceClick($event)" />
-          <glow-tour-cancel-trigger [ariaLabel]="cancelAria" [disabled]="disabled" />
+          <glow-tour-cancel-trigger [ariaLabel]="cancelAria" [cancelLabel]="cancelLabel" [disabled]="disabled" />
           <glow-tour-cancel-trigger ariaLabel="Static cancel" data-static-cancel disabled />
         </glow-tour-root>
       `,
@@ -750,6 +750,7 @@ describe("angular adapter browser behavior", () => {
       readonly tour = tour;
       previousLabel = "Back one";
       cancelAria = "Cancel one";
+      cancelLabel: string | undefined = undefined;
       disabled = true;
       finishLabel = "Finish one";
       advanceLabel = "Advance one";
@@ -782,6 +783,7 @@ describe("angular adapter browser behavior", () => {
     assert.equal(advance?.getAttribute("data-glow-tour-consumer-disabled"), "true");
     assert.equal(cancel?.textContent, "Skip");
     assert.equal(cancel?.getAttribute("aria-label"), "Cancel one");
+    assert.equal(staticCancel?.textContent, "Skip");
     assert.equal(staticCancel?.disabled, true);
     assert.equal(staticCancel?.getAttribute("aria-disabled"), "true");
     assert.equal(staticCancel?.getAttribute("data-glow-tour-consumer-disabled"), "true");
@@ -796,6 +798,7 @@ describe("angular adapter browser behavior", () => {
     assert.ok(harness instanceof TriggerInputsHarness);
     harness.previousLabel = "Back two";
     harness.cancelAria = "Cancel two";
+    harness.cancelLabel = "Leave the tour";
     harness.disabled = false;
     harness.advanceLabel = "Advance two";
     app.tick();
@@ -806,6 +809,9 @@ describe("angular adapter browser behavior", () => {
     assert.equal(advance?.getAttribute("aria-disabled"), "false");
     assert.equal(advance?.hasAttribute("data-glow-tour-consumer-disabled"), false);
     assert.equal(cancel?.getAttribute("aria-label"), "Cancel two");
+    assert.equal(cancel?.textContent, "Leave the tour");
+    // `ariaLabel` still wins over the label it is given, and the untouched trigger keeps the default.
+    assert.equal(staticCancel?.textContent, "Skip");
 
     harness.preventAdvance = true;
     app.tick();
