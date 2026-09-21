@@ -31,7 +31,7 @@ import { reactSource } from "../lib/framework-sources";
   faq={[
   {
     "question": "How do I create a product tour in React?",
-    "answer": "Install @glowhop/react-tour and @glowhop/styles-tour, create a tour and workflow with createGlowTour(), render GlowTourDefault with that tour, then start the workflow from any React event handler."
+    "answer": "Install @glowhop/react-tour and @glowhop/styles-tour, call useGlowTour() inside a React component, build a workflow with create(), render GlowTourDefault with the returned tour, then call start() from an event handler."
   },
   {
     "question": "Does GlowTour.js work with Next.js?",
