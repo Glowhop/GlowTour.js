@@ -31,7 +31,7 @@ import { angularSource } from "../lib/framework-sources";
   faq={[
   {
     "question": "How do I create a product tour in Angular?",
-    "answer": "Install @glowhop/angular-tour and @glowhop/styles-tour, import GlowTourDefault in a standalone component, create a typed workflow, render glow-tour-default, and start it from a template event."
+    "answer": "Install @glowhop/angular-tour and @glowhop/styles-tour, import GlowTourDefault in a standalone component, call injectGlowTour() in a field initializer, build a workflow with create(), render glow-tour-default, then call start() from a template event."
   },
   {
     "question": "Does GlowTour.js support standalone Angular components?",
