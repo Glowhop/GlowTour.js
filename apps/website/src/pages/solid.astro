@@ -31,7 +31,7 @@ import { solidSource } from "../lib/framework-sources";
   faq={[
   {
     "question": "How do I create a product tour in Solid?",
-    "answer": "Install @glowhop/solid-tour and @glowhop/styles-tour, create a tour and workflow, render GlowTourDefault with the tour, then start the workflow from a Solid event handler."
+    "answer": "Install @glowhop/solid-tour and @glowhop/styles-tour, call useGlowTour() inside a Solid component, build a workflow with create(), render GlowTourDefault with the returned tour, then call start() from an event handler."
   },
   {
     "question": "Does GlowTour.js work with SolidStart?",
