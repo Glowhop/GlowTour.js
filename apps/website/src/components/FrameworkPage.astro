@@ -140,7 +140,11 @@ const jsonLd = {
         Quick start
       </h2>
       <p class="mt-2 text-sm text-text-muted">
-        From <code>examples/{packageName}</code> in the GlowTour.js repository - copy, paste, run.
+        {icon === "vanilla" ? (
+          <>From <code>examples/{packageName}</code> in the GlowTour.js repository - copy, paste, run.</>
+        ) : (
+          <>A component-scoped integration using the {name} lifecycle API. See the full guide for additional setup and customization.</>
+        )}
       </p>
       <div data-tour="framework-quickstart">
         <CodeBlock code={code} lang={lang} class="mt-3" />
