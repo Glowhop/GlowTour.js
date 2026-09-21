@@ -1,127 +1,195 @@
-// Quick-start snippets copied verbatim from examples/<framework>/src/* so the site never
-// diverges from what actually ships and runs in the workspace's example apps.
+// Framework quick starts follow the primary component-scoped examples from their integration guides.
+// Vanilla keeps its standalone example because it has no framework lifecycle hook.
 
-export const reactSource = `import { createRoot } from "react-dom/client";
-import "@glowhop/styles-tour/default.css";
-import { createGlowTour, GlowTourDefault } from "@glowhop/react-tour";
+export const reactSource = `import "@glowhop/styles-tour/default.css";
+import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 
-const tour = createGlowTour();
-const workflow = tour
-  .create("welcome")
-  .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Hello world!" })
-  .build();
+export function TourApp() {
+  const { tour, create, start, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
 
-const root = document.getElementById("root");
-if (root) {
-  createRoot(root).render(
+  function startTour() {
+    const workflow = create("product-tour")
+      .step({
+        id: "features",
+        target: '[data-tour="features"]',
+        title: "Explore features",
+        content: "Learn about all the capabilities.",
+      })
+      .step({
+        id: "pricing",
+        target: '[data-tour="pricing"]',
+        title: "Check pricing",
+        content: "See plans that fit your needs.",
+      })
+      .build();
+    void start(workflow);
+  }
+
+  return (
     <>
-      <div style={{ padding: "20px" }}>
-        <h1>GlowTour.js - React Example</h1>
-        <button
-          id="welcome"
-          type="button"
-          onClick={() => void tour.start(workflow)}
-          style={{ padding: "10px 20px", fontSize: "16px" }}
-        >
-          Start tour
-        </button>
-      </div>
+      <main>
+        <section data-tour="features">
+          <h2>Features</h2>
+          <p>We offer guided tours, SSR support, and full keyboard navigation.</p>
+        </section>
+        <section data-tour="pricing">
+          <h2>Pricing</h2>
+          <p>Open source and free.</p>
+        </section>
+        {status === "active" ? (
+          <p>
+            Step {currentStepIndex + 1} of {totalSteps} <button onClick={() => void cancel()}>Stop</button>
+          </p>
+        ) : (
+          <button onClick={startTour}>Start tour</button>
+        )}
+      </main>
       <GlowTourDefault tour={tour} />
-    </>,
+    </>
   );
 }`;
 
 export const vueSource = `<script setup lang="ts">
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, GlowTourDefault } from "@glowhop/vue-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/vue-tour";
 
-const tour = createGlowTour();
-const workflow = tour
-  .create("welcome")
-  .step({ id: "welcome-2", target: "#welcome", title: "Welcome", content: "Hello world!" })
+const { tour, create, start, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
+
+const workflow = create("product-tour")
+  .step({
+    id: "features",
+    target: '[data-tour="features"]',
+    title: "Explore features",
+    content: "Learn about all the capabilities.",
+  })
+  .step({
+    id: "pricing",
+    target: '[data-tour="pricing"]',
+    title: "Check pricing",
+    content: "See plans that fit your needs.",
+  })
   .build();
-
-function start() {
-  void tour.start(workflow);
-}
 </script>
 
 <template>
-  <div style="padding: 20px">
-    <h1>GlowTour.js - Vue Example</h1>
-    <button id="welcome" type="button" @click="start"
-      style="padding: 10px 20px; font-size: 16px">
-      Start tour
-    </button>
-  </div>
+  <main>
+    <section data-tour="features">
+      <h2>Features</h2>
+      <p>We offer guided tours, SSR support, and full keyboard navigation.</p>
+    </section>
+    <section data-tour="pricing">
+      <h2>Pricing</h2>
+      <p>Open source and free.</p>
+    </section>
+    <p v-if="status === 'active'">
+      Step {{ currentStepIndex + 1 }} of {{ totalSteps }}
+      <button @click="cancel()">Stop</button>
+    </p>
+    <button v-else @click="start(workflow)">Start tour</button>
+  </main>
   <GlowTourDefault :tour="tour" />
 </template>`;
 
-export const solidSource = `import { render } from "solid-js/web";
+export const solidSource = `import { Show } from "solid-js";
+import { render } from "solid-js/web";
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, GlowTourDefault } from "@glowhop/solid-tour";
+import { GlowTourDefault, useGlowTour } from "@glowhop/solid-tour";
 
-const tour = createGlowTour();
-const workflow = tour
-  .create("welcome")
-  .step({ id: "welcome-3", target: "#welcome", title: "Welcome", content: "Hello world!" })
-  .build();
+function TourApp() {
+  const { tour, create, start, cancel, status, currentStepIndex, totalSteps } = useGlowTour();
 
-const appRoot = document.getElementById("root");
-if (appRoot) {
-  render(
-    () => (
-      <>
-        <div style={{ padding: "20px" }}>
-          <h1>GlowTour.js - Solid Example</h1>
-          <button
-            id="welcome"
-            type="button"
-            onClick={() => void tour.start(workflow)}
-            style={{ padding: "10px 20px", "font-size": "16px" }}
-          >
-            Start tour
-          </button>
-        </div>
-        <GlowTourDefault tour={tour} />
-      </>
-    ),
-    appRoot,
+  const workflow = create("product-tour")
+    .step({
+      id: "features",
+      target: '[data-tour="features"]',
+      title: "Explore features",
+      content: "Learn about all the capabilities.",
+    })
+    .step({
+      id: "pricing",
+      target: '[data-tour="pricing"]',
+      title: "Check pricing",
+      content: "See plans that fit your needs.",
+    })
+    .build();
+
+  return (
+    <>
+      <main>
+        <section data-tour="features">
+          <h2>Features</h2>
+          <p>We offer guided tours, SSR support, and full keyboard navigation.</p>
+        </section>
+        <section data-tour="pricing">
+          <h2>Pricing</h2>
+          <p>Open source and free.</p>
+        </section>
+        <Show
+          when={status() === "active"}
+          fallback={<button onClick={() => void start(workflow)}>Start tour</button>}
+        >
+          <p>
+            Step {currentStepIndex() + 1} of {totalSteps()} <button onClick={() => void cancel()}>Stop</button>
+          </p>
+        </Show>
+      </main>
+      <GlowTourDefault tour={tour} />
+    </>
   );
-}`;
+}
+
+render(() => <TourApp />, document.getElementById("app")!);`;
 
 export const angularSource = `import { Component } from "@angular/core";
 import "@glowhop/styles-tour/default.css";
-import { createGlowTour, GlowTourDefault } from "@glowhop/angular-tour";
+import { GlowTourDefault, injectGlowTour } from "@glowhop/angular-tour";
 
 @Component({
   standalone: true,
   imports: [GlowTourDefault],
-  selector: "app-root",
   template: \`
-    <div style="padding: 20px">
-      <h1>GlowTour.js - Angular Example</h1>
-      <button
-        id="welcome"
-        type="button"
-        (click)="start()"
-        style="padding: 10px 20px; font-size: 16px"
-      >
-        Start tour
-      </button>
-    </div>
-    <glow-tour-default [tour]="tour" />
+    <main>
+      <section data-tour="features">
+        <h2>Features</h2>
+        <p>We offer guided tours, SSR support, and full keyboard navigation.</p>
+      </section>
+      <section data-tour="pricing">
+        <h2>Pricing</h2>
+        <p>Open source and free.</p>
+      </section>
+      @if (glow.status() === "active") {
+        <p>
+          Step {{ glow.currentStepIndex() + 1 }} of {{ glow.totalSteps() }}
+          <button (click)="glow.cancel()">Stop</button>
+        </p>
+      } @else {
+        <button (click)="startTour()">Start tour</button>
+      }
+    </main>
+    <glow-tour-default [tour]="glow.tour" />
   \`,
 })
-export class AppComponent {
-  readonly tour = createGlowTour();
-  readonly workflow = this.tour
-    .create("welcome")
-    .step({ id: "welcome-4", target: "#welcome", title: "Welcome", content: "Hello world!" })
+export class TourComponent {
+  readonly glow = injectGlowTour();
+
+  private readonly workflow = this.glow
+    .create("product-tour")
+    .step({
+      id: "features",
+      target: '[data-tour="features"]',
+      title: "Explore features",
+      content: "Learn about all the capabilities.",
+    })
+    .step({
+      id: "pricing",
+      target: '[data-tour="pricing"]',
+      title: "Check pricing",
+      content: "See plans that fit your needs.",
+    })
     .build();
 
-  start() {
-    void this.tour.start(this.workflow);
+  startTour() {
+    void this.glow.start(this.workflow);
   }
 }`;
 
