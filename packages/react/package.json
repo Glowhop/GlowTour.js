@@ -1,9 +1,9 @@
 {
   "name": "@glowhop/react-tour",
   "version": "1.4.0",
-  "description": "React adapter for GlowTour.js.",
+  "description": "React product tour and onboarding tour components for GlowTour.js. Accessible, SSR-safe with Next.js, MIT licensed.",
   "license": "MIT",
-  "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
+  "homepage": "https://glowtour.dev/react/",
   "bugs": {
     "url": "https://github.com/Glowhop/GlowTour.js/issues"
   },
@@ -20,7 +20,9 @@
     "react",
     "react-tour",
     "joyride",
-    "driver-js-alternative"
+    "driver-js-alternative",
+    "onboarding-tour",
+    "nextjs"
   ],
   "engines": {
     "node": ">=18.19.1"

@@ -3,7 +3,7 @@
 This page moved. The user-facing format and usage documentation for building a workflow from a
 plain, JSON-serializable object is maintained as a single document on the documentation site:
 
-- Published: <https://glowtour.dev/docs/guides/json-config>
+- Published: <https://glowtour.dev/docs/guides/json-config/>
 - Source: [`apps/website/src/content/docs/docs/guides/json-config.md`](../apps/website/src/content/docs/docs/guides/json-config.md)
 
 Edit the source file above. This file is a pointer kept so existing links to `docs/json-config.md`

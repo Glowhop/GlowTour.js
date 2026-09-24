@@ -1,7 +1,7 @@
 # Accessibility: implementation contract
 
 > **Scope.** This is the internal contract and audit record, written against the source. The
-> user-facing guide is a separate document - published at <https://glowtour.dev/docs/guides/accessibility>,
+> user-facing guide is a separate document - published at <https://glowtour.dev/docs/guides/accessibility/>,
 > source in [`apps/website/src/content/docs/docs/guides/accessibility.md`](../apps/website/src/content/docs/docs/guides/accessibility.md).
 > Keep behavioural claims here (they cite the files that implement them); put anything a consumer
 > needs to read in the guide, not in both.

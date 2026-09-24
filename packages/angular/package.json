@@ -1,9 +1,9 @@
 {
   "name": "@glowhop/angular-tour",
   "version": "1.4.0",
-  "description": "Angular 18 adapter for GlowTour.js.",
+  "description": "Angular 18+ product tour and onboarding tour standalone components for GlowTour.js. Accessible, SSR-safe, MIT licensed.",
   "license": "MIT",
-  "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
+  "homepage": "https://glowtour.dev/angular/",
   "bugs": {
     "url": "https://github.com/Glowhop/GlowTour.js/issues"
   },
@@ -18,7 +18,9 @@
     "spotlight",
     "typescript",
     "angular",
-    "angular-tour"
+    "angular-tour",
+    "onboarding-tour",
+    "angular-standalone"
   ],
   "engines": {
     "node": ">=18.19.1"

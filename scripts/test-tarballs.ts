@@ -134,7 +134,12 @@ function assertPackedArtifact(packageName: PackageName) {
     `${packageName} must keep its description`,
   );
   assert.equal(manifest.license, "MIT");
-  assert.equal(manifest.homepage, "https://github.com/Glowhop/GlowTour.js#readme");
+  assert.equal(
+    manifest.homepage,
+    packageId === "core" || packageId === "styles"
+      ? "https://glowtour.dev/"
+      : `https://glowtour.dev/${packageId}/`,
+  );
   assert.deepEqual(manifest.bugs, { url: "https://github.com/Glowhop/GlowTour.js/issues" });
   assert.ok(
     Array.isArray(manifest.keywords) &&
