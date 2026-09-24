@@ -1,9 +1,9 @@
 ---
-title: Vue guide
-description: Build guided tours with @glowhop/vue-tour.
+title: How to build a product tour in Vue 3
+description: "Build a product tour or onboarding tour in Vue 3 and Nuxt with @glowhop/vue-tour: setup, steps, reactive state, slot content and theming."
 ---
 
-The GlowTour.js Vue adapter provides components and a provide/inject instance scoped through the component tree. Content is normal Vue slot content.
+This guide shows how to build a product tour or onboarding tour in Vue 3 with `@glowhop/vue-tour`, the GlowTour.js Vue adapter. It provides components and a provide/inject instance scoped through the component tree. Content is normal Vue slot content.
 
 ## Setup
 
@@ -143,7 +143,7 @@ The function can return a promise, for content that loads or opens after the tou
 
 ### When no element is found
 
-A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors#missing-target-strategies).
+A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors/#missing-target-strategies).
 
 The target must be an HTML element of the page: an SVG element makes the tour fail with a `TypeError`. To highlight an SVG graphic, target its HTML container.
 
@@ -163,7 +163,7 @@ The default component reads the theme's CSS custom properties, so colors, spacin
 }
 ```
 
-Keep rendering `<GlowTourDefault :tour="tour" />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+Keep rendering `<GlowTourDefault :tour="tour" />`. See the [theming guide](/docs/guides/theming/) for all available tokens.
 
 ### Compose the default layout
 
@@ -260,7 +260,7 @@ Then place it in the composed popover:
 
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
-See the runnable [Live step counter example](/examples).
+See the runnable [Live step counter example](/examples/).
 
 ## Share one tour between components
 
@@ -301,7 +301,7 @@ const { status } = useGlowTour(tour);
 </template>
 ```
 
-`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.start(workflow)`, `tour.cancel()`, and `tour.state`. In Nuxt, a plugin can provide the shared tour: see [With Nuxt](/docs/guides/ssr#with-nuxt).
+`useGlowTour(tour)` reads a tour it is given and never disposes it. Outside components, drive the same instance directly with `tour.start(workflow)`, `tour.cancel()`, and `tour.state`. In Nuxt, a plugin can provide the shared tour: see [With Nuxt](/docs/guides/ssr/#with-nuxt).
 
 ## Vue 3.3+
 
@@ -309,4 +309,4 @@ GlowTour.js requires Vue 3.3 or later. The adapter uses provide/inject and refs 
 
 ## SSR
 
-`GlowTourDefault` supports server-side rendering in SSR mode. The component renders as an inert container on the server and hydrates without warnings on the client. With Nuxt, see [With Nuxt](/docs/guides/ssr#with-nuxt) in the SSR guide.
+`GlowTourDefault` supports server-side rendering in SSR mode. The component renders as an inert container on the server and hydrates without warnings on the client. With Nuxt, see [With Nuxt](/docs/guides/ssr/#with-nuxt) in the SSR guide.

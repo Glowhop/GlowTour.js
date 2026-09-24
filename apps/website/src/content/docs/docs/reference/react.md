@@ -1,6 +1,6 @@
 ---
 title: React API reference
-description: API reference for @glowhop/react-tour.
+description: "API reference for @glowhop/react-tour: the useGlowTour hook, GlowTourDefault and the composable components for building React product tours."
 ---
 
 The React adapter (`@glowhop/react-tour`) exports components, hooks, and utility functions.
@@ -44,7 +44,7 @@ function Onboarding() {
 }
 ```
 
-See the guide to [choose step targets](/docs/guides/react#step-targets) and [share one tour between components](/docs/guides/react#share-one-tour-between-components).
+See the guide to [choose step targets](/docs/guides/react/#step-targets) and [share one tour between components](/docs/guides/react/#share-one-tour-between-components).
 
 ### `useGlowTourContext()`
 

@@ -1,6 +1,6 @@
 ---
 title: Vanilla API reference
-description: API reference for @glowhop/vanilla-tour.
+description: "API reference for @glowhop/vanilla-tour: createGlowTour, registerGlowTourElements and the custom elements for vanilla JavaScript product tours."
 ---
 
 The Vanilla adapter (`@glowhop/vanilla-tour`) exports custom element utilities and functions.
@@ -89,7 +89,7 @@ Title/header area inside the popover. Renders the step `title`: a string as text
 
 ### `glow-tour-content`
 
-Description content area inside the popover. Renders the step `content`: a string as text, a `Node` (image, video, any markup) as a child element. See [Rich content](/docs/guides/vanilla#rich-content-images-and-video).
+Description content area inside the popover. Renders the step `content`: a string as text, a `Node` (image, video, any markup) as a child element. See [Rich content](/docs/guides/vanilla/#rich-content-images-and-video).
 
 ### `glow-tour-footer`
 

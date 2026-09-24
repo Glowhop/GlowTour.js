@@ -1,9 +1,9 @@
 ---
-title: Vanilla guide
-description: Build guided tours with @glowhop/vanilla-tour.
+title: How to build a product tour in vanilla JavaScript
+description: "Build a product tour or onboarding tour without a framework using @glowhop/vanilla-tour and native custom elements: setup, steps, content and theming."
 ---
 
-The GlowTour.js Vanilla adapter uses native custom elements. Content is HTML and text. No framework required - works in any DOM-based application.
+This guide shows how to build a product tour or onboarding tour in plain JavaScript with `@glowhop/vanilla-tour`, the GlowTour.js vanilla adapter. It uses native custom elements. Content is HTML and text. No framework required - works in any DOM-based application.
 
 ## Setup
 
@@ -98,7 +98,7 @@ The default element reads the theme's CSS custom properties, so colors, spacing,
 }
 ```
 
-Keep using `<glow-tour-default>`. See the [theming guide](/docs/guides/theming) for all available tokens.
+Keep using `<glow-tour-default>`. See the [theming guide](/docs/guides/theming/) for all available tokens.
 
 ### Compose the default layout
 
@@ -176,7 +176,7 @@ popover.insertBefore(stepCounter, content);
 
 To have assistive technologies announce the complete counter when it changes, you can call `stepCounter.setAttribute("aria-live", "polite")` and `stepCounter.setAttribute("aria-atomic", "true")`. `glow-tour-content` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
-See the runnable [Live step counter example](/examples).
+See the runnable [Live step counter example](/examples/).
 
 ### Subscribe outside the composition
 
@@ -200,7 +200,7 @@ const stopStatusUpdates = bindTourStatus(status);
 // stopStatusUpdates();
 ```
 
-`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the unsubscribe function; call `stopStatusUpdates()` from the lifecycle that removes this UI. See [Programmatic control](/docs/guides/programmatic-control) for the complete state contract.
+`tour.state.get()` returns the current snapshot. `tour.state.subscribe(listener)` returns the unsubscribe function; call `stopStatusUpdates()` from the lifecycle that removes this UI. See [Programmatic control](/docs/guides/programmatic-control/) for the complete state contract.
 
 ## Rich content: images and video
 

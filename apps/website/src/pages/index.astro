@@ -1,6 +1,7 @@
 ---
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { Icon } from "astro-icon/components";
+import corePackage from "../../../../packages/core/package.json";
 import BundleSizes from "../components/BundleSizes.astro";
 import Button from "../components/Button.astro";
 import CodeBlock from "../components/CodeBlock.astro";
@@ -12,6 +13,7 @@ import Marquee from "../components/Marquee.astro";
 import SpotlightMotif from "../components/SpotlightMotif.astro";
 import StepDivider from "../components/StepDivider.astro";
 import MarketingLayout from "../layouts/MarketingLayout.astro";
+import { formatKib, frameworkBundle } from "../lib/bundle-sizes";
 import { COMPARISON_CHECKED_ON, FEATURED_COMPARISON_ROWS } from "../lib/comparison";
 import { FEATURED_EXAMPLE_LABELS, pickExamples } from "../lib/examples";
 
@@ -33,11 +35,11 @@ const exampleCodeHtml = await Promise.all(
 );
 
 const frameworks = [
-  { label: "React", href: "/react", icon: "react" as const },
-  { label: "Vue", href: "/vue", icon: "vue" as const },
-  { label: "Solid", href: "/solid", icon: "solid" as const },
-  { label: "Angular", href: "/angular", icon: "angular" as const },
-  { label: "Vanilla", href: "/vanilla", icon: "vanilla" as const },
+  { label: "React", href: "/react/", icon: "react" as const },
+  { label: "Vue", href: "/vue/", icon: "vue" as const },
+  { label: "Solid", href: "/solid/", icon: "solid" as const },
+  { label: "Angular", href: "/angular/", icon: "angular" as const },
+  { label: "Vanilla", href: "/vanilla/", icon: "vanilla" as const },
 ];
 
 // The server-rendering frameworks the SSR apps verify, named under the adapter buttons.
@@ -45,6 +47,7 @@ const ssrFrameworks = [
   { label: "Next.js", icon: "nextjs" as const },
   { label: "Nuxt", icon: "nuxt" as const },
   { label: "SolidStart", icon: "solidstart" as const },
+  { label: "Angular SSR", icon: "angular" as const },
 ];
 
 const useCases = [
@@ -125,14 +128,59 @@ const features = [
       "Every adapter renders the same dialog role, aria-live description, keyboard shortcuts (Escape, arrows, Tab trap), and focus restoration on exit.",
   },
   {
-    title: "SSR-verified for React, Vue, Solid",
+    title: "SSR-verified for React, Vue, Solid, Angular",
     description:
-      "Real renderToString/hydration coverage plus full Next.js, Nuxt, and SolidStart apps driven end to end with Playwright.",
+      "Real renderToString/hydration coverage plus full Next.js, Nuxt, SolidStart and Angular SSR apps driven end to end with Playwright.",
   },
 ];
 
+const TITLE = "Product Tour & Onboarding Tour JS Library | GlowTour.js";
 const SITE_DESCRIPTION =
-  "Build accessible, customizable product tours and user onboarding flows for React, Vue, Solid, Angular, and vanilla JavaScript.";
+  "Open-source JavaScript library for product tours and onboarding tours in React, Vue, Angular, Solid and vanilla JS. Accessible, SSR-ready, MIT licensed.";
+
+// The smallest and largest install, quoted in the FAQ rather than hardcoded so it cannot drift from
+// the measured bundles.
+const bundleTotals = (["vanilla", "react", "vue", "solid", "angular"] as const).map(
+  (framework) => frameworkBundle(framework).total,
+);
+const bundleRange = `${formatKib(Math.min(...bundleTotals))} to ${formatKib(Math.max(...bundleTotals))}`;
+
+/*
+ * Written as the questions people type into a search engine or ask an assistant, and answered in
+ * the first sentence, so the answer can be quoted on its own. Rendered on the page and as FAQPage
+ * data from the same list, so the two never disagree.
+ */
+const faq = [
+  {
+    question: "What is a product tour library?",
+    answer:
+      "A product tour library highlights parts of your interface one step at a time, with an overlay and a popover that explains each element. It is how you build onboarding tours, feature announcements and in-app walkthroughs in your own code, without a hosted onboarding platform. GlowTour.js is an open-source product tour library for JavaScript and TypeScript.",
+  },
+  {
+    question: "How do I add an onboarding tour to my web app?",
+    answer:
+      "Install the GlowTour.js adapter for your framework and the default theme (for example npm i @glowhop/react-tour @glowhop/styles-tour), describe the steps with the builder (tour.create().step(...).build()), render the GlowTourDefault component once, and call start() when the user should see the tour. The getting started guide walks through it for every framework.",
+  },
+  {
+    question: "Which frameworks does GlowTour.js support?",
+    answer:
+      "React 18 and 19, Vue 3, Angular 18+, Solid and vanilla JavaScript, each with a native adapter over the same core engine. Server rendering is verified in Next.js, Nuxt, SolidStart and Angular SSR applications.",
+  },
+  {
+    question: "Is GlowTour.js free for commercial use?",
+    answer:
+      "Yes. GlowTour.js is MIT-licensed, so it is free for commercial and closed-source products with no paid tier and no attribution requirement. Intro.js and Shepherd.js, by comparison, are AGPL-3.0 with a paid commercial license.",
+  },
+  {
+    question: "Are GlowTour.js product tours accessible?",
+    answer:
+      "Yes. Every adapter renders the popover as a dialog with an aria-live description, keeps focus inside the popover while a step blocks the page, supports Escape, arrow keys and Tab, and restores focus when the tour ends. VoiceOver and NVDA are tested against every adapter in CI.",
+  },
+  {
+    question: "How big is GlowTour.js?",
+    answer: `A complete install is ${bundleRange} gzipped depending on the framework, including the core engine and the default theme CSS. The core has no runtime dependencies and the packages ship as tree-shakable ESM.`,
+  },
+];
 
 // One @graph rather than three separate <script> blocks: the WebSite node is what lets search
 // engines attach the site name to every result, and the nodes cross-reference each other by @id.
@@ -157,10 +205,20 @@ const jsonLd = {
       sameAs: ["https://github.com/Glowhop/GlowTour.js", "https://www.npmjs.com/org/glowhop"],
     },
     {
-      "@type": "SoftwareSourceCode",
+      // Both types: SoftwareSourceCode says where the code lives, SoftwareApplication is the type
+      // search engines and assistants use for "what is this, what does it cost, where does it run".
+      "@type": ["SoftwareSourceCode", "SoftwareApplication"],
       "@id": "https://glowtour.dev/#software",
       name: "GlowTour.js",
+      alternateName: "GlowTour",
       description: SITE_DESCRIPTION,
+      applicationCategory: "DeveloperApplication",
+      applicationSubCategory: "Product tour and user onboarding library",
+      operatingSystem: "Any (web browser)",
+      softwareVersion: corePackage.version,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      keywords:
+        "product tour, onboarding tour, user onboarding, guided tour, walkthrough, javascript tour library, react tour, vue tour, angular tour",
       codeRepository: "https://github.com/Glowhop/GlowTour.js",
       downloadUrl: "https://www.npmjs.com/package/@glowhop/core-tour",
       programmingLanguage: "TypeScript",
@@ -169,14 +227,19 @@ const jsonLd = {
       isPartOf: { "@id": "https://glowtour.dev/#website" },
       author: { "@id": "https://glowtour.dev/#organization" },
     },
+    {
+      "@type": "FAQPage",
+      mainEntity: faq.map(({ question, answer }) => ({
+        "@type": "Question",
+        name: question,
+        acceptedAnswer: { "@type": "Answer", text: answer },
+      })),
+    },
   ],
 };
 ---
 
-<MarketingLayout
-  title="GlowTour.js - Product Tour & Onboarding Library for JavaScript"
-  description="Build accessible, customizable product tours and user onboarding flows for React, Vue, Solid, Angular, and vanilla JavaScript."
->
+<MarketingLayout title={TITLE} description={SITE_DESCRIPTION}>
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
   <section class="relative isolate overflow-hidden px-6 pt-20 pb-0 sm:pt-28">
     <SpotlightMotif class="-z-10" />
@@ -185,18 +248,18 @@ const jsonLd = {
         class="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1 text-xs font-medium text-text-muted backdrop-blur"
       >
         <span class="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></span>
-        Guided tours, five frameworks, one engine
+        Product tours, five frameworks, one engine
       </p>
       <h1
         data-tour="hero"
         class="font-heading mt-6 text-[2.6rem] leading-[1.05] font-semibold tracking-[-0.02em] text-balance text-text sm:text-6xl"
       >
-        Build interactive product tours & user onboarding
+        Build product tours & onboarding tours in JavaScript
       </h1>
       <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-pretty text-text-muted">
         Show people around without writing a guide. GlowTour.js is an open-source JavaScript
-        library for accessible, customizable product tours in React, Vue, Solid, Angular, and
-        vanilla JavaScript.
+        product tour library for onboarding tours, feature walkthroughs and guided tours in React,
+        Vue, Angular, Solid and vanilla JavaScript.
       </p>
       {/*
         The primary action is a real link to the examples section, so it still does something
@@ -205,17 +268,17 @@ const jsonLd = {
       */}
       <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
         <Button data-site-tour-start>Take the tour</Button>
-        <Button href="/docs/getting-started" variant="secondary">Documentation</Button>
+        <Button href="/docs/getting-started/" variant="secondary">Documentation</Button>
       </div>
       <InstallLine class="mt-6" />
       {/*
         The mascot stands in the pool of light the SpotlightMotif casts, so the illustration and
-        the backdrop read as one stage rather than two stacked decorations. Decorative: the
-        headline and subhead already carry the message, so the alt text stays empty.
+        the backdrop read as one stage rather than two stacked decorations. It is the largest image
+        on the page, so its alternative text describes it for image search as well.
       */}
       <img
         src="/mascot-wizard.png"
-        alt=""
+        alt="The GlowTour.js wizard mascot guiding three product tour steps"
         width="1024"
         height="749"
         loading="eager"
@@ -229,7 +292,7 @@ const jsonLd = {
 
   <section id="examples" class="mx-auto max-w-6xl px-6 pt-16 pb-4 scroll-mt-20">
     <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
-      Try it, then read it.
+      Product tour examples, live
     </h2>
     <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
       Every example below runs for real - the code beside it is exactly what produced it.
@@ -238,13 +301,13 @@ const jsonLd = {
       <ExamplesGallery client:visible codeHtml={exampleCodeHtml} labels={FEATURED_EXAMPLE_LABELS} />
     </div>
     <div class="mt-8 text-center">
-      <Button href="/examples" variant="secondary">See all examples</Button>
+      <Button href="/examples/" variant="secondary">See all examples</Button>
     </div>
   </section>
 
   <section id="frameworks" class="mx-auto max-w-6xl px-6 pt-16 pb-20 scroll-mt-20">
     <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
-      Pick your framework
+      A product tour library for your framework
     </h2>
     <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
       Same workflow engine underneath - each adapter renders it the way that framework expects.
@@ -271,7 +334,7 @@ const jsonLd = {
           </>
         ))
       } - <a
-        href="/docs/guides/ssr"
+        href="/docs/guides/ssr/"
         class="underline underline-offset-4 transition-colors hover:text-text"
         >server rendering verified in production builds</a
       >.
@@ -280,7 +343,7 @@ const jsonLd = {
 
   <section class="mx-auto max-w-6xl px-6 pb-20">
     <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
-      Where teams actually use it
+      Onboarding tours and other use cases
     </h2>
     <div class="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
       {
@@ -302,21 +365,21 @@ const jsonLd = {
   <BundleSizes />
 
   {/*
-    A taster of /compare, limited to the rows where the four libraries actually differ. The full
+    A taster of /compare, limited to the rows where the libraries actually differ. The full
     table, the per-library write-ups and the sources live on that page.
   */}
   <section id="compare" class="mx-auto max-w-4xl px-6 py-14 scroll-mt-20">
     <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
-      How it compares
+      How it compares to other tour libraries
     </h2>
     <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
-      GlowTour.js next to Driver.js, Shepherd.js and React Joyride, on the points where these
-      product tour libraries differ most.
+      GlowTour.js next to Intro.js, Driver.js, Shepherd.js and React Joyride, on the points where
+      these product tour libraries differ most.
     </p>
     <div class="mt-8">
       <ComparisonTable
         rows={FEATURED_COMPARISON_ROWS}
-        caption="GlowTour.js compared with Driver.js, Shepherd.js and React Joyride"
+        caption="GlowTour.js compared with Intro.js, Driver.js, Shepherd.js and React Joyride"
         legendAlign="center"
       />
     </div>
@@ -324,7 +387,7 @@ const jsonLd = {
       From each project's official docs and source, checked in {COMPARISON_CHECKED_ON}.
     </p>
     <div class="mt-8 text-center">
-      <Button href="/compare" variant="secondary">See full comparison</Button>
+      <Button href="/compare/" variant="secondary">See full comparison</Button>
     </div>
   </section>
 
@@ -332,7 +395,7 @@ const jsonLd = {
 
   <section class="mx-auto max-w-3xl px-6 py-20 text-center">
     <h2 class="font-heading text-3xl font-semibold tracking-tight text-text">
-      MIT, plainly
+      MIT licensed, plainly
     </h2>
     <p class="mt-4 text-text-muted">No tiers, no feature gates, no fine print.</p>
     <ul class="mx-auto mt-8 grid max-w-md gap-3 text-left">
@@ -367,7 +430,7 @@ const jsonLd = {
 
   <section class="mx-auto max-w-5xl px-6 py-20">
     <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
-      What's actually in the box
+      Product tour features in the box
     </h2>
     <div class="mt-10 grid gap-x-10 gap-y-6 sm:grid-cols-2">
       {
@@ -389,10 +452,31 @@ const jsonLd = {
     </div>
   </section>
 
+  <section id="faq" class="mx-auto max-w-3xl px-6 pb-20 scroll-mt-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
+      Product tour FAQ
+    </h2>
+    <div class="mt-8 divide-y divide-border border-y border-border">
+      {
+        faq.map((item) => (
+          <details class="group py-5">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-text">
+              {item.question}
+              <span class="text-accent transition-transform group-open:rotate-45" aria-hidden="true">
+                +
+              </span>
+            </summary>
+            <p class="mt-3 leading-relaxed text-text-muted">{item.answer}</p>
+          </details>
+        ))
+      }
+    </div>
+  </section>
+
   <section class="bg-accent">
     <div class="mx-auto max-w-3xl px-6 py-20 text-center">
       <h2 class="font-heading text-3xl font-semibold tracking-tight text-on-accent">
-        Your first tour, in one file
+        Your first onboarding tour, in one file
       </h2>
       <p class="mt-4 text-on-accent/80">
         Install the adapter for your framework, import the default theme, and build your first
@@ -400,7 +484,7 @@ const jsonLd = {
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
         <a
-          href="/docs/getting-started"
+          href="/docs/getting-started/"
           class="inline-flex -translate-x-px -translate-y-px items-center justify-center gap-2 rounded-glow bg-on-accent px-5 py-2.5 text-sm font-semibold text-accent shadow-[3px_3px_0_0_rgb(0_0_0_/_25%)] transition-[transform,box-shadow] duration-150 hover:translate-x-0 hover:translate-y-0 hover:shadow-[1px_1px_0_0_rgb(0_0_0_/_25%)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
         >
           Get started

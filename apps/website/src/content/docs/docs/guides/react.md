@@ -1,9 +1,9 @@
 ---
-title: React guide
-description: Build guided tours with @glowhop/react-tour.
+title: How to build a product tour in React
+description: "Build a product tour or onboarding tour in React 18/19 and Next.js with @glowhop/react-tour: setup, steps, state, custom content and theming."
 ---
 
-The GlowTour.js React adapter provides native React components and a Context-scoped tour instance. No portals to wire up yourself - `GlowTourDefault` renders the complete UI for you.
+This guide shows how to build a product tour or onboarding tour in React with `@glowhop/react-tour`, the GlowTour.js React adapter. It provides native React components and a Context-scoped tour instance. No portals to wire up yourself - `GlowTourDefault` renders the complete UI for you.
 
 ## Setup
 
@@ -153,7 +153,7 @@ The function can return a promise, for content that loads or opens after the tou
 
 ### When no element is found
 
-A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors#missing-target-strategies).
+A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors/#missing-target-strategies).
 
 The target must be an HTML element of the page: an SVG element makes the tour fail with a `TypeError`. To highlight an SVG graphic, target its HTML container.
 
@@ -173,7 +173,7 @@ The default component reads the theme's CSS custom properties, so colors, spacin
 }
 ```
 
-Keep rendering `<GlowTourDefault tour={tour} />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+Keep rendering `<GlowTourDefault tour={tour} />`. See the [theming guide](/docs/guides/theming/) for all available tokens.
 
 ### Compose the default layout
 
@@ -269,7 +269,7 @@ function StepCounter() {
 
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
-See the runnable [Live step counter example](/examples).
+See the runnable [Live step counter example](/examples/).
 
 ## Share one tour between components
 
@@ -309,4 +309,4 @@ GlowTour.js supports both React 18 and 19. The adapter uses `useSyncExternalStor
 
 ## SSR
 
-`GlowTourDefault` supports static server-side rendering. The component renders as an inert container on the server and hydrates without errors on the client. With Next.js, see [With Next.js (App Router)](/docs/guides/ssr#with-nextjs-app-router) in the SSR guide.
+`GlowTourDefault` supports static server-side rendering. The component renders as an inert container on the server and hydrates without errors on the client. With Next.js, see [With Next.js (App Router)](/docs/guides/ssr/#with-nextjs-app-router) in the SSR guide.

@@ -10,7 +10,7 @@ const { entry } = Astro.locals.starlightRoute;
 const title = `${entry.data.title} | GlowTour.js`;
 const description = entry.data.description ?? "";
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const ogImage = new URL("/mascot-wizard.png", Astro.site);
+const ogImage = new URL("/og/docs.jpg", Astro.site);
 
 // Breadcrumbs from the URL: "/docs/guides/react/" -> Docs > Guides > React guide. Google uses
 // this to render the path under the result instead of a raw URL.
@@ -53,13 +53,13 @@ const article = {
 <Default />
 
 <meta property="og:image" content={ogImage} />
-<meta property="og:image:width" content="1024" />
-<meta property="og:image:height" content="749" />
-<meta property="og:image:alt" content="The GlowTour.js wizard mascot" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="GlowTour.js documentation - build a product tour" />
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImage} />
-<meta name="twitter:image:alt" content="The GlowTour.js wizard mascot" />
+<meta name="twitter:image:alt" content="GlowTour.js documentation - build a product tour" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
 
 <script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbs)} />

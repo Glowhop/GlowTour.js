@@ -1,9 +1,9 @@
 ---
-title: Angular guide
-description: Build guided tours with @glowhop/angular-tour.
+title: How to build a product tour in Angular
+description: "Build a product tour or onboarding tour in Angular 18+ with @glowhop/angular-tour: standalone components, steps, state, template content and theming."
 ---
 
-The GlowTour.js Angular adapter provides components and a DI-scoped tour instance. Content is normal Angular template content with full support for bindings and directives.
+This guide shows how to build a product tour or onboarding tour in Angular with `@glowhop/angular-tour`, the GlowTour.js Angular adapter. It provides standalone components and a DI-scoped tour instance. Content is normal Angular template content with full support for bindings and directives.
 
 ## Setup
 
@@ -164,7 +164,7 @@ The function can return a promise, for content that loads or opens after the tou
 
 ### When no element is found
 
-A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors#missing-target-strategies).
+A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors/#missing-target-strategies).
 
 The target must be an HTML element of the page: an SVG element makes the tour fail with a `TypeError`. To highlight an SVG graphic, target its HTML container.
 
@@ -184,7 +184,7 @@ The default component reads the theme's CSS custom properties, so colors, spacin
 }
 ```
 
-Keep rendering `<glow-tour-default [tour]="tour" />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+Keep rendering `<glow-tour-default [tour]="tour" />`. See the [theming guide](/docs/guides/theming/) for all available tokens.
 
 ### Compose the default layout
 
@@ -278,7 +278,7 @@ Add `StepCounter` to the `imports` array of `CustomTour`, then place it inside t
 
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
-See the runnable [Live step counter example](/examples).
+See the runnable [Live step counter example](/examples/).
 
 ## Share one tour between components
 
@@ -317,4 +317,4 @@ GlowTour.js requires Angular 18 or later. The adapter uses Angular's new control
 
 ## SSR
 
-`GlowTourDefault` supports server-side rendering with `@angular/ssr`. The component renders as an inert container on the server and hydrates without errors on the client. See [Angular SSR](/docs/guides/ssr#angular-ssr) in the SSR guide for the setup.
+`GlowTourDefault` supports server-side rendering with `@angular/ssr`. The component renders as an inert container on the server and hydrates without errors on the client. See [Angular SSR](/docs/guides/ssr/#angular-ssr) in the SSR guide for the setup.

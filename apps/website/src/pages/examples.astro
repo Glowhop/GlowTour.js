@@ -16,17 +16,20 @@ const exampleCodeHtml = await Promise.all(
 ---
 
 <MarketingLayout
-  title="Examples - GlowTour.js"
-  description="Every GlowTour.js example, running for real, next to the code that produced it."
+  title="Product Tour Examples with Code | GlowTour.js"
+  description="Live product tour and onboarding tour examples, each next to the code that produced it: walkthroughs, click-to-continue steps, placement, theming and more."
+  image="/og/examples.jpg"
+  imageAlt="Product tour examples with GlowTour.js"
 >
   <section class="mx-auto max-w-6xl px-6 pt-16 pb-20">
     <h1
       class="font-heading text-center text-4xl font-semibold tracking-tight text-text"
     >
-      Examples
+      Product tour examples
     </h1>
     <p class="mx-auto mt-3 max-w-2xl text-center text-text-muted">
-      Every example runs for real, in this page - the code beside it is exactly what produced it.
+      Onboarding tours, walkthroughs and feature spotlights built with GlowTour.js. Every example
+      runs for real, in this page - the code beside it is exactly what produced it.
     </p>
     <div class="mt-10">
       <ExamplesGallery client:visible codeHtml={exampleCodeHtml} />
