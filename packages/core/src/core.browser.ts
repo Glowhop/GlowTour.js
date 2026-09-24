@@ -373,3 +373,81 @@ describe("waiting for an async target", () => {
     binding.release();
   });
 });
+
+describe("hiding the popover", () => {
+  test("hands the page back while hidden and makes the step modal again once shown", async () => {
+    const tour = createGlowTour<string>();
+    const document = rootWindow.document as unknown as Document;
+    const root = document.createElement("section");
+    const target = document.createElement("button");
+    const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const popover = document.createElement("aside");
+    const advance = document.createElement("button");
+
+    target.id = "hidden-popover-target";
+    root.setAttribute("data-glow-tour-root", "");
+    advance.setAttribute("data-glow-tour-advance-trigger", "");
+    target.getBoundingClientRect = () => rectangle(10, 20, 30, 40);
+    popover.getBoundingClientRect = () => rectangle(0, 0, 100, 60);
+    overlay.append(path);
+    popover.append(advance);
+    root.append(overlay, popover);
+    document.body.append(target, root);
+
+    const binding = connectGlowTourRoot(tour, { idPrefix: "hidden-popover", root });
+    binding.bindOverlay(overlay);
+    binding.bindPopover(popover);
+    const workflow = tour
+      .create("hidden-popover", { animated: false })
+      .step({ id: "one", content: "One", target: "#hidden-popover-target", title: "One" })
+      .step({ id: "two", content: "Two", target: "#hidden-popover-target", title: "Two" })
+      .build();
+    const press = (key: string) =>
+      document.body.dispatchEvent(
+        new rootWindow.KeyboardEvent("keydown", { bubbles: true, key }) as unknown as Event,
+      );
+
+    await tour.start(workflow);
+    assert.equal(popover.getAttribute("aria-modal"), "true");
+    assert.equal(target.hasAttribute("inert"), true);
+    await waitFor(() => document.activeElement === advance, "focus on the advance control");
+
+    tour.hidePopover();
+    assert.equal(tour.state.get().popoverHidden, true);
+    assert.equal(popover.getAttribute("aria-hidden"), "true");
+    assert.equal(popover.getAttribute("inert"), "true");
+    assert.equal(popover.hasAttribute("aria-modal"), false);
+    assert.equal(target.hasAttribute("inert"), false);
+    assert.equal(document.activeElement, target);
+    // The overlay stays, and the shortcuts do nothing without a popover to show them.
+    assert.equal(overlay.getAttribute("aria-hidden"), "true");
+    press("Escape");
+    press("ArrowRight");
+    await new Promise<void>((resolve) => rootWindow.setTimeout(resolve, 5));
+    assert.equal(tour.state.get().status, "active");
+    assert.equal(tour.state.get().currentStep?.id, "one");
+
+    // Stays hidden on the next step, and the page stays reachable.
+    await tour.advance();
+    assert.equal(tour.state.get().currentStep?.id, "two");
+    assert.equal(popover.getAttribute("aria-hidden"), "true");
+    assert.equal(target.hasAttribute("inert"), false);
+
+    tour.showPopover();
+    await waitFor(
+      () => popover.getAttribute("aria-modal") === "true",
+      "the shown popover to make the step modal again",
+    );
+    assert.equal(popover.getAttribute("aria-hidden"), null);
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.equal(popover.hasAttribute("inert"), false);
+    assert.equal(target.hasAttribute("inert"), true);
+    assert.equal(document.activeElement, advance);
+
+    press("Escape");
+    await waitFor(() => tour.state.get().status === "cancelled", "Escape to cancel the tour");
+
+    binding.release();
+  });
+});

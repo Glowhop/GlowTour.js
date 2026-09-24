@@ -60,7 +60,7 @@ function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
 
 function useGlowTourContext(): import("@glowhop/core-tour").TourState<ReactTourContent>;
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & TourState & {
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"> & TourState & {
     readonly tour: Tour;
 };
 

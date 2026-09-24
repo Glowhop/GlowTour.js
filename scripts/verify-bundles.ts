@@ -49,8 +49,13 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // from 22.25 KiB for reporting a target that has not resolved yet on the
     // popover still on screen (11 B over after dropping the element tracking
     // the attribute was written through and folding the wait flag into the
-    // popover's own mutation lease).
-    gzipBudget: 22.5 * KIB,
+    // popover's own mutation lease), then from 22.5 KiB for `hidePopover()` and
+    // `showPopover()`: a hidden popover lifts the page's modality, releases the
+    // focus guard and hands focus to the target, the shortcuts stop, and showing
+    // it replays the entrance before the step turns modal again (426 B after
+    // reusing the last placed rect, dropping redundant resets and folding the
+    // mid-entrance reveal into the step's engagement).
+    gzipBudget: 22.75 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

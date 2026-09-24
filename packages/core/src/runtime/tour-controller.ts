@@ -97,6 +97,8 @@ export class TourController<T> {
    */
   private awaitingTargetOperation: number | null = null;
   private operation: AbortController | null = null;
+  /** Set by `hidePopover()`, see `TourState.popoverHidden`. Only a running tour reports it. */
+  private popoverHidden = false;
   private disposed = false;
   private retainedPresentation: TourPresentation<T> | null = null;
   private readonly stateListeners = new Set<(state: TourState<T>) => void>();
@@ -192,6 +194,9 @@ export class TourController<T> {
     this.error = null;
     this.commandSource = "api";
     this.retainedPresentation = retainedPresentation;
+    // Every run starts with its popover shown, including one that replaces a tour hiding it.
+    this.popoverHidden = false;
+    this.driver.setPopoverHidden?.(false);
     // A start this one supersedes may still hold its `tour:start`: that tour never began.
     this.pendingTourStart = undefined;
 
@@ -252,6 +257,21 @@ export class TourController<T> {
     } catch (error) {
       await this.handleFailure(error, operation);
     }
+  }
+
+  /** `tour.hidePopover()` and `tour.showPopover()`. */
+  setPopoverHidden(hidden: boolean) {
+    this.assertNotDisposed();
+    if (!this.isRunning() || this.popoverHidden === hidden) return;
+    this.popoverHidden = hidden;
+    this.driver.setPopoverHidden?.(hidden);
+    this.publish();
+  }
+
+  private isRunning() {
+    return (
+      this.status === "starting" || this.status === "transitioning" || this.status === "active"
+    );
   }
 
   dispose() {
@@ -939,6 +959,7 @@ export class TourController<T> {
       isLastStep,
       status: this.status,
       awaitingTarget: this.awaitingTargetOperation !== null,
+      popoverHidden: this.popoverHidden && this.isRunning(),
       error: this.error,
     });
   }
@@ -983,7 +1004,9 @@ export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
     create: (name, options) => controller.create(name, options),
     dispose: () => controller.dispose(),
     goTo: (id) => controller.goTo(id),
+    hidePopover: () => controller.setPopoverHidden(true),
     previous: () => controller.previous(),
+    showPopover: () => controller.setPopoverHidden(false),
     start: (workflow, runOptions) => controller.start(workflow, runOptions),
     state: controller.state,
   };

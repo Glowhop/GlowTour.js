@@ -100,6 +100,7 @@ class RecordingDriver implements TourViewDriver<string> {
   retargetError: Error | null = null;
   retargetedTargets: (HTMLElement | null)[] = [];
   targetPendingCalls: boolean[] = [];
+  popoverHiddenCalls: boolean[] = [];
 
   clear() {
     this.clearCalls += 1;
@@ -127,6 +128,10 @@ class RecordingDriver implements TourViewDriver<string> {
 
   setTargetPending(pending: boolean) {
     this.targetPendingCalls.push(pending);
+  }
+
+  setPopoverHidden(hidden: boolean) {
+    this.popoverHiddenCalls.push(hidden);
   }
 }
 
@@ -212,6 +217,7 @@ describe("instance-first TourController", () => {
 
     assert.deepEqual(tour.state.get(), {
       awaitingTarget: false,
+      popoverHidden: false,
       canAdvance: false,
       canCancel: false,
       canPrevious: false,
@@ -1272,6 +1278,74 @@ describe("instance-first TourController", () => {
     assert.equal(tour.state.get().awaitingTarget, false);
     assert.equal(tour.state.get().currentStep?.id, "step-46b");
     unsubscribe();
+  });
+
+  test("hides and shows the popover of a running tour, across steps", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("popover-visibility")
+      .step({ id: "one", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "two", content: "two", target: targetResolver, title: "two" })
+      .build();
+
+    await tour.start(workflow);
+    driver.popoverHiddenCalls.length = 0;
+    const published: boolean[] = [];
+    const unsubscribe = tour.state.subscribe((state) => published.push(state.popoverHidden));
+
+    tour.setPopoverHidden(true);
+    tour.setPopoverHidden(true);
+    assert.equal(tour.state.get().popoverHidden, true);
+    assert.deepEqual(driver.popoverHiddenCalls, [true]);
+
+    await tour.advance();
+    assert.equal(tour.state.get().currentStep?.id, "two");
+    assert.equal(tour.state.get().popoverHidden, true);
+
+    tour.setPopoverHidden(false);
+    tour.setPopoverHidden(false);
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.deepEqual(driver.popoverHiddenCalls, [true, false]);
+    assert.deepEqual(published.slice(0, 2), [false, true]);
+    assert.equal(published.at(-1), false);
+    unsubscribe();
+  });
+
+  test("resets a hidden popover when the tour ends or starts again", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("popover-visibility-reset")
+      .step({ id: "one", content: "one", target: targetResolver, title: "one" })
+      .build();
+
+    // No running tour: nothing to hide.
+    tour.setPopoverHidden(true);
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.deepEqual(driver.popoverHiddenCalls, []);
+
+    await tour.start(workflow);
+    tour.setPopoverHidden(true);
+    await tour.cancel();
+    assert.equal(tour.state.get().status, "cancelled");
+    assert.equal(tour.state.get().popoverHidden, false);
+    tour.setPopoverHidden(true);
+    assert.equal(tour.state.get().popoverHidden, false);
+
+    await tour.start(workflow);
+    tour.setPopoverHidden(true);
+    driver.popoverHiddenCalls.length = 0;
+    // A start that replaces a running tour shows the popover again.
+    await tour.start(workflow);
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.deepEqual(driver.popoverHiddenCalls, [false]);
+
+    tour.setPopoverHidden(true);
+    tour.dispose();
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.throws(() => tour.setPopoverHidden(false), /disposed/);
+    assert.throws(() => tour.setPopoverHidden(true), /disposed/);
   });
 
   test("reports no wait for a target that resolves synchronously", async () => {
@@ -2566,6 +2640,7 @@ describe("instance-first TourController", () => {
     );
     assert.deepEqual(tour.state.get(), {
       awaitingTarget: false,
+      popoverHidden: false,
       canAdvance: false,
       canCancel: false,
       canPrevious: false,

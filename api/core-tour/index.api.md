@@ -26,6 +26,8 @@ interface GlowTour<T> {
     previous(): Promise<void>;
     goTo(id: string): Promise<void>;
     cancel(): Promise<void>;
+    showPopover(): void;
+    hidePopover(): void;
     dispose(): void;
     readonly state: ReadonlyTourState<T>;
 }
@@ -256,6 +258,7 @@ interface TourState<T> {
     readonly isLastStep: boolean;
     readonly status: TourStatus;
     readonly awaitingTarget: boolean;
+    readonly popoverHidden: boolean;
     readonly error: Error | null;
 }
 
