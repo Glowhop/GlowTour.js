@@ -255,6 +255,7 @@ interface TourState<T> {
     readonly isFirstStep: boolean;
     readonly isLastStep: boolean;
     readonly status: TourStatus;
+    readonly awaitingTarget: boolean;
     readonly error: Error | null;
 }
 

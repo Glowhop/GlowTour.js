@@ -440,6 +440,12 @@ export interface TourState<T> {
   readonly isLastStep: boolean;
   /** Current status of the tour. */
   readonly status: TourStatus;
+  /**
+   * Whether a navigation is waiting for the next step's target to resolve, i.e. an async resolver
+   * or the `"wait"` missing-target strategy. The step being left stays on screen meanwhile, and its
+   * advance control is refused, so a UI can show the wait instead of looking idle.
+   */
+  readonly awaitingTarget: boolean;
   /** Error encountered during the tour, if any. */
   readonly error: Error | null;
 }

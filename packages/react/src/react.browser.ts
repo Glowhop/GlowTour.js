@@ -586,6 +586,72 @@ describe("react adapter browser behavior", () => {
     await React.act(async () => root.unmount());
   });
 
+  test("keeps previous disabled on the first step while the next target resolves", async () => {
+    const [
+      React,
+      { createRoot },
+      {
+        createGlowTour,
+        GlowTourAdvanceTrigger,
+        GlowTourPopover,
+        GlowTourPreviousTrigger,
+        GlowTourRoot,
+      },
+    ] = await Promise.all([import("react"), import("react-dom/client"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    let resolveTarget!: (value: HTMLElement | null) => void;
+    const pending = new Promise<HTMLElement | null>((resolve) => {
+      resolveTarget = resolve;
+    });
+    const workflow = tour
+      .create("pending target", { animated: false })
+      .step({ id: "step-pending-1", content: "One", target, title: "One" })
+      .step({ id: "step-pending-2", content: "Two", target: () => pending, title: "Two" })
+      .build();
+    const root = createRoot(container);
+    await React.act(async () => {
+      root.render(
+        React.createElement(
+          GlowTourRoot,
+          { tour },
+          React.createElement(GlowTourPopover, null),
+          React.createElement(GlowTourPreviousTrigger, null),
+          React.createElement(GlowTourAdvanceTrigger, null),
+        ),
+      );
+    });
+    await React.act(async () => {
+      await tour.start(workflow);
+    });
+    const previous = container.querySelector<HTMLButtonElement>(
+      "[data-glow-tour-previous-trigger]",
+    );
+    const advance = container.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(previous?.disabled, true);
+
+    let advancing!: Promise<void>;
+    await React.act(async () => {
+      advancing = tour.advance();
+      await new Promise((resolve) => window.setTimeout(resolve, 10));
+    });
+    assert.equal(tour.state.get().status, "transitioning");
+    assert.equal(tour.state.get().awaitingTarget, true);
+    assert.equal(previous?.disabled, true);
+    assert.equal(advance?.disabled, true);
+
+    await React.act(async () => {
+      resolveTarget(target);
+      await advancing;
+    });
+    assert.equal(previous?.disabled, false);
+    assert.equal(advance?.disabled, false);
+
+    await React.act(async () => root.unmount());
+  });
+
   test("labels the cancel trigger with cancelLabel, and falls back to Skip", async () => {
     const [
       React,

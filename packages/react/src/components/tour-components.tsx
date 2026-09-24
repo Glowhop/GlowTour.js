@@ -415,9 +415,12 @@ export function GlowTourPreviousTrigger({ previousLabel, ...props }: PreviousTri
     <Trigger
       {...props}
       // Tour state disables a trigger only while the tour is active: disabling it natively outside
-      // of that, as a replacing start does, would blur the focused trigger.
+      // of that, as a replacing start does, would blur the focused trigger. The first step is the
+      // exception: it has nothing to go back to as soon as it is committed, transition included.
       capabilityDisabled={
-        (snapshot.status === "active" && !snapshot.canPrevious) || control === "disabled"
+        snapshot.isFirstStep ||
+        (snapshot.status === "active" && !snapshot.canPrevious) ||
+        control === "disabled"
       }
       label={label}
       marker="previous"
@@ -447,7 +450,10 @@ export function GlowTourAdvanceTrigger({
     <Trigger
       {...props}
       capabilityDisabled={
-        (snapshot.status === "active" && !snapshot.canAdvance) || control === "disabled"
+        // The wait on the next step's target refuses an advance, whoever owns the button.
+        snapshot.awaitingTarget ||
+        (snapshot.status === "active" && !snapshot.canAdvance) ||
+        control === "disabled"
       }
       label={label}
       marker="advance"

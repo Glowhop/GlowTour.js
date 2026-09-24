@@ -211,6 +211,7 @@ describe("instance-first TourController", () => {
     });
 
     assert.deepEqual(tour.state.get(), {
+      awaitingTarget: false,
       canAdvance: false,
       canCancel: false,
       canPrevious: false,
@@ -1251,18 +1252,26 @@ describe("instance-first TourController", () => {
     await tour.start(workflow);
     assert.deepEqual(driver.targetPendingCalls, []);
     assert.equal(driver.commands?.isAdvanceDisabled(), false);
+    assert.equal(tour.state.get().awaitingTarget, false);
+    const waits: boolean[] = [];
+    const unsubscribe = tour.state.subscribe((state) => waits.push(state.awaitingTarget));
 
     const advancing = tour.advance();
     await flushMicrotasks();
     assert.deepEqual(driver.targetPendingCalls, [true]);
     assert.equal(driver.commands?.isAdvanceDisabled(), true);
     assert.equal(tour.state.get().status, "transitioning");
+    // Published state too, for the adapters that render their own controls.
+    assert.equal(tour.state.get().awaitingTarget, true);
+    assert.ok(waits.includes(true), "expected subscribers to be notified of the wait");
 
     pending.resolve(target);
     await advancing;
     assert.deepEqual(driver.targetPendingCalls, [true, false]);
     assert.equal(driver.commands?.isAdvanceDisabled(), false);
+    assert.equal(tour.state.get().awaitingTarget, false);
     assert.equal(tour.state.get().currentStep?.id, "step-46b");
+    unsubscribe();
   });
 
   test("reports no wait for a target that resolves synchronously", async () => {
@@ -2556,6 +2565,7 @@ describe("instance-first TourController", () => {
       2,
     );
     assert.deepEqual(tour.state.get(), {
+      awaitingTarget: false,
       canAdvance: false,
       canCancel: false,
       canPrevious: false,

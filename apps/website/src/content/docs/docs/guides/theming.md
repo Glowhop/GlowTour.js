@@ -238,7 +238,8 @@ hook for anything more explicit, such as a spinner:
 ```
 
 A target that resolves synchronously never sets the attribute, so an instant transition does not
-flash a spinner.
+flash a spinner. The same wait is readable from JavaScript as `tour.state.get().awaitingTarget`,
+for a spinner rendered by your own components rather than by CSS.
 
 ## Tailwind CSS
 

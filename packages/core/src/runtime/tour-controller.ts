@@ -484,6 +484,8 @@ export class TourController<T> {
     if ((this.awaitingTargetOperation === operation) === awaiting) return;
     this.awaitingTargetOperation = awaiting ? operation : null;
     this.driver.setTargetPending?.(awaiting);
+    // Published too: an adapter that owns its controls reads the wait from the state, not the DOM.
+    this.publish();
   }
 
   /**
@@ -936,6 +938,7 @@ export class TourController<T> {
       isFirstStep,
       isLastStep,
       status: this.status,
+      awaitingTarget: this.awaitingTargetOperation !== null,
       error: this.error,
     });
   }

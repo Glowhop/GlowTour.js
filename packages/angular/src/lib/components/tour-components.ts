@@ -475,6 +475,7 @@ export class GlowTourPreviousTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
+      this.snapshot()?.isFirstStep === true ||
       this.unavailableWhileActive(!this.snapshot()?.canPrevious) ||
       this.step()?.controls?.previous?.state === "disabled",
   );
@@ -522,6 +523,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
+      this.snapshot()?.awaitingTarget === true ||
       this.unavailableWhileActive(!this.snapshot()?.canAdvance) ||
       this.step()?.controls?.advance?.state === "disabled",
   );
