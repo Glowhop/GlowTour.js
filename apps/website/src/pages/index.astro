@@ -327,7 +327,7 @@ const jsonLd = {
         ssrFrameworks.map((fw, index) => (
           <>
             {index === 0 ? "" : index === ssrFrameworks.length - 1 ? " and " : ", "}
-            <span class="inline-flex items-center gap-1 whitespace-nowrap align-middle">
+            <span class="inline-flex items-center gap-1 whitespace-nowrap align-middle pb-1">
               <FrameworkIcon name={fw.icon} class="h-3.5 w-3.5" />
               {fw.label}
             </span>
