@@ -189,7 +189,7 @@ function ExamplePicker({ shown, activeIndex, onSelect }: SelectorProps) {
           aria-label="Examples"
           aria-activedescendant={optionId(highlightedIndex)}
           onKeyDown={onListKeyDown}
-          className="absolute top-full right-0 left-0 z-30 mt-2 grid max-h-[min(60vh,26rem)] grid-cols-1 gap-1 overflow-y-auto rounded-glow border border-border bg-surface p-2 shadow-glow outline-none sm:grid-cols-2 lg:grid-cols-3"
+          className="absolute top-full right-0 left-0 z-30 mt-2 grid max-h-[min(60vh,26rem)] grid-cols-1 gap-1 overflow-y-auto rounded-glow bg-surface-muted border border-border p-2 shadow-glow outline-none sm:grid-cols-2 lg:grid-cols-3"
         >
           {shown.map((example, index) => (
             // A real button, so a pointer press behaves like one; focus stays on the list itself,
