@@ -1,6 +1,6 @@
 ---
 title: Solid API reference
-description: API reference for @glowhop/solid-tour.
+description: "API reference for @glowhop/solid-tour: the useGlowTour hook, GlowTourDefault and the composable components for building Solid product tours."
 ---
 
 The Solid adapter (`@glowhop/solid-tour`) exports components, hooks, and utility functions.
@@ -44,7 +44,7 @@ function Onboarding() {
 }
 ```
 
-See the guide to [choose step targets](/docs/guides/solid#step-targets) and [share one tour between components](/docs/guides/solid#share-one-tour-between-components).
+See the guide to [choose step targets](/docs/guides/solid/#step-targets) and [share one tour between components](/docs/guides/solid/#share-one-tour-between-components).
 
 ### `useGlowTourContext()`
 

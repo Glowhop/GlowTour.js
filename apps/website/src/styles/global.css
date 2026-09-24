@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./fonts.css";
 
 /*
  * The tour's own theme, imported here rather than only from the script that mounts the tour.

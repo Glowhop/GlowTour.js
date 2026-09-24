@@ -284,7 +284,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       target: '[data-tour="frameworks"]',
       title: title("⚙️", "Five adapters, one engine"),
     })
-    .beforeLeave(goTo("advance", "adapter-install", "/react"))
+    .beforeLeave(goTo("advance", "adapter-install", "/react/"))
     .step({
       behavior: acrossPageBoundary,
       content: content(
@@ -319,7 +319,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       target: '[data-tour="framework-quickstart"]',
       title: title("🚀", "Your first tour, in one file"),
     })
-    .beforeLeave(goTo("advance", "gallery", "/examples"))
+    .beforeLeave(goTo("advance", "gallery", "/examples/"))
     .step({
       behavior: acrossPageBoundary,
       content: content(
@@ -336,7 +336,7 @@ export function buildSiteTourWorkflow(tour: Tour): WorkflowDefinition {
       target: '[data-tour="examples-tabs"]',
       title: title("🖼️", "The whole gallery"),
     })
-    .beforeLeave(goTo("previous", "adapter-quickstart", "/react"))
+    .beforeLeave(goTo("previous", "adapter-quickstart", "/react/"))
     .step({
       content: content(
         "It was about sixty lines of workflow. The documentation covers the rest:",

@@ -23,6 +23,8 @@ const glowtour = getLibrary("glowtour");
 const library = getLibrary(competitor);
 const heading = `GlowTour.js vs ${library.name}`;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+// "/glowtour-vs-driver-js/" -> "/og/vs-driver-js.jpg", rendered by scripts/og-images.ts.
+const ogImage = `/og/${(library.path ?? "").replace(/^\/glowtour-|\/$/g, "")}.jpg`;
 const otherComparisons = COMPETITOR_KEYS.filter((key) => key !== competitor).map(getLibrary);
 
 // One page per "GlowTour.js vs X" search, linked from /compare and the footer. The WebPage node ties
@@ -53,7 +55,7 @@ const h2 = "font-heading text-2xl font-semibold tracking-tight text-text sm:text
 const link = "underline underline-offset-4 transition-colors hover:text-text";
 ---
 
-<MarketingLayout title={title} description={description}>
+<MarketingLayout title={title} description={description} image={ogImage} imageAlt={heading}>
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
 
   <section class="mx-auto max-w-3xl px-6 pt-16 sm:pt-24">
@@ -62,7 +64,7 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
       <span class="font-heading text-lg text-text-muted">vs</span>
       <LibraryMark library={library} class="h-10 w-10 p-1.5 text-xl" />
     </div>
-    <p class="mt-6 text-sm font-semibold text-accent">Product tour library comparison</p>
+    <p class="mt-6 text-sm font-semibold text-accent">An open-source {library.name} alternative</p>
     <h1
       class="font-heading mt-2 text-4xl leading-[1.1] font-semibold tracking-tight text-balance text-text sm:text-5xl"
     >
@@ -93,10 +95,13 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
     </div>
     <p class="mt-8 text-sm leading-relaxed text-text-muted">
       GlowTour.js is newer than {library.name} and ships as ESM only. Server rendering is verified
-      for its React, Vue and Solid adapters but not yet for Angular; check the <a
-        href="/docs/compatibility"
+      for its React, Vue, Solid and Angular adapters; check the <a
+        href="/docs/compatibility/"
         class={link}>compatibility page</a
-      > before adopting it.
+      > for the exact versions before adopting it. For every library side by side, see <a
+        href="/compare/"
+        class={link}>the best open-source product tour libraries</a
+      >.
     </p>
 
     <section id="sources" class="mt-14 scroll-mt-20">
@@ -142,8 +147,8 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
 
   <section class="mx-auto max-w-3xl px-6 py-20">
     <div class="flex flex-wrap gap-3">
-      <Button href="/docs/getting-started">Get started</Button>
-      <Button href="/examples" variant="secondary">See the examples</Button>
+      <Button href="/docs/getting-started/">Get started</Button>
+      <Button href="/examples/" variant="secondary">See the examples</Button>
     </div>
   </section>
 </MarketingLayout>

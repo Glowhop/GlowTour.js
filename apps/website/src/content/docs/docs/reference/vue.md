@@ -1,6 +1,6 @@
 ---
 title: Vue API reference
-description: API reference for @glowhop/vue-tour.
+description: "API reference for @glowhop/vue-tour: the useGlowTour composable, GlowTourDefault and the composable components for building Vue product tours."
 ---
 
 The Vue adapter (`@glowhop/vue-tour`) exports components, hooks, and utility functions.
@@ -42,7 +42,7 @@ const workflow = create("welcome")
 </template>
 ```
 
-See the guide to [choose step targets](/docs/guides/vue#step-targets) and [share one tour between components](/docs/guides/vue#share-one-tour-between-components).
+See the guide to [choose step targets](/docs/guides/vue/#step-targets) and [share one tour between components](/docs/guides/vue/#share-one-tour-between-components).
 
 ### `useGlowTourContext()`
 
@@ -176,7 +176,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 </GlowTourAdvanceTrigger>
 ```
 
-A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder#hiding-a-controls-button).
+A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder/#hiding-a-controls-button).
 
 ### `GlowTourPointer`
 

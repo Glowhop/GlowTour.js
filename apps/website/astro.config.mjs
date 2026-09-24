@@ -12,6 +12,10 @@ import icon from "astro-icon";
 // `/docs/...` URLs while leaving the site root free for the marketing pages in `src/pages/`.
 export default defineConfig({
   site: "https://glowtour.dev",
+  // Every page is built as a directory (`/vue/index.html`), so the canonical URL of each one ends
+  // in a slash. Enforcing it here makes a link written without the slash fail in dev instead of
+  // costing a redirect in production.
+  trailingSlash: "always",
   integrations: [
     starlight({
       title: "GlowTour.js",
@@ -26,64 +30,62 @@ export default defineConfig({
         SiteTitle: "./src/components/StarlightSiteTitle.astro",
         Head: "./src/components/StarlightHead.astro",
       },
+      // Fraunces is self-hosted (src/styles/fonts.css) instead of loaded from Google Fonts: a
+      // third-party stylesheet in the head blocks the first paint of every docs page.
+      customCss: ["./src/styles/fonts.css"],
       head: [
         {
           tag: "link",
-          attrs: { rel: "preconnect", href: "https://fonts.googleapis.com" },
-        },
-        {
-          tag: "link",
-          attrs: { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: true },
-        },
-        {
-          tag: "link",
           attrs: {
-            rel: "stylesheet",
-            href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,500..700,40,1&display=swap",
+            rel: "preload",
+            href: "/fonts/fraunces-latin.woff2",
+            as: "font",
+            type: "font/woff2",
+            crossorigin: true,
           },
         },
       ],
       sidebar: [
-        { label: "Overview", link: "/docs" },
-        { label: "Getting started", link: "/docs/getting-started" },
+        { label: "Overview", link: "/docs/" },
+        { label: "Getting started", link: "/docs/getting-started/" },
         {
           label: "Frameworks",
           items: [
-            { label: "Angular", link: "/docs/guides/angular" },
-            { label: "React", link: "/docs/guides/react" },
-            { label: "Solid", link: "/docs/guides/solid" },
-            { label: "Vanilla", link: "/docs/guides/vanilla" },
-            { label: "Vue", link: "/docs/guides/vue" },
+            { label: "Angular", link: "/docs/guides/angular/" },
+            { label: "React", link: "/docs/guides/react/" },
+            { label: "Solid", link: "/docs/guides/solid/" },
+            { label: "Vanilla", link: "/docs/guides/vanilla/" },
+            { label: "Vue", link: "/docs/guides/vue/" },
           ],
         },
         {
           label: "Guides",
           items: [
-            { label: "Theming", link: "/docs/guides/theming" },
-            { label: "Accessibility", link: "/docs/guides/accessibility" },
-            { label: "Positioning", link: "/docs/guides/positioning" },
-            { label: "Programmatic control", link: "/docs/guides/programmatic-control" },
-            { label: "Resuming a tour", link: "/docs/guides/resuming" },
-            { label: "Monitoring", link: "/docs/guides/monitoring" },
-            { label: "Handling errors", link: "/docs/guides/handling-errors" },
-            { label: "JSON config", link: "/docs/guides/json-config" },
-            { label: "SSR", link: "/docs/guides/ssr" },
+            { label: "Theming", link: "/docs/guides/theming/" },
+            { label: "Accessibility", link: "/docs/guides/accessibility/" },
+            { label: "Positioning", link: "/docs/guides/positioning/" },
+            { label: "Programmatic control", link: "/docs/guides/programmatic-control/" },
+            { label: "Resuming a tour", link: "/docs/guides/resuming/" },
+            { label: "Monitoring", link: "/docs/guides/monitoring/" },
+            { label: "Handling errors", link: "/docs/guides/handling-errors/" },
+            { label: "JSON config", link: "/docs/guides/json-config/" },
+            { label: "SSR", link: "/docs/guides/ssr/" },
           ],
         },
         {
           label: "Reference",
           items: [
-            { label: "Builder", link: "/docs/reference/builder" },
-            { label: "Tour", link: "/docs/reference/tour" },
-            { label: "Angular", link: "/docs/reference/angular" },
-            { label: "React", link: "/docs/reference/react" },
-            { label: "Solid", link: "/docs/reference/solid" },
-            { label: "Vanilla", link: "/docs/reference/vanilla" },
-            { label: "Vue", link: "/docs/reference/vue" },
+            { label: "Builder", link: "/docs/reference/builder/" },
+            { label: "Tour", link: "/docs/reference/tour/" },
+            { label: "Angular", link: "/docs/reference/angular/" },
+            { label: "React", link: "/docs/reference/react/" },
+            { label: "Solid", link: "/docs/reference/solid/" },
+            { label: "Vanilla", link: "/docs/reference/vanilla/" },
+            { label: "Vue", link: "/docs/reference/vue/" },
           ],
         },
-        { label: "Migrating to 1.4", link: "/docs/migration/1-4" },
-        { label: "Compatibility", link: "/docs/compatibility" },
+        { label: "Migrating to 1.4", link: "/docs/migration/1-4/" },
+        { label: "Compatibility", link: "/docs/compatibility/" },
       ],
     }),
     react(),

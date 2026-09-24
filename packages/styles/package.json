@@ -1,9 +1,9 @@
 {
   "name": "@glowhop/styles-tour",
   "version": "1.4.0",
-  "description": "Default CSS theme for GlowTour.js.",
+  "description": "Default CSS theme for GlowTour.js product tours and onboarding tours, customizable with CSS custom properties.",
   "license": "MIT",
-  "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
+  "homepage": "https://glowtour.dev/",
   "bugs": {
     "url": "https://github.com/Glowhop/GlowTour.js/issues"
   },
@@ -19,7 +19,8 @@
     "typescript",
     "css",
     "theme",
-    "css-variables"
+    "css-variables",
+    "onboarding-tour"
   ],
   "engines": {
     "node": ">=18.19.1"

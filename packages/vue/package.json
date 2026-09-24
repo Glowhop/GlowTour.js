@@ -1,9 +1,9 @@
 {
   "name": "@glowhop/vue-tour",
   "version": "1.4.0",
-  "description": "Vue 3 adapter for GlowTour.js.",
+  "description": "Vue 3 product tour and onboarding tour components for GlowTour.js. Accessible, SSR-safe with Nuxt, MIT licensed.",
   "license": "MIT",
-  "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
+  "homepage": "https://glowtour.dev/vue/",
   "bugs": {
     "url": "https://github.com/Glowhop/GlowTour.js/issues"
   },
@@ -19,7 +19,9 @@
     "typescript",
     "vue",
     "vue3",
-    "vue-tour"
+    "vue-tour",
+    "onboarding-tour",
+    "nuxt"
   ],
   "engines": {
     "node": ">=18.19.1"

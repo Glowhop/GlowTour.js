@@ -22,13 +22,13 @@
 </p>
 
 <p align="center">
-  <a href="https://glowtour.dev"><b>Website</b></a> ·
-  <a href="https://glowtour.dev/docs/getting-started"><b>Documentation</b></a> ·
-  <a href="https://glowtour.dev/examples"><b>Live examples</b></a> ·
+  <a href="https://glowtour.dev/"><b>Website</b></a> ·
+  <a href="https://glowtour.dev/docs/getting-started/"><b>Documentation</b></a> ·
+  <a href="https://glowtour.dev/examples/"><b>Live examples</b></a> ·
   <a href="https://github.com/Glowhop/GlowTour.js/issues"><b>Issues</b></a>
 </p>
 
-<p align="center">The documentation describes the upcoming 1.4. Upgrading from 1.3? Follow the <a href="https://glowtour.dev/docs/migration/1-4">migration guide to 1.4</a>.</p>
+<p align="center">Upgrading from 1.3? Follow the <a href="https://glowtour.dev/docs/migration/1-4/">migration guide to 1.4</a>.</p>
 
 <p align="center"><img src="assets/demo.gif" alt="A GlowTour.js walkthrough highlighting controls in an analytics dashboard" width="820"></p>
 
@@ -98,7 +98,7 @@ export function App() {
 
 Import the stylesheet once. Nothing renders until an adapter connects a root and a popover - the core owns workflow state, navigation and DOM behavior, but no presentation.
 
-The same workflow in [Vue](https://glowtour.dev/docs/getting-started#vue), [Solid](https://glowtour.dev/docs/getting-started#solid), [Angular](https://glowtour.dev/docs/getting-started#angular) and [vanilla JS](https://glowtour.dev/docs/getting-started#vanilla).
+The same workflow in [Vue](https://glowtour.dev/docs/getting-started/#vue), [Solid](https://glowtour.dev/docs/getting-started/#solid), [Angular](https://glowtour.dev/docs/getting-started/#angular) and [vanilla JS](https://glowtour.dev/docs/getting-started/#vanilla).
 
 ## Theming
 
@@ -118,7 +118,7 @@ The default theme declares every token at zero specificity, so a plain class on 
 
 <p align="center"><img src="assets/theming.gif" alt="The same GlowTour.js popover re-skinned from CSS custom properties" width="720"></p>
 
-Light and dark ship together; `data-glow-tour-theme="dark"` on a wrapper pins one. See the [Custom theme example](https://glowtour.dev/examples).
+Light and dark ship together; `data-glow-tour-theme="dark"` on a wrapper pins one. See the [Custom theme example](https://glowtour.dev/examples/).
 
 ## Placement
 
@@ -140,8 +140,8 @@ Writing an adapter for another framework? [`@glowhop/core-tour/adapter`](https:/
 
 ## Documentation
 
-- [Getting started](https://glowtour.dev/docs/getting-started)
-- [Examples gallery](https://glowtour.dev/examples) - every demo runs live, with its source
+- [Getting started](https://glowtour.dev/docs/getting-started/)
+- [Examples gallery](https://glowtour.dev/examples/) - every demo runs live, with its source
 - [Accessibility](https://github.com/Glowhop/GlowTour.js/blob/main/docs/accessibility.md)
 - [Framework versions and verified SSR facts](https://github.com/Glowhop/GlowTour.js/blob/main/docs/compatibility.md)
 - [JSON configuration](https://github.com/Glowhop/GlowTour.js/blob/main/docs/json-config.md)
