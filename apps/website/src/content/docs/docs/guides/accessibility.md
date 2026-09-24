@@ -1,6 +1,6 @@
 ---
-title: Accessibility guide
-description: Understand accessibility and keyboard support in GlowTour.js.
+title: "Accessible product tours: ARIA, focus and keyboard"
+description: "How GlowTour.js makes product tours accessible: dialog semantics, keyboard shortcuts, focus containment and restoration, tested with VoiceOver and NVDA."
 ---
 
 GlowTour.js is designed for keyboard and screen reader use. Every adapter renders the same ARIA semantics, keyboard shortcuts, and focus-restoration behavior, and these are tested with real screen readers, within the [known limitations](#known-limitations) listed below.
@@ -82,7 +82,7 @@ When a step opens, focus goes to its Advance button, or to its Previous button w
 Set `behavior.autoFocus: false` when your app places focus itself, for example while the user fills in a form the tour walks them through. The step then never moves focus:
 
 - Focus stays where it is: in the popover, on the target, or anywhere on the page when `allowInteraction` is `true`.
-- On a modal step, the page becomes `inert` and the browser drops focus from the element that had it, such as the button that started the tour. Focus then stays on the body: nothing is focused in the popover, and screen readers do not announce the dialog until the user reaches it. Keyboard shortcuts still work, and `Tab` goes straight into the popover. If the step needs focus somewhere, move it yourself once the step is shown, for example from [`onEvent`](/docs/guides/monitoring) on `step:enter`.
+- On a modal step, the page becomes `inert` and the browser drops focus from the element that had it, such as the button that started the tour. Focus then stays on the body: nothing is focused in the popover, and screen readers do not announce the dialog until the user reaches it. Keyboard shortcuts still work, and `Tab` goes straight into the popover. If the step needs focus somewhere, move it yourself once the step is shown, for example from [`onEvent`](/docs/guides/monitoring/) on `step:enter`.
 - The [focus trap](#focus-trap) still pulls focus that leaves the popover and target back in, and [focus restoration](#focus-restoration) still runs when the tour ends.
 
 ```ts
@@ -155,7 +155,7 @@ The dialog semantics and keyboard navigation are designed against the WCAG 2.1 A
 
 Colour contrast is a different matter. The default palettes - light and dark - are a sensible
 default, not a certified one: contrast depends on the surface you place the tour over and on any
-tokens you override, so it is yours to verify. See the [theming guide](/docs/guides/theming#contrast)
+tokens you override, so it is yours to verify. See the [theming guide](/docs/guides/theming/#contrast)
 for which tokens to check.
 
 The implementation-level contract behind this page - the exact source of each ARIA attribute, the

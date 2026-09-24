@@ -5,15 +5,22 @@ import { vueSource } from "../lib/framework-sources";
 
 <FrameworkPage
   name="Vue"
+  headline="Vue product tour & onboarding library"
   icon="vue"
   packageName="vue"
   installCommand="npm i @glowhop/vue-tour @glowhop/styles-tour"
   intro="Vue 3.3+ components with a provide/inject-scoped tour instance. GlowTourDefault drops straight into your template - no manual mounting required."
   code={vueSource}
   lang="vue"
-  guideHref="/docs/guides/vue"
-  title="Vue Product Tour Library - GlowTour.js"
-  description="Build accessible, SSR-safe product tours and guided onboarding for Vue 3 with @glowhop/vue-tour, a typed step builder, and GlowTourDefault."
+  guideHref="/docs/guides/vue/"
+  title="Vue Product Tour & Onboarding Library | GlowTour.js"
+  description="Add product tours and onboarding tours to Vue 3 and Nuxt apps with @glowhop/vue-tour: native components, a typed builder, accessible, MIT licensed."
+  steps={[
+  "Install the adapter and the default theme with npm i @glowhop/vue-tour @glowhop/styles-tour, then import \"@glowhop/styles-tour/default.css\" once, in your app entry or the component that renders the tour.",
+  "Call useGlowTour() in <script setup>. It returns the tour instance plus create, start, cancel and the current status as refs.",
+  "Describe the onboarding tour with the builder: create(\"product-tour\").step({ id, target, title, content }).build(), one step per element you want to highlight.",
+  "Render <GlowTourDefault :tour=\"tour\" /> once in your template and call start(workflow) from an event handler. In Nuxt, start it on the client once the targets are mounted."
+]}
   benefits={[
   {
     "title": "Native Vue components",
@@ -40,6 +47,10 @@ import { vueSource } from "../lib/framework-sources";
   {
     "question": "Can I customize the Vue tour UI?",
     "answer": "Yes. Replace the default theme with your own CSS or compose the Vue adapter's primitives when you need to control the popover, overlay, pointer, and navigation."
+  },
+  {
+    "question": "Is GlowTour.js a vue-tour alternative for Vue 3?",
+    "answer": "Yes. vue-tour depends on Vue 2 and its latest release is from 2021. GlowTour.js is built for Vue 3.3+ with the Composition API, is verified with Nuxt server rendering, and is actively maintained."
   }
 ]}
 />

@@ -10,9 +10,67 @@ import {
   LIBRARY_KEYS,
 } from "../lib/comparison";
 
-const TITLE = "GlowTour.js vs Driver.js, Shepherd.js & React Joyride";
+const TITLE = "Best Product Tour Libraries for JavaScript (2026) | GlowTour.js";
 const DESCRIPTION =
-  "Compare GlowTour.js with Driver.js, Shepherd.js and React Joyride across framework support, customization, accessibility, API design and licensing.";
+  "The best open-source product tour libraries compared: GlowTour.js, Intro.js, Driver.js, Shepherd.js and React Joyride, on frameworks, SSR, accessibility and license.";
+
+/*
+ * Single-framework libraries people search for by name ("vue-tour alternative", "ngx-joyride
+ * Angular 18"). Only facts read from npm are stated: the latest version, its publish date and its
+ * peer framework. Re-check them together with COMPARISON_CHECKED_ON.
+ */
+const FRAMEWORK_SPECIFIC = [
+  {
+    framework: "Vue",
+    libraries: [
+      {
+        name: "vue-tour",
+        href: "https://www.npmjs.com/package/vue-tour",
+        note: "Vue 2 only (depends on vue ^2.6); latest release 2.0.0, published March 2021.",
+      },
+      {
+        name: "v-onboarding",
+        href: "https://www.npmjs.com/package/v-onboarding",
+        note: "Vue 3 onboarding component, MIT, actively released (2.12.4, May 2026).",
+      },
+      {
+        name: "vue3-tour",
+        href: "https://www.npmjs.com/package/vue3-tour",
+        note: "A Vue 3 port of vue-tour; latest release 1.0.3, October 2024.",
+      },
+    ],
+  },
+  {
+    framework: "Angular",
+    libraries: [
+      {
+        name: "ngx-joyride",
+        href: "https://www.npmjs.com/package/ngx-joyride",
+        note: "Latest release 2.5.0, published January 2022.",
+      },
+      {
+        name: "ngx-ui-tour",
+        href: "https://www.npmjs.com/package/ngx-ui-tour-core",
+        note: "Actively released (17.0.0, June 2026), with separate packages per UI kit such as Angular Material; depends on @angular/router.",
+      },
+    ],
+  },
+  {
+    framework: "React",
+    libraries: [
+      {
+        name: "Reactour",
+        href: "https://www.npmjs.com/package/@reactour/tour",
+        note: "@reactour/tour 3.8.0 (May 2025), MIT, React 16 to 19.",
+      },
+      {
+        name: "intro.js-react",
+        href: "https://www.npmjs.com/package/intro.js-react",
+        note: "Community wrapper around Intro.js (1.0.0, May 2023); Intro.js licensing still applies.",
+      },
+    ],
+  },
+] as const;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const libraries = LIBRARY_KEYS.map(getLibrary);
@@ -41,6 +99,16 @@ const jsonLd = {
         { "@type": "ListItem", position: 2, name: "Compare", item: canonicalURL.href },
       ],
     },
+    {
+      "@type": "ItemList",
+      name: "Open-source product tour libraries",
+      itemListElement: libraries.map((library, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: library.name,
+        url: new URL(library.path ?? "/", Astro.site).href,
+      })),
+    },
   ],
 };
 
@@ -54,25 +122,40 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
   prose below only ever wraps between two plain words, never before or after an <a>.
 */}
 <MarketingLayout
-  title="GlowTour.js vs Driver.js, Shepherd.js & React Joyride"
-  description="Compare GlowTour.js with Driver.js, Shepherd.js and React Joyride across framework support, customization, accessibility, API design and licensing."
+  title={TITLE}
+  description={DESCRIPTION}
+  image="/og/compare.jpg"
+  imageAlt="The best open-source product tour libraries, compared"
 >
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
 
   <section class="mx-auto max-w-3xl px-6 pt-16 sm:pt-24">
-    <p class="text-sm font-semibold text-accent">Compare</p>
+    <p class="text-sm font-semibold text-accent">Product tour library comparison</p>
     <h1
       class="font-heading mt-2 text-4xl leading-[1.1] font-semibold tracking-tight text-balance text-text sm:text-5xl"
     >
-      GlowTour.js compared to other product tour libraries
+      The best open-source product tour libraries, compared
     </h1>
     <p class="mt-6 text-lg leading-relaxed text-pretty text-text-muted">
-      GlowTour.js is a framework-agnostic product tour library: one TypeScript engine with
-      first-party integrations for React, Vue and Angular, plus Solid and vanilla JavaScript. It
-      focuses on deep UI customization through composable components and CSS custom properties,
-      accessible defaults, and a builder-style API for describing tours. Below, it is compared with
-      Driver.js, Shepherd.js and React Joyride using each project's official documentation and
-      source code.
+      The most used open-source product tour libraries for JavaScript are Intro.js, Driver.js,
+      Shepherd.js and React Joyride. GlowTour.js is a newer, MIT-licensed alternative: one
+      TypeScript engine with first-party integrations for React, Vue, Angular, Solid and vanilla
+      JavaScript. This page compares all five on framework support, server rendering,
+      customization, accessibility and license, using each project's official documentation and
+      source code. We maintain GlowTour.js, so every claim links to its source.
+    </p>
+  </section>
+
+  <section id="what-is-a-product-tour-library" class="mx-auto max-w-3xl px-6 pt-12 scroll-mt-20">
+    <h2 class={h2}>What is a product tour library?</h2>
+    <p class={prose}>
+      A product tour library highlights elements of your interface one step at a time, usually
+      with an overlay that dims the rest of the page and a popover that explains the highlighted
+      element. It is how you build onboarding tours for new users, feature announcements,
+      walkthroughs of a complex form, or in-app help, without a hosted onboarding platform. The
+      differences that matter between libraries are which frameworks they integrate with, whether
+      they survive server rendering, how far you can restyle the popover, how accessible it is to
+      keyboard and screen reader users, and whether the license fits a commercial product.
     </p>
   </section>
 
@@ -80,7 +163,7 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
     <h2 class={h2}>Feature comparison</h2>
     <div class="mt-6">
       <ComparisonTable
-        caption="GlowTour.js, Driver.js, Shepherd.js and React Joyride compared feature by feature"
+        caption="GlowTour.js, Intro.js, Driver.js, Shepherd.js and React Joyride compared feature by feature"
       />
     </div>
     <p class="mt-3 text-xs leading-relaxed text-text-muted">
@@ -107,8 +190,9 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
     <section id="which-to-choose" class="scroll-mt-20">
       <h2 class={h2}>Which product tour library should you choose?</h2>
       <p class={prose}>
-        All four are open source. The right choice depends on your stack, how far you need to take
-        the UI, and your licensing constraints.
+        All five are open source, but two of them (Intro.js and Shepherd.js) are licensed under
+        AGPL-3.0 with a paid commercial license for closed-source products. The right choice depends
+        on your stack, how far you need to take the UI, and your licensing constraints.
       </p>
       <ul class="mt-6 grid gap-4">
         {
@@ -117,6 +201,11 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
               name: "GlowTour.js",
               reason:
                 "if you want first-party React, Vue and Angular integrations, deep UI composition and a builder-style API, under the MIT license.",
+            },
+            {
+              name: "Intro.js",
+              reason:
+                "if you want the most widely used vanilla JavaScript tour library, with hints and a large community, and a paid commercial license (or AGPL-3.0) fits your project.",
             },
             {
               name: "Driver.js",
@@ -144,11 +233,45 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
         }
       </ul>
       <p class={prose}>
-        GlowTour.js is newer than the other three and ships as ESM only. Server rendering is
-        verified for its React, Vue and Solid adapters but not yet for Angular; see the <a
-          href="/docs/compatibility"
+        GlowTour.js is newer than the other four and ships as ESM only. Server rendering is verified
+        for its React, Vue, Solid and Angular adapters; see the <a
+          href="/docs/compatibility/"
           class={link}>compatibility page</a
-        > before adopting it.
+        > for the exact versions before adopting it.
+      </p>
+    </section>
+
+    <section id="framework-specific" class="mt-14 scroll-mt-20">
+      <h2 class={h2}>Framework-specific tour libraries</h2>
+      <p class={prose}>
+        Some libraries only target one framework. They can be a good fit for a single-framework
+        app; check how recently they were released against the framework version you run.
+      </p>
+      {
+        FRAMEWORK_SPECIFIC.map((group) => (
+          <>
+            <h3 class="mt-8 text-lg font-semibold text-text">{group.framework} product tour libraries</h3>
+            <ul class="mt-3 grid gap-2 text-text-muted">
+              {group.libraries.map((library) => (
+                <li>
+                  <a href={library.href} rel="noopener" class={`font-medium text-text ${link}`}>
+                    {library.name}
+                  </a>
+                  : {library.note}
+                </li>
+              ))}
+            </ul>
+          </>
+        ))
+      }
+      <p class={prose}>
+        Versions and dates from npm, checked in {COMPARISON_CHECKED_ON}. GlowTour.js covers these
+        frameworks with one engine, so a tour behaves the same in each: see the <a
+          href="/vue/"
+          class={link}>Vue</a
+        >, <a href="/angular/" class={link}>Angular</a> and <a href="/react/" class={link}
+          >React</a
+        > pages.
       </p>
     </section>
 
@@ -179,8 +302,8 @@ const link = "underline underline-offset-4 transition-colors hover:text-text";
 
   <section class="mx-auto max-w-3xl px-6 py-20">
     <div class="flex flex-wrap gap-3">
-      <Button href="/docs/getting-started">Get started</Button>
-      <Button href="/examples" variant="secondary">See the examples</Button>
+      <Button href="/docs/getting-started/">Get started</Button>
+      <Button href="/examples/" variant="secondary">See the examples</Button>
     </div>
   </section>
 </MarketingLayout>

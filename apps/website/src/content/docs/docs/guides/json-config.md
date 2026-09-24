@@ -1,6 +1,6 @@
 ---
-title: JSON config guide
-description: Build tours from a plain, JSON-serializable object instead of the JS builder.
+title: Defining a product tour in JSON
+description: Build GlowTour.js tours from a plain, JSON-serializable config instead of the JavaScript builder, so tours can live in a CMS, a database or an API.
 ---
 
 `createWorkflowFromConfig` turns a plain JSON configuration into the same `WorkflowDefinition` produced by the JavaScript builder. Tours can therefore be authored in a CMS, stored in a database, or served by an API without changing how GlowTour renders or runs them.
@@ -9,7 +9,7 @@ The config API ships as a separate entry point, so applications using only the b
 
 ## Quick start
 
-Import the config entry point for your framework, load a JSON object, then run the generated workflow on a tour that is rendered by the adapter. This React example uses `useGlowTour()`; other adapters follow the same pattern with their own [component setup](/docs/getting-started):
+Import the config entry point for your framework, load a JSON object, then run the generated workflow on a tour that is rendered by the adapter. This React example uses `useGlowTour()`; other adapters follow the same pattern with their own [component setup](/docs/getting-started/):
 
 ```tsx
 import "@glowhop/styles-tour/default.css";
@@ -70,10 +70,10 @@ export function OnboardingTour() {
 ```
 
 - `version`, `name`, and `steps` are required. `version` is the version of the config format, currently `"1.1"`.
-- Every step requires `id`, `target`, and `content`; `title` is optional. Step ids must be unique within the workflow; they are what [`start(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour.
+- Every step requires `id`, `target`, and `content`; `title` is optional. Step ids must be unique within the workflow; they are what [`start(workflow, { startAt })`](/docs/guides/resuming/) uses to resume a tour.
 - `target` is a CSS selector. Function and `HTMLElement` targets remain builder-only.
 - `title` and `content` are strings for JSON loaded from a CMS or API.
-- `overlay`, `popover`, `indicator`, `behavior`, and `classNames` use the same options as the builder, globally or per step. A step's `classNames` entry overrides the global one for the same component, as described in [Class name options](/docs/reference/builder#class-name-options).
+- `overlay`, `popover`, `indicator`, `behavior`, and `classNames` use the same options as the builder, globally or per step. A step's `classNames` entry overrides the global one for the same component, as described in [Class name options](/docs/reference/builder/#class-name-options).
 - `data` accepts `string`, `number`, `boolean`, and `null` values.
 
 Unknown keys, invalid nested options, and unsupported values are rejected rather than silently ignored.
@@ -242,4 +242,4 @@ The config module never evaluates strings as code: it uses no `eval`, `new Funct
 - No config exporter yet; the generated definition retains its validated source in `.source`.
 - No built-in i18n integration. Translation keys and interpolation values can be stored in `content` and `data`.
 
-For the JavaScript builder equivalent, see the [Builder reference](/docs/reference/builder) and [Programmatic control guide](/docs/guides/programmatic-control).
+For the JavaScript builder equivalent, see the [Builder reference](/docs/reference/builder/) and [Programmatic control guide](/docs/guides/programmatic-control/).

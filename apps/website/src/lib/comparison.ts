@@ -7,7 +7,7 @@
  * bump COMPARISON_CHECKED_ON and its checkedVersion; both are printed under the table.
  */
 
-export type LibraryKey = "glowtour" | "driver" | "shepherd" | "joyride";
+export type LibraryKey = "glowtour" | "intro" | "driver" | "shepherd" | "joyride";
 export type CompetitorKey = Exclude<LibraryKey, "glowtour">;
 
 export interface SourceLink {
@@ -35,18 +35,30 @@ const LIBRARIES: Record<LibraryKey, ComparedLibrary> = {
     name: "GlowTour.js",
     mark: { type: "image", src: "/glow-tour-logo.png" },
     sources: [
-      { label: "Compatibility", href: "/docs/compatibility" },
-      { label: "Builder API", href: "/docs/reference/builder" },
-      { label: "Accessibility guide", href: "/docs/guides/accessibility" },
-      { label: "SSR guide", href: "/docs/guides/ssr" },
+      { label: "Compatibility", href: "/docs/compatibility/" },
+      { label: "Builder API", href: "/docs/reference/builder/" },
+      { label: "Accessibility guide", href: "/docs/guides/accessibility/" },
+      { label: "SSR guide", href: "/docs/guides/ssr/" },
       { label: "GitHub", href: "https://github.com/Glowhop/GlowTour.js" },
+    ],
+  },
+  intro: {
+    key: "intro",
+    name: "Intro.js",
+    mark: { type: "emoji", emoji: "👋" },
+    path: "/glowtour-vs-intro-js/",
+    checkedVersion: "8.6.0",
+    sources: [
+      { label: "Website", href: "https://introjs.com/" },
+      { label: "GitHub", href: "https://github.com/usablica/intro.js" },
+      { label: "License", href: "https://github.com/usablica/intro.js/blob/master/license.md" },
     ],
   },
   driver: {
     key: "driver",
     name: "Driver.js",
     mark: { type: "emoji", emoji: "🦊" },
-    path: "/glowtour-vs-driver-js",
+    path: "/glowtour-vs-driver-js/",
     checkedVersion: "1.8.0",
     sources: [
       { label: "Theming docs", href: "https://driverjs.com/docs/theming" },
@@ -61,7 +73,7 @@ const LIBRARIES: Record<LibraryKey, ComparedLibrary> = {
     key: "shepherd",
     name: "Shepherd.js",
     mark: { type: "image", src: "/compare/shepherd.svg" },
-    path: "/glowtour-vs-shepherd-js",
+    path: "/glowtour-vs-shepherd-js/",
     checkedVersion: "15.3.0",
     sources: [
       { label: "Website", href: "https://shepherdjs.dev/" },
@@ -72,13 +84,13 @@ const LIBRARIES: Record<LibraryKey, ComparedLibrary> = {
     key: "joyride",
     name: "React Joyride",
     mark: { type: "image", src: "/compare/react-joyride.svg" },
-    path: "/glowtour-vs-react-joyride",
+    path: "/glowtour-vs-react-joyride/",
     checkedVersion: "3.2.0",
     sources: [{ label: "GitHub", href: "https://github.com/gilbarbara/react-joyride" }],
   },
 };
 
-export const COMPETITOR_KEYS: readonly CompetitorKey[] = ["driver", "shepherd", "joyride"];
+export const COMPETITOR_KEYS: readonly CompetitorKey[] = ["intro", "driver", "shepherd", "joyride"];
 
 export const getLibrary = (key: LibraryKey): ComparedLibrary => LIBRARIES[key];
 
@@ -116,6 +128,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "Vanilla JS",
     values: {
       glowtour: yes("Native (custom elements)"),
+      intro: yes("Native"),
       driver: yes("Native"),
       shepherd: yes("Native"),
       joyride: no(),
@@ -125,6 +138,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "React",
     values: {
       glowtour: yes("Native integration"),
+      intro: partial("Community wrapper"),
       driver: partial("Compatible, no native adapter"),
       shepherd: yes("Official wrapper"),
       joyride: yes("Native (React-only)"),
@@ -134,6 +148,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "Vue",
     values: {
       glowtour: yes("Native integration"),
+      intro: partial("Compatible, no official adapter"),
       driver: partial("Compatible, no native adapter"),
       shepherd: yes("Official wrapper"),
       joyride: no(),
@@ -143,6 +158,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "Angular",
     values: {
       glowtour: yes("Native integration"),
+      intro: partial("Compatible, no official adapter"),
       driver: partial("Compatible, no native adapter"),
       shepherd: yes("Official wrapper"),
       joyride: no(),
@@ -152,6 +168,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "Solid",
     values: {
       glowtour: yes("Native integration"),
+      intro: partial("Generic JS API"),
       driver: partial("Compatible, no native adapter"),
       shepherd: partial("Generic JS API"),
       joyride: no(),
@@ -161,17 +178,21 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "Framework-agnostic core",
     values: {
       glowtour: yes(),
+      intro: yes(),
       driver: yes(),
       shepherd: yes(),
       joyride: no(),
     },
   },
   {
-    // Checked by importing each library with no DOM globals: none of them throws, but only
-    // GlowTour.js renders tour markup on the server (React Joyride's renderToString is empty).
+    // Checked by importing each library with no DOM globals: Intro.js 8.6.0 throws
+    // ("document is not defined", from both its CJS and ESM entries), so it has to be imported
+    // dynamically on the client. The others import cleanly, but only GlowTour.js renders tour
+    // markup on the server (React Joyride's renderToString is empty).
     feature: "SSR & hydration",
     values: {
       glowtour: yes("Verified in Next.js, Nuxt, SolidStart, Angular"),
+      intro: partial("Client-side only, import needs a DOM"),
       driver: partial("Safe to import, client-side only"),
       shepherd: partial("Safe to import, client-side only"),
       joyride: partial("SSR-safe, renders client-side only"),
@@ -179,16 +200,17 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
   },
   {
     feature: "TypeScript",
-    values: { glowtour: yes(), driver: yes(), shepherd: yes(), joyride: yes() },
+    values: { glowtour: yes(), intro: yes(), driver: yes(), shepherd: yes(), joyride: yes() },
   },
   {
     feature: "CSS customization",
-    values: { glowtour: yes(), driver: yes(), shepherd: yes(), joyride: yes() },
+    values: { glowtour: yes(), intro: yes(), driver: yes(), shepherd: yes(), joyride: yes() },
   },
   {
     feature: "Custom/composable UI",
     values: {
       glowtour: yes("First-class (composable components)"),
+      intro: partial("Step options + CSS classes"),
       driver: partial("CSS + DOM hooks"),
       shepherd: partial("Step options + CSS classes"),
       joyride: yes("Custom React components"),
@@ -198,6 +220,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "Custom layouts",
     values: {
       glowtour: yes(),
+      intro: partial("HTML inside the step template"),
       driver: partial("Via onPopoverRender"),
       shepherd: partial("Within the step template"),
       joyride: yes("Yes (custom tooltip)"),
@@ -207,6 +230,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "Chainable builder API",
     values: {
       glowtour: yes("Yes (chainable)"),
+      intro: no("No (steps option)"),
       driver: no("No (config object)"),
       shepherd: no("No (imperative addStep)"),
       joyride: no("No (steps prop)"),
@@ -216,6 +240,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "Accessibility (ARIA, focus, keyboard)",
     values: {
       glowtour: yes(),
+      intro: partial("Dialog role + keyboard, no focus trap"),
       driver: partial("Keyboard + focus trap, open ARIA issues"),
       shepherd: yes(),
       joyride: yes(),
@@ -226,11 +251,13 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     // every adapter in .github/workflows/screen-readers.yml, with its limits in the accessibility
     // guide. The others were checked in their published test setup (driver.js packages/driver,
     // shepherd.js, react-joyride package.json): Vitest, Cypress or Playwright, and no screen reader
-    // automation or accessibility testing tool. A red cell here says nothing about how accessible
+    // automation or accessibility testing tool. Intro.js runs jest-axe, which checks the markup
+    // but does not drive a screen reader. A red cell here says nothing about how accessible
     // they are; the row above does.
     feature: "Automated screen reader tests",
     values: {
       glowtour: yes("VoiceOver + NVDA, in CI"),
+      intro: no("None (jest-axe checks only)"),
       driver: no("None in its repository"),
       shepherd: no("None in its repository"),
       joyride: no("None in its repository"),
@@ -240,6 +267,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     feature: "License",
     values: {
       glowtour: yes("MIT"),
+      intro: partial("AGPL-3.0 or paid commercial"),
       driver: yes("MIT"),
       shepherd: partial("AGPL-3.0 or commercial"),
       joyride: yes("MIT"),
@@ -249,7 +277,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
 
 export const LIBRARY_KEYS: readonly LibraryKey[] = ["glowtour", ...COMPETITOR_KEYS];
 
-/** The rows where the four libraries differ most: the compact table on the home page. */
+/** The rows where the libraries differ most: the compact table on the home page. */
 const FEATURED_FEATURES = new Set([
   "React",
   "Vue",

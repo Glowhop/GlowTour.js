@@ -5,15 +5,22 @@ import { solidSource } from "../lib/framework-sources";
 
 <FrameworkPage
   name="Solid"
+  headline="Solid product tour & onboarding library"
   icon="solid"
   packageName="solid"
   installCommand="npm i @glowhop/solid-tour @glowhop/styles-tour"
   intro="Solid 1.8+ components with a Context-scoped tour instance, verified for real server rendering and hydration in a SolidStart app."
   code={solidSource}
   lang="tsx"
-  guideHref="/docs/guides/solid"
-  title="Solid Product Tour Library - GlowTour.js"
-  description="Build accessible, SSR-safe product tours and guided onboarding for Solid with @glowhop/solid-tour, a typed step builder, and GlowTourDefault."
+  guideHref="/docs/guides/solid/"
+  title="Solid Product Tour & Onboarding Library | GlowTour.js"
+  description="Add product tours and onboarding tours to Solid and SolidStart apps with @glowhop/solid-tour: native components, a typed builder, accessible, MIT licensed."
+  steps={[
+  "Install the adapter and the default theme with npm i @glowhop/solid-tour @glowhop/styles-tour, then import \"@glowhop/styles-tour/default.css\" once, in your app entry or the component that renders the tour.",
+  "Call useGlowTour() inside a Solid component. It returns the tour instance plus create, start, cancel and the current status as accessors.",
+  "Describe the onboarding tour with the builder: create(\"product-tour\").step({ id, target, title, content }).build(), one step per element you want to highlight.",
+  "Render <GlowTourDefault tour={tour} /> once and call start(workflow) from an event handler. In SolidStart, start it after the targets have mounted in the browser."
+]}
   benefits={[
   {
     "title": "Solid-native components",

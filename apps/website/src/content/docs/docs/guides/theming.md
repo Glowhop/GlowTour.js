@@ -1,6 +1,6 @@
 ---
-title: Theming guide
-description: Customize the appearance of GlowTour.js with CSS custom properties.
+title: Theming a product tour with CSS
+description: "Customize the look of GlowTour.js product tours with CSS custom properties: colors, spacing, light and dark mode, and your own brand theme."
 ---
 
 GlowTour.js provides a complete default theme via `@glowhop/styles-tour/default.css`, in light and dark. All colors, spacing, sizing, and transitions are defined as CSS custom properties and can be overridden to match your brand.
@@ -43,7 +43,7 @@ All the properties below are only *read* inside `@glowhop/styles-tour/default.cs
 | --- | --- | --- |
 | `--glow-tour-radius` | `8px` | Border radius for popover and buttons |
 | `--glow-tour-shadow` | `0 4px 12px rgb(0 0 0 / 8%)` in light, `0 8px 24px rgb(0 0 0 / 56%)` in dark | Popover box shadow |
-| `--glow-tour-transition-duration` | `120ms` | Hover/state color-transition duration for the Cancel/Previous/Advance buttons - not the popover's fade/slide, which is a separate JS-driven animation (see the `animation` option, default 180ms, in the [Builder reference](/docs/reference/builder#animation-options)) |
+| `--glow-tour-transition-duration` | `120ms` | Hover/state color-transition duration for the Cancel/Previous/Advance buttons - not the popover's fade/slide, which is a separate JS-driven animation (see the `animation` option, default 180ms, in the [Builder reference](/docs/reference/builder/#animation-options)) |
 | `--glow-tour-transition-easing` | `ease-out` | Easing function for that same button color transition |
 
 ### Arrow
@@ -66,7 +66,7 @@ setting, and any value you assign is overwritten on the next frame.
 
 :::caution
 Four of these five have a JavaScript equivalent under `popover.arrow` in the
-[Builder reference](/docs/reference/builder#arrow-options). Those options are written as
+[Builder reference](/docs/reference/builder/#arrow-options). Those options are written as
 inline custom properties, so they **win over your stylesheet** for the same property. Set a
 given property in one channel or the other, not both. `--glow-tour-arrow-border-color` has
 no JS equivalent and is only settable from CSS.
@@ -178,7 +178,7 @@ The palettes are provided as a sensible default, not as a certified one. If you 
 your own tokens, or place the tour over a busy background, check the contrast of
 `--glow-tour-color-text`, `--glow-tour-color-text-muted` and
 `--glow-tour-color-on-accent` against their surfaces yourself. See the
-[accessibility notes](/docs/guides/accessibility) for what the library does and does
+[accessibility notes](/docs/guides/accessibility/) for what the library does and does
 not guarantee.
 
 ## Styling a step
@@ -207,7 +207,7 @@ tour
 
 The same option works on the workflow, for every step that does not set its own classes for the
 component, and in the JSON config. See
-[Class name options](/docs/reference/builder#class-name-options).
+[Class name options](/docs/reference/builder/#class-name-options).
 
 ## Tailwind CSS
 

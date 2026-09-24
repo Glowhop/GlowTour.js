@@ -1,6 +1,6 @@
 ---
-title: Programmatic control guide
-description: Control tours with state subscriptions, actions, and callbacks.
+title: Controlling a tour programmatically
+description: "Start, stop and navigate a GlowTour.js product tour from code: state subscriptions, actions between steps, waits and lifecycle callbacks."
 ---
 
 GlowTour.js provides a complete programmatic API for controlling tours, observing state changes, and sequencing complex workflows.
@@ -29,7 +29,7 @@ console.log(state.currentStep);   // Current step info (or null if not active)
 console.log(state.error);         // Error if status === "error"
 ```
 
-See [`tour.state.get()`](/docs/reference/tour#tourstateget) for every state field.
+See [`tour.state.get()`](/docs/reference/tour/#tourstateget) for every state field.
 
 ### Subscribing to changes
 
@@ -55,7 +55,7 @@ await tour.start(workflow);
 console.log("First step is on screen");
 ```
 
-`start()` resolves once the first step is on screen, not when the tour ends. It rejects if that first step fails. To react to the end of the tour, use the workflow's `onFinish` and `onCancel` callbacks, an `onEvent` listener for `tour:complete` and `tour:cancel`, or a `subscribe` listener that checks `status`. See [The promise trap](/docs/guides/handling-errors#the-promise-trap).
+`start()` resolves once the first step is on screen, not when the tour ends. It rejects if that first step fails. To react to the end of the tour, use the workflow's `onFinish` and `onCancel` callbacks, an `onEvent` listener for `tour:complete` and `tour:cancel`, or a `subscribe` listener that checks `status`. See [The promise trap](/docs/guides/handling-errors/#the-promise-trap).
 
 ### Navigation commands
 
@@ -339,7 +339,7 @@ Pass an array to bind the same handler to several events at once:
 
 ## Error handling
 
-A subscriber or step callback that throws is reported to `onSubscriberError` and does not fail the tour. A fatal error rejects the command and sets `status` to `"error"`. See [Handling errors](/docs/guides/handling-errors) for how to observe and recover from both.
+A subscriber or step callback that throws is reported to `onSubscriberError` and does not fail the tour. A fatal error rejects the command and sets `status` to `"error"`. See [Handling errors](/docs/guides/handling-errors/) for how to observe and recover from both.
 
 ## Example: complex tour
 
@@ -402,4 +402,4 @@ await tour.start(workflow);
 
 ---
 
-For the full workflow/step-building API and every option's default value, see the [Builder reference](/docs/reference/builder); for the controller API (`createGlowTour`, `tour.start`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).
+For the full workflow/step-building API and every option's default value, see the [Builder reference](/docs/reference/builder/); for the controller API (`createGlowTour`, `tour.start`, `tour.state`, …), see the [Tour reference](/docs/reference/tour/).

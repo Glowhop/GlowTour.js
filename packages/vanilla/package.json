@@ -1,9 +1,9 @@
 {
   "name": "@glowhop/vanilla-tour",
   "version": "1.4.0",
-  "description": "Native custom-element adapter for GlowTour.js.",
+  "description": "Vanilla JavaScript product tour and onboarding tour custom elements for GlowTour.js. No framework needed, MIT licensed.",
   "license": "MIT",
-  "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
+  "homepage": "https://glowtour.dev/vanilla/",
   "bugs": {
     "url": "https://github.com/Glowhop/GlowTour.js/issues"
   },
@@ -20,7 +20,9 @@
     "vanilla-js",
     "custom-elements",
     "web-components",
-    "no-framework"
+    "no-framework",
+    "onboarding-tour",
+    "intro-js-alternative"
   ],
   "engines": {
     "node": ">=18.19.1"

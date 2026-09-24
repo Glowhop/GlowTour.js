@@ -1,11 +1,11 @@
 ---
 title: Builder API reference
-description: Complete reference for the GlowTour.js workflow/step builder and all available options with their defaults.
+description: "Complete reference for the GlowTour.js workflow and step builder: every step, popover, indicator, scroll and behavior option with its default."
 ---
 
-`tour.create()` returns a workflow builder: chain `.step()`, `.do()`, `.wait()`, and the other methods below to describe a tour, then call `.build()` to get an immutable `WorkflowDefinition`. For the controller that runs the resulting workflow (`createGlowTour`, `tour.start`, `tour.advance`, `tour.state`, …), see the [Tour reference](/docs/reference/tour).
+`tour.create()` returns a workflow builder: chain `.step()`, `.do()`, `.wait()`, and the other methods below to describe a tour, then call `.build()` to get an immutable `WorkflowDefinition`. For the controller that runs the resulting workflow (`createGlowTour`, `tour.start`, `tour.advance`, `tour.state`, …), see the [Tour reference](/docs/reference/tour/).
 
-For framework-specific integration and components, see [React](/docs/reference/react), [Vue](/docs/reference/vue), [Solid](/docs/reference/solid), [Angular](/docs/reference/angular), or [Vanilla](/docs/reference/vanilla).
+For framework-specific integration and components, see [React](/docs/reference/react/), [Vue](/docs/reference/vue/), [Solid](/docs/reference/solid/), [Angular](/docs/reference/angular/), or [Vanilla](/docs/reference/vanilla/).
 
 ## Main functions
 
@@ -45,7 +45,7 @@ step(params: StepParameters): WorkflowStepBuilder
 ```
 
 **Parameters**:
-- `id` - Stable identifier, unique within the workflow (required). Validated at `.build()` time. It is what [`start(workflow, { startAt })`](/docs/guides/resuming) uses to resume a tour, so prefer a name that survives reordering.
+- `id` - Stable identifier, unique within the workflow (required). Validated at `.build()` time. It is what [`start(workflow, { startAt })`](/docs/guides/resuming/) uses to resume a tour, so prefer a name that survives reordering.
 - `target` - CSS selector, HTMLElement, or resolver function (required)
 - `title` - Step title displayed in the popover header (optional: without a title, the header is omitted and the content names the dialog)
 - `content` - Step description displayed in popover (required)
@@ -369,7 +369,7 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 | `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour starts |
 | `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour is cancelled |
 | `onFinish` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour completes |
-| `onEvent` | `(event: TourEvent) => void` | - | Monitoring callback for this workflow. Cannot abort a transition; see the [Monitoring guide](/docs/guides/monitoring) |
+| `onEvent` | `(event: TourEvent) => void` | - | Monitoring callback for this workflow. Cannot abort a transition; see the [Monitoring guide](/docs/guides/monitoring/) |
 
 *Animations automatically disable when the browser detects `prefers-reduced-motion`.
 
@@ -446,7 +446,7 @@ popover: {
 
 These options are written as inline custom properties on the popover, so they take
 precedence over the same `--glow-tour-arrow-*` variables set in your stylesheet. Pick one
-channel per property - see the [Theming guide](/docs/guides/theming#arrow).
+channel per property - see the [Theming guide](/docs/guides/theming/#arrow).
 
 ### Indicator options
 
@@ -475,11 +475,11 @@ Control step interaction and scrolling behavior.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element. Every behavior option can change during the step with `context.props.update({ behavior })` - see [Changing behavior during a step](/docs/guides/programmatic-control#changing-behavior-during-a-step) |
+| `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element. Every behavior option can change during the step with `context.props.update({ behavior })` - see [Changing behavior during a step](/docs/guides/programmatic-control/#changing-behavior-during-a-step) |
 | `allowScroll` | boolean | `true` | The page stays scrollable while the step is shown; set `false` to lock page scroll while the step is shown (restored when a step allows scrolling again, and on finish/cancel/error/dispose) |
-| `autoFocus` | boolean | `true` | Focus the popover's Advance button (Previous when going back) when the step is shown. `false` never moves focus during the step, even when a modal step leaves it on the body - see [Keeping focus where it is](/docs/guides/accessibility#keeping-focus-where-it-is) |
+| `autoFocus` | boolean | `true` | Focus the popover's Advance button (Previous when going back) when the step is shown. `false` never moves focus during the step, even when a modal step leaves it on the body - see [Keeping focus where it is](/docs/guides/accessibility/#keeping-focus-where-it-is) |
 | `autoScroll` | boolean | `true` | Scroll the target into view when the step is shown |
-| `missingTarget.strategy` | `"error" \| "wait" \| "skip" \| "detached"` | `"error"` | What to do if target isn't found: `"detached"` shows the popover centered over a backdrop covering the whole screen - see [Handling errors](/docs/guides/handling-errors) |
+| `missingTarget.strategy` | `"error" \| "wait" \| "skip" \| "detached"` | `"error"` | What to do if target isn't found: `"detached"` shows the popover centered over a backdrop covering the whole screen - see [Handling errors](/docs/guides/handling-errors/) |
 | `missingTarget.timeout` | number | `3000` | Time to wait for target with the `"wait"` strategy (in milliseconds) |
 | `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
 | `scroll` | ScrollOptions | - | Scroll behavior (see [Scroll options](#scroll-options)) |
@@ -610,7 +610,7 @@ tour
   .build();
 ```
 
-To change the classes during a step, see [Updating step props](/docs/guides/programmatic-control#updating-step-props).
+To change the classes during a step, see [Updating step props](/docs/guides/programmatic-control/#updating-step-props).
 
 ### Lifecycle hook context
 
@@ -723,4 +723,4 @@ Builder-related type exports for TypeScript users:
 - `StepHookAction` - Callback type for `beforeEnter` and `beforeLeave`
 - `TargetResolver` - Target resolution function type
 
-See the [Tour reference](/docs/reference/tour) for the controller API that runs a built workflow.
+See the [Tour reference](/docs/reference/tour/) for the controller API that runs a built workflow.

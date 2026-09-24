@@ -44,7 +44,7 @@ test("preserves publish metadata and package-specific side effects", () => {
   const source = {
     description: "A package",
     license: "MIT",
-    homepage: "https://github.com/Glowhop/GlowTour.js#readme",
+    homepage: "https://glowtour.dev/",
     bugs: { url: "https://github.com/Glowhop/GlowTour.js/issues" },
     keywords: ["glow-tour"],
     engines: { node: ">=18.19.1" },

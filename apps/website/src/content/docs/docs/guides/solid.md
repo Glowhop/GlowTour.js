@@ -1,9 +1,9 @@
 ---
-title: Solid guide
-description: Build guided tours with @glowhop/solid-tour.
+title: How to build a product tour in Solid
+description: "Build a product tour or onboarding tour in Solid and SolidStart with @glowhop/solid-tour: setup, steps, reactive state, JSX content and theming."
 ---
 
-The GlowTour.js Solid adapter provides components and a Context-scoped tour instance using Solid's reactivity model. Content is normal Solid JSX.
+This guide shows how to build a product tour or onboarding tour in Solid with `@glowhop/solid-tour`, the GlowTour.js Solid adapter. It provides components and a Context-scoped tour instance using Solid's reactivity model. Content is normal Solid JSX.
 
 ## Setup
 
@@ -151,7 +151,7 @@ The function can return a promise, for content that loads or opens after the tou
 
 ### When no element is found
 
-A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors#missing-target-strategies).
+A selector that matches nothing, a function that returns `null`, or an element that is no longer in the page makes the step follow `behavior.missingTarget`. By default the tour fails with an error. Use `"wait"` to resolve the target again every 16 ms until a timeout (a function target is called each time, so keep it cheap), `"skip"` to move past the step, or `"detached"` to show the popover centered on the screen. See [Handling errors](/docs/guides/handling-errors/#missing-target-strategies).
 
 The target must be an HTML element of the page: an SVG element makes the tour fail with a `TypeError`. To highlight an SVG graphic, target its HTML container.
 
@@ -171,7 +171,7 @@ The default component reads the theme's CSS custom properties, so colors, spacin
 }
 ```
 
-Keep rendering `<GlowTourDefault tour={tour} />`. See the [theming guide](/docs/guides/theming) for all available tokens.
+Keep rendering `<GlowTourDefault tour={tour} />`. See the [theming guide](/docs/guides/theming/) for all available tokens.
 
 ### Compose the default layout
 
@@ -268,7 +268,7 @@ function StepCounter() {
 
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.
 
-See the runnable [Live step counter example](/examples).
+See the runnable [Live step counter example](/examples/).
 
 ## Share one tour between components
 
@@ -308,4 +308,4 @@ GlowTour.js requires Solid 1.8 or later. The adapter uses Solid's Context API an
 
 ## SSR
 
-`GlowTourDefault` supports server-side rendering. The component renders as an inert container on the server and hydrates correctly on the client. With SolidStart, see [With SolidStart](/docs/guides/ssr#with-solidstart) in the SSR guide.
+`GlowTourDefault` supports server-side rendering. The component renders as an inert container on the server and hydrates correctly on the client. With SolidStart, see [With SolidStart](/docs/guides/ssr/#with-solidstart) in the SSR guide.

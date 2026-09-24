@@ -5,15 +5,22 @@ import { reactSource } from "../lib/framework-sources";
 
 <FrameworkPage
   name="React"
+  headline="React product tour & onboarding library"
   icon="react"
   packageName="react"
   installCommand="npm i @glowhop/react-tour @glowhop/styles-tour"
   intro="Native React components and a Context-scoped tour instance, built for React 18 and 19. No portals to wire up yourself - GlowTourDefault renders the popover, overlay, and pointer for you."
   code={reactSource}
   lang="tsx"
-  guideHref="/docs/guides/react"
-  title="React Product Tour Library - GlowTour.js"
-  description="Build accessible, SSR-safe product tours and guided onboarding for React 18/19 with @glowhop/react-tour, a typed step builder, and GlowTourDefault."
+  guideHref="/docs/guides/react/"
+  title="React Product Tour & Onboarding Library | GlowTour.js"
+  description="Add product tours and onboarding tours to React 18/19 and Next.js apps with @glowhop/react-tour: native components, typed builder, accessible, MIT licensed."
+  steps={[
+  "Install the adapter and the default theme with npm i @glowhop/react-tour @glowhop/styles-tour, then import \"@glowhop/styles-tour/default.css\" once, in your app entry or the component that renders the tour.",
+  "Call useGlowTour() inside a React component. It returns the tour instance plus create, start, cancel and the current status.",
+  "Describe the onboarding tour with the builder: create(\"product-tour\").step({ id, target, title, content }).build(), one step per element you want to highlight.",
+  "Render <GlowTourDefault tour={tour} /> once and call start(workflow) from an event handler, such as a \"Take the tour\" button or the first visit after sign-up."
+]}
   benefits={[
   {
     "title": "React-native rendering",
@@ -40,6 +47,10 @@ import { reactSource } from "../lib/framework-sources";
   {
     "question": "Can I customize the React tour UI?",
     "answer": "Yes. You can replace the default theme with your own CSS or compose the React adapter's lower-level components when you need full control over the popover, overlay, pointer, and controls."
+  },
+  {
+    "question": "Is GlowTour.js a React Joyride alternative?",
+    "answer": "Yes. Both render product tours as React components. GlowTour.js adds a chainable builder, composable popover primitives, verified server rendering in Next.js, and the same tour engine for Vue, Angular, Solid and vanilla JavaScript if your product is not React-only."
   }
 ]}
 />

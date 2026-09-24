@@ -1,6 +1,6 @@
 ---
-title: Handling errors
-description: Respond to tour failures in three channels - onEvent, state, or promises - using strategies for missing targets.
+title: Handling tour errors and missing targets
+description: Respond to product tour failures through onEvent, state or promises, and choose a strategy for steps whose target element is missing.
 ---
 
 A tour fails when a step's target element is missing or missing for too long. What happens next depends on which channel you listen on, and what strategy the step declares upfront.
@@ -63,7 +63,7 @@ The callback receives a `tour:error` event with:
 
 `onEvent` is the right channel for analytics and observability.
 
-Note: `tour:error` is not preceded by `step:leave`. The step was not left - the tour died on it - and the event still names that step, so the pair reconciles in a funnel. See [Monitoring a tour](/docs/guides/monitoring) for the full event order.
+Note: `tour:error` is not preceded by `step:leave`. The step was not left - the tour died on it - and the event still names that step, so the pair reconciles in a funnel. See [Monitoring a tour](/docs/guides/monitoring/) for the full event order.
 
 ### 2. Tour state
 

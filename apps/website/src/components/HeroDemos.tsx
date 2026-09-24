@@ -226,7 +226,9 @@ export const waitForAsyncWorkflow = waitForAsyncTour
     behavior: { allowInteraction: true },
     controls: { advance: { state: "disabled" } },
   })
-  .waitUntilElement("#hero-wait-for-async-loaded")
+  .waitUntilElement("#hero-wait-for-async-loaded", {
+    timeout: 30_000,
+  })
   .do(async (context) => {
     if (!context.props.get().data?.loaded) await context.advance();
     context.props.update({ data: { loaded: true } });

@@ -1,11 +1,11 @@
 ---
 title: Tour API reference
-description: Complete reference for the GlowTour.js controller - the instance returned by createGlowTour.
+description: "Complete reference for the GlowTour.js tour controller returned by createGlowTour(): start, navigation, cancel, dispose and reactive state."
 ---
 
-`createGlowTour()` returns a tour controller: the long-lived instance that creates workflows (via `tour.create()`, see the [Builder reference](/docs/reference/builder)), runs them, drives navigation, and exposes reactive state. One controller can be connected to one live root at a time.
+`createGlowTour()` returns a tour controller: the long-lived instance that creates workflows (via `tour.create()`, see the [Builder reference](/docs/reference/builder/)), runs them, drives navigation, and exposes reactive state. One controller can be connected to one live root at a time.
 
-For framework-specific integration and components, see [React](/docs/reference/react), [Vue](/docs/reference/vue), [Solid](/docs/reference/solid), [Angular](/docs/reference/angular), or [Vanilla](/docs/reference/vanilla).
+For framework-specific integration and components, see [React](/docs/reference/react/), [Vue](/docs/reference/vue/), [Solid](/docs/reference/solid/), [Angular](/docs/reference/angular/), or [Vanilla](/docs/reference/vanilla/).
 
 ## Functions
 
@@ -20,7 +20,7 @@ function createGlowTour(options?: GlowTourOptions): GlowTour
 
 **Parameters**:
 - `options.onSubscriberError` - Called when a state/step subscriber throws an error (optional, no default)
-- `options.onEvent` - Monitoring callback for every tour this instance runs; see the [Monitoring guide](/docs/guides/monitoring) (optional, no default)
+- `options.onEvent` - Monitoring callback for every tour this instance runs; see the [Monitoring guide](/docs/guides/monitoring/) (optional, no default)
 
 **Returns**: Tour controller instance
 
@@ -37,7 +37,7 @@ const tour = createGlowTour({
 
 ### `tour.create(name, options?)`
 
-Starts building a new workflow on this controller. See the [Builder reference](/docs/reference/builder#tourcreatename-options) for the full builder API.
+Starts building a new workflow on this controller. See the [Builder reference](/docs/reference/builder/#tourcreatename-options) for the full builder API.
 
 **Signature**:
 ```typescript
@@ -54,7 +54,7 @@ start(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
 ```
 
 **Options**:
-- `startAt` - Id of the step to start on, instead of the first one. Throws if no step carries that id. The workflow is not truncated: `totalSteps` is unchanged and `previous()` can go back before this step. See [Resuming a tour](/docs/guides/resuming).
+- `startAt` - Id of the step to start on, instead of the first one. Throws if no step carries that id. The workflow is not truncated: `totalSteps` is unchanged and `previous()` can go back before this step. See [Resuming a tour](/docs/guides/resuming/).
 
 **Usage**:
 ```typescript
@@ -204,10 +204,10 @@ Controller-related type exports for TypeScript users:
 
 - `GlowTour` - Tour controller interface
 - `GlowTourOptions` - Options for `createGlowTour`
-- `TourEvent`, `TourEventListener`, `TourEventType`, `TourEventSource` - The monitoring contract; see the [Monitoring guide](/docs/guides/monitoring)
+- `TourEvent`, `TourEventListener`, `TourEventType`, `TourEventSource` - The monitoring contract; see the [Monitoring guide](/docs/guides/monitoring/)
 - `TourState` - Immutable state object returned by `tour.state.get()`
 - `TourCurrentStep` - The active step's target and props, part of `TourState`
 
 `TourStatus`, `TourEventType`, and `TourEventSource` are unions that can gain members in a minor release. When you switch over them, keep a default branch.
 
-See the [Builder reference](/docs/reference/builder) for `tour.create()`'s workflow/step-building API and every option's default value.
+See the [Builder reference](/docs/reference/builder/) for `tour.create()`'s workflow/step-building API and every option's default value.
