@@ -23,24 +23,64 @@ export function isNode(value: unknown, context?: Node | null): value is Node {
   return typeof Node === "function" && value instanceof Node;
 }
 
+interface MeasuredBox {
+  height: number;
+  key: string;
+  width: number;
+}
+
+const fixedBoxes = new WeakMap<Document, MeasuredBox>();
+
+/**
+ * The containing block of a `position: fixed` element, measured with a probe.
+ *
+ * It usually matches `documentElement.clientWidth`/`clientHeight`, but not on
+ * a phone whose page is wider than `device-width`: the browser then grows the
+ * layout viewport past the initial containing block so the page can be zoomed
+ * out, and fixed elements follow the layout viewport while `clientWidth` stays
+ * at the device width. No property reports that box on every engine, so an
+ * invisible `inset: 0` element is measured instead — once per window size, so
+ * the tracking loop does not mutate the DOM every frame.
+ */
+function fixedContainingBlock(document: Document, root: HTMLElement) {
+  const view = document.defaultView;
+  const key = `${root.clientWidth} ${root.clientHeight} ${view?.innerWidth} ${view?.innerHeight}`;
+  const cached = fixedBoxes.get(document);
+  if (cached?.key === key) return cached;
+  const probe = document.createElement?.("div");
+  if (!probe?.style) return null;
+  probe.style.cssText =
+    "position:fixed;top:0;right:0;bottom:0;left:0;visibility:hidden;pointer-events:none";
+  root.appendChild(probe);
+  const { height, width } = probe.getBoundingClientRect();
+  probe.remove();
+  if (!(width > 0 && height > 0)) return null;
+  const box = { height, key, width };
+  fixedBoxes.set(document, box);
+  return box;
+}
+
 /**
  * The layout viewport, in CSS pixels — the box every `position: fixed` tour
  * element is sized and positioned against, and the frame that
  * `getBoundingClientRect()` reports coordinates in.
  *
  * Deliberately not `innerWidth`/`innerHeight`: those measure the *visual*
- * viewport, which on mobile shrinks and grows with the browser's URL bar and on
- * desktop includes the classic scrollbar. Either gap skews the overlay's
- * `viewBox` against its own `100%`-sized box, and the default
- * `preserveAspectRatio` then scales and centres the backdrop — leaving undimmed
- * bands and a cutout that no longer lines up with its target.
+ * viewport on some engines, which on mobile shrinks and grows with the
+ * browser's URL bar and pinch zoom, and on desktop includes the classic
+ * scrollbar. Either gap skews the overlay's `viewBox` against its own
+ * `100%`-sized box, and the default `preserveAspectRatio` then scales and
+ * centres the backdrop — leaving undimmed bands and a cutout that no longer
+ * lines up with its target.
  */
 export function viewportDimensions(context?: Node | null) {
-  const root = ownerDocument(context)?.documentElement;
+  const document = ownerDocument(context);
+  const root = document?.documentElement;
   const width = root?.clientWidth;
   const height = root?.clientHeight;
   if (typeof width === "number" && width > 0 && typeof height === "number" && height > 0) {
-    return { width, height };
+    const fixed = document && root && fixedContainingBlock(document, root);
+    return fixed ? { height: fixed.height, width: fixed.width } : { width, height };
   }
 
   const currentWindow = ownerWindow(context);
