@@ -45,8 +45,12 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // the step props live (modality, focus, pointer fade) on the step, then
     // from 21.75 KiB for the `"detached"` missing-target strategy (a centered
     // popover over a backdrop without a cutout), then from 22 KiB for keeping
-    // the focus to restore when a new tour replaces one still fading out.
-    gzipBudget: 22.25 * KIB,
+    // the focus to restore when a new tour replaces one still fading out, then
+    // from 22.25 KiB for reporting a target that has not resolved yet on the
+    // popover still on screen (11 B over after dropping the element tracking
+    // the attribute was written through and folding the wait flag into the
+    // popover's own mutation lease).
+    gzipBudget: 22.5 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

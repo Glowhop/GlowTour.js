@@ -209,6 +209,38 @@ The same option works on the workflow, for every step that does not set its own 
 component, and in the JSON config. See
 [Class name options](/docs/reference/builder/#class-name-options).
 
+## Styling a wait on an async target
+
+When a step's target is an async resolver - or the `"wait"` strategy is polling for one that
+isn't in the DOM yet - the tour stays on the step the user asked to leave until the target
+settles. While it waits, that step's popover carries `data-glow-tour-awaiting-target` and its
+advance button is disabled, which the default theme already dims. The attribute is a styling
+hook for anything more explicit, such as a spinner:
+
+```css
+[data-glow-tour-popover][data-glow-tour-awaiting-target] [data-glow-tour-advance-trigger]::after {
+  content: "";
+  display: inline-block;
+  inline-size: 0.75em;
+  block-size: 0.75em;
+  margin-inline-start: 0.5em;
+  border: 2px solid currentColor;
+  border-block-start-color: transparent;
+  border-radius: 50%;
+  animation: glow-tour-spin 0.6s linear infinite;
+}
+
+@keyframes glow-tour-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+```
+
+A target that resolves synchronously never sets the attribute, so an instant transition does not
+flash a spinner. The same wait is readable from JavaScript as `tour.state.get().awaitingTarget`,
+for a spinner rendered by your own components rather than by CSS.
+
 ## Tailwind CSS
 
 Tailwind CSS v4 generates its utility classes inside `@layer utilities`. A stylesheet imported

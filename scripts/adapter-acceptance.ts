@@ -466,13 +466,21 @@ export async function runDefaultTourAcceptance<TContent>(
   assert.equal(tour.state.get().status, "cancelled", `${name}: cancel cancels`);
   // Tour state disables a trigger only while the tour is active. Outside of it, a start replacing
   // the tour on screen would natively disable the focused trigger during its onStart and blur it.
-  for (const control of ["advance", "previous", "cancel"] as const) {
+  for (const control of ["advance", "cancel"] as const) {
     assert.equal(
       disabled(`[data-glow-tour-${control}-trigger]`),
       false,
       `${name}: ${control} not disabled by an inactive tour`,
     );
   }
+  // Previous is the exception, and not a trigger an inactive tour newly disables: the tour was
+  // cancelled on its first step, where there is nothing to go back to, so the button was already
+  // disabled while it ran and keeps that state until the presentation is gone.
+  assert.equal(
+    disabled("[data-glow-tour-previous-trigger]"),
+    true,
+    `${name}: previous stays disabled on the first step`,
+  );
 
   await unmount();
   await assert.rejects(

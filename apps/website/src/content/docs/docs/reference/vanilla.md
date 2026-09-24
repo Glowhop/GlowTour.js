@@ -146,6 +146,10 @@ root.append(pointer);
 **Properties**:
 - `disabled: boolean` - Disable the button
 
+**Attributes**:
+- `advance-label` - Button text on every step but the last (default `"Advance step"`)
+- `finish-label` - Button text on the last step (default `"Finish tour"`)
+
 **Usage**:
 ```typescript
 const button = document.createElement("glow-tour-advance-trigger");
@@ -160,12 +164,18 @@ footer.append(button);
 **Properties**:
 - `disabled: boolean` - Disable the button
 
+**Attributes**:
+- `cancel-label` - Button text (default `"Skip"`)
+
 ### `glow-tour-previous-trigger`
 
 "Previous" button to go back to the previous step.
 
 **Properties**:
 - `disabled: boolean` - Disable the button
+
+**Attributes**:
+- `previous-label` - Button text (default `"Previous step"`)
 
 ## Element names
 

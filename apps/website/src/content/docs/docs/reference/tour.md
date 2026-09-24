@@ -163,6 +163,7 @@ const { status, canAdvance } = tour.state.get();
 ```typescript
 {
   status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
+  awaitingTarget: boolean
   name: string
   totalSteps: number
   currentStepIndex: number
@@ -205,7 +206,7 @@ Controller-related type exports for TypeScript users:
 - `GlowTour` - Tour controller interface
 - `GlowTourOptions` - Options for `createGlowTour`
 - `TourEvent`, `TourEventListener`, `TourEventType`, `TourEventSource` - The monitoring contract; see the [Monitoring guide](/docs/guides/monitoring/)
-- `TourState` - Immutable state object returned by `tour.state.get()`
+- `TourState` - Immutable state object returned by `tour.state.get()`. `awaitingTarget` is true while a navigation waits for the next step's target to resolve - an async resolver, or the `"wait"` missing-target strategy - which is when the step being left is still on screen with its advance refused; see [Behavior options](/docs/reference/builder/#behavior-options)
 - `TourCurrentStep` - The active step's target and props, part of `TourState`
 
 `TourStatus`, `TourEventType`, and `TourEventSource` are unions that can gain members in a minor release. When you switch over them, keep a default branch.

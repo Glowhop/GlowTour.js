@@ -774,6 +774,72 @@ describe("vanilla adapter browser behavior", () => {
     assert.equal(generatedButton.textContent, "Finished");
   });
 
+  test("disables advance, and keeps previous disabled, while the next target resolves", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    const element = root(tour, "pending-target");
+    element.innerHTML =
+      "<glow-tour-popover></glow-tour-popover><glow-tour-previous-trigger></glow-tour-previous-trigger><glow-tour-advance-trigger></glow-tour-advance-trigger>";
+    document.body.append(target, element);
+    await settle();
+    let resolveTarget!: (value: HTMLElement | null) => void;
+    const pending = new Promise<HTMLElement | null>((resolve) => {
+      resolveTarget = resolve;
+    });
+    const workflow = tour
+      .create("pending target", { animated: false })
+      .step({ id: "step-pending-1", content: "One", target, title: "One" })
+      .step({ id: "step-pending-2", content: "Two", target: () => pending, title: "Two" })
+      .build();
+    await tour.start(workflow);
+    await settle();
+    const previous = element.querySelector<HTMLButtonElement>("[data-glow-tour-previous-trigger]");
+    const advance = element.querySelector<HTMLButtonElement>("[data-glow-tour-advance-trigger]");
+    assert.equal(previous?.disabled, true);
+    assert.equal(advance?.disabled, false);
+
+    const advancing = tour.advance();
+    await settle();
+    assert.equal(tour.state.get().status, "transitioning");
+    assert.equal(tour.state.get().awaitingTarget, true);
+    // The first step is still the presented one: neither control may look available.
+    assert.equal(advance?.disabled, true);
+    assert.equal(advance?.getAttribute("aria-disabled"), "true");
+    assert.equal(previous?.disabled, true);
+
+    resolveTarget(target);
+    await advancing;
+    await settle();
+    assert.equal(tour.state.get().awaitingTarget, false);
+    assert.equal(advance?.disabled, false);
+    assert.equal(previous?.disabled, false);
+  });
+
+  test("labels the cancel trigger from cancel-label, and falls back to Skip", async () => {
+    const tour = runtime.createGlowTour();
+    const target = document.createElement("button");
+    const element = root(tour, "cancel-label");
+    element.innerHTML =
+      '<glow-tour-popover></glow-tour-popover><glow-tour-cancel-trigger></glow-tour-cancel-trigger><glow-tour-cancel-trigger cancel-label="Leave the tour" data-labelled></glow-tour-cancel-trigger>';
+    document.body.append(target, element);
+    await settle();
+    await tour.start(
+      tour
+        .create("cancel label")
+        .step({ id: "step-cancel-label", content: "One", target, title: "One" })
+        .build(),
+    );
+    await settle();
+
+    const [fallback, labelled] = Array.from(
+      element.querySelectorAll<HTMLButtonElement>("[data-glow-tour-cancel-trigger]"),
+    );
+    assert.equal(fallback?.textContent, "Skip");
+    assert.equal(fallback?.getAttribute("aria-label"), "Skip");
+    assert.equal(labelled?.textContent, "Leave the tour");
+    assert.equal(labelled?.getAttribute("aria-label"), "Leave the tour");
+  });
+
   test("delegates Cancel, Back, late Advance, host disabled state, prevented clicks, and custom shortcuts", async () => {
     const tour = runtime.createGlowTour();
     const target = document.createElement("button");

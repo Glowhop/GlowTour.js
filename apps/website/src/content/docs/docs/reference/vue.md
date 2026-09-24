@@ -129,7 +129,7 @@ Primitives for custom layouts:
 - `GlowTourFooter` - Navigation button container
 - `GlowTourAdvanceTrigger` - Next step button
 - `GlowTourPreviousTrigger` - Previous step button
-- `GlowTourCancelTrigger` - Cancel button, labelled "Skip"
+- `GlowTourCancelTrigger` - Cancel button, labelled "Skip" by default
 
 The same components are grouped under the `GlowTour` object without their prefix (`Root`, `Overlay`, `Pointer`, `Popover`, `Header`, `Content`, `Footer`, `AdvanceTrigger`, `PreviousTrigger`, `CancelTrigger`), for compound markup:
 
@@ -164,7 +164,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 | `GlowTourFooter` | `<footer>` | - | default |
 | `GlowTourPreviousTrigger` | `<button>` | `previousLabel?: string` (default `"Previous step"`), `ariaLabel?: string` | default, trigger slot |
 | `GlowTourAdvanceTrigger` | `<button>` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), `ariaLabel?: string` | default, trigger slot |
-| `GlowTourCancelTrigger` | `<button>` | `ariaLabel?: string` | default, trigger slot. Its label is `"Skip"` |
+| `GlowTourCancelTrigger` | `<button>` | `ariaLabel?: string`, `cancelLabel?: string` (default `"Skip"`) | default, trigger slot |
 
 `idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
 
