@@ -29,7 +29,7 @@ const SCROLL_SETTLE_TIMEOUT = 2000;
 /** Quiet time, in milliseconds, after which a user scroll counts as finished. */
 const USER_SCROLL_IDLE_DELAY = 150;
 /** Default `scroll.returnDelay`. */
-const DEFAULT_SCROLL_RETURN_DELAY = 2000;
+const DEFAULT_SCROLL_RETURN_DELAY = 500;
 const ACTIVE_MODAL_BY_DOCUMENT = new WeakMap<Document, object>();
 const DEFAULT_SHORTCUTS = {
   previous: ["ArrowLeft", "Backspace"],

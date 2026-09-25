@@ -661,7 +661,7 @@ with `allowScroll: false` locks the page, so none of this applies.
 | `behavior` | `"auto" \| "smooth"` | `"smooth"`* | Scroll animation style |
 | `block` | `"start" \| "center" \| "end" \| "nearest"` | `"center"` | Vertical alignment within viewport |
 | `inline` | `"start" \| "center" \| "end" \| "nearest"` | `"nearest"` | Horizontal alignment within viewport |
-| `returnDelay` | `number \| false` | `2000` | Milliseconds to wait, after the user stops scrolling with part of the target off screen, before scrolling it back. `false` leaves the page where the user put it. Ignored when `autoScroll` is `false` |
+| `returnDelay` | `number \| false` | `500` | Milliseconds to wait, after the user stops scrolling with part of the target off screen, before scrolling it back. `false` leaves the page where the user put it. Ignored when `autoScroll` is `false` |
 
 *Automatically switches to `"instant"` when the browser detects `prefers-reduced-motion`.
 
@@ -671,7 +671,7 @@ scroll: {
   behavior: "smooth",
   block: "center",
   inline: "nearest",
-  returnDelay: 2000
+  returnDelay: 500
 }
 ```
 

@@ -221,7 +221,7 @@ export interface ScrollOptions {
   /**
    * Milliseconds to wait, once the user stops scrolling with part of the target outside the
    * viewport, before scrolling it back into view. `false` leaves the page where the user put it.
-   * Ignored when `autoScroll` is `false`. @default 2000
+   * Ignored when `autoScroll` is `false`. @default 500
    */
   returnDelay?: number | false;
 }

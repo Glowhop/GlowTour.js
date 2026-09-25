@@ -3783,9 +3783,9 @@ describe("DomTourViewDriver", () => {
       await flushMicrotasks();
       assert.equal(opacityOf(handle.elements.popover), "0");
       assert.equal(handle.scrolls, 0);
-      assert.deepEqual(handle.timers.pending(), [2000]);
+      assert.deepEqual(handle.timers.pending(), [500]);
 
-      handle.timers.run(2000);
+      handle.timers.run(500);
       assert.equal(handle.scrolls, 1);
       handle.target.setRect({ height: 20, left: 10, top: 390, width: 20 });
       await flushFrames(12);
@@ -3797,13 +3797,13 @@ describe("DomTourViewDriver", () => {
     });
 
     test("waits the step's own return delay", async () => {
-      const handle = await showStep({ returnDelay: 500 });
+      const handle = await showStep({ returnDelay: 1200 });
 
       scrollPage();
       handle.target.setRect(offscreen);
       handle.timers.run(150);
 
-      assert.deepEqual(handle.timers.pending(), [500]);
+      assert.deepEqual(handle.timers.pending(), [1200]);
     });
 
     test("starts the wait over when the user scrolls again before the return", async () => {
@@ -3839,7 +3839,7 @@ describe("DomTourViewDriver", () => {
       scrollPage();
       handle.target.setRect(offscreen);
       handle.timers.run(150);
-      handle.timers.run(2000);
+      handle.timers.run(500);
       assert.equal(handle.scrolls, 1);
       document.dispatchEvent(new MockEvent("wheel", { target: document as unknown as MockNode }));
       await flushFrames(12);
