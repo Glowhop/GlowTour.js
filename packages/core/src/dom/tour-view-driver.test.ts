@@ -3856,6 +3856,27 @@ describe("DomTourViewDriver", () => {
       assert.equal(handle.scrolls, 1);
     });
 
+    test("does not read an instant scroll back as the user scrolling", async () => {
+      reducedMotion = true;
+      const handle = await showStep();
+
+      scrollPage();
+      handle.target.setRect(offscreen);
+      handle.timers.run(150);
+      handle.timers.run(500);
+      assert.equal(handle.scrolls, 1);
+      handle.target.setRect({ height: 20, left: 10, top: 390, width: 20 });
+      // The browser fires the instant jump's scroll event with the next frame, after the microtasks.
+      await flushMicrotasks();
+      scrollPage();
+      await flushFrames(12);
+      await flushMicrotasks();
+
+      assert.equal(opacityOf(handle.elements.popover), "1");
+      assert.equal(handle.elements.pointer.getAttribute("aria-hidden"), null);
+      assert.deepEqual(handle.timers.pending(), []);
+    });
+
     test("only reacts to scrollers that move the target", async () => {
       const handle = await showStep();
 

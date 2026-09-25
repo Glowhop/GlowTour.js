@@ -1018,7 +1018,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.isCurrentGeneration(generation);
     this.awaitingStepUi = true;
     try {
-      await this.scrollTargetIntoView(step, target, signal);
+      // An instant scroll has landed, but its `scroll` event only fires with the next frame: still
+      // marked as the scroll back, it must not read as the user scrolling once the step is back.
+      await (this.scrollTargetIntoView(step, target, signal) ??
+        this.waitForScrollToSettle(target, signal));
     } catch (error) {
       // An interrupted scroll back, or one whose step ended, has already been handed over.
       if (scrollingBack()) this.observeDynamicOperation(Promise.reject(error), generation);
