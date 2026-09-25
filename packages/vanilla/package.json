@@ -1,6 +1,6 @@
 {
   "name": "@glowhop/vanilla-tour",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Vanilla JavaScript product tour and onboarding tour custom elements for GlowTour.js. No framework needed, MIT licensed.",
   "license": "MIT",
   "homepage": "https://glowtour.dev/vanilla/",

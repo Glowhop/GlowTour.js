@@ -1,6 +1,6 @@
 {
   "name": "@glowhop/core-tour",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Framework-agnostic product tour engine for GlowTour.js: the tour controller and DOM runtime behind onboarding tours in any framework.",
   "license": "MIT",
   "homepage": "https://glowtour.dev/",

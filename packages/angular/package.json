@@ -1,6 +1,6 @@
 {
   "name": "@glowhop/angular-tour",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Angular 18+ product tour and onboarding tour standalone components for GlowTour.js. Accessible, SSR-safe, MIT licensed.",
   "license": "MIT",
   "homepage": "https://glowtour.dev/angular/",
