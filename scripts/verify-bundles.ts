@@ -57,7 +57,13 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // mid-entrance reveal into the step's engagement). 23 KiB rather than
     // 22.75: the mobile layout-viewport fix had already brought the core to
     // 23039 B, 1 B under the previous 22.5 KiB, leaving no headroom to absorb.
-    gzipBudget: 23 * KIB,
+    // Then from 23 KiB for stepping the popover and pointer aside while the
+    // user scrolls and scrolling the target back after `scroll.returnDelay`
+    // (about 510 B after folding the scroll-back flag into `awaitingStepUi`,
+    // sharing one timer between the idle wait and the return delay, and letting
+    // `syncInteraction` run during the scroll back instead of resyncing after;
+    // 23965 B once merged with `hidePopover()`).
+    gzipBudget: 23.5 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

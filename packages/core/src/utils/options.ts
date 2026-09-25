@@ -122,6 +122,7 @@ export function mergeScrollOptions(
     behavior: overrides?.behavior ?? defaults?.behavior,
     block: overrides?.block ?? defaults?.block,
     inline: overrides?.inline ?? defaults?.inline,
+    returnDelay: overrides?.returnDelay ?? defaults?.returnDelay,
   };
 }
 

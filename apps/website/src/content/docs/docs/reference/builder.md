@@ -648,11 +648,20 @@ shows up straight away and tracks the target as the page travels; the popover
 and the pointer enter once the page has come to rest, so they are never placed
 against a rect that is still moving.
 
+When the user scrolls during a step, the popover and the pointer fade out while
+the spotlight keeps following the target. They come back once the page has been
+still for a moment. If the user left part of the target outside the viewport,
+the step first waits `returnDelay`, then scrolls the target back into view with
+the options below. Scrolling again during that wait starts it over, and a wheel
+or touch drag during the scroll back hands the page back to the user. A step
+with `allowScroll: false` locks the page, so none of this applies.
+
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `behavior` | `"auto" \| "smooth"` | `"smooth"`* | Scroll animation style |
 | `block` | `"start" \| "center" \| "end" \| "nearest"` | `"center"` | Vertical alignment within viewport |
 | `inline` | `"start" \| "center" \| "end" \| "nearest"` | `"nearest"` | Horizontal alignment within viewport |
+| `returnDelay` | `number \| false` | `500` | Milliseconds to wait, after the user stops scrolling with part of the target off screen, before scrolling it back. `false` leaves the page where the user put it. Ignored when `autoScroll` is `false` |
 
 *Automatically switches to `"instant"` when the browser detects `prefers-reduced-motion`.
 
@@ -661,7 +670,8 @@ against a rect that is still moving.
 scroll: {
   behavior: "smooth",
   block: "center",
-  inline: "nearest"
+  inline: "nearest",
+  returnDelay: 500
 }
 ```
 

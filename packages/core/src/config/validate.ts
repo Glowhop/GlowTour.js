@@ -72,7 +72,7 @@ const BEHAVIOR_KEYS = [
   "scroll",
   "overlayClick",
 ] as const;
-const SCROLL_KEYS = ["behavior", "block", "inline"] as const;
+const SCROLL_KEYS = ["behavior", "block", "inline", "returnDelay"] as const;
 
 /** The config format version this release reads. */
 const CONFIG_VERSION = "1.1";
@@ -653,6 +653,8 @@ function validateScrollShape(path: string, value: unknown, issues: ConfigValidat
     ["start", "center", "end", "nearest"],
     issues,
   );
+  if (value.returnDelay !== false)
+    validateOptionalFiniteNonNegative(`${path}.returnDelay`, value.returnDelay, issues);
 }
 
 function validateBehaviorShape(

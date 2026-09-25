@@ -138,6 +138,9 @@ class MockElement extends MockNode {
       (selector.includes("[aria-hidden='true']") && this.getAttribute("aria-hidden") === "true");
     return match ? this : (this.parent?.closest(selector) ?? null);
   }
+  blur() {
+    if (document.activeElement === this) document.activeElement = null;
+  }
   focus() {
     if (this.closest("[hidden], [inert], [aria-hidden='true']")) return;
     document.activeElement = this;
@@ -259,6 +262,9 @@ class MockDocument extends MockEventTarget {
   scrollingElement: { scrollLeft: number; scrollTop: number } | null = null;
   /** Mirrors the real property; tests flip it to exercise the hidden-tab path. */
   visibilityState: "visible" | "hidden" = "visible";
+  contains() {
+    return true;
+  }
   createElement(tagName: string) {
     return new MockElement(tagName);
   }
@@ -326,6 +332,8 @@ const globalKeys = [
   "cancelAnimationFrame",
   "document",
   "requestAnimationFrame",
+  "clearTimeout",
+  "setTimeout",
   "window",
 ] as const;
 const originalGlobals = new Map(
@@ -453,6 +461,7 @@ function createStep(
     autoFocus?: boolean;
     autoScroll?: boolean;
     overlayClick?: "none" | "advance" | "cancel";
+    returnDelay?: number | false;
   } = {},
 ) {
   const workflow = new WorkflowBuilder<string>("dom-driver", {
@@ -462,6 +471,7 @@ function createStep(
       allowScroll: options.allowScroll,
       autoFocus: options.autoFocus,
       autoScroll: options.autoScroll,
+      scroll: options.returnDelay === undefined ? undefined : { returnDelay: options.returnDelay },
     },
     controls: options.advanceShortcuts
       ? { advance: { keys: options.advanceShortcuts } }
@@ -530,6 +540,48 @@ function createOffscreenTarget() {
   const target = createTarget();
   target.setRect({ height: 20, left: 10, top: 2000, width: 20 });
   return target;
+}
+/**
+ * Replaces `setTimeout` with a queue the test runs by delay, so the scroll idle
+ * wait and the return delay play out without real time passing. Restored with
+ * the other globals after each test.
+ */
+function installManualTimers() {
+  const timers = new Map<number, { callback: () => void; delay: number }>();
+  let nextId = 0;
+  Object.defineProperty(globalThis, "setTimeout", {
+    configurable: true,
+    value: (callback: () => void, delay = 0) => {
+      nextId += 1;
+      timers.set(nextId, { callback, delay });
+      return nextId;
+    },
+    writable: true,
+  });
+  Object.defineProperty(globalThis, "clearTimeout", {
+    configurable: true,
+    value: (id: number) => void timers.delete(id),
+    writable: true,
+  });
+  return {
+    /** Delays of the timers still pending, in the order they were set. */
+    pending: () => [...timers.values()].map((timer) => timer.delay),
+    /** Fires every pending timer set with `delay`. */
+    run(delay: number) {
+      for (const [id, timer] of [...timers]) {
+        if (timer.delay !== delay) continue;
+        timers.delete(id);
+        timer.callback();
+      }
+    },
+  };
+}
+/** A scroll of the page itself, as the browser reports it: on the document. */
+function scrollPage() {
+  document.dispatchEvent(new MockEvent("scroll", { target: document as unknown as MockNode }));
+}
+function opacityOf(element: MockElement) {
+  return element.style.getPropertyValue("opacity");
 }
 function hasAnimationFor(target: unknown, start = 0) {
   return createdAnimations.slice(start).some((animation) => animation.target === target);
@@ -3658,6 +3710,221 @@ describe("DomTourViewDriver", () => {
     await flushMicrotasks();
 
     assert.deepEqual(calls, []);
+  });
+
+  describe("user scroll", () => {
+    async function showStep(options: Parameters<typeof createStep>[0] = {}) {
+      const timers = installManualTimers();
+      installScroller();
+      const installed = installDriver();
+      const step = createStep({ allowInteraction: true, ...options });
+      const target = createTarget();
+      let scrolls = 0;
+      target.scrollIntoView = () => {
+        scrolls += 1;
+      };
+      step.target = target as unknown as HTMLElement;
+      await installed.driver.show(step, "advance", new AbortController().signal);
+      return {
+        ...installed,
+        target,
+        timers,
+        get scrolls() {
+          return scrolls;
+        },
+      };
+    }
+    const offscreen = { height: 20, left: 10, top: 2000, width: 20 };
+
+    test("steps the popover and pointer aside while the spotlight keeps tracking", async () => {
+      const { driver, elements, target, timers } = await showStep();
+      const updates = countDriverPositionUpdates(driver);
+
+      scrollPage();
+      await flushMicrotasks();
+      target.setRect({ height: 20, left: 10, top: 300, width: 20 });
+      await flushFrames(1);
+
+      assert.equal(opacityOf(elements.popover), "0");
+      assert.equal(
+        elements.popover.getAttribute("aria-hidden"),
+        null,
+        "the popover stays exposed to assistive technology",
+      );
+      assert.equal(elements.pointer.getAttribute("aria-hidden"), "true");
+      assert.ok(updates.overlay.count > 0, "the spotlight follows the target");
+      assert.equal(updates.popover.count, 0);
+      assert.equal(updates.pointer.count, 0);
+      assert.deepEqual(timers.pending(), [150]);
+    });
+
+    test("brings the step back where it is once the page is still over a visible target", async () => {
+      const handle = await showStep();
+
+      scrollPage();
+      await flushMicrotasks();
+      scrollPage();
+      assert.deepEqual(handle.timers.pending(), [150], "each scroll rearms the same wait");
+      handle.timers.run(150);
+      await flushMicrotasks();
+
+      assert.equal(opacityOf(handle.elements.popover), "1");
+      assert.equal(handle.elements.pointer.getAttribute("aria-hidden"), null);
+      assert.equal(handle.scrolls, 0);
+      assert.deepEqual(handle.timers.pending(), []);
+    });
+
+    test("scrolls a target left off screen back after the return delay", async () => {
+      const handle = await showStep();
+
+      scrollPage();
+      handle.target.setRect(offscreen);
+      handle.timers.run(150);
+      await flushMicrotasks();
+      assert.equal(opacityOf(handle.elements.popover), "0");
+      assert.equal(handle.scrolls, 0);
+      assert.deepEqual(handle.timers.pending(), [500]);
+
+      handle.timers.run(500);
+      assert.equal(handle.scrolls, 1);
+      handle.target.setRect({ height: 20, left: 10, top: 390, width: 20 });
+      await flushFrames(12);
+      await flushMicrotasks();
+
+      assert.equal(opacityOf(handle.elements.popover), "1");
+      const settled = translateY(handle.elements.popover.style.transform);
+      assert.ok(settled !== null && settled < 800, `expected the popover in view, got ${settled}`);
+    });
+
+    test("waits the step's own return delay", async () => {
+      const handle = await showStep({ returnDelay: 1200 });
+
+      scrollPage();
+      handle.target.setRect(offscreen);
+      handle.timers.run(150);
+
+      assert.deepEqual(handle.timers.pending(), [1200]);
+    });
+
+    test("starts the wait over when the user scrolls again before the return", async () => {
+      const handle = await showStep();
+
+      scrollPage();
+      handle.target.setRect(offscreen);
+      handle.timers.run(150);
+      scrollPage();
+
+      assert.deepEqual(handle.timers.pending(), [150]);
+      assert.equal(handle.scrolls, 0);
+    });
+
+    for (const options of [{ returnDelay: false as const }, { autoScroll: false }]) {
+      test(`leaves the page where the user put it with ${JSON.stringify(options)}`, async () => {
+        const handle = await showStep(options);
+
+        scrollPage();
+        handle.target.setRect(offscreen);
+        handle.timers.run(150);
+        await flushMicrotasks();
+
+        assert.equal(handle.scrolls, 0);
+        assert.equal(opacityOf(handle.elements.popover), "1");
+        assert.deepEqual(handle.timers.pending(), []);
+      });
+    }
+
+    test("hands the page back when the user scrolls against the return", async () => {
+      const handle = await showStep();
+
+      scrollPage();
+      handle.target.setRect(offscreen);
+      handle.timers.run(150);
+      handle.timers.run(500);
+      assert.equal(handle.scrolls, 1);
+      document.dispatchEvent(new MockEvent("wheel", { target: document as unknown as MockNode }));
+      await flushFrames(12);
+      await flushMicrotasks();
+
+      assert.equal(opacityOf(handle.elements.popover), "0", "the return does not finish");
+      assert.deepEqual(handle.timers.pending(), [150]);
+
+      handle.target.setRect({ height: 20, left: 10, top: 300, width: 20 });
+      handle.timers.run(150);
+      await flushMicrotasks();
+
+      assert.equal(opacityOf(handle.elements.popover), "1");
+      assert.equal(handle.scrolls, 1);
+    });
+
+    test("only reacts to scrollers that move the target", async () => {
+      const handle = await showStep();
+
+      document.dispatchEvent(new MockEvent("scroll", { target: handle.elements.popover }));
+      assert.equal(opacityOf(handle.elements.popover), "1");
+      assert.deepEqual(handle.timers.pending(), []);
+
+      const container = document.createElement("div");
+      document.body.append(container);
+      container.append(handle.target);
+      document.dispatchEvent(new MockEvent("scroll", { target: container }));
+      await flushMicrotasks();
+      assert.equal(opacityOf(handle.elements.popover), "0");
+    });
+
+    test("ignores scrolling on a step that locks it", async () => {
+      const handle = await showStep({ allowScroll: false });
+
+      scrollPage();
+      await flushMicrotasks();
+
+      assert.equal(opacityOf(handle.elements.popover), "1");
+      assert.deepEqual(handle.timers.pending(), []);
+    });
+
+    test("drops a pending return when the tour is cleared", async () => {
+      const handle = await showStep();
+
+      scrollPage();
+      handle.target.setRect(offscreen);
+      handle.timers.run(150);
+      await handle.driver.clear(new AbortController().signal);
+
+      assert.deepEqual(handle.timers.pending(), []);
+      assert.equal(handle.scrolls, 0);
+    });
+
+    test("keeps a popover the consumer hid out of sight once the page is still", async () => {
+      const handle = await showStep();
+      handle.driver.setPopoverHidden(true);
+      await flushMicrotasks();
+
+      scrollPage();
+      await flushMicrotasks();
+      handle.timers.run(150);
+      await flushMicrotasks();
+
+      assert.equal(opacityOf(handle.elements.popover), "0");
+      assert.equal(handle.elements.popover.getAttribute("aria-hidden"), "true");
+      assert.equal(
+        handle.elements.pointer.getAttribute("aria-hidden"),
+        null,
+        "the pointer returns",
+      );
+    });
+
+    test("brings the popover back when the target is lost mid-scroll", async () => {
+      const handle = await showStep();
+
+      scrollPage();
+      await flushMicrotasks();
+      handle.target.isConnected = false;
+      await flushFrames(1);
+      await flushMicrotasks();
+
+      assert.deepEqual(handle.calls, ["targetDisconnected"]);
+      assert.equal(opacityOf(handle.elements.popover), "1");
+      assert.deepEqual(handle.timers.pending(), []);
+    });
   });
 
   describe("frozen presentation recovery", () => {

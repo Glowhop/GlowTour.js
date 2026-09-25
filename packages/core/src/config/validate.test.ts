@@ -216,6 +216,19 @@ describe("validateWorkflowConfig", () => {
     }
   });
 
+  test("accepts a non-negative scroll return delay or false", () => {
+    for (const returnDelay of [0, 1500, false]) {
+      const config = { ...minimalConfig(), behavior: { scroll: { returnDelay } } };
+      assert.equal(validateWorkflowConfig(config), config);
+    }
+    for (const returnDelay of [-1, Number.NaN, Number.POSITIVE_INFINITY, "2000", true]) {
+      const paths = issuesOf({ ...minimalConfig(), behavior: { scroll: { returnDelay } } }).map(
+        (issue) => issue.path,
+      );
+      assert.deepEqual(paths, ["behavior.scroll.returnDelay"], `returnDelay: ${returnDelay}`);
+    }
+  });
+
   test("rejects cancellable: the cancel control replaces it", () => {
     assert.deepEqual(issuesOf({ ...minimalConfig(), cancellable: false }), [
       { path: "cancellable", message: "Unknown key: cancellable" },
