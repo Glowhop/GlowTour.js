@@ -223,6 +223,10 @@ describe("angular adapter browser behavior", () => {
     await settle();
     app.tick();
     assert.equal(document.querySelector("output")?.textContent?.trim(), "active:1");
+    glow.hidePopover();
+    assert.equal(glow.popoverHidden(), true);
+    glow.showPopover();
+    assert.equal(glow.popoverHidden(), false);
     await glow.cancel();
     assert.equal(glow.status(), "cancelled");
     await app.destroy();

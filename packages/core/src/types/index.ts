@@ -446,6 +446,11 @@ export interface TourState<T> {
    * advance control is refused, so a UI can show the wait instead of looking idle.
    */
   readonly awaitingTarget: boolean;
+  /**
+   * Whether `hidePopover()` hid the popover of the running tour. `false` again after
+   * `showPopover()`, and whenever a tour starts or ends.
+   */
+  readonly popoverHidden: boolean;
   /** Error encountered during the tour, if any. */
   readonly error: Error | null;
 }
@@ -475,6 +480,18 @@ export interface GlowTour<T> {
   goTo(id: string): Promise<void>;
   /** Cancel the current tour. */
   cancel(): Promise<void>;
+  /**
+   * Show the popover again after `hidePopover()`, and move focus into it when the step auto
+   * focuses. Does nothing when no tour is running.
+   */
+  showPopover(): void;
+  /**
+   * Hide the popover of the running tour. The overlay, the indicator and the scroll lock stay; the
+   * page is no longer inert, focus leaves the popover for the target, and the keyboard shortcuts
+   * do nothing until `showPopover()`. The popover stays hidden across steps, until `showPopover()`
+   * or the end of the tour. Does nothing when no tour is running.
+   */
+  hidePopover(): void;
   /** Dispose the tour and free resources. */
   dispose(): void;
   /** Observable store of the current tour state. */

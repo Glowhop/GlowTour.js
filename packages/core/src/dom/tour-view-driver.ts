@@ -79,6 +79,11 @@ export interface TourViewDriver<T> {
    * the one that carries the wait.
    */
   setTargetPending?(pending: boolean): void;
+  /**
+   * Hides or shows the popover of the running tour. A step still entering reads it as it is
+   * presented. Every `start()` shows it again first.
+   */
+  setPopoverHidden?(hidden: boolean): void;
   dispose(): void;
   releaseMount?(): void;
   setCommands?(commands: TourViewCommands): void;
@@ -156,6 +161,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private presentationDirty = false;
   /** True while the controller waits for the next step's target, see `setTargetPending`. */
   private targetPending = false;
+  /** True while the consumer hides the popover, see `setPopoverHidden`. */
+  private popoverHidden = false;
   /**
    * The focus a clear gives back once the popover has faded out. Kept past a clear that a new show
    * supersedes, so that tour returns focus there instead of to the fading popover.
@@ -243,6 +250,26 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (refocus) this.focusGuard.focus();
   }
 
+  /**
+   * Hides the popover and hands the page back while it is hidden: nothing is left to trap focus
+   * in, so the page leaves `inert`, focus moves from the popover to the target, and the shortcuts
+   * stop. The overlay, the pointer and the scroll lock stay. Showing it again replays the entrance
+   * and makes the step modal again. A step still entering applies it once presented.
+   */
+  setPopoverHidden(hidden: boolean): void {
+    if (this.disposed || this.popoverHidden === hidden) return;
+    this.popoverHidden = hidden;
+    const step = this.currentStep;
+    const target = this.activeTarget;
+    if (!this.active || !step || !target) return;
+    if (hidden) {
+      this.liftModality();
+      this.concealPopover();
+    } else {
+      this.revealPopover(step, target, this.generation);
+    }
+  }
+
   async show(
     step: ActiveStep<T>,
     direction: TourDirection,
@@ -252,7 +279,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.throwIfAborted(signal);
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
-    const replaceVisiblePopover = this.active && onBeforePopoverAppear !== undefined;
+    const replaceVisiblePopover =
+      this.active && !this.popoverHidden && onBeforePopoverAppear !== undefined;
     let removeTransitionListeners = () => {};
     try {
       this.cleanupStepResources();
@@ -324,8 +352,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       // the page while the popover is still hidden pulls the screen reader's cursor out of the
       // tree with nowhere to go, and VoiceOver then stays silent. Read live: `beforeEnter` or the
       // entrance may have changed `behavior.allowInteraction` since the modal claim above.
-      this.syncModality(step.allowsInteraction());
-      this.activateFocus(step, target, direction, generation);
+      this.engagePopover(step, target, direction, generation);
       this.syncScrollLock(step);
       this.throwIfStale(generation, signal);
       removeTransitionListeners();
@@ -437,8 +464,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // is the one the step was already parked on rather than a fresh reading.
     await this.appear(() => targetRect as DOMRect, step, generation, null, false);
     this.throwIfStale(generation);
-    this.syncModality(step.allowsInteraction());
-    this.activateFocus(step, target, this.direction, generation);
+    this.engagePopover(step, target, this.direction, generation);
     this.syncScrollLock(step);
     this.throwIfStale(generation);
     this.attachStepResources(step, target, generation, signal);
@@ -469,6 +495,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
 
     this.claimModal();
+    // A hidden popover leaves nothing to interact with: the page stays reachable until it is back.
+    if (this.popoverHidden) {
+      this.liftModality();
+      return;
+    }
     const popover = this.popover?.getElement();
     if (isHTMLElement(popover, this.root ?? popover)) popover.setAttribute("aria-modal", "true");
 
@@ -503,13 +534,18 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private releaseModality() {
-    this.popover?.getElement()?.removeAttribute("aria-modal");
-    this.restoreInertBranches();
+    this.liftModality();
     const document = this.modalDocument;
     if (document && ACTIVE_MODAL_BY_DOCUMENT.get(document) === this.modalToken) {
       ACTIVE_MODAL_BY_DOCUMENT.delete(document);
     }
     this.modalDocument = null;
+  }
+
+  /** Gives the page back without releasing the document's modal claim. */
+  private liftModality() {
+    this.popover?.getElement()?.removeAttribute("aria-modal");
+    this.restoreInertBranches();
     this.modalRoot = null;
   }
 
@@ -615,7 +651,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.elementProps(step),
     ).placement;
     return Promise.all([
-      this.popover?.present(targetRect, this.elementProps(step)) ?? Promise.resolve(),
+      (!this.popoverHidden && this.popover?.present(targetRect, this.elementProps(step))) ||
+        Promise.resolve(),
       this.presentPointer(targetRect, step, popoverPlacement) ?? Promise.resolve(),
     ]);
   }
@@ -840,11 +877,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
     presentationChanged: boolean,
   ) {
-    const popoverPlacement = this.popover?.updatePosition(
-      targetRect,
-      this.elementProps(step),
-      (reposition) => this.observeDynamicOperation(reposition, generation),
-    );
+    const popoverPlacement = this.placePopover(targetRect, step, generation);
     if (presentationChanged) {
       if (this.pointerFading) this.pointerFading = false;
       else
@@ -869,6 +902,19 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
+  /**
+   * Moves the popover along with its target and returns its placement. A hidden popover stays
+   * where it is: moving it would fade it back in. The pointer still keeps clear of its placement.
+   */
+  private placePopover(targetRect: DOMRect, step: ActiveStep<T>, generation: number) {
+    if (this.popoverHidden) {
+      return this.popover?.resolvePosition(targetRect, this.elementProps(step)).placement;
+    }
+    return this.popover?.updatePosition(targetRect, this.elementProps(step), (reposition) =>
+      this.observeDynamicOperation(reposition, generation),
+    );
+  }
+
   private observeDynamicOperation(operation: Promise<void> | undefined, generation: number) {
     if (!operation) return;
     void operation.catch((error) => {
@@ -884,6 +930,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const step = this.currentStep;
     if (
       !step ||
+      this.popoverHidden ||
       event.defaultPrevented ||
       event.isComposing ||
       event.ctrlKey ||
@@ -1043,6 +1090,63 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       event.preventDefault();
       focusable[0]?.focus();
     }
+  }
+
+  /**
+   * Makes a presented step modal and moves focus into its popover, or keeps the popover hidden. A
+   * popover shown again after the entrance passed over it enters now.
+   */
+  private engagePopover(
+    step: ActiveStep<T>,
+    target: HTMLElement,
+    direction: TourDirection,
+    generation: number,
+  ) {
+    this.syncModality(step.allowsInteraction());
+    if (this.popoverHidden) this.concealPopover();
+    else if (this.isPopoverConcealed()) this.revealPopover(step, target, generation);
+    else this.activateFocus(step, target, direction, generation);
+  }
+
+  /**
+   * Fades the popover out and stops guarding focus. Focus left in the popover goes to the target,
+   * or is dropped when the target cannot take it: `inert` would otherwise drop it on the body. The
+   * focus the tour gives back when it ends is kept for the step that shows the popover again.
+   */
+  private concealPopover() {
+    this.focusToRestore = this.focusGuard.release() ?? this.focusToRestore;
+    const popover = this.popover;
+    const element = popover?.getElement();
+    if (!popover || !element) return;
+    const focused = element.ownerDocument.activeElement;
+    if (isHTMLElement(focused, element) && element.contains(focused)) {
+      focused.blur();
+      this.activeTarget?.focus();
+    }
+    if (this.isPopoverConcealed()) return;
+    popover.cancelAnimations();
+    this.observeDynamicOperation(popover.disappear(), this.generation);
+  }
+
+  /**
+   * Replays the popover's entrance on the rect the step was last placed on (a frozen step has no
+   * live target to measure), then makes the step modal again.
+   */
+  private revealPopover(step: ActiveStep<T>, target: HTMLElement, generation: number) {
+    this.focusGuard.captureInitialFocus(target, this.focusToRestore);
+    this.popover?.cancelAnimations();
+    this.observeDynamicOperation(
+      this.popover?.present(this.lastTargetRect as DOMRect, this.elementProps(step)).then(() => {
+        if (!this.isCurrentGeneration(generation) || this.popoverHidden) return;
+        this.syncModality(!this.frozen && step.allowsInteraction());
+        this.activateFocus(step, target, this.direction, generation);
+      }),
+      generation,
+    );
+  }
+
+  private isPopoverConcealed() {
+    return this.popover?.getElement()?.getAttribute("aria-hidden") === "true";
   }
 
   private activateFocus(
@@ -1333,7 +1437,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.applyInteractionLock(step, false);
     this.appliedAllowInteraction = step.allowsInteraction();
     const popover = this.popover?.getElement();
-    if (isHTMLElement(popover, this.root ?? popover)) {
+    if (!this.popoverHidden && isHTMLElement(popover, this.root ?? popover)) {
       this.focusGuard.update({
         allowedTarget: target,
         allowTargetInteraction: step.allowsInteraction(),
@@ -1431,11 +1535,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.overlay?.animateTo(targetRect, this.elementProps(step)),
       generation,
     );
-    const placement = this.popover?.updatePosition(
-      targetRect,
-      this.elementProps(step),
-      (reposition) => this.observeDynamicOperation(reposition, generation),
-    );
+    const placement = this.placePopover(targetRect, step, generation);
     if (this.isPointerEnabled(step)) {
       this.observeDynamicOperation(
         this.pointer?.moveToTarget(targetRect, step.props.get(), true, placement),

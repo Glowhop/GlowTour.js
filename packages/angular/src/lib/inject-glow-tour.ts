@@ -5,7 +5,7 @@ import { createGlowTour, type Tour, type TourState } from "./glow-tour";
 /** What `injectGlowTour` returns: the tour, its methods, and one signal per state field. */
 export type InjectGlowTourResult = Pick<
   Tour,
-  "advance" | "cancel" | "create" | "goTo" | "previous" | "start"
+  "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"
 > & {
   /** The tour instance, to pass to `glow-tour-default` or `glow-tour-root`. */
   readonly tour: Tour;
@@ -28,8 +28,18 @@ export function injectGlowTour(source: GlowTourOptions | Tour = {}): InjectGlowT
     unsubscribe();
     if (!shared) tour.dispose();
   });
-  const { advance, cancel, create, goTo, previous, start } = tour;
-  const result: Record<string, unknown> = { advance, cancel, create, goTo, previous, start, tour };
+  const { advance, cancel, create, goTo, hidePopover, previous, showPopover, start } = tour;
+  const result: Record<string, unknown> = {
+    advance,
+    cancel,
+    create,
+    goTo,
+    hidePopover,
+    previous,
+    showPopover,
+    start,
+    tour,
+  };
   for (const key of Object.keys(snapshot()) as (keyof TourState)[]) {
     result[key] = computed(() => snapshot()[key]);
   }

@@ -244,7 +244,9 @@ describe("private root bridge", () => {
       "create",
       "dispose",
       "goTo",
+      "hidePopover",
       "previous",
+      "showPopover",
       "start",
       "state",
     ]);

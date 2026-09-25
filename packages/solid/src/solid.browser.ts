@@ -250,6 +250,10 @@ describe("solid adapter browser behavior", () => {
     assert.equal(container.querySelector("output")?.textContent, "active:0");
     await glow.advance();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
+    glow.hidePopover();
+    assert.equal(glow.popoverHidden(), true);
+    glow.showPopover();
+    assert.equal(glow.popoverHidden(), false);
     await glow.cancel();
     assert.equal(glow.status(), "cancelled");
     dispose();

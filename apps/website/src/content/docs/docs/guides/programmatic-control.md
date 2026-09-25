@@ -71,6 +71,10 @@ await tour.previous();
 // Jump to a specific step by id
 await tour.goTo("billing");
 
+// Hide the popover, keeping the overlay, then show it again
+tour.hidePopover();
+tour.showPopover();
+
 // Cancel and end the tour
 await tour.cancel();
 
