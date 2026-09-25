@@ -1280,6 +1280,32 @@ describe("instance-first TourController", () => {
     unsubscribe();
   });
 
+  test("ends the wait of a navigation superseded while its resolver never settles", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("stuck-target")
+      .step({ id: "step-46c", content: "one", target: targetResolver, title: "one" })
+      // Ignores the abort signal and never settles.
+      .step({ id: "step-46d", content: "two", target: () => new Promise(() => {}), title: "two" })
+      .build();
+
+    await tour.start(workflow);
+    void tour.advance();
+    await flushMicrotasks();
+    assert.equal(tour.state.get().awaitingTarget, true);
+
+    await tour.cancel();
+    assert.equal(tour.state.get().status, "cancelled");
+    assert.equal(tour.state.get().awaitingTarget, false);
+    assert.deepEqual(driver.targetPendingCalls, [true, false]);
+
+    await tour.start(workflow);
+    assert.equal(tour.state.get().currentStep?.id, "step-46c");
+    assert.equal(tour.state.get().awaitingTarget, false);
+    assert.equal(driver.commands?.isAdvanceDisabled(), false);
+  });
+
   test("hides and shows the popover of a running tour, across steps", async () => {
     const driver = new RecordingDriver();
     const tour = new TourController<string>(driver);

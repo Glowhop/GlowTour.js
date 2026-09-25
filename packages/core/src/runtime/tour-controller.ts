@@ -754,6 +754,12 @@ export class TourController<T> {
     this.operationToken += 1;
     this.operation?.abort();
     this.operation = null;
+    // A superseded wait ends here: its resolver may ignore the abort and never settle to clear it.
+    // The operation that supersedes it publishes the state.
+    if (this.awaitingTargetOperation !== null) {
+      this.awaitingTargetOperation = null;
+      this.driver.setTargetPending?.(false);
+    }
   }
 
   private signalFor(operation: number) {
