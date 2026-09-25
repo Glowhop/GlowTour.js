@@ -52,10 +52,12 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // popover's own mutation lease), then from 22.5 KiB for `hidePopover()` and
     // `showPopover()`: a hidden popover lifts the page's modality, releases the
     // focus guard and hands focus to the target, the shortcuts stop, and showing
-    // it replays the entrance before the step turns modal again (426 B after
+    // it replays the entrance before the step turns modal again (427 B after
     // reusing the last placed rect, dropping redundant resets and folding the
-    // mid-entrance reveal into the step's engagement).
-    gzipBudget: 22.75 * KIB,
+    // mid-entrance reveal into the step's engagement). 23 KiB rather than
+    // 22.75: the mobile layout-viewport fix had already brought the core to
+    // 23039 B, 1 B under the previous 22.5 KiB, leaving no headroom to absorb.
+    gzipBudget: 23 * KIB,
     name: "Core index",
     outputExtension: "js",
   },
