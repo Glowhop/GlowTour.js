@@ -38,6 +38,13 @@ Timing is part of the contract, because real screen readers lose track otherwise
   popover is still hidden left VoiceOver with nothing to read.
 - `clear()` releases the focus guard with `FocusGuard.release()` and restores focus only after the
   popover has faded out. Moving focus in the same task that lifts `inert` was not announced.
+- `hidePopover()` (`setPopoverHidden()` in `tour-view-driver.ts`) lifts `aria-modal` and the
+  `inert` branches, releases the focus guard and moves focus from the popover to the target (or
+  drops it when the target cannot take it), then fades the popover out to `aria-hidden` + `inert`.
+  A hidden popover must not keep the page modal: that would be a trap with nothing to read or
+  reach. The document's modal claim is kept, the keyboard shortcuts are ignored, and the focus to
+  restore at the end of the tour is kept. `showPopover()` replays the entrance, and only once it
+  has settled re-applies the modality and `activateFocus()`, the same order as `show()`.
 - Between two steps the popover is not hidden from assistive technology:
   `initializeProps(false)` and `disappear(false)` on the popover keep it
   exposed so the live region announces the new content and `inert` never blurs the focused

@@ -6,7 +6,7 @@ import { createGlowTour, type Tour, type TourState } from "./glow-tour.js";
 /** What `useGlowTour` returns: the tour, its methods, and one readonly ref per state field. */
 export type UseGlowTourResult = Pick<
   Tour,
-  "advance" | "cancel" | "create" | "goTo" | "previous" | "start"
+  "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"
 > & {
   /** The tour instance, to pass to `GlowTourDefault` or `GlowTourRoot`. */
   readonly tour: Tour;
@@ -25,8 +25,18 @@ export function useGlowTour(source: GlowTourOptions | Tour = {}): UseGlowTourRes
   const tour = shared ? source : createGlowTour(source);
   if (!shared) onScopeDispose(tour.dispose);
   const snapshot = useTourSnapshot(() => tour);
-  const { advance, cancel, create, goTo, previous, start } = tour;
-  const result: Record<string, unknown> = { advance, cancel, create, goTo, previous, start, tour };
+  const { advance, cancel, create, goTo, hidePopover, previous, showPopover, start } = tour;
+  const result: Record<string, unknown> = {
+    advance,
+    cancel,
+    create,
+    goTo,
+    hidePopover,
+    previous,
+    showPopover,
+    start,
+    tour,
+  };
   for (const key of Object.keys(snapshot.value) as (keyof TourState)[]) {
     result[key] = toRef(() => snapshot.value[key]);
   }

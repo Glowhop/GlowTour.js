@@ -138,6 +138,9 @@ class MockElement extends MockNode {
       (selector.includes("[aria-hidden='true']") && this.getAttribute("aria-hidden") === "true");
     return match ? this : (this.parent?.closest(selector) ?? null);
   }
+  blur() {
+    if (document.activeElement === this) document.activeElement = null;
+  }
   focus() {
     if (this.closest("[hidden], [inert], [aria-hidden='true']")) return;
     document.activeElement = this;
@@ -3888,6 +3891,25 @@ describe("DomTourViewDriver", () => {
 
       assert.deepEqual(handle.timers.pending(), []);
       assert.equal(handle.scrolls, 0);
+    });
+
+    test("keeps a popover the consumer hid out of sight once the page is still", async () => {
+      const handle = await showStep();
+      handle.driver.setPopoverHidden(true);
+      await flushMicrotasks();
+
+      scrollPage();
+      await flushMicrotasks();
+      handle.timers.run(150);
+      await flushMicrotasks();
+
+      assert.equal(opacityOf(handle.elements.popover), "0");
+      assert.equal(handle.elements.popover.getAttribute("aria-hidden"), "true");
+      assert.equal(
+        handle.elements.pointer.getAttribute("aria-hidden"),
+        null,
+        "the pointer returns",
+      );
     });
 
     test("brings the popover back when the target is lost mid-scroll", async () => {

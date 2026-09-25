@@ -226,6 +226,10 @@ describe("vue adapter browser behavior", () => {
     await glow.advance();
     await nextTick();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
+    glow.hidePopover();
+    assert.equal(glow.popoverHidden.value, true);
+    glow.showPopover();
+    assert.equal(glow.popoverHidden.value, false);
     await glow.cancel();
     await nextTick();
     assert.equal(glow.status.value, "cancelled");

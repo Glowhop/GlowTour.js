@@ -239,6 +239,10 @@ describe("react adapter browser behavior", () => {
     assert.equal(container.querySelector("output")?.textContent, "active:0");
     await React.act(async () => glow.advance());
     assert.equal(container.querySelector("output")?.textContent, "active:1");
+    await React.act(async () => glow.hidePopover());
+    assert.equal(glow.popoverHidden, true);
+    await React.act(async () => glow.showPopover());
+    assert.equal(glow.popoverHidden, false);
     await React.act(async () => glow.cancel());
     assert.equal(glow.status, "cancelled");
     assert.equal(new Set([...tours].filter((tour) => tour === glow.tour)).size, 1);
@@ -1154,8 +1158,14 @@ describe("react adapter browser behavior", () => {
       async goTo(id: string) {
         await React.act(() => tour.goTo(id));
       },
+      hidePopover() {
+        React.act(() => tour.hidePopover());
+      },
       async previous() {
         await React.act(() => tour.previous());
+      },
+      showPopover() {
+        React.act(() => tour.showPopover());
       },
       async start(workflow: Parameters<typeof tour.start>[0]) {
         await React.act(() => tour.start(workflow));

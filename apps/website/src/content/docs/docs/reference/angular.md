@@ -15,7 +15,7 @@ Runs a tour from a component. This is the main entry point: it returns the tour 
 ```typescript
 function injectGlowTour(source?: GlowTourOptions | Tour): InjectGlowTourResult
 
-type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
+type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"> & {
   readonly tour: Tour
 } & { readonly [K in keyof TourState]: Signal<TourState[K]> }
 ```

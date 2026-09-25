@@ -128,6 +128,27 @@ cancel(): Promise<void>
 <button onClick={() => tour.cancel()}>Skip tour</button>
 ```
 
+### `tour.hidePopover()` / `tour.showPopover()`
+
+Hide the popover of the running tour, and show it again. Both do nothing when no tour is running.
+
+While the popover is hidden, the overlay, the indicator and the scroll lock stay on screen, and the tour keeps running: `advance()`, `previous()`, `goTo()` and `cancel()` still work. The popover has nothing left to trap focus in, so the page is no longer inert, focus moves from the popover to the target, and the keyboard shortcuts do nothing. It stays hidden across steps, until `showPopover()` or the end of the tour; a new `start()` shows it again.
+
+`showPopover()` replays the popover's entrance on the current step, makes the step modal again, and moves focus into the popover when the step auto focuses. `state.popoverHidden` reports which one is in effect.
+
+**Signature**:
+```typescript
+hidePopover(): void
+showPopover(): void
+```
+
+**Usage**:
+```typescript
+// Let the user look at the page without the popover, then bring it back
+tour.hidePopover();
+helpButton.addEventListener("click", () => tour.showPopover());
+```
+
 ### `tour.dispose()`
 
 Cancels pending work and releases the connected root. The controller becomes unusable after this - create a new one with `createGlowTour()` if you need another tour.
@@ -164,6 +185,7 @@ const { status, canAdvance } = tour.state.get();
 {
   status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
   awaitingTarget: boolean
+  popoverHidden: boolean
   name: string
   totalSteps: number
   currentStepIndex: number
@@ -206,7 +228,7 @@ Controller-related type exports for TypeScript users:
 - `GlowTour` - Tour controller interface
 - `GlowTourOptions` - Options for `createGlowTour`
 - `TourEvent`, `TourEventListener`, `TourEventType`, `TourEventSource` - The monitoring contract; see the [Monitoring guide](/docs/guides/monitoring/)
-- `TourState` - Immutable state object returned by `tour.state.get()`. `awaitingTarget` is true while a navigation waits for the next step's target to resolve - an async resolver, or the `"wait"` missing-target strategy - which is when the step being left is still on screen with its advance refused; see [Behavior options](/docs/reference/builder/#behavior-options)
+- `TourState` - Immutable state object returned by `tour.state.get()`. `awaitingTarget` is true while a navigation waits for the next step's target to resolve - an async resolver, or the `"wait"` missing-target strategy - which is when the step being left is still on screen with its advance refused; see [Behavior options](/docs/reference/builder/#behavior-options). `popoverHidden` is true between `hidePopover()` and `showPopover()`, and false again whenever a tour starts or ends
 - `TourCurrentStep` - The active step's target and props, part of `TourState`
 
 `TourStatus`, `TourEventType`, and `TourEventSource` are unions that can gain members in a minor release. When you switch over them, keep a default branch.

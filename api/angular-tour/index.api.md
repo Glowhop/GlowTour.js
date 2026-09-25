@@ -81,7 +81,7 @@ function injectGlowTour(source?: GlowTourOptions | Tour): InjectGlowTourResult;
 
 function injectGlowTourContext(): Signal<import("@glowhop/core-tour").TourState<AngularTourContent> | null>;
 
-type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
+type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"> & {
     readonly tour: Tour;
 } & {
     readonly [K in keyof TourState]: Signal<TourState[K]>;

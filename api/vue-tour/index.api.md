@@ -53,7 +53,7 @@ function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
 
 function useGlowTourContext(): ShallowRef<import("@glowhop/core-tour").TourState<VueTourContent>>;
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"> & {
     readonly tour: Tour;
 } & {
     readonly [K in keyof TourState]: Readonly<Ref<TourState[K]>>;
