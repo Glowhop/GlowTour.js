@@ -1,6 +1,6 @@
 ---
 title: Angular API reference
-description: API reference for @glowhop/angular-tour.
+description: "API reference for @glowhop/angular-tour: injectGlowTour, GlowTourDefault and the standalone components for building Angular product tours."
 ---
 
 The Angular adapter (`@glowhop/angular-tour`) exports components and utility functions.
@@ -15,7 +15,7 @@ Runs a tour from a component. This is the main entry point: it returns the tour 
 ```typescript
 function injectGlowTour(source?: GlowTourOptions | Tour): InjectGlowTourResult
 
-type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
+type InjectGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"> & {
   readonly tour: Tour
 } & { readonly [K in keyof TourState]: Signal<TourState[K]> }
 ```
@@ -51,7 +51,7 @@ export class Onboarding {
 }
 ```
 
-See the guide to [choose step targets](/docs/guides/angular#step-targets) and [share one tour between components](/docs/guides/angular#share-one-tour-between-components).
+See the guide to [choose step targets](/docs/guides/angular/#step-targets) and [share one tour between components](/docs/guides/angular/#share-one-tour-between-components).
 
 ### `injectGlowTourContext()`
 
@@ -208,9 +208,9 @@ Navigation button container. Selector: `glow-tour-footer`.
 | --- | --- | --- |
 | `GlowTourPreviousTrigger` | `glow-tour-previous-trigger` | `previousLabel?: string` (default `"Previous step"`), `ariaLabel?: string`, `disabled: boolean` |
 | `GlowTourAdvanceTrigger` | `glow-tour-advance-trigger` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), `ariaLabel?: string`, `disabled: boolean` |
-| `GlowTourCancelTrigger` | `glow-tour-cancel-trigger` | `ariaLabel?: string`, `disabled: boolean`. Its label is `"Skip"` |
+| `GlowTourCancelTrigger` | `glow-tour-cancel-trigger` | `ariaLabel?: string`, `cancelLabel?: string` (default `"Skip"`), `disabled: boolean` |
 
-Each trigger renders a `<button>`. The label is the button text and, without `ariaLabel`, its accessible name. Projected content replaces the button text. `disabled` accepts a boolean attribute and adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder#hiding-a-controls-button).
+Each trigger renders a `<button>`. The label is the button text and, without `ariaLabel`, its accessible name. Projected content replaces the button text. `disabled` accepts a boolean attribute and adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder/#hiding-a-controls-button).
 
 **Usage**:
 ```html

@@ -55,6 +55,9 @@ function Tutorial() {
           <button type="button" disabled={!core.canCancel} onClick={() => void core.cancel()}>
             Cancel
           </button>
+          <button type="button" disabled={!core.popoverHidden} onClick={core.showPopover}>
+            Show popover
+          </button>
         </div>
       </section>
       <div className="tutorial-cards">
@@ -84,6 +87,9 @@ function Tutorial() {
           <StepCounter />
           <GlowTour.Content />
           <GlowTour.Footer>
+            <button type="button" onClick={core.hidePopover}>
+              Hide
+            </button>
             <GlowTour.CancelTrigger />
             <GlowTour.PreviousTrigger />
             <GlowTour.AdvanceTrigger />

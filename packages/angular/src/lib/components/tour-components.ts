@@ -475,6 +475,7 @@ export class GlowTourPreviousTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
+      this.snapshot()?.isFirstStep === true ||
       this.unavailableWhileActive(!this.snapshot()?.canPrevious) ||
       this.step()?.controls?.previous?.state === "disabled",
   );
@@ -522,6 +523,7 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
   readonly isDisabled = computed(
     () =>
       this.consumerDisabled() ||
+      this.snapshot()?.awaitingTarget === true ||
       this.unavailableWhileActive(!this.snapshot()?.canAdvance) ||
       this.step()?.controls?.advance?.state === "disabled",
   );
@@ -550,6 +552,8 @@ export class GlowTourAdvanceTrigger extends GlowTourTrigger {
 })
 /** Button component for canceling/skipping the tour. */
 export class GlowTourCancelTrigger extends GlowTourTrigger {
+  private readonly cancelLabelValue = signal<string | undefined>(undefined);
+
   /** Optional aria-label for the cancel button. */
   @Input() set ariaLabel(value: string | undefined) {
     this.setAriaLabel(value);
@@ -558,6 +562,10 @@ export class GlowTourCancelTrigger extends GlowTourTrigger {
   @Input({ transform: booleanAttribute }) set disabled(value: boolean) {
     this.setDisabled(value);
   }
+  /** Optional label text for the cancel button. */
+  @Input() set cancelLabel(value: string | undefined) {
+    this.cancelLabelValue.set(value);
+  }
 
   readonly isDisabled = computed(
     () =>
@@ -565,5 +573,5 @@ export class GlowTourCancelTrigger extends GlowTourTrigger {
       this.unavailableWhileActive(!this.snapshot()?.canCancel) ||
       this.step()?.controls?.cancel?.state === "disabled",
   );
-  readonly label = computed(() => "Skip");
+  readonly label = computed(() => this.cancelLabelValue() ?? "Skip");
 }

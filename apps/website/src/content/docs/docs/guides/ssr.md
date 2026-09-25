@@ -1,6 +1,6 @@
 ---
-title: SSR guide
-description: Server-render GlowTour.js with React, Vue, Solid, Angular, or Vanilla.
+title: "Server-side rendering: Next.js, Nuxt, SolidStart, Angular"
+description: Use GlowTour.js product tours with server-side rendering in Next.js, Nuxt, SolidStart and Angular SSR, and import the vanilla adapter safely on the server.
 ---
 
 The GlowTour.js adapters have varying levels of SSR support. React, Vue, Solid, and Angular have verified coverage with real-world SSR apps. Vanilla custom elements only upgrade in the browser, but the package imports safely without DOM globals.

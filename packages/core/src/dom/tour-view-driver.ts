@@ -26,6 +26,10 @@ const SCROLL_SETTLE_GRACE_FRAMES = 3;
 const SCROLL_SETTLE_EPSILON = 0.5;
 /** Safety valve for a scroller that never settles, or a tab with no frames. */
 const SCROLL_SETTLE_TIMEOUT = 2000;
+/** Quiet time, in milliseconds, after which a user scroll counts as finished. */
+const USER_SCROLL_IDLE_DELAY = 150;
+/** Default `scroll.returnDelay`. */
+const DEFAULT_SCROLL_RETURN_DELAY = 500;
 const ACTIVE_MODAL_BY_DOCUMENT = new WeakMap<Document, object>();
 const DEFAULT_SHORTCUTS = {
   previous: ["ArrowLeft", "Backspace"],
@@ -73,6 +77,17 @@ export interface TourViewDriver<T> {
    * than throw.
    */
   retarget(step: ActiveStep<T>, signal: AbortSignal): Promise<void> | void;
+  /**
+   * Reports that the navigation under way is waiting for the next step's
+   * target to resolve. The presented step has not left yet, so its popover is
+   * the one that carries the wait.
+   */
+  setTargetPending?(pending: boolean): void;
+  /**
+   * Hides or shows the popover of the running tour. A step still entering reads it as it is
+   * presented. Every `start()` shows it again first.
+   */
+  setPopoverHidden?(hidden: boolean): void;
   dispose(): void;
   releaseMount?(): void;
   setCommands?(commands: TourViewCommands): void;
@@ -125,6 +140,14 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
    * instead of freezing the presentation.
    */
   private awaitingStepUi = false;
+  /**
+   * True while the popover and pointer stand aside for a user scroll, until the
+   * page has been still for `USER_SCROLL_IDLE_DELAY` and, when the target was
+   * left off screen, the step has scrolled it back. The spotlight keeps
+   * tracking the target throughout.
+   */
+  private userScrolling = false;
+  private scrollTimer?: ReturnType<typeof setTimeout>;
   private activeTarget: HTMLElement | null = null;
   private targetFocusedAtFreeze = false;
   private lastTargetRect: RectSnapshot | null = null;
@@ -148,6 +171,10 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private handledTriggerClick: Event | null = null;
   private popover: PopoverElement | null = null;
   private presentationDirty = false;
+  /** True while the controller waits for the next step's target, see `setTargetPending`. */
+  private targetPending = false;
+  /** True while the consumer hides the popover, see `setPopoverHidden`. */
+  private popoverHidden = false;
   /**
    * The focus a clear gives back once the popover has faded out. Kept past a clear that a new show
    * supersedes, so that tour returns focus there instead of to the fading popover.
@@ -209,6 +236,52 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.refreshRegisteredElements();
   }
 
+  /**
+   * Flags the presented popover as waiting for the next step's target, and
+   * disables its advance control for as long as the wait lasts: the step the
+   * user asked to leave stays on screen, and an advance that is already
+   * refused by the controller must not keep looking available. Cleared by the
+   * controller when the target settles, and by any teardown.
+   */
+  setTargetPending(pending: boolean): void {
+    if (this.disposed || this.targetPending === pending) return;
+    this.targetPending = pending;
+    this.popover?.setAwaitingTarget(pending);
+    const step = this.currentStep;
+    if (!step) return;
+    // A browser drops the focus of a control it sees disabled, and it drops it on the body:
+    // outside a page the tour made inert, with nothing to tab back from. Read before the sync,
+    // moved after it so the guard skips the control it just disabled, and left alone on a step
+    // that handed focus to the page.
+    const focused = this.popover?.getElement()?.ownerDocument.activeElement;
+    const refocus =
+      pending &&
+      step.autoFocuses() &&
+      this.findTriggers("advance").includes(focused as HTMLButtonElement);
+    this.syncControlState(step);
+    if (refocus) this.focusGuard.focus();
+  }
+
+  /**
+   * Hides the popover and hands the page back while it is hidden: nothing is left to trap focus
+   * in, so the page leaves `inert`, focus moves from the popover to the target, and the shortcuts
+   * stop. The overlay, the pointer and the scroll lock stay. Showing it again replays the entrance
+   * and makes the step modal again. A step still entering applies it once presented.
+   */
+  setPopoverHidden(hidden: boolean): void {
+    if (this.disposed || this.popoverHidden === hidden) return;
+    this.popoverHidden = hidden;
+    const step = this.currentStep;
+    const target = this.activeTarget;
+    if (!this.active || !step || !target) return;
+    if (hidden) {
+      this.liftModality();
+      this.concealPopover();
+    } else {
+      this.revealPopover(step, target, this.generation);
+    }
+  }
+
   async show(
     step: ActiveStep<T>,
     direction: TourDirection,
@@ -218,7 +291,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.throwIfAborted(signal);
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
-    const replaceVisiblePopover = this.active && onBeforePopoverAppear !== undefined;
+    const replaceVisiblePopover =
+      this.active && !this.popoverHidden && onBeforePopoverAppear !== undefined;
     let removeTransitionListeners = () => {};
     try {
       this.cleanupStepResources();
@@ -290,8 +364,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       // the page while the popover is still hidden pulls the screen reader's cursor out of the
       // tree with nowhere to go, and VoiceOver then stays silent. Read live: `beforeEnter` or the
       // entrance may have changed `behavior.allowInteraction` since the modal claim above.
-      this.syncModality(step.allowsInteraction());
-      this.activateFocus(step, target, direction, generation);
+      this.engagePopover(step, target, direction, generation);
       this.syncScrollLock(step);
       this.throwIfStale(generation, signal);
       removeTransitionListeners();
@@ -311,6 +384,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.throwIfAborted(signal);
     const generation = this.beginGeneration();
     const removeAbort = this.cancelAnimationsOnAbort(signal);
+    this.setTargetPending(false);
     // Focus goes back once the popover has faded out, not in the task that lifts `inert` from the
     // page: screen readers ignore focus moved onto content that just rejoined their tree.
     try {
@@ -347,6 +421,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   releaseMount(): void {
     if (this.disposed) return;
+    this.setTargetPending(false);
     this.beginGeneration();
     this.cleanupStepResources();
     this.releaseModality();
@@ -401,8 +476,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // is the one the step was already parked on rather than a fresh reading.
     await this.appear(() => targetRect as DOMRect, step, generation, null, false);
     this.throwIfStale(generation);
-    this.syncModality(step.allowsInteraction());
-    this.activateFocus(step, target, this.direction, generation);
+    this.engagePopover(step, target, this.direction, generation);
     this.syncScrollLock(step);
     this.throwIfStale(generation);
     this.attachStepResources(step, target, generation, signal);
@@ -433,6 +507,11 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
 
     this.claimModal();
+    // A hidden popover leaves nothing to interact with: the page stays reachable until it is back.
+    if (this.popoverHidden) {
+      this.liftModality();
+      return;
+    }
     const popover = this.popover?.getElement();
     if (isHTMLElement(popover, this.root ?? popover)) popover.setAttribute("aria-modal", "true");
 
@@ -467,13 +546,18 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   private releaseModality() {
-    this.popover?.getElement()?.removeAttribute("aria-modal");
-    this.restoreInertBranches();
+    this.liftModality();
     const document = this.modalDocument;
     if (document && ACTIVE_MODAL_BY_DOCUMENT.get(document) === this.modalToken) {
       ACTIVE_MODAL_BY_DOCUMENT.delete(document);
     }
     this.modalDocument = null;
+  }
+
+  /** Gives the page back without releasing the document's modal claim. */
+  private liftModality() {
+    this.popover?.getElement()?.removeAttribute("aria-modal");
+    this.restoreInertBranches();
     this.modalRoot = null;
   }
 
@@ -579,7 +663,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.elementProps(step),
     ).placement;
     return Promise.all([
-      this.popover?.present(targetRect, this.elementProps(step)) ?? Promise.resolve(),
+      (!this.popoverHidden && this.popover?.present(targetRect, this.elementProps(step))) ||
+        Promise.resolve(),
       this.presentPointer(targetRect, step, popoverPlacement) ?? Promise.resolve(),
     ]);
   }
@@ -644,6 +729,29 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
           this.handleOverlayClick(event as MouseEvent, step, this.activeTarget);
         }
       });
+    }
+    const targetDocument = ownerDocument(target);
+    if (typeof targetDocument?.addEventListener === "function") {
+      // Captured, since `scroll` does not bubble: this sees nested scrollers too.
+      const passive = { capture: true, passive: true };
+      this.listen(
+        targetDocument,
+        "scroll",
+        (event) => this.onUserScroll(event, step, generation),
+        passive,
+      );
+      // A scroll event does not say who scrolled: while the step scrolls its target back, the
+      // user taking the page back is read from the input that drives a scroll instead.
+      const interrupt = () => {
+        if (!this.isCurrentGeneration(generation) || !this.userScrolling || !this.awaitingStepUi)
+          return;
+        this.awaitingStepUi = false;
+        this.cancelScroll?.();
+        // The popover stays aside until the page is still again, even if this input scrolls nothing.
+        this.waitForScrollIdle(step, generation);
+      };
+      this.listen(targetDocument, "wheel", interrupt, passive);
+      this.listen(targetDocument, "touchmove", interrupt, passive);
     }
     this.attachButtonHandlers(step);
     this.observeControls(step, generation);
@@ -791,7 +899,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     // not be dragged along: the popover is pinned by a transform it only
     // rewrites on entrance, so following a moving rect would make it jump
     // through a fade every fifty pixels of travel.
-    if (!this.awaitingStepUi) this.trackStepUi(targetRect, step, generation, presentationChanged);
+    if (!this.awaitingStepUi && !this.userScrolling)
+      this.trackStepUi(targetRect, step, generation, presentationChanged);
     this.lastTargetRect = targetSnapshot;
     this.lastViewport = viewportSnapshot;
     if (presentationChanged) this.presentationDirty = false;
@@ -804,11 +913,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     generation: number,
     presentationChanged: boolean,
   ) {
-    const popoverPlacement = this.popover?.updatePosition(
-      targetRect,
-      this.elementProps(step),
-      (reposition) => this.observeDynamicOperation(reposition, generation),
-    );
+    const popoverPlacement = this.placePopover(targetRect, step, generation);
     if (presentationChanged) {
       if (this.pointerFading) this.pointerFading = false;
       else
@@ -833,7 +938,128 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     }
   }
 
-  private observeDynamicOperation(operation: Promise<void> | undefined, generation: number) {
+  /**
+   * A scroll of the page, or of a scroller around the target, while the step is
+   * on screen. The popover and pointer stand aside at the first one, since
+   * following a travelling rect would fade them out and in every few pixels,
+   * and come back once the page has been still for a moment.
+   */
+  private onUserScroll(event: Event, step: ActiveStep<T>, generation: number) {
+    const target = this.activeTarget;
+    if (
+      !target ||
+      !this.isCurrentGeneration(generation) ||
+      this.frozen ||
+      this.awaitingStepUi ||
+      step.detached ||
+      !step.allowsScroll() ||
+      // A scroller that cannot move the target, the popover's own content for one, is left
+      // alone. The document contains the target, so a scroll of the page itself counts.
+      !(event.target as Node | null)?.contains?.(target)
+    )
+      return;
+    if (!this.userScrolling) {
+      this.userScrolling = true;
+      this.popover?.cancelAnimations();
+      this.pointer?.cancelAnimations();
+      // Faded rather than hidden: the popover keeps focus and stays exposed to assistive technology.
+      // One the consumer hid is already out of the way.
+      if (!this.popoverHidden)
+        this.observeDynamicOperation(this.popover?.disappear(false), generation);
+      this.observeDynamicOperation(this.pointer?.disappear(), generation);
+    }
+    this.waitForScrollIdle(step, generation);
+  }
+
+  private waitForScrollIdle(step: ActiveStep<T>, generation: number) {
+    clearTimeout(this.scrollTimer);
+    this.scrollTimer = setTimeout(
+      () => this.settleScroll(step, generation),
+      USER_SCROLL_IDLE_DELAY,
+    );
+  }
+
+  /**
+   * The page has been still for a moment: brings the popover and pointer back,
+   * after `scroll.returnDelay` has scrolled the target back into view when the
+   * user left part of it outside.
+   */
+  private settleScroll(step: ActiveStep<T>, generation: number) {
+    const target = this.activeTarget;
+    if (!target) return;
+    const behavior = step.props.get().behavior;
+    const returnDelay = behavior?.scroll?.returnDelay ?? DEFAULT_SCROLL_RETURN_DELAY;
+    if (
+      returnDelay === false ||
+      behavior?.autoScroll === false ||
+      isInViewport(target.getBoundingClientRect(), target)
+    )
+      this.revealAfterScroll(step, target, generation);
+    else
+      this.scrollTimer = setTimeout(
+        () => void this.scrollBack(step, target, generation),
+        returnDelay,
+      );
+  }
+
+  /**
+   * Scrolls the target back in. As on entrance, `awaitingStepUi` leaves the
+   * spotlight to follow the page on its own and the scroll events this raises
+   * to be ignored; set together with `userScrolling`, it marks the scroll back,
+   * which a wheel or touch drag interrupts.
+   */
+  private async scrollBack(step: ActiveStep<T>, target: HTMLElement, generation: number) {
+    const signal = this.currentSignal;
+    if (!signal) return;
+    const scrollingBack = () =>
+      this.userScrolling &&
+      this.awaitingStepUi &&
+      !signal.aborted &&
+      this.isCurrentGeneration(generation);
+    this.awaitingStepUi = true;
+    try {
+      // An instant scroll has landed, but its `scroll` event only fires with the next frame: still
+      // marked as the scroll back, it must not read as the user scrolling once the step is back.
+      await (this.scrollTargetIntoView(step, target, signal) ??
+        this.waitForScrollToSettle(target, signal));
+    } catch (error) {
+      // An interrupted scroll back, or one whose step ended, has already been handed over.
+      if (scrollingBack()) this.observeDynamicOperation(Promise.reject(error), generation);
+    }
+    if (scrollingBack()) this.revealAfterScroll(step, target, generation);
+  }
+
+  private revealAfterScroll(step: ActiveStep<T>, target: HTMLElement, generation: number) {
+    this.stopUserScroll();
+    this.awaitingStepUi = false;
+    this.pointerFading = false;
+    this.popover?.cancelAnimations();
+    this.pointer?.cancelAnimations();
+    this.observeDynamicOperation(
+      this.enterStepUi(presentationRect(step, target), step),
+      generation,
+    );
+  }
+
+  private stopUserScroll() {
+    clearTimeout(this.scrollTimer);
+    this.userScrolling = false;
+  }
+
+  /**
+   * Moves the popover along with its target and returns its placement. A hidden popover stays
+   * where it is: moving it would fade it back in. The pointer still keeps clear of its placement.
+   */
+  private placePopover(targetRect: DOMRect, step: ActiveStep<T>, generation: number) {
+    if (this.popoverHidden) {
+      return this.popover?.resolvePosition(targetRect, this.elementProps(step)).placement;
+    }
+    return this.popover?.updatePosition(targetRect, this.elementProps(step), (reposition) =>
+      this.observeDynamicOperation(reposition, generation),
+    );
+  }
+
+  private observeDynamicOperation(operation: Promise<unknown> | undefined, generation: number) {
     if (!operation) return;
     void operation.catch((error) => {
       if (!this.isCurrentGeneration(generation)) return;
@@ -848,6 +1074,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     const step = this.currentStep;
     if (
       !step ||
+      this.popoverHidden ||
       event.defaultPrevented ||
       event.isComposing ||
       event.ctrlKey ||
@@ -1007,6 +1234,63 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       event.preventDefault();
       focusable[0]?.focus();
     }
+  }
+
+  /**
+   * Makes a presented step modal and moves focus into its popover, or keeps the popover hidden. A
+   * popover shown again after the entrance passed over it enters now.
+   */
+  private engagePopover(
+    step: ActiveStep<T>,
+    target: HTMLElement,
+    direction: TourDirection,
+    generation: number,
+  ) {
+    this.syncModality(step.allowsInteraction());
+    if (this.popoverHidden) this.concealPopover();
+    else if (this.isPopoverConcealed()) this.revealPopover(step, target, generation);
+    else this.activateFocus(step, target, direction, generation);
+  }
+
+  /**
+   * Fades the popover out and stops guarding focus. Focus left in the popover goes to the target,
+   * or is dropped when the target cannot take it: `inert` would otherwise drop it on the body. The
+   * focus the tour gives back when it ends is kept for the step that shows the popover again.
+   */
+  private concealPopover() {
+    this.focusToRestore = this.focusGuard.release() ?? this.focusToRestore;
+    const popover = this.popover;
+    const element = popover?.getElement();
+    if (!popover || !element) return;
+    const focused = element.ownerDocument.activeElement;
+    if (isHTMLElement(focused, element) && element.contains(focused)) {
+      focused.blur();
+      this.activeTarget?.focus();
+    }
+    if (this.isPopoverConcealed()) return;
+    popover.cancelAnimations();
+    this.observeDynamicOperation(popover.disappear(), this.generation);
+  }
+
+  /**
+   * Replays the popover's entrance on the rect the step was last placed on (a frozen step has no
+   * live target to measure), then makes the step modal again.
+   */
+  private revealPopover(step: ActiveStep<T>, target: HTMLElement, generation: number) {
+    this.focusGuard.captureInitialFocus(target, this.focusToRestore);
+    this.popover?.cancelAnimations();
+    this.observeDynamicOperation(
+      this.popover?.present(this.lastTargetRect as DOMRect, this.elementProps(step)).then(() => {
+        if (!this.isCurrentGeneration(generation) || this.popoverHidden) return;
+        this.syncModality(!this.frozen && step.allowsInteraction());
+        this.activateFocus(step, target, this.direction, generation);
+      }),
+      generation,
+    );
+  }
+
+  private isPopoverConcealed() {
+    return this.popover?.getElement()?.getAttribute("aria-hidden") === "true";
   }
 
   private activateFocus(
@@ -1231,6 +1515,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   private cleanupStepResources() {
     this.cancelScroll?.();
     this.cancelScroll = null;
+    this.stopUserScroll();
     this.presentationDirty = false;
     this.pointerFading = false;
     if (this.rafId !== null) this.rafCancel?.(this.rafId);
@@ -1274,6 +1559,18 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.targetFocusedAtFreeze = this.isFocusInsideTarget(target);
     this.cleanupTargetResources();
     this.applyInteractionLock(step, true);
+    if (this.userScrolling) {
+      // The popover is the way out of a tour whose target is gone: it comes back where it stood.
+      this.stopUserScroll();
+      const targetRect = this.lastTargetRect;
+      this.popover?.cancelAnimations();
+      if (targetRect && !this.popoverHidden) {
+        this.observeDynamicOperation(
+          this.popover?.present(targetRect as DOMRect, this.elementProps(step)),
+          generation,
+        );
+      }
+    }
     void Promise.resolve(this.commands?.targetDisconnected(target)).catch((error) => {
       void this.commands?.reportError(error).catch(() => {});
     });
@@ -1297,7 +1594,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.applyInteractionLock(step, false);
     this.appliedAllowInteraction = step.allowsInteraction();
     const popover = this.popover?.getElement();
-    if (isHTMLElement(popover, this.root ?? popover)) {
+    if (!this.popoverHidden && isHTMLElement(popover, this.root ?? popover)) {
       this.focusGuard.update({
         allowedTarget: target,
         allowTargetInteraction: step.allowsInteraction(),
@@ -1310,8 +1607,9 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
 
   /**
    * Applies a `behavior.allowInteraction` changed through the step props while the step is on
-   * screen. A step still entering reads the new value when it presents, and a frozen one keeps
-   * interaction off until `retarget()` restores it. The indicator fades in or out instead of snapping.
+   * screen, or stepped aside for a user scroll. A step still entering reads the new value when it
+   * presents, and a frozen one keeps interaction off until `retarget()` restores it. The indicator
+   * fades in or out instead of snapping.
    */
   private syncInteraction(step: ActiveStep<T>) {
     const target = this.activeTarget;
@@ -1319,7 +1617,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.disposed ||
       !this.active ||
       this.frozen ||
-      this.awaitingStepUi ||
+      (this.awaitingStepUi && !this.userScrolling) ||
       this.currentStep !== step ||
       !target
     )
@@ -1328,6 +1626,8 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     this.applyInteraction(step, target);
     if (focusWasInTarget && !step.allowsInteraction() && step.autoFocuses())
       this.focusGuard.focus();
+    // The pointer stays aside with the popover: their return presents it as the step now asks.
+    if (this.userScrolling) return;
     const targetRect = target.getBoundingClientRect();
     this.pointer?.cancelAnimations();
     this.observeDynamicOperation(
@@ -1395,11 +1695,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       this.overlay?.animateTo(targetRect, this.elementProps(step)),
       generation,
     );
-    const placement = this.popover?.updatePosition(
-      targetRect,
-      this.elementProps(step),
-      (reposition) => this.observeDynamicOperation(reposition, generation),
-    );
+    const placement = this.placePopover(targetRect, step, generation);
     if (this.isPointerEnabled(step)) {
       this.observeDynamicOperation(
         this.pointer?.moveToTarget(targetRect, step.props.get(), true, placement),
@@ -1451,15 +1747,18 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
     if (step.detached || step.props.get().behavior?.autoScroll === false) return null;
 
     if (isInViewport(target.getBoundingClientRect(), target)) return null;
-    const currentWindow = this.getWindow(target);
-    if (!currentWindow) return null;
-    const behavior = prefersReducedMotion(target)
-      ? "instant"
-      : (step.props.get().behavior?.scroll?.behavior ?? "smooth");
+    if (!this.getWindow(target)) return null;
+    return this.scrollTargetIntoView(step, target, signal);
+  }
+
+  /** Scrolls the target in as the step asks, and returns the settle wait as `beginTargetScroll` does. */
+  private scrollTargetIntoView(step: ActiveStep<T>, target: HTMLElement, signal: AbortSignal) {
+    const scroll = step.props.get().behavior?.scroll;
+    const behavior = prefersReducedMotion(target) ? "instant" : (scroll?.behavior ?? "smooth");
     target.scrollIntoView({
       behavior,
-      block: step.props.get().behavior?.scroll?.block ?? "center",
-      inline: step.props.get().behavior?.scroll?.inline ?? "nearest",
+      block: scroll?.block ?? "center",
+      inline: scroll?.inline ?? "nearest",
     });
     // An instant scroll has already landed by the time the call returns.
     if (behavior === "instant") return null;

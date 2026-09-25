@@ -821,6 +821,7 @@ export function registerGlowTourElements() {
     ) {
       return {
         disabled:
+          state.isFirstStep ||
           (state.status === "active" && !state.canPrevious) ||
           props.controls?.previous?.state === "disabled",
         label: this.getAttribute("previous-label") ?? "Previous step",
@@ -837,6 +838,7 @@ export function registerGlowTourElements() {
     ) {
       return {
         disabled:
+          state.awaitingTarget ||
           (state.status === "active" && !state.canAdvance) ||
           props.controls?.advance?.state === "disabled",
         label: state.isLastStep
@@ -857,7 +859,7 @@ export function registerGlowTourElements() {
         disabled:
           (state.status === "active" && !state.canCancel) ||
           props.controls?.cancel?.state === "disabled",
-        label: "Skip",
+        label: this.getAttribute("cancel-label") ?? "Skip",
       };
     }
   }

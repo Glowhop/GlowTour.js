@@ -20,6 +20,7 @@ import type {
   TourStatus,
 } from "../types";
 import { isControlAvailable } from "../utils/options";
+import { isPendingTarget } from "../utils/utils";
 import { abortableDelay, abortError } from "./abort";
 import { ActiveStep } from "./active-step";
 import { attachRootBridge } from "./root-bridge";
@@ -90,7 +91,14 @@ export class TourController<T> {
   private recoveringTarget: HTMLElement | null = null;
   private operationToken = 0;
   private publicationRevision = 0;
+  /**
+   * The operation currently parked on a target that has not resolved yet, or `null`. The step being
+   * left is still on screen while a navigation waits, so the wait is reported on its presentation.
+   */
+  private awaitingTargetOperation: number | null = null;
   private operation: AbortController | null = null;
+  /** Set by `hidePopover()`, see `TourState.popoverHidden`. Only a running tour reports it. */
+  private popoverHidden = false;
   private disposed = false;
   private retainedPresentation: TourPresentation<T> | null = null;
   private readonly stateListeners = new Set<(state: TourState<T>) => void>();
@@ -129,7 +137,8 @@ export class TourController<T> {
       canPrevious: () => this.canNavigate("previous"),
       cancel: (source) => this.cancel(source),
       goTo: (id) => this.goTo(id),
-      isAdvanceDisabled: () => !this.isPresentedAdvanceAvailable(),
+      isAdvanceDisabled: () =>
+        this.awaitingTargetOperation !== null || !this.isPresentedAdvanceAvailable(),
       isCancelDisabled: () => !this.isPresentedCancelAvailable(),
       isPreviousDisabled: () => !this.isPresentedPreviousAvailable(),
       previous: (source) => this.previous(source),
@@ -185,6 +194,9 @@ export class TourController<T> {
     this.error = null;
     this.commandSource = "api";
     this.retainedPresentation = retainedPresentation;
+    // Every run starts with its popover shown, including one that replaces a tour hiding it.
+    this.popoverHidden = false;
+    this.driver.setPopoverHidden?.(false);
     // A start this one supersedes may still hold its `tour:start`: that tour never began.
     this.pendingTourStart = undefined;
 
@@ -245,6 +257,21 @@ export class TourController<T> {
     } catch (error) {
       await this.handleFailure(error, operation);
     }
+  }
+
+  /** `tour.hidePopover()` and `tour.showPopover()`. */
+  setPopoverHidden(hidden: boolean) {
+    this.assertNotDisposed();
+    if (!this.isRunning() || this.popoverHidden === hidden) return;
+    this.popoverHidden = hidden;
+    this.driver.setPopoverHidden?.(hidden);
+    this.publish();
+  }
+
+  private isRunning() {
+    return (
+      this.status === "starting" || this.status === "transitioning" || this.status === "active"
+    );
   }
 
   dispose() {
@@ -443,19 +470,42 @@ export class TourController<T> {
     const timeout = missingTarget?.timeout ?? DEFAULT_TARGET_TIMEOUT;
     const startedAt = Date.now();
     step.detached = false;
-    while (true) {
-      const target = await step.resolveTarget(signal);
-      this.assertCurrent(operation);
-      if (target) return target;
-      if (strategy === "skip") return null;
-      const body = strategy === "detached" && step.detach();
-      if (body) return body;
-      if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
-        throw this.missingTargetError(step);
+    try {
+      while (true) {
+        const pending = step.resolveTarget(signal);
+        // An async resolver, and the "wait" retries below, are the two waits a step can impose.
+        if (isPendingTarget(pending)) this.setAwaitingTarget(operation, true);
+        const target = await pending;
+        this.assertCurrent(operation);
+        if (target) return target;
+        if (strategy === "skip") return null;
+        const body = strategy === "detached" && step.detach();
+        if (body) return body;
+        if (strategy !== "wait" || Date.now() - startedAt >= timeout) {
+          throw this.missingTargetError(step);
+        }
+        this.setAwaitingTarget(operation, true);
+        await abortableDelay(16, signal);
+        this.assertCurrent(operation);
       }
-      await abortableDelay(16, signal);
-      this.assertCurrent(operation);
+    } finally {
+      this.setAwaitingTarget(operation, false);
     }
+  }
+
+  /**
+   * Reports a navigation waiting on the next step's target. The presentation on screen still
+   * belongs to the step being left, so the driver marks that popover and disables its advance
+   * control until the target settles. Keyed by operation: a superseded navigation never clears the
+   * wait its replacement declared. The freeze of a target lost mid-step is deliberately not a wait
+   * here, see `recoverDisconnectedTarget`.
+   */
+  private setAwaitingTarget(operation: number, awaiting: boolean) {
+    if ((this.awaitingTargetOperation === operation) === awaiting) return;
+    this.awaitingTargetOperation = awaiting ? operation : null;
+    this.driver.setTargetPending?.(awaiting);
+    // Published too: an adapter that owns its controls reads the wait from the state, not the DOM.
+    this.publish();
   }
 
   /**
@@ -704,6 +754,12 @@ export class TourController<T> {
     this.operationToken += 1;
     this.operation?.abort();
     this.operation = null;
+    // A superseded wait ends here: its resolver may ignore the abort and never settle to clear it.
+    // The operation that supersedes it publishes the state.
+    if (this.awaitingTargetOperation !== null) {
+      this.awaitingTargetOperation = null;
+      this.driver.setTargetPending?.(false);
+    }
   }
 
   private signalFor(operation: number) {
@@ -908,6 +964,8 @@ export class TourController<T> {
       isFirstStep,
       isLastStep,
       status: this.status,
+      awaitingTarget: this.awaitingTargetOperation !== null,
+      popoverHidden: this.popoverHidden && this.isRunning(),
       error: this.error,
     });
   }
@@ -952,7 +1010,9 @@ export function createGlowTour<T>(options: GlowTourOptions = {}): GlowTour<T> {
     create: (name, options) => controller.create(name, options),
     dispose: () => controller.dispose(),
     goTo: (id) => controller.goTo(id),
+    hidePopover: () => controller.setPopoverHidden(true),
     previous: () => controller.previous(),
+    showPopover: () => controller.setPopoverHidden(false),
     start: (workflow, runOptions) => controller.start(workflow, runOptions),
     state: controller.state,
   };

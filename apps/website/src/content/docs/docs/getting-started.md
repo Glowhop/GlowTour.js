@@ -1,12 +1,12 @@
 ---
-title: Getting started
-description: Install GlowTour.js and build your first guided tour.
+title: "Getting started: build your first product tour"
+description: Install GlowTour.js and build your first product tour or onboarding tour in React, Vue, Angular, Solid or vanilla JavaScript, step by step.
 ---
 
-GlowTour.js is a cross-framework guided-tour library with a shared core engine and framework-specific adapters. Choose the adapter for your framework, import the default theme, and build your first workflow.
+GlowTour.js is an open-source product tour library with a shared core engine and framework-specific adapters. To build your first product tour or onboarding tour, choose the adapter for your framework, import the default theme, and describe the tour as a workflow.
 
 :::note
-This documentation describes the upcoming 1.4. If you use 1.3, the [migration guide](/docs/migration/1-4) lists what changes.
+This documentation describes GlowTour.js 1.4. If you are upgrading from 1.3, the [migration guide](/docs/migration/1-4/) lists what changes.
 :::
 
 ## Installation

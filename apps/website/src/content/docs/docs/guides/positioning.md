@@ -1,6 +1,6 @@
 ---
-title: Positioning guide
-description: Control how the popover and indicator position relative to the target.
+title: Positioning the tour popover
+description: Control where a GlowTour.js popover and pointer sit around the highlighted element, the placement order to try, and how viewport collisions are handled.
 ---
 
 GlowTour.js positions the popover and pointer (indicator) around the target element and automatically handles collisions with the viewport. You control which placements to try and in what order; GlowTour.js picks the first one that fits.
@@ -153,4 +153,4 @@ Each step tries different placements based on the region of the page it's in, en
 
 ---
 
-For a complete reference of all positioning options and their defaults, see [Popover options](/docs/reference/builder#popover-options) and [Indicator options](/docs/reference/builder#indicator-options) in the Builder reference.
+For a complete reference of all positioning options and their defaults, see [Popover options](/docs/reference/builder/#popover-options) and [Indicator options](/docs/reference/builder/#indicator-options) in the Builder reference.

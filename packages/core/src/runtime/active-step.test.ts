@@ -2,6 +2,7 @@ import { describe, test } from "bun:test";
 import assert from "node:assert/strict";
 import { WorkflowBuilder } from "../builder";
 import type { TourControls } from "../types";
+import { isPendingTarget } from "../utils/utils";
 import { ActiveStep } from "./active-step";
 
 function createRealmDocument() {
@@ -233,7 +234,7 @@ describe("ActiveStep target resolution", () => {
     assert.equal(await step.resolveTarget(new AbortController().signal), null);
   });
 
-  test("rejects a direct target from another realm with its step path", async () => {
+  test("throws on a direct target from another realm with its step path", () => {
     const rootRealm = createRealmDocument();
     const foreignElement = createRealmDocument().element();
     const workflow = new WorkflowBuilder<string>("foreign-direct")
@@ -247,13 +248,13 @@ describe("ActiveStep target resolution", () => {
       rootRealm.document,
     );
 
-    await assert.rejects(() => step.resolveTarget(new AbortController().signal), {
+    assert.throws(() => step.resolveTarget(new AbortController().signal), {
       name: "TypeError",
       message: /steps\[2\]/,
     });
   });
 
-  test("rejects a resolver target from another realm with its step path", async () => {
+  test("throws on a sync resolver target from another realm with its step path", () => {
     const rootRealm = createRealmDocument();
     const foreignElement = createRealmDocument().element();
     const workflow = new WorkflowBuilder<string>("foreign-resolver")
@@ -267,9 +268,73 @@ describe("ActiveStep target resolution", () => {
       rootRealm.document,
     );
 
-    await assert.rejects(() => step.resolveTarget(new AbortController().signal), {
+    assert.throws(() => step.resolveTarget(new AbortController().signal), {
       name: "TypeError",
       message: /steps\[2\]/,
     });
+  });
+
+  test("rejects an async resolver target from another realm with its step path", async () => {
+    const rootRealm = createRealmDocument();
+    const foreignElement = createRealmDocument().element();
+    const workflow = new WorkflowBuilder<string>("foreign-async-resolver")
+      .step({
+        id: "step-6",
+        content: "content",
+        target: async () => foreignElement,
+        title: "title",
+      })
+      .build();
+    const step = new ActiveStep(
+      workflow.steps[0],
+      workflow.options,
+      undefined,
+      "steps[2]",
+      rootRealm.document,
+    );
+
+    await assert.rejects(async () => await step.resolveTarget(new AbortController().signal), {
+      name: "TypeError",
+      message: /steps\[2\]/,
+    });
+  });
+
+  test("hands back the pending resolution of an async resolver", async () => {
+    const realm = createRealmDocument();
+    const element = realm.element();
+    const workflow = new WorkflowBuilder<string>("pending-resolver")
+      .step({ id: "step-7", content: "content", target: async () => element, title: "title" })
+      .build();
+    const step = new ActiveStep(
+      workflow.steps[0],
+      workflow.options,
+      undefined,
+      "steps[2]",
+      realm.document,
+    );
+
+    const pending = step.resolveTarget(new AbortController().signal);
+    assert.equal(isPendingTarget(pending), true);
+    assert.equal(await pending, element);
+  });
+
+  test("resolves a selector target without waiting", () => {
+    const realm = createRealmDocument();
+    const element = realm.element();
+    realm.select(element);
+    const workflow = new WorkflowBuilder<string>("sync-selector")
+      .step({ id: "step-8", content: "content", target: "#sync", title: "title" })
+      .build();
+    const step = new ActiveStep(
+      workflow.steps[0],
+      workflow.options,
+      undefined,
+      "steps[2]",
+      realm.document,
+    );
+
+    const resolved = step.resolveTarget(new AbortController().signal);
+    assert.equal(isPendingTarget(resolved), false);
+    assert.equal(resolved, element);
   });
 });

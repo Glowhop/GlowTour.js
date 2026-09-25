@@ -1,6 +1,6 @@
 ---
-title: Compatibility
-description: Framework versions and SSR support verified for each adapter.
+title: "Compatibility: framework versions and SSR"
+description: Supported React, Vue, Angular and Solid versions, and the server rendering verified for each GlowTour.js adapter in Next.js, Nuxt, SolidStart and Angular SSR.
 ---
 
 The versions listed are the current peer contracts and are not a promise of support for older major versions.
@@ -50,7 +50,7 @@ The versions listed are the current peer contracts and are not a promise of supp
 | Angular | Yes | Yes | Angular SSR production app |
 | Vanilla | Not applicable | Not applicable | DOM-free import only |
 
-See the [SSR guide](/docs/guides/ssr) for setup and hydration details per framework.
+See the [SSR guide](/docs/guides/ssr/) for setup and hydration details per framework.
 
 ## Single instance contract
 

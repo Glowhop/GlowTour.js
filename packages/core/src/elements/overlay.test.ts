@@ -585,6 +585,6 @@ describe("OverlayElement viewBox", () => {
 
     overlay.initializeProps();
 
-    assert.equal(element.styles.get("height"), "100lvh");
+    assert.equal(element.styles.get("height"), "max(100%, 100lvh)");
   });
 });

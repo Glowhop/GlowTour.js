@@ -1,0 +1,113 @@
+---
+import ComparisonPage from "../components/ComparisonPage.astro";
+import ComparisonSection from "../components/ComparisonSection.astro";
+---
+
+{/*
+  Astro drops the whitespace of a line break that sits right next to an inline element, so the
+  prose below only ever wraps between two plain words, never before or after <code> or <strong>.
+*/}
+<ComparisonPage
+  competitor="intro"
+  title="Intro.js Alternative: GlowTour.js vs Intro.js Compared"
+  description="Looking for an Intro.js alternative? Compare GlowTour.js and Intro.js on licensing (MIT vs AGPL-3.0), React, Vue and Angular support, SSR and accessibility."
+  intro="Intro.js is one of the most widely used vanilla JavaScript product tour libraries. GlowTour.js is an MIT-licensed alternative with the same framework-agnostic core idea, plus native React, Vue, Angular, Solid and vanilla adapters on top. The main differences are the license, framework integration, server rendering and how you customize the popover."
+>
+  <ComparisonSection id="licensing" heading="Licensing: AGPL-3.0 or commercial vs MIT">
+    <p>
+      Intro.js is published under AGPL-3.0, and its license file asks commercial projects to buy a
+      commercial license. AGPL-3.0 requires you to release the source of the application that uses
+      it, including over a network, so most closed-source products end up on the paid license.
+    </p>
+    <p>
+      GlowTour.js is MIT-licensed: free for commercial and closed-source products, with no
+      attribution requirement and no paid tier. If licensing is why you are looking for an Intro.js
+      alternative, this is the main difference.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection
+    id="framework-integrations"
+    heading="Framework integration: generic JavaScript API vs native adapters"
+  >
+    <p>
+      Intro.js is a vanilla JavaScript library. In a framework app you call
+      <code>introJs.tour()</code> from an effect or lifecycle hook, and it renders its own tooltip DOM
+      outside your components. React users often add intro.js-react, a community wrapper; Vue and
+      Angular have no official adapter.
+    </p>
+    <p>
+      GlowTour.js ships a native integration for each framework: React components, Vue components
+      and Angular standalone components, plus Solid components and vanilla custom elements, all
+      driven by the same core engine. Popover content is ordinary component content, so it can use
+      your own components, state and translations.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="ssr" heading="Server rendering: client-only vs verified SSR">
+    <p>
+      Importing Intro.js 8.6.0 without a DOM throws <code>document is not defined</code>, from both
+      its CommonJS and ESM entries. In Next.js, Nuxt, SolidStart or Angular SSR it has to be
+      imported dynamically on the client.
+    </p>
+    <p>
+      GlowTour.js packages import safely on the server, and its adapters are tested against real
+      server rendering and hydration in Next.js, Nuxt, SolidStart and Angular SSR applications.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection
+    id="ui-customization"
+    heading="UI customization: themes and CSS classes vs composable components"
+  >
+    <p>
+      Intro.js customizes through options and CSS: built-in themes, <code>registerTheme</code> for
+      your own, <code>tooltipClass</code> and <code>highlightClass</code> per tour or step, and HTML
+      content inside each step. The tooltip layout itself stays the one Intro.js renders.
+    </p>
+    <p>
+      GlowTour.js assembles the popover from primitives such as Root, Popover, Header, Content,
+      Footer and trigger components, so a custom layout is ordinary component code. Theming goes
+      through the CSS custom properties prefixed <code>--glow-tour-*</code>.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="defining-tours" heading="Defining tours: steps option vs builder API">
+    <p>
+      Intro.js tours are a <code>steps</code> array passed through <code>setOptions()</code>, with
+      callbacks such as <code>onbeforechange</code>. It also ships hints, small hotspots that are
+      separate from tours, and a built-in "don't show again" checkbox backed by a cookie.
+    </p>
+    <p>
+      GlowTour.js uses a chainable builder
+      (<code>tour.create().step().do().wait().build()</code>) that can also sequence work between
+      steps, such as waiting for an element or a condition. The same tour can come from a JSON
+      config. Persisting progress is left to your application, with a documented recipe for
+      resuming a tour.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="accessibility" heading="Accessibility">
+    <p>
+      Intro.js gives its tooltip a dialog role and supports keyboard navigation with the arrow keys
+      and Escape; we found no focus trap in 8.6.0. Its tests include jest-axe checks on the markup.
+    </p>
+    <p>
+      GlowTour.js renders the same dialog semantics, keyboard shortcuts, focus containment and
+      focus restoration in every adapter, and runs VoiceOver and NVDA against each adapter in CI.
+    </p>
+  </ComparisonSection>
+
+  <ComparisonSection id="which-to-choose" heading="Should you choose GlowTour.js or Intro.js?">
+    <ul>
+      <li>
+        <strong>Choose Intro.js</strong> if you want a long-established vanilla JavaScript library
+        with hints and ready-made themes, and AGPL-3.0 or its commercial license fits your project.
+      </li>
+      <li>
+        <strong>Choose GlowTour.js</strong> if you need an MIT license, native React, Vue or Angular
+        components, server rendering, or a popover you compose from components.
+      </li>
+    </ul>
+  </ComparisonSection>
+</ComparisonPage>

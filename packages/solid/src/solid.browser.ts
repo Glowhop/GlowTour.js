@@ -250,6 +250,10 @@ describe("solid adapter browser behavior", () => {
     assert.equal(container.querySelector("output")?.textContent, "active:0");
     await glow.advance();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
+    glow.hidePopover();
+    assert.equal(glow.popoverHidden(), true);
+    glow.showPopover();
+    assert.equal(glow.popoverHidden(), false);
     await glow.cancel();
     assert.equal(glow.status(), "cancelled");
     dispose();
@@ -400,6 +404,51 @@ describe("solid adapter browser behavior", () => {
     window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter" }));
     await new Promise((resolve) => window.setTimeout(resolve, 10));
     assert.equal(tour.state.get().currentStepIndex, 1);
+    dispose();
+  });
+
+  test("labels the cancel trigger with cancelLabel, and falls back to Skip", async () => {
+    const [
+      { createComponent, createSignal },
+      { render },
+      { createGlowTour, GlowTourCancelTrigger, GlowTourPopover, GlowTourRoot },
+    ] = await Promise.all([import("solid-js"), import("solid-js/web"), import("./index")]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = createGlowTour();
+    const workflow = tour
+      .create("cancel label")
+      .step({ id: "step-cancel-label", content: "First", target, title: "First" })
+      .build();
+    let setCancelLabel!: (label: string | undefined) => void;
+    const dispose = render(() => {
+      const [cancelLabel, updateCancelLabel] = createSignal<string | undefined>(undefined);
+      setCancelLabel = updateCancelLabel;
+      return createComponent(GlowTourRoot, {
+        tour,
+        get children() {
+          return [
+            createComponent(GlowTourPopover, {}),
+            createComponent(GlowTourCancelTrigger, {
+              get cancelLabel() {
+                return cancelLabel();
+              },
+            }),
+          ];
+        },
+      });
+    }, container);
+
+    await tour.start(workflow);
+    const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
+    assert.equal(cancel?.textContent, "Skip");
+    assert.equal(cancel?.getAttribute("aria-label"), "Skip");
+
+    setCancelLabel("Leave the tour");
+    assert.equal(cancel?.textContent, "Leave the tour");
+    assert.equal(cancel?.getAttribute("aria-label"), "Leave the tour");
+
     dispose();
   });
 

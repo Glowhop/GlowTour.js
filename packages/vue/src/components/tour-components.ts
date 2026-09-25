@@ -388,8 +388,10 @@ export const GlowTourPreviousTrigger = /* @__PURE__ */ defineComponent({
     const renderTrigger = trigger(
       "previous",
       // Tour state disables a trigger only while the tour is active: disabling it natively outside
-      // of that, as a replacing start does, would blur the focused trigger.
+      // of that, as a replacing start does, would blur the focused trigger. The first step is the
+      // exception: it has nothing to go back to as soon as it is committed, transition included.
       () =>
+        snapshot.value.isFirstStep ||
         (snapshot.value.status === "active" && !snapshot.value.canPrevious) ||
         step()?.controls?.previous?.state === "disabled",
       () => props.previousLabel ?? "Previous step",
@@ -416,7 +418,9 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
     const step = useStep();
     const renderTrigger = trigger(
       "advance",
+      // The wait on the next step's target refuses an advance, whoever owns the button.
       () =>
+        snapshot.value.awaitingTarget ||
         (snapshot.value.status === "active" && !snapshot.value.canAdvance) ||
         step()?.controls?.advance?.state === "disabled",
       () => {
@@ -436,7 +440,7 @@ export const GlowTourAdvanceTrigger = /* @__PURE__ */ defineComponent({
 export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
   name: componentName("CancelTrigger"),
   inheritAttrs: false,
-  props: { ariaLabel: { type: String } },
+  props: { ariaLabel: { type: String }, cancelLabel: { type: String } },
   setup(props, { attrs, slots }) {
     const context = useTourScope();
     const snapshot = useTourSnapshot(context.tour);
@@ -446,7 +450,7 @@ export const GlowTourCancelTrigger = /* @__PURE__ */ defineComponent({
       () =>
         (snapshot.value.status === "active" && !snapshot.value.canCancel) ||
         step()?.controls?.cancel?.state === "disabled",
-      () => "Skip",
+      () => props.cancelLabel ?? "Skip",
       () => props.ariaLabel,
       attrs,
       slots,

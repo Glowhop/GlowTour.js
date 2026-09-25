@@ -5,15 +5,22 @@ import { angularSource } from "../lib/framework-sources";
 
 <FrameworkPage
   name="Angular"
+  headline="Angular product tour & onboarding library"
   icon="angular"
   packageName="angular"
   installCommand="npm i @glowhop/angular-tour @glowhop/styles-tour"
   intro="Standalone Angular 18 components with a DI-scoped root, distributed in Angular Package Format with partial compilation. Drop GlowTourDefault into any standalone component template."
   code={angularSource}
   lang="ts"
-  guideHref="/docs/guides/angular"
-  title="Angular Product Tour Library - GlowTour.js"
-  description="Build accessible product tours and guided onboarding for Angular 18 with @glowhop/angular-tour, a typed step builder, and GlowTourDefault."
+  guideHref="/docs/guides/angular/"
+  title="Angular Product Tour & Onboarding Library | GlowTour.js"
+  description="Add product tours and onboarding tours to Angular 18+ apps with @glowhop/angular-tour: standalone components, SSR verified, accessible, MIT licensed."
+  steps={[
+  "Install the adapter and the default theme with npm i @glowhop/angular-tour @glowhop/styles-tour, then import \"@glowhop/styles-tour/default.css\" once, in your app entry or the component that renders the tour.",
+  "Add GlowTourDefault to the imports array of a standalone component and call injectGlowTour() in a field initializer. No NgModule is needed.",
+  "Describe the onboarding tour with the builder: create(\"product-tour\").step({ id, target, title, content }).build(), one step per element you want to highlight.",
+  "Render <glow-tour-default> in the template and call start(workflow) from a template event, such as a \"Take the tour\" button."
+]}
   benefits={[
   {
     "title": "Standalone Angular components",
@@ -40,6 +47,14 @@ import { angularSource } from "../lib/framework-sources";
   {
     "question": "Can I customize the Angular tour UI?",
     "answer": "Yes. Replace the default theme with your own CSS or use the adapter primitives to control the tour presentation while keeping the shared workflow engine."
+  },
+  {
+    "question": "Is GlowTour.js an alternative to ngx-joyride or ngx-ui-tour?",
+    "answer": "Yes. ngx-joyride's latest release is from January 2022. ngx-ui-tour is maintained and ships separate packages per UI kit. GlowTour.js uses standalone components, does not depend on the Angular router or a UI kit, and is verified with Angular SSR."
+  },
+  {
+    "question": "Does GlowTour.js work with Angular SSR?",
+    "answer": "Yes. The Angular adapter is tested against server rendering and hydration in an Angular SSR production app. Start the tour in the browser once its target elements are rendered."
   }
 ]}
 />

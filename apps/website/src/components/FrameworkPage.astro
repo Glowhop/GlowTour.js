@@ -8,6 +8,8 @@ import FrameworkIcon from "./FrameworkIcon.astro";
 
 interface Props {
   name: string;
+  /** The h1: the query the page answers ("Vue product tour & onboarding library"), not the brand. */
+  headline: string;
   icon: "react" | "vue" | "solid" | "angular" | "vanilla";
   packageName: string;
   installCommand: string;
@@ -17,12 +19,15 @@ interface Props {
   guideHref: string;
   title: string;
   description: string;
+  /** "Build a tour in N steps", one sentence each, in the order a newcomer does them. */
+  steps: string[];
   benefits: Array<{ title: string; description: string }>;
   faq: Array<{ question: string; answer: string }>;
 }
 
 const {
   name,
+  headline,
   icon,
   packageName,
   installCommand,
@@ -32,14 +37,31 @@ const {
   guideHref,
   title,
   description,
+  steps,
   benefits,
-  faq,
+  faq: pageFaq,
 } = Astro.props;
 
 const bundle = frameworkBundle(icon);
 const npmPackage = `@glowhop/${packageName}-tour`;
 const npmUrl = `https://www.npmjs.com/package/${npmPackage}`;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const frameworkLabel = icon === "vanilla" ? "vanilla JavaScript" : name;
+
+// Questions every adapter answers the same way, appended to the page's own so the size and license
+// answers come from the same data as the rest of the site.
+const faq = [
+  ...pageFaq,
+  {
+    question: `How big is the ${name} product tour library?`,
+    answer: `${formatKib(bundle.total)} gzipped in total: ${formatKib(bundle.adapter)} for ${npmPackage}, ${formatKib(bundle.core)} for the shared core engine, and ${formatKib(bundle.styles)} for the default theme CSS, which you can replace with your own. The core has no runtime dependencies.`,
+  },
+  {
+    question: `Is ${npmPackage} free for commercial use?`,
+    answer:
+      "Yes. Every GlowTour.js package is MIT-licensed: free for commercial and closed-source products, with no paid tier and no attribution requirement.",
+  },
+];
 
 // Each adapter page is a distinct package landing page; describing it as its own
 // SoftwareSourceCode (plus a breadcrumb back to the site root) keeps the five of them from
@@ -81,21 +103,30 @@ const jsonLd = {
 };
 ---
 
-<MarketingLayout title={title} description={description}>
+<MarketingLayout
+  title={title}
+  description={description}
+  image={`/og/${icon}.jpg`}
+  imageAlt={headline}
+>
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
   <section class="mx-auto max-w-4xl px-6 py-16 sm:py-24">
     <div class="flex items-center gap-2">
       <FrameworkIcon name={icon} class="h-5 w-5 text-accent" />
       <p class="text-sm font-semibold text-accent">{name}</p>
     </div>
-    <h1 class="mt-2 text-4xl font-semibold tracking-tight text-text">
-      GlowTour.js for {name}
+    <h1 class="mt-2 text-4xl font-semibold tracking-tight text-balance text-text">
+      {headline}
     </h1>
+    <p class="mt-4 max-w-2xl text-lg text-text-muted">
+      <code>{npmPackage}</code> is the {name} adapter of GlowTour.js, an open-source product tour
+      library for building onboarding tours, feature walkthroughs and guided tours in {frameworkLabel}.
+    </p>
     <p class="mt-4 max-w-2xl text-lg text-text-muted">{intro}</p>
 
     <div class="mt-8 flex flex-wrap gap-3">
       <Button href={guideHref}>Read the {name} guide</Button>
-      <Button href="/docs/getting-started" variant="secondary">Getting started</Button>
+      <Button href="/docs/getting-started/" variant="secondary">Getting started</Button>
     </div>
 
     <div class="mt-12">
@@ -153,7 +184,28 @@ const jsonLd = {
 
     <div class="mt-16">
       <h2 class="text-2xl font-semibold tracking-tight text-text">
-        Why use GlowTour.js with {name}?
+        How to build a {name} onboarding tour
+      </h2>
+      <ol class="mt-6 grid gap-4">
+        {
+          steps.map((step, index) => (
+            <li class="flex gap-4">
+              <span
+                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-semibold text-accent"
+                aria-hidden="true"
+              >
+                {index + 1}
+              </span>
+              <p class="leading-relaxed text-text-muted">{step}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <div class="mt-16">
+      <h2 class="text-2xl font-semibold tracking-tight text-text">
+        Why use GlowTour.js for {name} product tours?
       </h2>
       <div class="mt-6 grid gap-6 sm:grid-cols-3">
         {

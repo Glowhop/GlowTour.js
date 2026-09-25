@@ -137,6 +137,14 @@ export default class PopoverElement extends GlowTourElement {
     return this._centerPosition(popoverPosition, viewport);
   }
 
+  /**
+   * Marks the popover as waiting for the next step's target. Written through the mutation lease,
+   * like every other attribute the popover owns, so unbinding the element gives it back clean.
+   */
+  setAwaitingTarget(awaiting: boolean) {
+    this.mutationLease.setAttribute("data-glow-tour-awaiting-target", awaiting ? "" : null);
+  }
+
   private _centerPosition(
     popoverPosition: DOMRect,
     viewport: { width: number; height: number },

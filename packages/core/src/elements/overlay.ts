@@ -179,7 +179,11 @@ export default class OverlayElement extends GlowTourElement {
     // as soon as that bar retracts. `100lvh` is the *largest* viewport by
     // definition and therefore always spans the visible area; where it is not
     // understood the declaration is dropped and the `100%` above still stands.
-    el.style.setProperty("height", "100lvh");
+    // `max()` keeps `100%` whenever it is the taller of the two: on a page
+    // wider than the device, the layout viewport grows past the initial
+    // containing block so the page can be zoomed out, and `100lvh` alone
+    // would stop the backdrop short of the bottom again.
+    el.style.setProperty("height", "max(100%, 100lvh)");
     this.syncViewBox();
   }
 

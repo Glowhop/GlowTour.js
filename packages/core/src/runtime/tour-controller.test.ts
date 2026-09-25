@@ -99,6 +99,8 @@ class RecordingDriver implements TourViewDriver<string> {
   retargetCalls = 0;
   retargetError: Error | null = null;
   retargetedTargets: (HTMLElement | null)[] = [];
+  targetPendingCalls: boolean[] = [];
+  popoverHiddenCalls: boolean[] = [];
 
   clear() {
     this.clearCalls += 1;
@@ -122,6 +124,14 @@ class RecordingDriver implements TourViewDriver<string> {
 
   setCommands(commands: TourViewCommands) {
     this.commands = commands;
+  }
+
+  setTargetPending(pending: boolean) {
+    this.targetPendingCalls.push(pending);
+  }
+
+  setPopoverHidden(hidden: boolean) {
+    this.popoverHiddenCalls.push(hidden);
   }
 }
 
@@ -206,6 +216,8 @@ describe("instance-first TourController", () => {
     });
 
     assert.deepEqual(tour.state.get(), {
+      awaitingTarget: false,
+      popoverHidden: false,
       canAdvance: false,
       canCancel: false,
       canPrevious: false,
@@ -1231,6 +1243,210 @@ describe("instance-first TourController", () => {
     assert.equal(disposeAborted, true);
     await assert.rejects(() => disposeTour.advance(), /disposed/);
     disposeTour.dispose();
+  });
+
+  test("reports the wait on an async target and refuses advance until it settles", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const pending = deferred<HTMLElement | null>();
+    const workflow = tour
+      .create("async-target")
+      .step({ id: "step-46a", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-46b", content: "two", target: () => pending.promise, title: "two" })
+      .build();
+
+    await tour.start(workflow);
+    assert.deepEqual(driver.targetPendingCalls, []);
+    assert.equal(driver.commands?.isAdvanceDisabled(), false);
+    assert.equal(tour.state.get().awaitingTarget, false);
+    const waits: boolean[] = [];
+    const unsubscribe = tour.state.subscribe((state) => waits.push(state.awaitingTarget));
+
+    const advancing = tour.advance();
+    await flushMicrotasks();
+    assert.deepEqual(driver.targetPendingCalls, [true]);
+    assert.equal(driver.commands?.isAdvanceDisabled(), true);
+    assert.equal(tour.state.get().status, "transitioning");
+    // Published state too, for the adapters that render their own controls.
+    assert.equal(tour.state.get().awaitingTarget, true);
+    assert.ok(waits.includes(true), "expected subscribers to be notified of the wait");
+
+    pending.resolve(target);
+    await advancing;
+    assert.deepEqual(driver.targetPendingCalls, [true, false]);
+    assert.equal(driver.commands?.isAdvanceDisabled(), false);
+    assert.equal(tour.state.get().awaitingTarget, false);
+    assert.equal(tour.state.get().currentStep?.id, "step-46b");
+    unsubscribe();
+  });
+
+  test("ends the wait of a navigation superseded while its resolver never settles", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("stuck-target")
+      .step({ id: "step-46c", content: "one", target: targetResolver, title: "one" })
+      // Ignores the abort signal and never settles.
+      .step({ id: "step-46d", content: "two", target: () => new Promise(() => {}), title: "two" })
+      .build();
+
+    await tour.start(workflow);
+    void tour.advance();
+    await flushMicrotasks();
+    assert.equal(tour.state.get().awaitingTarget, true);
+
+    await tour.cancel();
+    assert.equal(tour.state.get().status, "cancelled");
+    assert.equal(tour.state.get().awaitingTarget, false);
+    assert.deepEqual(driver.targetPendingCalls, [true, false]);
+
+    await tour.start(workflow);
+    assert.equal(tour.state.get().currentStep?.id, "step-46c");
+    assert.equal(tour.state.get().awaitingTarget, false);
+    assert.equal(driver.commands?.isAdvanceDisabled(), false);
+  });
+
+  test("hides and shows the popover of a running tour, across steps", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("popover-visibility")
+      .step({ id: "one", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "two", content: "two", target: targetResolver, title: "two" })
+      .build();
+
+    await tour.start(workflow);
+    driver.popoverHiddenCalls.length = 0;
+    const published: boolean[] = [];
+    const unsubscribe = tour.state.subscribe((state) => published.push(state.popoverHidden));
+
+    tour.setPopoverHidden(true);
+    tour.setPopoverHidden(true);
+    assert.equal(tour.state.get().popoverHidden, true);
+    assert.deepEqual(driver.popoverHiddenCalls, [true]);
+
+    await tour.advance();
+    assert.equal(tour.state.get().currentStep?.id, "two");
+    assert.equal(tour.state.get().popoverHidden, true);
+
+    tour.setPopoverHidden(false);
+    tour.setPopoverHidden(false);
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.deepEqual(driver.popoverHiddenCalls, [true, false]);
+    assert.deepEqual(published.slice(0, 2), [false, true]);
+    assert.equal(published.at(-1), false);
+    unsubscribe();
+  });
+
+  test("resets a hidden popover when the tour ends or starts again", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("popover-visibility-reset")
+      .step({ id: "one", content: "one", target: targetResolver, title: "one" })
+      .build();
+
+    // No running tour: nothing to hide.
+    tour.setPopoverHidden(true);
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.deepEqual(driver.popoverHiddenCalls, []);
+
+    await tour.start(workflow);
+    tour.setPopoverHidden(true);
+    await tour.cancel();
+    assert.equal(tour.state.get().status, "cancelled");
+    assert.equal(tour.state.get().popoverHidden, false);
+    tour.setPopoverHidden(true);
+    assert.equal(tour.state.get().popoverHidden, false);
+
+    await tour.start(workflow);
+    tour.setPopoverHidden(true);
+    driver.popoverHiddenCalls.length = 0;
+    // A start that replaces a running tour shows the popover again.
+    await tour.start(workflow);
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.deepEqual(driver.popoverHiddenCalls, [false]);
+
+    tour.setPopoverHidden(true);
+    tour.dispose();
+    assert.equal(tour.state.get().popoverHidden, false);
+    assert.throws(() => tour.setPopoverHidden(false), /disposed/);
+    assert.throws(() => tour.setPopoverHidden(true), /disposed/);
+  });
+
+  test("reports no wait for a target that resolves synchronously", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const workflow = tour
+      .create("sync-target")
+      .step({ id: "step-46c", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-46d", content: "two", target: targetResolver, title: "two" })
+      .build();
+
+    await tour.start(workflow);
+    await tour.advance();
+    await tour.previous();
+
+    assert.deepEqual(driver.targetPendingCalls, []);
+  });
+
+  test("reports the wait while the wait strategy polls for a missing target", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    let resolved: HTMLElement | null = null;
+    const workflow = tour
+      .create("polling-target")
+      .step({ id: "step-46e", content: "one", target: targetResolver, title: "one" })
+      .step({
+        behavior: { missingTarget: { strategy: "wait", timeout: 5000 } },
+        content: "two",
+        id: "step-46f",
+        target: () => resolved,
+        title: "two",
+      })
+      .build();
+
+    await tour.start(workflow);
+    const advancing = tour.advance();
+    await delay(40);
+    assert.deepEqual(driver.targetPendingCalls, [true]);
+    assert.equal(driver.commands?.isAdvanceDisabled(), true);
+
+    resolved = target;
+    await advancing;
+    assert.deepEqual(driver.targetPendingCalls, [true, false]);
+    assert.equal(tour.state.get().currentStep?.id, "step-46f");
+  });
+
+  test("keeps the wait declared by the navigation that superseded an aborted one", async () => {
+    const driver = new RecordingDriver();
+    const tour = new TourController<string>(driver);
+    const first = deferred<HTMLElement | null>();
+    const second = deferred<HTMLElement | null>();
+    const workflow = tour
+      .create("superseded-wait")
+      .step({ id: "step-46g", content: "one", target: targetResolver, title: "one" })
+      .step({ id: "step-46h", content: "two", target: () => first.promise, title: "two" })
+      .step({ id: "step-46i", content: "three", target: () => second.promise, title: "three" })
+      .build();
+
+    await tour.start(workflow);
+    const abandoned = tour.advance();
+    await flushMicrotasks();
+    assert.deepEqual(driver.targetPendingCalls, [true]);
+
+    const superseding = tour.start(workflow, { startAt: "step-46i" });
+    await flushMicrotasks();
+    first.resolve(target);
+    await abandoned;
+    await flushMicrotasks();
+    // The abandoned navigation must not clear the wait its replacement is still in.
+    assert.equal(driver.commands?.isAdvanceDisabled(), true);
+
+    second.resolve(target);
+    await superseding;
+    assert.equal(driver.commands?.isAdvanceDisabled(), false);
+    assert.equal(tour.state.get().currentStep?.id, "step-46i");
   });
 
   test("aborts a pending wait-strategy retry without polling again", async () => {
@@ -2449,6 +2665,8 @@ describe("instance-first TourController", () => {
       2,
     );
     assert.deepEqual(tour.state.get(), {
+      awaitingTarget: false,
+      popoverHidden: false,
       canAdvance: false,
       canCancel: false,
       canPrevious: false,

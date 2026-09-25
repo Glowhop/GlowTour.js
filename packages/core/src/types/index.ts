@@ -200,12 +200,16 @@ export interface PopoverOptions extends BaseOptions {
 }
 
 /**
- * Scroll behavior options passed to Element.scrollIntoView().
+ * How a step scrolls its target into view, on entrance and after the user scrolled away.
  *
  * A step scrolls only when part of its target falls outside the viewport, and
  * does not wait for the scroll before presenting: the spotlight appears at once
  * and tracks the target as the page travels, and the popover and pointer enter
  * when the page has come to rest.
+ *
+ * While the user scrolls, the popover and pointer step aside and the spotlight
+ * keeps following the target. Once the page is still they come back, after
+ * `returnDelay` scrolls the target back into view if it was left outside it.
  */
 export interface ScrollOptions {
   /** Scroll animation. Forced to `"instant"` when the user prefers reduced motion. @default "smooth" */
@@ -214,6 +218,12 @@ export interface ScrollOptions {
   block?: "start" | "center" | "end" | "nearest";
   /** Horizontal alignment of the target in the viewport. @default "nearest" */
   inline?: "start" | "center" | "end" | "nearest";
+  /**
+   * Milliseconds to wait, once the user stops scrolling with part of the target outside the
+   * viewport, before scrolling it back into view. `false` leaves the page where the user put it.
+   * Ignored when `autoScroll` is `false`. @default 500
+   */
+  returnDelay?: number | false;
 }
 
 /** Animation timing configuration. */
@@ -440,6 +450,17 @@ export interface TourState<T> {
   readonly isLastStep: boolean;
   /** Current status of the tour. */
   readonly status: TourStatus;
+  /**
+   * Whether a navigation is waiting for the next step's target to resolve, i.e. an async resolver
+   * or the `"wait"` missing-target strategy. The step being left stays on screen meanwhile, and its
+   * advance control is refused, so a UI can show the wait instead of looking idle.
+   */
+  readonly awaitingTarget: boolean;
+  /**
+   * Whether `hidePopover()` hid the popover of the running tour. `false` again after
+   * `showPopover()`, and whenever a tour starts or ends.
+   */
+  readonly popoverHidden: boolean;
   /** Error encountered during the tour, if any. */
   readonly error: Error | null;
 }
@@ -469,6 +490,18 @@ export interface GlowTour<T> {
   goTo(id: string): Promise<void>;
   /** Cancel the current tour. */
   cancel(): Promise<void>;
+  /**
+   * Show the popover again after `hidePopover()`, and move focus into it when the step auto
+   * focuses. Does nothing when no tour is running.
+   */
+  showPopover(): void;
+  /**
+   * Hide the popover of the running tour. The overlay, the indicator and the scroll lock stay; the
+   * page is no longer inert, focus leaves the popover for the target, and the keyboard shortcuts
+   * do nothing until `showPopover()`. The popover stays hidden across steps, until `showPopover()`
+   * or the end of the tour. Does nothing when no tour is running.
+   */
+  hidePopover(): void;
   /** Dispose the tour and free resources. */
   dispose(): void;
   /** Observable store of the current tour state. */

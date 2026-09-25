@@ -1,9 +1,9 @@
 {
   "name": "@glowhop/solid-tour",
   "version": "1.4.0",
-  "description": "Solid adapter for GlowTour.js.",
+  "description": "Solid product tour and onboarding tour components for GlowTour.js. Accessible, SSR-safe with SolidStart, MIT licensed.",
   "license": "MIT",
-  "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
+  "homepage": "https://glowtour.dev/solid/",
   "bugs": {
     "url": "https://github.com/Glowhop/GlowTour.js/issues"
   },
@@ -19,7 +19,9 @@
     "typescript",
     "solid",
     "solidjs",
-    "solid-tour"
+    "solid-tour",
+    "onboarding-tour",
+    "solid-start"
   ],
   "engines": {
     "node": ">=18.19.1"

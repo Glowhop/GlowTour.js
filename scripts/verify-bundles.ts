@@ -45,8 +45,25 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // the step props live (modality, focus, pointer fade) on the step, then
     // from 21.75 KiB for the `"detached"` missing-target strategy (a centered
     // popover over a backdrop without a cutout), then from 22 KiB for keeping
-    // the focus to restore when a new tour replaces one still fading out.
-    gzipBudget: 22.25 * KIB,
+    // the focus to restore when a new tour replaces one still fading out, then
+    // from 22.25 KiB for reporting a target that has not resolved yet on the
+    // popover still on screen (11 B over after dropping the element tracking
+    // the attribute was written through and folding the wait flag into the
+    // popover's own mutation lease), then from 22.5 KiB for `hidePopover()` and
+    // `showPopover()`: a hidden popover lifts the page's modality, releases the
+    // focus guard and hands focus to the target, the shortcuts stop, and showing
+    // it replays the entrance before the step turns modal again (427 B after
+    // reusing the last placed rect, dropping redundant resets and folding the
+    // mid-entrance reveal into the step's engagement). 23 KiB rather than
+    // 22.75: the mobile layout-viewport fix had already brought the core to
+    // 23039 B, 1 B under the previous 22.5 KiB, leaving no headroom to absorb.
+    // Then from 23 KiB for stepping the popover and pointer aside while the
+    // user scrolls and scrolling the target back after `scroll.returnDelay`
+    // (about 510 B after folding the scroll-back flag into `awaitingStepUi`,
+    // sharing one timer between the idle wait and the return delay, and letting
+    // `syncInteraction` run during the scroll back instead of resyncing after;
+    // 23965 B once merged with `hidePopover()`).
+    gzipBudget: 23.5 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

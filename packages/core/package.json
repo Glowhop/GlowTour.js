@@ -1,9 +1,9 @@
 {
   "name": "@glowhop/core-tour",
   "version": "1.4.0",
-  "description": "Framework-agnostic tour controller and DOM runtime for GlowTour.js.",
+  "description": "Framework-agnostic product tour engine for GlowTour.js: the tour controller and DOM runtime behind onboarding tours in any framework.",
   "license": "MIT",
-  "homepage": "https://github.com/Glowhop/GlowTour.js#readme",
+  "homepage": "https://glowtour.dev/",
   "bugs": {
     "url": "https://github.com/Glowhop/GlowTour.js/issues"
   },
@@ -20,7 +20,9 @@
     "dom",
     "headless",
     "framework-agnostic",
-    "ssr"
+    "ssr",
+    "onboarding-tour",
+    "intro-js-alternative"
   ],
   "engines": {
     "node": ">=18.19.1"

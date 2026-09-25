@@ -1,6 +1,6 @@
 ---
-title: Monitoring a tour
-description: Wire GlowTour.js to analytics with a single onEvent callback.
+title: Tracking product tour analytics
+description: "Send product tour analytics with a single onEvent callback: tour starts, steps entered and left, time per step, and how each tour ended."
 ---
 
 `onEvent` reports what a tour did: when it started, which steps were entered and
@@ -22,7 +22,7 @@ const tour = createGlowTour({
 ```
 
 That is the whole integration. Registered on the instance, it covers every workflow
-that instance runs - including workflows built from a [JSON config](/docs/guides/json-config).
+that instance runs - including workflows built from a [JSON config](/docs/guides/json-config/).
 
 ## The events
 
@@ -34,7 +34,7 @@ that instance runs - including workflows built from a [JSON config](/docs/guides
 | `step:skip` | When a navigation passes over a step whose target is missing and whose `missingTarget.strategy` is `"skip"` |
 | `tour:complete` | The tour ran past its last step |
 | `tour:cancel` | The tour was cancelled |
-| `tour:error` | The tour failed - see [Handling errors](/docs/guides/handling-errors) for response strategies |
+| `tour:error` | The tour failed - see [Handling errors](/docs/guides/handling-errors/) for response strategies |
 
 A completed two-step tour emits, in order: `tour:start`, `step:enter`, `step:leave`,
 `step:enter`, `step:leave`, `tour:complete`.
@@ -135,4 +135,4 @@ tour.start(workflow, { startAt: "invite" });
 ```
 
 Treat a `tour:start` whose `stepIndex` is not `0` as a resume. See
-[Resuming a tour](/docs/guides/resuming).
+[Resuming a tour](/docs/guides/resuming/).

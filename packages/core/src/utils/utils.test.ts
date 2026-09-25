@@ -59,6 +59,39 @@ describe("viewportDimensions", () => {
     assert.deepEqual(viewportDimensions(), { height: 844, width: 375 });
   });
 
+  test("follows a layout viewport grown past the device width", () => {
+    // A phone page wider than `device-width` can be zoomed out: fixed elements
+    // then span 491x1064 while `clientWidth`/`clientHeight` stay at 375x812.
+    const probes: { style: { cssText: string } }[] = [];
+    const root = {
+      appendChild: (probe: (typeof probes)[number]) => probes.push(probe),
+      clientHeight: 812,
+      clientWidth: 375,
+    };
+    const view = { innerHeight: 1064, innerWidth: 491 };
+    const document = {
+      createElement: () => ({
+        getBoundingClientRect: () => ({ height: 1064, width: 491 }),
+        remove: () => {},
+        style: { cssText: "" },
+      }),
+      defaultView: view,
+      documentElement: root,
+    };
+    Object.defineProperty(globalThis, "document", { configurable: true, value: document });
+    Object.defineProperty(globalThis, "window", { configurable: true, value: view });
+
+    assert.deepEqual(viewportDimensions(), { height: 1064, width: 491 });
+    assert.match(probes[0]?.style.cssText ?? "", /position:fixed/);
+
+    // Measured once per window size: the tracking loop reads it every frame.
+    viewportDimensions();
+    assert.equal(probes.length, 1);
+    view.innerWidth = 500;
+    viewportDimensions();
+    assert.equal(probes.length, 2);
+  });
+
   test("falls back to the window when the document cannot be measured", () => {
     stubGlobals({ clientHeight: 0, clientWidth: 0 }, { innerHeight: 750, innerWidth: 390 });
 

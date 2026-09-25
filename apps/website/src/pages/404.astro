@@ -11,6 +11,7 @@ import MarketingLayout from "../layouts/MarketingLayout.astro";
 <MarketingLayout
   title="Page not found - GlowTour.js"
   description="This page does not exist or has moved."
+  noindex
 >
   <section class="mx-auto max-w-3xl px-6 py-24 text-center sm:py-32">
     <p class="text-sm font-semibold text-accent">404</p>
@@ -23,7 +24,7 @@ import MarketingLayout from "../layouts/MarketingLayout.astro";
       This page does not exist or has moved.
     </p>
     <div class="mt-10 flex flex-wrap justify-center gap-4">
-      <Button href="/docs">Documentation</Button>
+      <Button href="/docs/">Documentation</Button>
       <Button href="/" variant="secondary">Home</Button>
     </div>
   </section>

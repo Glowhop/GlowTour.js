@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 
 function createGlowTour(options?: GlowTourOptions): Tour;
 
-const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => React.JSX.Element; CancelTrigger: (props: ButtonProps) => React.JSX.Element; Content: (props: ContentProps) => React.JSX.Element; Footer: (props: ElementProps) => React.JSX.Element; Header: (props: ContentProps) => React.JSX.Element | null; Overlay: (props: OverlayProps) => React.JSX.Element; Pointer: (props: PointerProps) => React.JSX.Element; Popover: (props: ElementProps) => React.JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => React.JSX.Element; Root: (props: RootProps) => React.JSX.Element; };
+const GlowTour: { AdvanceTrigger: (props: AdvanceTriggerProps) => React.JSX.Element; CancelTrigger: (props: CancelTriggerProps) => React.JSX.Element; Content: (props: ContentProps) => React.JSX.Element; Footer: (props: ElementProps) => React.JSX.Element; Header: (props: ContentProps) => React.JSX.Element | null; Overlay: (props: OverlayProps) => React.JSX.Element; Pointer: (props: PointerProps) => React.JSX.Element; Popover: (props: ElementProps) => React.JSX.Element; PreviousTrigger: (props: PreviousTriggerProps) => React.JSX.Element; Root: (props: RootProps) => React.JSX.Element; };
 
 function GlowTourAdvanceTrigger(props: AdvanceTriggerProps): React.JSX.Element;
 
@@ -60,7 +60,7 @@ function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
 
 function useGlowTourContext(): import("@glowhop/core-tour").TourState<ReactTourContent>;
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & TourState & {
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"> & TourState & {
     readonly tour: Tour;
 };
 
@@ -77,7 +77,9 @@ type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children
     children?: React.ReactElement<React.ButtonHTMLAttributes<HTMLButtonElement>> | ((props: React.ButtonHTMLAttributes<HTMLButtonElement>) => React.ReactElement);
 };
 
-type CancelTriggerProps = ButtonProps;
+type CancelTriggerProps = ButtonProps & {
+    cancelLabel?: string;
+};
 
 type ContentProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "id">;
 

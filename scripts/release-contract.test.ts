@@ -96,7 +96,13 @@ test("source manifests contain complete public npm metadata and preserve require
     const manifest = JSON.parse(read(`packages/${packageId}/package.json`)) as Record<string, unknown>;
     expect(manifest.description).toBeString();
     expect(manifest.license).toBe("MIT");
-    expect(manifest.homepage).toBe("https://github.com/Glowhop/GlowTour.js#readme");
+    // npm links each package to its page on the site: the adapters to their framework page, the
+    // core and the theme to the home page.
+    expect(manifest.homepage).toBe(
+      packageId === "core" || packageId === "styles"
+        ? "https://glowtour.dev/"
+        : `https://glowtour.dev/${packageId}/`,
+    );
     expect(manifest.bugs).toEqual({ url: "https://github.com/Glowhop/GlowTour.js/issues" });
     expect(manifest.keywords).toBeArray();
     expect(manifest.engines).toEqual({ node: ">=18.19.1" });

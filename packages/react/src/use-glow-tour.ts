@@ -6,7 +6,7 @@ import { createGlowTour, type Tour, type TourState } from "./glow-tour";
 /** What `useGlowTour` returns: the tour, its methods, and its current state fields. */
 export type UseGlowTourResult = Pick<
   Tour,
-  "advance" | "cancel" | "create" | "goTo" | "previous" | "start"
+  "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"
 > &
   TourState & {
     /** The tour instance, to pass to `GlowTourDefault` or `GlowTourRoot`. */
@@ -25,6 +25,17 @@ export type UseGlowTourResult = Pick<
 export function useGlowTour(source: GlowTourOptions | Tour = {}): UseGlowTourResult {
   const [owned] = useState(() => ("start" in source ? null : createGlowTour(source)));
   const tour = owned ?? (source as Tour);
-  const { advance, cancel, create, goTo, previous, start } = tour;
-  return { ...useTourSnapshot(tour), advance, cancel, create, goTo, previous, start, tour };
+  const { advance, cancel, create, goTo, hidePopover, previous, showPopover, start } = tour;
+  return {
+    ...useTourSnapshot(tour),
+    advance,
+    cancel,
+    create,
+    goTo,
+    hidePopover,
+    previous,
+    showPopover,
+    start,
+    tour,
+  };
 }

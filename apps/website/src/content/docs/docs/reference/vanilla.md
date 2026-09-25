@@ -1,6 +1,6 @@
 ---
 title: Vanilla API reference
-description: API reference for @glowhop/vanilla-tour.
+description: "API reference for @glowhop/vanilla-tour: createGlowTour, registerGlowTourElements and the custom elements for vanilla JavaScript product tours."
 ---
 
 The Vanilla adapter (`@glowhop/vanilla-tour`) exports custom element utilities and functions.
@@ -89,7 +89,7 @@ Title/header area inside the popover. Renders the step `title`: a string as text
 
 ### `glow-tour-content`
 
-Description content area inside the popover. Renders the step `content`: a string as text, a `Node` (image, video, any markup) as a child element. See [Rich content](/docs/guides/vanilla#rich-content-images-and-video).
+Description content area inside the popover. Renders the step `content`: a string as text, a `Node` (image, video, any markup) as a child element. See [Rich content](/docs/guides/vanilla/#rich-content-images-and-video).
 
 ### `glow-tour-footer`
 
@@ -146,6 +146,10 @@ root.append(pointer);
 **Properties**:
 - `disabled: boolean` - Disable the button
 
+**Attributes**:
+- `advance-label` - Button text on every step but the last (default `"Advance step"`)
+- `finish-label` - Button text on the last step (default `"Finish tour"`)
+
 **Usage**:
 ```typescript
 const button = document.createElement("glow-tour-advance-trigger");
@@ -160,12 +164,18 @@ footer.append(button);
 **Properties**:
 - `disabled: boolean` - Disable the button
 
+**Attributes**:
+- `cancel-label` - Button text (default `"Skip"`)
+
 ### `glow-tour-previous-trigger`
 
 "Previous" button to go back to the previous step.
 
 **Properties**:
 - `disabled: boolean` - Disable the button
+
+**Attributes**:
+- `previous-label` - Button text (default `"Previous step"`)
 
 ## Element names
 

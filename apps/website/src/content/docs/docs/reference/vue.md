@@ -1,6 +1,6 @@
 ---
 title: Vue API reference
-description: API reference for @glowhop/vue-tour.
+description: "API reference for @glowhop/vue-tour: the useGlowTour composable, GlowTourDefault and the composable components for building Vue product tours."
 ---
 
 The Vue adapter (`@glowhop/vue-tour`) exports components, hooks, and utility functions.
@@ -15,7 +15,7 @@ Runs a tour from a component. This is the main entry point: it returns the tour 
 ```typescript
 function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "previous" | "start"> & {
+type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"> & {
   readonly tour: Tour
 } & { readonly [K in keyof TourState]: Readonly<Ref<TourState[K]>> }
 ```
@@ -42,7 +42,7 @@ const workflow = create("welcome")
 </template>
 ```
 
-See the guide to [choose step targets](/docs/guides/vue#step-targets) and [share one tour between components](/docs/guides/vue#share-one-tour-between-components).
+See the guide to [choose step targets](/docs/guides/vue/#step-targets) and [share one tour between components](/docs/guides/vue/#share-one-tour-between-components).
 
 ### `useGlowTourContext()`
 
@@ -129,7 +129,7 @@ Primitives for custom layouts:
 - `GlowTourFooter` - Navigation button container
 - `GlowTourAdvanceTrigger` - Next step button
 - `GlowTourPreviousTrigger` - Previous step button
-- `GlowTourCancelTrigger` - Cancel button, labelled "Skip"
+- `GlowTourCancelTrigger` - Cancel button, labelled "Skip" by default
 
 The same components are grouped under the `GlowTour` object without their prefix (`Root`, `Overlay`, `Pointer`, `Popover`, `Header`, `Content`, `Footer`, `AdvanceTrigger`, `PreviousTrigger`, `CancelTrigger`), for compound markup:
 
@@ -164,7 +164,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 | `GlowTourFooter` | `<footer>` | - | default |
 | `GlowTourPreviousTrigger` | `<button>` | `previousLabel?: string` (default `"Previous step"`), `ariaLabel?: string` | default, trigger slot |
 | `GlowTourAdvanceTrigger` | `<button>` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), `ariaLabel?: string` | default, trigger slot |
-| `GlowTourCancelTrigger` | `<button>` | `ariaLabel?: string` | default, trigger slot. Its label is `"Skip"` |
+| `GlowTourCancelTrigger` | `<button>` | `ariaLabel?: string`, `cancelLabel?: string` (default `"Skip"`) | default, trigger slot |
 
 `idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
 
@@ -176,7 +176,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 </GlowTourAdvanceTrigger>
 ```
 
-A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder#hiding-a-controls-button).
+A `disabled` attribute adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. To hide a trigger, see [Hiding a control's button](/docs/reference/builder/#hiding-a-controls-button).
 
 ### `GlowTourPointer`
 

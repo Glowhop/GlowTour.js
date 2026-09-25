@@ -158,6 +158,42 @@ describe("vue adapter browser behavior", () => {
     app.unmount();
   });
 
+  test("labels the cancel trigger with cancelLabel, and falls back to Skip", async () => {
+    const [{ createApp, h, nextTick, ref }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = runtime.createGlowTour();
+    const workflow = tour
+      .create("cancel label")
+      .step({ id: "step-cancel-label", content: "First", target, title: "First" })
+      .build();
+    const cancelLabel = ref<string | undefined>(undefined);
+    const app = createApp({
+      render: () =>
+        h(runtime.GlowTourRoot, { tour }, () => [
+          h(runtime.GlowTourPopover),
+          h(runtime.GlowTourCancelTrigger, { cancelLabel: cancelLabel.value }),
+        ]),
+    });
+    app.mount(container);
+    await tour.start(workflow);
+    await nextTick();
+    const cancel = container.querySelector<HTMLButtonElement>("[data-glow-tour-cancel-trigger]");
+    assert.equal(cancel?.textContent, "Skip");
+    assert.equal(cancel?.getAttribute("aria-label"), "Skip");
+
+    cancelLabel.value = "Leave the tour";
+    await nextTick();
+    assert.equal(cancel?.textContent, "Leave the tour");
+    assert.equal(cancel?.getAttribute("aria-label"), "Leave the tour");
+
+    app.unmount();
+  });
+
   test("useGlowTour exposes state refs outside the root and disposes the tour it creates", async () => {
     const [{ createApp, defineComponent, h, nextTick }, runtime] = await Promise.all([
       import("vue"),
@@ -190,6 +226,10 @@ describe("vue adapter browser behavior", () => {
     await glow.advance();
     await nextTick();
     assert.equal(container.querySelector("output")?.textContent, "active:1");
+    glow.hidePopover();
+    assert.equal(glow.popoverHidden.value, true);
+    glow.showPopover();
+    assert.equal(glow.popoverHidden.value, false);
     await glow.cancel();
     await nextTick();
     assert.equal(glow.status.value, "cancelled");
