@@ -49,8 +49,13 @@ export const bundleScenarios: readonly BundleScenario[] = [
     // from 22.25 KiB for reporting a target that has not resolved yet on the
     // popover still on screen (11 B over after dropping the element tracking
     // the attribute was written through and folding the wait flag into the
-    // popover's own mutation lease).
-    gzipBudget: 22.5 * KIB,
+    // popover's own mutation lease), then from 22.5 KiB for stepping the popover
+    // and pointer aside while the user scrolls and scrolling the target back
+    // after `scroll.returnDelay` (about 510 B; 6 B over 23 KiB after folding the
+    // scroll-back flag into `awaitingStepUi`, sharing one timer between the idle
+    // wait and the return delay, and letting `syncInteraction` run during the
+    // scroll back instead of resyncing once it ends).
+    gzipBudget: 23.25 * KIB,
     name: "Core index",
     outputExtension: "js",
   },

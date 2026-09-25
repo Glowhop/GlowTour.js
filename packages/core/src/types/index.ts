@@ -200,12 +200,16 @@ export interface PopoverOptions extends BaseOptions {
 }
 
 /**
- * Scroll behavior options passed to Element.scrollIntoView().
+ * How a step scrolls its target into view, on entrance and after the user scrolled away.
  *
  * A step scrolls only when part of its target falls outside the viewport, and
  * does not wait for the scroll before presenting: the spotlight appears at once
  * and tracks the target as the page travels, and the popover and pointer enter
  * when the page has come to rest.
+ *
+ * While the user scrolls, the popover and pointer step aside and the spotlight
+ * keeps following the target. Once the page is still they come back, after
+ * `returnDelay` scrolls the target back into view if it was left outside it.
  */
 export interface ScrollOptions {
   /** Scroll animation. Forced to `"instant"` when the user prefers reduced motion. @default "smooth" */
@@ -214,6 +218,12 @@ export interface ScrollOptions {
   block?: "start" | "center" | "end" | "nearest";
   /** Horizontal alignment of the target in the viewport. @default "nearest" */
   inline?: "start" | "center" | "end" | "nearest";
+  /**
+   * Milliseconds to wait, once the user stops scrolling with part of the target outside the
+   * viewport, before scrolling it back into view. `false` leaves the page where the user put it.
+   * Ignored when `autoScroll` is `false`. @default 2000
+   */
+  returnDelay?: number | false;
 }
 
 /** Animation timing configuration. */

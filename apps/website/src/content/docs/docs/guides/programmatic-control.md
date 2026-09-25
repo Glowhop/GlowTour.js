@@ -200,7 +200,7 @@ Each field takes effect when GlowTour reads it:
 | `allowInteraction` | Continuously | Applies at once: the page becomes inert or usable again, focus leaves the target when interaction is blocked, and the indicator fades out or back in |
 | `allowScroll` | Continuously | Applies at once: page scroll is locked or released |
 | `overlayClick` | On each click on the dimmed area | Applies to the next click |
-| `autoFocus`, `autoScroll`, `scroll` | When the step is entered | Applies on the next visit, or to this one when set in `beforeEnter` |
+| `autoFocus`, `autoScroll`, `scroll` | When the step is entered, and `autoScroll` and `scroll` again each time the user stops scrolling | Applies on the next visit, or to this one when set in `beforeEnter`. `autoScroll` and `scroll` also apply to the next return after a user scroll |
 | `missingTarget` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
 
 `controls` works the same way: `context.props.update({ controls })` changes a command's `state` or
