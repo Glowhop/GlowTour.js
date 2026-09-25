@@ -1,6 +1,6 @@
 {
   "name": "@glowhop/vue-tour",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Vue 3 product tour and onboarding tour components for GlowTour.js. Accessible, SSR-safe with Nuxt, MIT licensed.",
   "license": "MIT",
   "homepage": "https://glowtour.dev/vue/",

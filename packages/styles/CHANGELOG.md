@@ -1,5 +1,11 @@
 # @glowhop/styles-tour
 
+## 1.5.0
+
+### Patch Changes
+
+- 2c568ab: Point each package's npm homepage to its page on glowtour.dev instead of the GitHub README, and describe what each package does in its npm description. Package metadata only: no code, API or export changes.
+
 ## 1.4.0
 
 ### Patch Changes

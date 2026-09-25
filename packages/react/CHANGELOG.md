@@ -1,5 +1,25 @@
 # @glowhop/react-tour
 
+## 1.5.0
+
+### Minor Changes
+
+- 9b58464: Let the cancel trigger's text be set, like the advance and previous ones already allow. `GlowTourCancelTrigger` takes a `cancelLabel` in React, Vue, Solid and Angular, and the vanilla `<glow-tour-cancel-trigger>` reads a `cancel-label` attribute. The default stays `"Skip"`, and an explicit `ariaLabel` still wins over the label for the accessible name.
+- 91d778a: Add `tour.hidePopover()` and `tour.showPopover()`, also returned by `useGlowTour` and `injectGlowTour`. Hiding the popover keeps the overlay, the indicator and the scroll lock, and the tour keeps running: the page leaves `inert`, focus moves from the popover to the target, and the keyboard shortcuts do nothing until the popover is shown again. It stays hidden across steps, until `showPopover()` or the end of the tour, and a new `start()` shows it again. Showing it replays its entrance, makes the step modal again and moves focus back into it. `TourState` gains `popoverHidden`.
+
+### Patch Changes
+
+- 781a1f7: Report the wait when a step's target is still resolving. A target given as an async resolver, or one the `"wait"` strategy is polling for, keeps the tour on the step the user asked to leave: for as long as that wait lasts, the popover on screen carries `data-glow-tour-awaiting-target` and its advance control is disabled, so a tour waiting on a slow target no longer looks idle with a button that does nothing. Both are cleared when the target settles, and `TourState` gains `awaitingTarget` so a UI that renders its own controls - every adapter's trigger components, and any custom one - can show the wait rather than read it from the DOM. Cancel and previous stay available, a target that resolves synchronously never enters this state, and the freeze of a target lost mid-step is unchanged.
+- ed16bb0: Disable the previous trigger on the first step as soon as that step is committed, instead of once the tour reaches `"active"`. The adapters only read the navigation capabilities while the tour is active, so between the popover appearing and the end of the entrance the first step showed an enabled Back button that refused every click. Having nothing to go back to is structural, not a transient capability, so it no longer waits for the status. A tour that is starting over a presentation still on screen keeps that presentation's state, so no focused trigger is newly disabled.
+- 2c568ab: Point each package's npm homepage to its page on glowtour.dev instead of the GitHub README, and describe what each package does in its npm description. Package metadata only: no code, API or export changes.
+- d63e152: Step the popover aside while the user scrolls. The popover and the pointer used to chase the target through a fade every few pixels of travel, and settled in the middle of the screen once the target had scrolled out of view. They now fade out at the first scroll and come back once the page has been still for a moment, while the spotlight keeps following the target. When the user left part of the target outside the viewport, the step scrolls it back after the new `behavior.scroll.returnDelay` (500 ms by default, `false` to leave the page where the user put it); scrolling again restarts the wait, and a wheel or touch drag during the scroll back hands the page back. Steps with `allowScroll: false` or `autoScroll: false` do not scroll back.
+- Updated dependencies [781a1f7]
+- Updated dependencies [2c568ab]
+- Updated dependencies [91d778a]
+- Updated dependencies [d63e152]
+- Updated dependencies [f8259bd]
+  - @glowhop/core-tour@1.5.0
+
 ## 1.4.0
 
 ### Minor Changes
