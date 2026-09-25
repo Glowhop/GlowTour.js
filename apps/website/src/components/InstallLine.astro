@@ -1,6 +1,7 @@
 ---
 import CopyButton from "./CopyButton.astro";
 import FrameworkIcon from "./FrameworkIcon.astro";
+import GithubIcon from "./GithubIcon.astro";
 
 interface Props {
   class?: string;
@@ -21,6 +22,29 @@ const frameworks = [
 
 const command = (packageName: string) => `npm i @glowhop/${packageName}-tour @glowhop/styles-tour`;
 const defaultCommand = command("react");
+
+const repoUrl = "https://github.com/Glowhop/GlowTour.js";
+
+// Read once at build time so the page stays static. Any failure (offline build, rate limit) just
+// drops the count and leaves a plain "Star" button rather than breaking the build.
+async function fetchStarCount(): Promise<string | null> {
+  try {
+    const response = await fetch("https://api.github.com/repos/Glowhop/GlowTour.js", {
+      headers: { Accept: "application/vnd.github+json" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return null;
+    const { stargazers_count: count } = (await response.json()) as { stargazers_count?: number };
+    if (typeof count !== "number") return null;
+    return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(
+      count,
+    );
+  } catch {
+    return null;
+  }
+}
+
+const stars = await fetchStarCount();
 ---
 
 <div data-tour="install" class={`mx-auto w-fit max-w-full ${className}`}>
@@ -60,6 +84,16 @@ const defaultCommand = command("react");
       >
     </div>
     <CopyButton value={defaultCommand} label="Copy install command" iconOnly />
+    <a
+      href={repoUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={stars ? `Star GlowTour.js on GitHub, ${stars} stars` : "Star GlowTour.js on GitHub"}
+      class="inline-flex shrink-0 items-center gap-1.5 rounded-[calc(var(--radius-glow)/1.5)] border border-border bg-surface px-2 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-accent hover:text-text"
+    >
+      <GithubIcon class="h-3.5 w-3.5" />
+      <span>{stars ?? "Star"}</span>
+    </a>
   </div>
 </div>
 
