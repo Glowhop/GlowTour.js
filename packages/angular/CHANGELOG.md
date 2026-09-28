@@ -1,5 +1,13 @@
 # @glowhop/angular-tour
 
+## 1.5.1
+
+### Patch Changes
+
+- e388604: Fix the popover blinking when a step scrolls its target into view on a page that scrolls inside a container rather than the document. The scroll counted as finished a few frames in, so the popover appeared mid-scroll, stepped aside as if the user were scrolling, and came back once the page stopped. The popover now waits until the target itself has stopped moving.
+- Updated dependencies [e388604]
+  - @glowhop/core-tour@1.5.1
+
 ## 1.5.0
 
 ### Minor Changes
