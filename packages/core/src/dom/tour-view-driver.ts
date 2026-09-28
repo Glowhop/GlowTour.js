@@ -1766,7 +1766,13 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
   }
 
   /**
-   * Resolves once the scroller has held still for a couple of frames.
+   * Resolves once the scroller, and the target it carries, have held still for
+   * a couple of frames.
+   *
+   * The target's own position is watched alongside the document's offset: a
+   * page that scrolls inside a container rather than the document moves the
+   * target while `scrollingElement` sits at zero, and would otherwise read as
+   * settled a few frames in, presenting the popover mid-scroll.
    *
    * Deliberately not the `scrollend` event: Safari only fires it from 18.2, so
    * older versions would fall through to the safety timeout on every step, and
@@ -1797,6 +1803,7 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
       let timeout: ReturnType<typeof setTimeout> | null = null;
       let left = scroller.scrollLeft;
       let top = scroller.scrollTop;
+      let rect = target.getBoundingClientRect();
       // Seeded below zero so the frames before the browser starts moving — the
       // scroller still sitting at its old offset — cannot read as "arrived".
       // Any real movement resets it to zero, where two still frames do mean it.
@@ -1818,11 +1825,15 @@ export class DomTourViewDriver<T> implements TourViewDriver<T> {
         frame = null;
         const nextLeft = scroller.scrollLeft;
         const nextTop = scroller.scrollTop;
+        const nextRect = target.getBoundingClientRect();
         const still =
           Math.abs(nextLeft - left) <= SCROLL_SETTLE_EPSILON &&
-          Math.abs(nextTop - top) <= SCROLL_SETTLE_EPSILON;
+          Math.abs(nextTop - top) <= SCROLL_SETTLE_EPSILON &&
+          Math.abs(nextRect.left - rect.left) <= SCROLL_SETTLE_EPSILON &&
+          Math.abs(nextRect.top - rect.top) <= SCROLL_SETTLE_EPSILON;
         left = nextLeft;
         top = nextTop;
+        rect = nextRect;
         stillFrames = still ? stillFrames + 1 : 0;
         if (stillFrames >= SCROLL_SETTLE_STILL_FRAMES) return finish();
         frame = frames.request(watch);
