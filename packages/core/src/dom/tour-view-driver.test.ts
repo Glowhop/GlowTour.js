@@ -3292,6 +3292,28 @@ describe("DomTourViewDriver", () => {
     await showing;
     assert.equal(hasAnimationFor(elements.popover), true);
   });
+  test("holds the popover back while a container, not the document, scrolls", async () => {
+    // The document's offset never moves: only the target, carried by its container, does.
+    installScroller();
+    const { driver, elements } = installDriver();
+    const step = createStep();
+    const target = createOffscreenTarget();
+    step.target = target as unknown as HTMLElement;
+
+    const showing = driver.show(step, "advance", new AbortController().signal);
+    await flushMicrotasks();
+
+    // Long enough that a sentinel blind to the container would call it settled midway.
+    for (let top = 1900; top >= 400; top -= 100) {
+      target.setRect({ height: 20, left: 10, top, width: 20 });
+      await flushFrames(2);
+    }
+    assert.equal(hasAnimationFor(elements.popover), false, "the popover waits for the container");
+
+    await flushFrames(12);
+    await showing;
+    assert.equal(hasAnimationFor(elements.popover), true);
+  });
   test("places the popover on the rect the target settles at", async () => {
     const scroller = installScroller();
     const { driver, elements } = installDriver();
