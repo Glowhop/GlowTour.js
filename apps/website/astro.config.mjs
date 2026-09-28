@@ -92,7 +92,8 @@ export default defineConfig({
     icon(),
     // Only publish URL data we can keep accurate. A deployment date is not a meaningful
     // modification date for every page, and search engines calculate crawl priority themselves.
-    sitemap(),
+    // The Studio privacy policy is `noindex`: it exists for the Chrome Web Store listing only.
+    sitemap({ filter: (page) => !page.endsWith("/studio/privacy/") }),
   ],
   vite: {
     plugins: [tailwindcss()],

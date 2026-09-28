@@ -1,0 +1,277 @@
+---
+import MarketingLayout from "../../layouts/MarketingLayout.astro";
+---
+
+{/*
+  Privacy policy of the GlowTour Studio Chrome extension. The Chrome Web Store listing links here,
+  so the URL has to stay stable, but the page is not meant to be found through search: it is
+  `noindex` and filtered out of the sitemap in astro.config.mjs.
+*/}
+<MarketingLayout
+  title="GlowTour Studio Privacy Policy"
+  description="How the GlowTour Studio Chrome extension handles your data."
+  noindex
+>
+  <article class="policy mx-auto max-w-3xl px-6 py-16 sm:py-24">
+    <section lang="en">
+      <h1
+        class="font-heading text-4xl leading-[1.1] font-semibold tracking-tight text-balance text-text sm:text-5xl"
+      >
+        GlowTour Studio Privacy Policy
+      </h1>
+      <p class="updated">Last updated: September 27, 2026</p>
+      <p>
+        GlowTour Studio is a Chrome extension for creating and playing interactive tutorials on web
+        pages. It is designed to work entirely on your device: there is no account, no server and no
+        analytics.
+      </p>
+
+      <h2>Data the extension stores</h2>
+      <p>
+        The following data is stored only on your device, in Chrome's local extension storage
+        (<code>chrome.storage.local</code>):
+      </p>
+      <ul>
+        <li>
+          Your tutorials: name, start page URL, steps (text written in Markdown, CSS selectors of
+          the targeted elements, labels, placement), visual settings and auto-start preference.
+        </li>
+        <li>Your preferences: interface language and theme (light, dark or automatic).</li>
+        <li>Auto-start state: whether a tutorial set to run "once" has already been shown.</li>
+      </ul>
+      <p>
+        This data never leaves your device through the extension. It is deleted when you delete a
+        tutorial or uninstall the extension.
+      </p>
+
+      <h2>Access to web pages</h2>
+      <p>
+        The extension only accesses a website after you grant permission for that site, through
+        Chrome's native permission prompt. On an allowed site, it:
+      </p>
+      <ul>
+        <li>lets you select an element on the page, to record a CSS selector for it;</li>
+        <li>displays tutorials on top of the page;</li>
+        <li>
+          starts a tutorial automatically, if you configured it to, when you open its start page.
+        </li>
+      </ul>
+      <p>
+        Page content is read locally to perform these actions. It is not collected, stored beyond
+        the selectors you save, or transmitted.
+      </p>
+
+      <h2>Data shared with third parties</h2>
+      <p>
+        GlowTour Studio does not sell, share or transmit your data. The only exceptions are actions
+        you explicitly take:
+      </p>
+      <ul>
+        <li>
+          Feedback: the "Give feedback" link opens a form hosted by
+          <a href="https://tally.so">Tally</a>. When the extension is uninstalled, Chrome opens a
+          similar optional form. Both links include the extension version and your browser name, so
+          that bugs can be reproduced. Anything you type in these forms is sent to Tally and handled
+          under <a href="https://tally.so/help/privacy-policy">Tally's privacy policy</a>. Filling
+          them in is optional.
+        </li>
+        <li>
+          Export: exporting a tutorial saves a JSON file on your computer. What you do with that
+          file is up to you.
+        </li>
+        <li>
+          External content: if you add an image or link from another website in a tutorial's text,
+          it is loaded from that website when the tutorial is displayed.
+        </li>
+      </ul>
+
+      <h2>Your control</h2>
+      <ul>
+        <li>Delete tutorials at any time from the extension's library.</li>
+        <li>
+          Revoke site access at any time from <code>chrome://extensions</code> → GlowTour Studio →
+          Details → Site access.
+        </li>
+        <li>Uninstalling the extension deletes all of its locally stored data.</li>
+      </ul>
+
+      <h2>Children</h2>
+      <p>
+        The extension is not directed at children under 13 and does not knowingly collect any of
+        their information.
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        If this policy changes, the updated version will be published at this address, with a new
+        "Last updated" date.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about this policy:
+        <a href="mailto:glowhop.temps@gmail.com">glowhop.temps@gmail.com</a>
+      </p>
+    </section>
+
+    <section lang="fr" class="mt-20 border-t border-border pt-16">
+      <h2 class="font-heading title">Politique de confidentialité (Français)</h2>
+      <p class="updated">Dernière mise à jour : 27 septembre 2026</p>
+      <p>
+        GlowTour Studio est une extension Chrome qui permet de créer et de lancer des tutoriels
+        interactifs sur des pages web. Elle fonctionne entièrement sur votre appareil : pas de
+        compte, pas de serveur, pas de statistiques d'utilisation.
+      </p>
+
+      <h3>Données enregistrées</h3>
+      <p>
+        Les données suivantes sont enregistrées uniquement sur votre appareil, dans le stockage
+        local de l'extension (<code>chrome.storage.local</code>) :
+      </p>
+      <ul>
+        <li>
+          Vos tutoriels : nom, URL de la page de départ, étapes (texte en Markdown, sélecteurs CSS
+          des éléments ciblés, libellés, placement), réglages visuels et préférence de lancement
+          automatique.
+        </li>
+        <li>Vos préférences : langue de l'interface et thème (clair, sombre ou automatique).</li>
+        <li>
+          État du lancement automatique : si un tutoriel réglé sur « une fois » a déjà été affiché.
+        </li>
+      </ul>
+      <p>
+        L'extension ne transmet jamais ces données hors de votre appareil. Elles sont supprimées
+        quand vous supprimez un tutoriel ou désinstallez l'extension.
+      </p>
+
+      <h3>Accès aux pages web</h3>
+      <p>
+        L'extension n'accède à un site qu'après votre autorisation pour ce site, via la demande de
+        permission native de Chrome. Sur un site autorisé, elle :
+      </p>
+      <ul>
+        <li>
+          vous permet de sélectionner un élément de la page, pour en enregistrer le sélecteur CSS ;
+        </li>
+        <li>affiche les tutoriels par-dessus la page ;</li>
+        <li>
+          lance automatiquement un tutoriel sur sa page de départ, si vous l'avez configuré ainsi.
+        </li>
+      </ul>
+      <p>
+        Le contenu de la page est lu localement pour ces actions. Il n'est ni collecté, ni conservé
+        au-delà des sélecteurs que vous enregistrez, ni transmis.
+      </p>
+
+      <h3>Partage avec des tiers</h3>
+      <p>
+        GlowTour Studio ne vend, ne partage et ne transmet pas vos données, sauf lors des actions
+        que vous faites vous-même :
+      </p>
+      <ul>
+        <li>
+          Feedback : le lien « Donner mon avis » ouvre un formulaire hébergé par
+          <a href="https://tally.so">Tally</a>. À la désinstallation, Chrome ouvre un formulaire
+          similaire, facultatif. Ces liens transmettent la version de l'extension et le nom de votre
+          navigateur, pour aider à reproduire les bugs. Ce que vous saisissez est envoyé à Tally et
+          traité selon <a href="https://tally.so/help/privacy-policy">sa politique de
+          confidentialité</a>. Remplir ces formulaires est facultatif.
+        </li>
+        <li>
+          Export : exporter un tutoriel enregistre un fichier JSON sur votre ordinateur. Vous
+          décidez de ce que vous en faites.
+        </li>
+        <li>
+          Contenu externe : si vous ajoutez dans un tutoriel une image ou un lien provenant d'un
+          autre site, il est chargé depuis ce site à l'affichage du tutoriel.
+        </li>
+      </ul>
+
+      <h3>Vos choix</h3>
+      <ul>
+        <li>Supprimez vos tutoriels à tout moment depuis la bibliothèque de l'extension.</li>
+        <li>
+          Retirez l'accès à un site à tout moment depuis <code>chrome://extensions</code> →
+          GlowTour Studio → Détails → Accès au site.
+        </li>
+        <li>Désinstaller l'extension supprime toutes ses données locales.</li>
+      </ul>
+
+      <h3>Enfants</h3>
+      <p>
+        L'extension ne s'adresse pas aux enfants de moins de 13 ans et ne collecte sciemment aucune
+        de leurs informations.
+      </p>
+
+      <h3>Modifications</h3>
+      <p>
+        En cas de modification, la nouvelle version sera publiée à cette adresse avec une nouvelle
+        date de mise à jour.
+      </p>
+
+      <h3>Contact</h3>
+      <p>
+        Pour toute question :
+        <a href="mailto:glowhop.temps@gmail.com">glowhop.temps@gmail.com</a>
+      </p>
+    </section>
+  </article>
+</MarketingLayout>
+
+<style>
+  .policy {
+    color: var(--color-text);
+    line-height: 1.7;
+  }
+
+  .policy p,
+  .policy ul {
+    margin-top: 1rem;
+    color: var(--color-text-muted);
+  }
+
+  .policy ul {
+    list-style: disc;
+    padding-inline-start: 1.5rem;
+  }
+
+  .policy li + li {
+    margin-top: 0.5rem;
+  }
+
+  .policy .updated {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .policy .title {
+    font-size: 1.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .policy section[lang="en"] h2,
+  .policy h3 {
+    margin-top: 2.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .policy a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .policy a:hover {
+    color: var(--color-accent-hover);
+  }
+
+  .policy code {
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background: var(--color-surface-muted);
+    font-size: 0.875em;
+  }
+</style>
