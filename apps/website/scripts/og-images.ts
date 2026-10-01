@@ -92,6 +92,12 @@ const CARDS: readonly Card[] = [
     subtitle: "MIT vs AGPL-3.0/commercial, framework support, SSR and accessibility.",
   },
   {
+    name: "studio",
+    kicker: "Free Chrome extension",
+    title: "GlowTour Studio",
+    subtitle: "Create interactive tutorials on any website, without code.",
+  },
+  {
     name: "docs",
     kicker: "Documentation",
     title: "Build a product tour with GlowTour.js",

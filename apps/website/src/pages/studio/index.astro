@@ -1,0 +1,169 @@
+---
+import Button from "../../components/Button.astro";
+import SpotlightMotif from "../../components/SpotlightMotif.astro";
+import StepDivider from "../../components/StepDivider.astro";
+import MarketingLayout from "../../layouts/MarketingLayout.astro";
+
+const STORE_URL = "https://chromewebstore.google.com/detail/ihliphbjpmdenlealdhfgbkffamhceie";
+
+const steps = [
+  {
+    title: "Pick an element",
+    description:
+      "Open the page you want to explain and click the element a step should point at. Studio records a CSS selector for it.",
+  },
+  {
+    title: "Write the step",
+    description:
+      "Give each step a title and a text in Markdown, with links and images, then choose where the popover sits.",
+  },
+  {
+    title: "Play the tour",
+    description:
+      "Run the tutorial on top of the live page, or let it start on its own the next time you open its start page.",
+  },
+];
+
+const features = [
+  {
+    title: "No code",
+    description: "Tours are built by pointing and typing, on any website you grant access to.",
+  },
+  {
+    title: "Markdown steps",
+    description: "Formatted text, links and images in every step.",
+  },
+  {
+    title: "Auto-start",
+    description: "Start a tutorial when its page opens, every time or only once.",
+  },
+  {
+    title: "Your look",
+    description: "Visual settings per tutorial, and a light, dark or automatic interface.",
+  },
+  {
+    title: "JSON export",
+    description: "Save a tutorial as a JSON file on your computer, to keep or share.",
+  },
+  {
+    title: "English and French",
+    description: "The extension interface is available in both languages.",
+  },
+];
+---
+
+<MarketingLayout
+  title="GlowTour Studio - Create Interactive Tutorials Without Code | GlowTour.js"
+  description="GlowTour Studio is a free Chrome extension to create and play interactive tutorials and guided tours on any web page, without code. No account, no server: everything stays on your device."
+  image="/og/studio.jpg"
+  imageAlt="GlowTour Studio - interactive tutorials on any website, without code"
+>
+  <section class="relative isolate overflow-hidden px-6 pt-20 pb-16 sm:pt-28">
+    <SpotlightMotif class="-z-10" />
+    <div class="mx-auto max-w-3xl text-center">
+      <p
+        class="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1 text-xs font-medium text-text-muted backdrop-blur"
+      >
+        <span class="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></span>
+        Free Chrome extension
+      </p>
+      <h1
+        class="font-heading mt-6 text-[2.6rem] leading-[1.05] font-semibold tracking-[-0.02em] text-balance text-text sm:text-6xl"
+      >
+        Interactive tutorials on any website, without code
+      </h1>
+      <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-pretty text-text-muted">
+        GlowTour Studio lets you create and play guided tours directly in Chrome. Point at the
+        elements you want to explain, write the steps, and run the tutorial on top of the page.
+      </p>
+      <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+        <Button href={STORE_URL}>Add to Chrome</Button>
+        <Button href="#how-it-works" variant="secondary">How it works</Button>
+      </div>
+      <img
+        src="/mascot-welcome.png"
+        alt="The GlowTour mascot welcoming visitors to an interactive tutorial"
+        width="1222"
+        height="1287"
+        loading="eager"
+        fetchpriority="high"
+        class="mx-auto mt-12 w-full max-w-xs"
+      />
+    </div>
+  </section>
+
+  <section id="how-it-works" class="mx-auto max-w-5xl px-6 pb-20 scroll-mt-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
+      A tutorial in three steps
+    </h2>
+    <ol class="mt-10 grid gap-8 sm:grid-cols-3">
+      {
+        steps.map((step, index) => (
+          <li>
+            <span class="font-heading text-2xl font-semibold text-accent">{index + 1}</span>
+            <h3 class="mt-2 font-semibold text-text">{step.title}</h3>
+            <p class="mt-1 text-sm text-text-muted">{step.description}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <StepDivider class="py-2" />
+
+  <section class="mx-auto max-w-5xl px-6 py-20">
+    <h2 class="font-heading text-center text-3xl font-semibold tracking-tight text-text">
+      What Studio does
+    </h2>
+    <div class="mt-10 grid gap-x-10 gap-y-6 sm:grid-cols-2">
+      {
+        features.map((feature) => (
+          <div class="flex gap-4">
+            <span class="mt-1 h-px w-6 shrink-0 bg-accent" aria-hidden="true" />
+            <div>
+              <h3 class="font-semibold text-text">{feature.title}</h3>
+              <p class="mt-1 text-sm text-text-muted">{feature.description}</p>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <StepDivider class="py-2" />
+
+  <section class="mx-auto max-w-3xl px-6 py-20 text-center">
+    <h2 class="font-heading text-3xl font-semibold tracking-tight text-text">
+      Private by design
+    </h2>
+    <p class="mt-4 text-text-muted">
+      No account, no server, no analytics. Your tutorials are stored only in Chrome, on your device,
+      and the extension reads a website only after you allow it for that site.
+    </p>
+    <p class="mt-4 text-sm">
+      <a href="/studio/privacy/" class="text-text underline underline-offset-4 hover:text-accent">
+        Read the privacy policy
+      </a>
+    </p>
+  </section>
+
+  <section class="bg-accent">
+    <div class="mx-auto max-w-3xl px-6 py-16 text-center">
+      <h2 class="font-heading text-3xl font-semibold tracking-tight text-on-accent">
+        Building tours inside your own app?
+      </h2>
+      <p class="mt-4 text-on-accent/80">
+        Studio is for tutorials you make in the browser. To ship onboarding tours as part of your
+        product, use the GlowTour.js library for React, Vue, Angular, Solid or vanilla JavaScript.
+      </p>
+      <div class="mt-8">
+        <a
+          href="/docs/getting-started/"
+          class="inline-flex -translate-x-px -translate-y-px items-center justify-center gap-2 rounded-glow bg-on-accent px-5 py-2.5 text-sm font-semibold text-accent shadow-[3px_3px_0_0_rgb(0_0_0_/_25%)] transition-[transform,box-shadow] duration-150 hover:translate-x-0 hover:translate-y-0 hover:shadow-[1px_1px_0_0_rgb(0_0_0_/_25%)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+        >
+          Get started with GlowTour.js
+        </a>
+      </div>
+    </div>
+  </section>
+</MarketingLayout>
