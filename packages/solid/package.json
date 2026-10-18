@@ -57,6 +57,6 @@
   },
   "devDependencies": {
     "happy-dom": "^18.0.1",
-    "solid-js": "^1.9.14"
+    "solid-js": "^1.9.17"
   }
 }
