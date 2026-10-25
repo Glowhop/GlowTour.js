@@ -18,6 +18,6 @@
     "zone.js": "^0.14.10"
   },
   "devDependencies": {
-    "vite": "^6.0.11"
+    "vite": "^6.4.5"
   }
 }
