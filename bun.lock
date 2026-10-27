@@ -139,7 +139,7 @@
       },
       "devDependencies": {
         "@playwright/test": "^1.64.1",
-        "vite": "^6.4.5",
+        "vite": "^8.2.2",
       },
     },
     "apps/ssr-vue": {
@@ -790,6 +790,8 @@
     "@glowhop/ssr-react": ["@glowhop/ssr-react@workspace:apps/ssr-react"],
 
     "@glowhop/ssr-solid": ["@glowhop/ssr-solid@workspace:apps/ssr-solid"],
+
+    "@glowhop/ssr-solid/vite": ["vite@8.3.5", "", { "dependencies": { "lightningcss": "^1.33.0", "picomatch": "^4.0.7", "postcss": "^8.5.30", "rolldown": "~1.2.14", "tinyglobby": "^0.2.17" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "@vitejs/devtools": "^0.7.1 || ^0.8.0", "esbuild": "^0.27.0 || ^0.28.0", "jiti": ">=1.21.0", "less": "^4.0.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "@vitejs/devtools", "esbuild", "jiti", "less", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-z1YpjieJ9g0ebTmQpLBv/oq9E3F9EIlOe+7LahW8SrE3LTiG3udBRUXQOlYXP9b+IC2q2phHeVxj9xGlw34OEQ=="],
 
     "@glowhop/ssr-vue-app": ["@glowhop/ssr-vue-app@workspace:apps/ssr-vue"],
 
