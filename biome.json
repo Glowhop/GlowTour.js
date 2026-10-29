@@ -78,26 +78,22 @@
   },
   "overrides": [
     {
-      "includes": [
-        "apps/website/**/*.astro"
-      ],
+      "includes": ["packages/react/src/react.browser.ts"],
       "linter": {
         "rules": {
           "correctness": {
-            "noUnusedImports": "off",
-            "noUnusedVariables": "off"
+            "noComponentHookFactories": "off"
           }
         }
       }
     },
     {
-      "includes": [
-        "packages/react/src/react.browser.ts"
-      ],
+      "includes": ["apps/website/**/*.astro"],
       "linter": {
         "rules": {
           "correctness": {
-            "noComponentHookFactories": "off"
+            "noUnusedImports": "off",
+            "noUnusedVariables": "off"
           }
         }
       }
