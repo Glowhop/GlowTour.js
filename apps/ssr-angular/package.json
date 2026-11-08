@@ -21,16 +21,16 @@
     "@glowhop/styles-tour": "workspace:*",
     "express": "^4.22.3",
     "rxjs": "~7.8.0",
-    "tslib": "^2.3.0",
+    "tslib": "^2.9.1",
     "zone.js": "0.14.10"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^18.2.12",
     "@angular/cli": "^18.2.12",
     "@angular/compiler-cli": "18.2.14",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.1",
     "@types/express": "^4.17.21",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.6",
     "typescript": "5.5.4"
   }
 }
