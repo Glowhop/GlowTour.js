@@ -1,4 +1,5 @@
 ---
+
 title: "Getting started: build your first product tour"
 description: Install GlowTour.js and build your first product tour or onboarding tour in React, Vue, Angular, Solid or vanilla JavaScript, step by step.
 ---
@@ -47,15 +48,15 @@ npm i @glowhop/vanilla-tour @glowhop/styles-tour
 
 All packages are published on npm under the `@glowhop` scope:
 
-| Package | npm |
-| --- | --- |
-| `@glowhop/core-tour` | [npmjs.com/package/@glowhop/core-tour](https://www.npmjs.com/package/@glowhop/core-tour) |
-| `@glowhop/react-tour` | [npmjs.com/package/@glowhop/react-tour](https://www.npmjs.com/package/@glowhop/react-tour) |
-| `@glowhop/vue-tour` | [npmjs.com/package/@glowhop/vue-tour](https://www.npmjs.com/package/@glowhop/vue-tour) |
-| `@glowhop/solid-tour` | [npmjs.com/package/@glowhop/solid-tour](https://www.npmjs.com/package/@glowhop/solid-tour) |
+| Package                 | npm                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `@glowhop/core-tour`    | [npmjs.com/package/@glowhop/core-tour](https://www.npmjs.com/package/@glowhop/core-tour)       |
+| `@glowhop/react-tour`   | [npmjs.com/package/@glowhop/react-tour](https://www.npmjs.com/package/@glowhop/react-tour)     |
+| `@glowhop/vue-tour`     | [npmjs.com/package/@glowhop/vue-tour](https://www.npmjs.com/package/@glowhop/vue-tour)         |
+| `@glowhop/solid-tour`   | [npmjs.com/package/@glowhop/solid-tour](https://www.npmjs.com/package/@glowhop/solid-tour)     |
 | `@glowhop/angular-tour` | [npmjs.com/package/@glowhop/angular-tour](https://www.npmjs.com/package/@glowhop/angular-tour) |
 | `@glowhop/vanilla-tour` | [npmjs.com/package/@glowhop/vanilla-tour](https://www.npmjs.com/package/@glowhop/vanilla-tour) |
-| `@glowhop/styles-tour` | [npmjs.com/package/@glowhop/styles-tour](https://www.npmjs.com/package/@glowhop/styles-tour) |
+| `@glowhop/styles-tour`  | [npmjs.com/package/@glowhop/styles-tour](https://www.npmjs.com/package/@glowhop/styles-tour)   |
 
 The adapters depend on `@glowhop/core-tour`; you only install it directly if you build your own adapter.
 
@@ -172,10 +173,7 @@ export class TourComponent {
 
 ```typescript
 import "@glowhop/styles-tour/default.css";
-import {
-  createGlowTour,
-  registerGlowTourElements,
-} from "@glowhop/vanilla-tour";
+import { createGlowTour, registerGlowTourElements } from "@glowhop/vanilla-tour";
 
 registerGlowTourElements();
 

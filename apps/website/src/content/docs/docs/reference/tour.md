@@ -1,4 +1,5 @@
 ---
+
 title: Tour API reference
 description: "Complete reference for the GlowTour.js tour controller returned by createGlowTour(): start, navigation, cancel, dispose and reactive state."
 ---
@@ -14,22 +15,25 @@ For framework-specific integration and components, see [React](/docs/reference/r
 Creates and returns a new tour controller instance.
 
 **Signature**:
+
 ```typescript
-function createGlowTour(options?: GlowTourOptions): GlowTour
+function createGlowTour(options?: GlowTourOptions): GlowTour;
 ```
 
 **Parameters**:
+
 - `options.onSubscriberError` - Called when a state/step subscriber throws an error (optional, no default)
 - `options.onEvent` - Monitoring callback for every tour this instance runs; see the [Monitoring guide](/docs/guides/monitoring/) (optional, no default)
 
 **Returns**: Tour controller instance
 
 **Usage**:
+
 ```typescript
 const tour = createGlowTour({
   onSubscriberError: (error) => {
     console.error("Subscriber error:", error);
-  }
+  },
 });
 ```
 
@@ -40,6 +44,7 @@ const tour = createGlowTour({
 Starts building a new workflow on this controller. See the [Builder reference](/docs/reference/builder/#tourcreatename-options) for the full builder API.
 
 **Signature**:
+
 ```typescript
 create(name: string, options?: StartOptions): WorkflowBuilder
 ```
@@ -49,16 +54,27 @@ create(name: string, options?: StartOptions): WorkflowBuilder
 Runs a workflow built with `.build()`. Any previous run or navigation on this controller is cancelled first. The returned promise resolves once the first step is on screen, not when the tour ends, and rejects if that first step fails.
 
 **Signature**:
+
 ```typescript
 start(workflow: WorkflowDefinition, options?: RunOptions): Promise<void>
 ```
 
 **Options**:
+
 - `startAt` - Id of the step to start on, instead of the first one. Throws if no step carries that id. The workflow is not truncated: `totalSteps` is unchanged and `previous()` can go back before this step. See [Resuming a tour](/docs/guides/resuming/).
 
 **Usage**:
+
 ```typescript
-const workflow = tour.create("welcome").step({ id: "save-button", target: "#save-button", title: "Save", content: "Click here to save." }).build();
+const workflow = tour
+  .create("welcome")
+  .step({
+    id: "save-button",
+    target: "#save-button",
+    title: "Save",
+    content: "Click here to save.",
+  })
+  .build();
 
 await tour.start(workflow);
 ```
@@ -68,11 +84,13 @@ await tour.start(workflow);
 Moves to the next step. Only available if `canAdvance` is true - check `tour.state.get().canAdvance` or the state a `subscribe` listener receives before calling it, or wire it to a button's `disabled` prop.
 
 **Signature**:
+
 ```typescript
 advance(): Promise<void>
 ```
 
 **Usage**:
+
 ```typescript
 <button disabled={!state.canAdvance} onClick={() => tour.advance()}>
   Next
@@ -84,11 +102,13 @@ advance(): Promise<void>
 Moves to the previous step. Only available if `canPrevious` is true.
 
 **Signature**:
+
 ```typescript
 previous(): Promise<void>
 ```
 
 **Usage**:
+
 ```typescript
 <button disabled={!state.canPrevious} onClick={() => tour.previous()}>
   Previous
@@ -102,11 +122,13 @@ Goes to the step with this `id`, skipping the steps in between. The direction (`
 Steps are designated by `id`, like `startAt` in `start()`: an index would break as soon as steps are reordered or inserted.
 
 **Signature**:
+
 ```typescript
 goTo(id: string): Promise<void>
 ```
 
 **Usage**:
+
 ```typescript
 // Jump straight to the billing step
 await tour.goTo("billing");
@@ -119,11 +141,13 @@ A step action or a target event handler can do the same with `context.goTo(id)`,
 Cancels the running tour. Does nothing when no tour is running. A disabled `controls.cancel` only blocks the tour UI: `tour.cancel()` still cancels.
 
 **Signature**:
+
 ```typescript
 cancel(): Promise<void>
 ```
 
 **Usage**:
+
 ```typescript
 <button onClick={() => tour.cancel()}>Skip tour</button>
 ```
@@ -137,12 +161,14 @@ While the popover is hidden, the overlay, the indicator and the scroll lock stay
 `showPopover()` replays the popover's entrance on the current step, makes the step modal again, and moves focus into the popover when the step auto focuses. `state.popoverHidden` reports which one is in effect.
 
 **Signature**:
+
 ```typescript
 hidePopover(): void
 showPopover(): void
 ```
 
 **Usage**:
+
 ```typescript
 // Let the user look at the page without the popover, then bring it back
 tour.hidePopover();
@@ -154,11 +180,13 @@ helpButton.addEventListener("click", () => tour.showPopover());
 Cancels pending work and releases the connected root. The controller becomes unusable after this - create a new one with `createGlowTour()` if you need another tour.
 
 **Signature**:
+
 ```typescript
 dispose(): void
 ```
 
 **Usage**:
+
 ```typescript
 // e.g. in a framework's unmount/cleanup hook
 tour.dispose();
@@ -171,32 +199,42 @@ tour.dispose();
 Returns the current tour state as a plain snapshot (not reactive by itself - use `subscribe` below to react to changes).
 
 **Signature**:
+
 ```typescript
 get(): TourState
 ```
 
 **Usage**:
+
 ```typescript
 const { status, canAdvance } = tour.state.get();
 ```
 
 **Returns**:
+
 ```typescript
 {
-  status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
-  awaitingTarget: boolean
-  popoverHidden: boolean
-  name: string
-  totalSteps: number
-  currentStepIndex: number
-  currentStep: TourCurrentStep | null
-  direction: "advance" | "previous"
-  canAdvance: boolean
-  canPrevious: boolean
-  canCancel: boolean
-  isFirstStep: boolean
-  isLastStep: boolean
-  error: Error | null
+  status: "idle" |
+    "starting" |
+    "transitioning" |
+    "active" |
+    "finished" |
+    "cancelled" |
+    "error" |
+    "disposed";
+  awaitingTarget: boolean;
+  popoverHidden: boolean;
+  name: string;
+  totalSteps: number;
+  currentStepIndex: number;
+  currentStep: TourCurrentStep | null;
+  direction: "advance" | "previous";
+  canAdvance: boolean;
+  canPrevious: boolean;
+  canCancel: boolean;
+  isFirstStep: boolean;
+  isLastStep: boolean;
+  error: Error | null;
 }
 ```
 
@@ -205,6 +243,7 @@ const { status, canAdvance } = tour.state.get();
 Subscribes to state changes. Called whenever any part of the state changes.
 
 **Signature**:
+
 ```typescript
 subscribe(listener: (state: TourState) => void): () => void
 ```
@@ -212,6 +251,7 @@ subscribe(listener: (state: TourState) => void): () => void
 **Returns**: Unsubscribe function
 
 **Usage**:
+
 ```typescript
 const unsubscribe = tour.state.subscribe((state) => {
   console.log("Tour status:", state.status);

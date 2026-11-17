@@ -1,4 +1,5 @@
 ---
+
 title: "Compatibility: framework versions and SSR"
 description: Supported React, Vue, Angular and Solid versions, and the server rendering verified for each GlowTour.js adapter in Next.js, Nuxt, SolidStart and Angular SSR.
 ---
@@ -7,13 +8,13 @@ The versions listed are the current peer contracts and are not a promise of supp
 
 ## Framework contracts
 
-| Framework | Version | Adapter Package |
-| --- | --- | --- |
-| React | 18 and 19 (`^18.0.0 \|\| ^19.0.0`) | `@glowhop/react-tour` |
-| Vue | 3.3+ (`^3.3.0`) | `@glowhop/vue-tour` |
-| Solid | 1.8+ (`^1.8.0`) | `@glowhop/solid-tour` |
-| Angular | 18+ (`^18.0.0`) | `@glowhop/angular-tour` |
-| Vanilla/Browser | See [Browsers](#browsers) | `@glowhop/vanilla-tour` |
+| Framework       | Version                            | Adapter Package         |
+| --------------- | ---------------------------------- | ----------------------- |
+| React           | 18 and 19 (`^18.0.0 \|\| ^19.0.0`) | `@glowhop/react-tour`   |
+| Vue             | 3.3+ (`^3.3.0`)                    | `@glowhop/vue-tour`     |
+| Solid           | 1.8+ (`^1.8.0`)                    | `@glowhop/solid-tour`   |
+| Angular         | 18+ (`^18.0.0`)                    | `@glowhop/angular-tour` |
+| Vanilla/Browser | See [Browsers](#browsers)          | `@glowhop/vanilla-tour` |
 
 **Notes**:
 
@@ -42,13 +43,13 @@ The versions listed are the current peer contracts and are not a promise of supp
 
 ## SSR and hydration summary
 
-| Adapter | SSR | Hydration | Verification |
-| --- | --- | --- | --- |
-| React | Yes | Yes | Package-level + Next.js production app |
-| Vue | Yes | Yes | Package-level + Nuxt production app |
-| Solid | Yes | Yes | Package-level + SolidStart production app |
-| Angular | Yes | Yes | Angular SSR production app |
-| Vanilla | Not applicable | Not applicable | DOM-free import only |
+| Adapter | SSR            | Hydration      | Verification                              |
+| ------- | -------------- | -------------- | ----------------------------------------- |
+| React   | Yes            | Yes            | Package-level + Next.js production app    |
+| Vue     | Yes            | Yes            | Package-level + Nuxt production app       |
+| Solid   | Yes            | Yes            | Package-level + SolidStart production app |
+| Angular | Yes            | Yes            | Angular SSR production app                |
+| Vanilla | Not applicable | Not applicable | DOM-free import only                      |
 
 See the [SSR guide](/docs/guides/ssr/) for setup and hydration details per framework.
 

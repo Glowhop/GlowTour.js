@@ -1,4 +1,5 @@
 ---
+
 title: "Server-side rendering: Next.js, Nuxt, SolidStart, Angular"
 description: Use GlowTour.js product tours with server-side rendering in Next.js, Nuxt, SolidStart and Angular SSR, and import the vanilla adapter safely on the server.
 ---
@@ -128,7 +129,7 @@ const tour = createGlowTour();
 const html = await renderToString(
   createSSRApp({
     render: () => [h(YourApp), h(GlowTourDefault, { tour })],
-  })
+  }),
 );
 ```
 
@@ -375,13 +376,13 @@ Custom elements don't render on the server; they only upgrade once connected to 
 
 ## Summary table
 
-| Framework | SSR | Hydration | Real-world verified |
-| --- | --- | --- | --- |
-| React | Yes | Yes | Next.js production |
-| Vue | Yes | Yes | Nuxt production |
-| Solid | Yes | Yes | SolidStart production |
-| Angular | Yes | Yes | Angular SSR production |
-| Vanilla | Not applicable | Not applicable | N/A |
+| Framework | SSR            | Hydration      | Real-world verified    |
+| --------- | -------------- | -------------- | ---------------------- |
+| React     | Yes            | Yes            | Next.js production     |
+| Vue       | Yes            | Yes            | Nuxt production        |
+| Solid     | Yes            | Yes            | SolidStart production  |
+| Angular   | Yes            | Yes            | Angular SSR production |
+| Vanilla   | Not applicable | Not applicable | N/A                    |
 
 ## Verifying your setup
 
