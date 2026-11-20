@@ -1,4 +1,5 @@
 ---
+
 title: Defining a product tour in JSON
 description: Build GlowTour.js tours from a plain, JSON-serializable config instead of the JavaScript builder, so tours can live in a CMS, a database or an API.
 ---
@@ -54,9 +55,7 @@ export function OnboardingTour() {
         { "type": "waitUntilElement", "selector": "#invite-button", "timeout": 5000 },
         { "type": "clickTarget" }
       ],
-      "targetEvents": [
-        { "event": "click", "action": { "type": "focusTarget" } }
-      ]
+      "targetEvents": [{ "event": "click", "action": { "type": "focusTarget" } }]
     },
     {
       "id": "done-banner",
@@ -94,10 +93,7 @@ const config: WorkflowConfig = {
       target: "#invite-button",
       title: "Invite your team",
       content: "Send an invite to get started.",
-      actions: [
-        { type: "waitUntilElement", selector: "#invite-button" },
-        { type: "clickTarget" },
-      ],
+      actions: [{ type: "waitUntilElement", selector: "#invite-button" }, { type: "clickTarget" }],
     },
   ],
 };
@@ -111,12 +107,12 @@ Keep this object declarative when it must be transported as JSON. `WorkflowConfi
 
 `actions[]` and `targetEvents[].action` accept declarative action objects:
 
-| `type` | Fields | Builder equivalent |
-| --- | --- | --- |
-| `"wait"` | `ms: number` | `.wait(ms)` |
+| `type`               | Fields                                                      | Builder equivalent       |
+| -------------------- | ----------------------------------------------------------- | ------------------------ |
+| `"wait"`             | `ms: number`                                                | `.wait(ms)`              |
 | `"waitUntilElement"` | `selector: string`, `interval?: number`, `timeout?: number` | `.waitUntilElement(...)` |
-| `"clickTarget"` | - | `.clickTarget()` |
-| `"focusTarget"` | - | `.focusTarget()` |
+| `"clickTarget"`      | -                                                           | `.clickTarget()`         |
+| `"focusTarget"`      | -                                                           | `.focusTarget()`         |
 
 `.waitUntil(predicate)` has no JSON equivalent because an arbitrary predicate cannot be serialized. Use `waitUntilElement` or the JavaScript builder instead.
 
@@ -176,18 +172,26 @@ const workflow = createWorkflowFromConfig(config);
 For CMS-driven behavior, keep an identifier in `data` and attach the implementation in application code:
 
 ```typescript
-import { type StepConfig, validateWorkflowConfig, type WorkflowConfig } from "@glowhop/react-tour/config";
+import {
+  type StepConfig,
+  validateWorkflowConfig,
+  type WorkflowConfig,
+} from "@glowhop/react-tour/config";
 
-const parsed = validateWorkflowConfig(await fetch("/tours/onboarding.json").then((response) => response.json()));
+const parsed = validateWorkflowConfig(
+  await fetch("/tours/onboarding.json").then((response) => response.json()),
+);
 const config: WorkflowConfig = {
   ...parsed,
-  steps: parsed.steps.map((step): StepConfig => ({
-    ...step,
-    beforeLeave: ({ direction, props }) => {
-      if (direction !== "advance") return;
-      analytics.track(String(props.get().data?.trackingId ?? "unknown-step"));
-    },
-  })),
+  steps: parsed.steps.map(
+    (step): StepConfig => ({
+      ...step,
+      beforeLeave: ({ direction, props }) => {
+        if (direction !== "advance") return;
+        analytics.track(String(props.get().data?.trackingId ?? "unknown-step"));
+      },
+    }),
+  ),
 };
 ```
 

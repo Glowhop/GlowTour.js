@@ -1,4 +1,5 @@
 ---
+
 title: Theming a product tour with CSS
 description: "Customize the look of GlowTour.js product tours with CSS custom properties: colors, spacing, light and dark mode, and your own brand theme."
 ---
@@ -10,41 +11,41 @@ GlowTour.js provides a complete default theme via `@glowhop/styles-tour/default.
 The following properties control the tour's appearance. Override them in your stylesheet or inline style.
 
 :::note
-All the properties below are only *read* inside `@glowhop/styles-tour/default.css` itself - they have no effect unless you actually import that stylesheet (or redefine the same selectors yourself). The [arrow properties](#arrow) are the exception: `@glowhop/core-tour` injects their rules itself, so they work regardless of which theme, or no theme, you use.
+All the properties below are only _read_ inside `@glowhop/styles-tour/default.css` itself - they have no effect unless you actually import that stylesheet (or redefine the same selectors yourself). The [arrow properties](#arrow) are the exception: `@glowhop/core-tour` injects their rules itself, so they work regardless of which theme, or no theme, you use.
 :::
 
 ### Colors
 
-| Property | Light | Dark | Purpose |
-| --- | --- | --- | --- |
-| `--glow-tour-color-accent` | `#4c35fd` | `#6d5bff` | Primary action buttons and interactive elements |
-| `--glow-tour-color-accent-hover` | `#3f2be0` | `#5d4bf0` | Hover state of the advance button |
-| `--glow-tour-color-accent-active` | `#3522c7` | `#4f3ce0` | Active state of the advance button |
-| `--glow-tour-color-on-accent` | `#ffffff` | `#ffffff` | Text on top of the accent |
-| `--glow-tour-color-surface` | `#ffffff` | `#1c1c21` | Popover background |
-| `--glow-tour-color-surface-muted` | `#f6f6f7` | `#26262d` | Hover and disabled backgrounds |
-| `--glow-tour-color-text` | `#1f1f23` | `#f2f2f4` | Primary text color |
-| `--glow-tour-color-text-muted` | `#5f5f66` | `#a8a8b3` | Secondary text and muted content |
-| `--glow-tour-color-border` | `#dedee3` | `#3a3a44` | Popover border and dividers |
-| `--glow-tour-overlay-color` | `#000000` | `#000000` | Backdrop fill - see the note under [Dark mode](#dark-mode) |
+| Property                          | Light     | Dark      | Purpose                                                    |
+| --------------------------------- | --------- | --------- | ---------------------------------------------------------- |
+| `--glow-tour-color-accent`        | `#4c35fd` | `#6d5bff` | Primary action buttons and interactive elements            |
+| `--glow-tour-color-accent-hover`  | `#3f2be0` | `#5d4bf0` | Hover state of the advance button                          |
+| `--glow-tour-color-accent-active` | `#3522c7` | `#4f3ce0` | Active state of the advance button                         |
+| `--glow-tour-color-on-accent`     | `#ffffff` | `#ffffff` | Text on top of the accent                                  |
+| `--glow-tour-color-surface`       | `#ffffff` | `#1c1c21` | Popover background                                         |
+| `--glow-tour-color-surface-muted` | `#f6f6f7` | `#26262d` | Hover and disabled backgrounds                             |
+| `--glow-tour-color-text`          | `#1f1f23` | `#f2f2f4` | Primary text color                                         |
+| `--glow-tour-color-text-muted`    | `#5f5f66` | `#a8a8b3` | Secondary text and muted content                           |
+| `--glow-tour-color-border`        | `#dedee3` | `#3a3a44` | Popover border and dividers                                |
+| `--glow-tour-overlay-color`       | `#000000` | `#000000` | Backdrop fill - see the note under [Dark mode](#dark-mode) |
 
 ### Spacing and sizing
 
-| Property | Default | Purpose |
-| --- | --- | --- |
-| `--glow-tour-spacing` | `8px` | Base spacing unit (buttons, gaps, padding) |
-| `--glow-tour-popover-width` | `352px` | Popover max-width |
-| `--glow-tour-control-height` | `32px` | Height of navigation buttons |
-| `--glow-tour-viewport-gap` | `16px` | Minimum gap from popover to viewport edges |
+| Property                     | Default | Purpose                                    |
+| ---------------------------- | ------- | ------------------------------------------ |
+| `--glow-tour-spacing`        | `8px`   | Base spacing unit (buttons, gaps, padding) |
+| `--glow-tour-popover-width`  | `352px` | Popover max-width                          |
+| `--glow-tour-control-height` | `32px`  | Height of navigation buttons               |
+| `--glow-tour-viewport-gap`   | `16px`  | Minimum gap from popover to viewport edges |
 
 ### Styling
 
-| Property | Default | Purpose |
-| --- | --- | --- |
-| `--glow-tour-radius` | `8px` | Border radius for popover and buttons |
-| `--glow-tour-shadow` | `0 4px 12px rgb(0 0 0 / 8%)` in light, `0 8px 24px rgb(0 0 0 / 56%)` in dark | Popover box shadow |
-| `--glow-tour-transition-duration` | `120ms` | Hover/state color-transition duration for the Cancel/Previous/Advance buttons - not the popover's fade/slide, which is a separate JS-driven animation (see the `animation` option, default 180ms, in the [Builder reference](/docs/reference/builder/#animation-options)) |
-| `--glow-tour-transition-easing` | `ease-out` | Easing function for that same button color transition |
+| Property                          | Default                                                                      | Purpose                                                                                                                                                                                                                                                                   |
+| --------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--glow-tour-radius`              | `8px`                                                                        | Border radius for popover and buttons                                                                                                                                                                                                                                     |
+| `--glow-tour-shadow`              | `0 4px 12px rgb(0 0 0 / 8%)` in light, `0 8px 24px rgb(0 0 0 / 56%)` in dark | Popover box shadow                                                                                                                                                                                                                                                        |
+| `--glow-tour-transition-duration` | `120ms`                                                                      | Hover/state color-transition duration for the Cancel/Previous/Advance buttons - not the popover's fade/slide, which is a separate JS-driven animation (see the `animation` option, default 180ms, in the [Builder reference](/docs/reference/builder/#animation-options)) |
+| `--glow-tour-transition-easing`   | `ease-out`                                                                   | Easing function for that same button color transition                                                                                                                                                                                                                     |
 
 ### Arrow
 
@@ -52,13 +53,13 @@ The arrow is a rotated square drawn as a `::before` pseudo-element on the popove
 every other property on this page, these are injected by `@glowhop/core-tour` itself, so
 they apply with no stylesheet imported.
 
-| Property | Default | Purpose |
-| --- | --- | --- |
-| `--glow-tour-arrow-color` | `--glow-tour-color-surface`, else `#ffffff` | Arrow fill, normally matching the popover background |
-| `--glow-tour-arrow-border-color` | `--glow-tour-color-border`, else `#dedee3` | Arrow border, normally matching the popover border |
-| `--glow-tour-arrow-border-width` | `1px` | Arrow border width |
-| `--glow-tour-arrow-border-radius` | `0px` | Rounding of the arrow tip |
-| `--glow-tour-arrow-size` | `12px` | Width and height of the square before rotation |
+| Property                          | Default                                     | Purpose                                              |
+| --------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
+| `--glow-tour-arrow-color`         | `--glow-tour-color-surface`, else `#ffffff` | Arrow fill, normally matching the popover background |
+| `--glow-tour-arrow-border-color`  | `--glow-tour-color-border`, else `#dedee3`  | Arrow border, normally matching the popover border   |
+| `--glow-tour-arrow-border-width`  | `1px`                                       | Arrow border width                                   |
+| `--glow-tour-arrow-border-radius` | `0px`                                       | Rounding of the arrow tip                            |
+| `--glow-tour-arrow-size`          | `12px`                                      | Width and height of the square before rotation       |
 
 `--glow-tour-arrow-offset` is **not** in that list: the core computes it on every
 reposition and writes it inline to centre the arrow on the target. It is an output, not a
@@ -72,7 +73,7 @@ given property in one channel or the other, not both. `--glow-tour-arrow-border-
 no JS equivalent and is only settable from CSS.
 :::
 
-To change the arrow's *shape* rather than its values, set `popover.arrow.autoStyles`
+To change the arrow's _shape_ rather than its values, set `popover.arrow.autoStyles`
 to `false` to skip the injected rules entirely and write your own. The popover carries a
 `data-glow-tour-placement` attribute, and the computed `--glow-tour-arrow-offset`, to
 position whatever you draw.
@@ -126,7 +127,7 @@ tour inside it - which is what lets a single dark example sit on an otherwise li
 ```tsx
 <div data-glow-tour-theme="dark">
   <GlowTourDefault tour={tour} />
-</div>
+</div>;
 ```
 
 The nearest ancestor carrying the attribute wins, so a wrapper can opt back into light
@@ -134,7 +135,7 @@ inside a dark page.
 
 :::caution
 The nearest element also wins for the tokens themselves. If you override a token on an
-ancestor and then place a `data-glow-tour-theme` wrapper *between* that override and the
+ancestor and then place a `data-glow-tour-theme` wrapper _between_ that override and the
 tour, the wrapper's palette replaces your value. Override at or below the themed element
 to keep it.
 :::
@@ -161,7 +162,7 @@ light value even on a dark OS. Keying off a media query and an attribute of our 
 keeps the default correct without depending on a property your app uses for its own
 theme, and without raising the library's browser floor.
 
-Nothing stops you from using it in *your* tokens, though - you control your own
+Nothing stops you from using it in _your_ tokens, though - you control your own
 `:root`, so the constraint does not apply:
 
 ```css
@@ -263,7 +264,7 @@ The theme's rules then come before the utilities, and your classes take preceden
   <GlowTourHeader />
   <GlowTourContent />
   <GlowTourFooter className="gap-3" />
-</GlowTourPopover>
+</GlowTourPopover>;
 ```
 
 The same applies to the classes a step adds with `classNames`:
@@ -289,7 +290,18 @@ JSON config loaded at runtime are not scanned: list them in your sources, or dec
 For complete control over the popover layout, header styling, or footer layout, you can use custom composition and write your own styles:
 
 ```tsx
-import { createGlowTour, GlowTourAdvanceTrigger, GlowTourCancelTrigger, GlowTourContent, GlowTourFooter, GlowTourHeader, GlowTourOverlay, GlowTourPointer, GlowTourPopover, GlowTourRoot } from "@glowhop/react-tour";
+import {
+  createGlowTour,
+  GlowTourAdvanceTrigger,
+  GlowTourCancelTrigger,
+  GlowTourContent,
+  GlowTourFooter,
+  GlowTourHeader,
+  GlowTourOverlay,
+  GlowTourPointer,
+  GlowTourPopover,
+  GlowTourRoot,
+} from "@glowhop/react-tour";
 import "./custom-tour.css";
 
 const tour = createGlowTour();

@@ -1,4 +1,5 @@
 ---
+
 title: Controlling a tour programmatically
 description: "Start, stop and navigate a GlowTour.js product tour from code: state subscriptions, actions between steps, waits and lifecycle callbacks."
 ---
@@ -24,9 +25,9 @@ Access the current tour state and subscribe to changes:
 ```typescript
 const state = tour.state.get();
 
-console.log(state.status);        // "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
-console.log(state.currentStep);   // Current step info (or null if not active)
-console.log(state.error);         // Error if status === "error"
+console.log(state.status); // "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
+console.log(state.currentStep); // Current step info (or null if not active)
+console.log(state.error); // Error if status === "error"
 ```
 
 See [`tour.state.get()`](/docs/reference/tour/#tourstateget) for every state field.
@@ -50,7 +51,7 @@ unsubscribe();
 ### Starting a tour
 
 ```typescript
-const workflow = tour.create("intro").step({ id: "step-1", /* ... */ }).build();
+const workflow = tour.create("intro").step({ id: "step-1" /* ... */ }).build();
 await tour.start(workflow);
 console.log("First step is on screen");
 ```
@@ -99,13 +100,13 @@ const workflow = tour
       console.log("Tour completed all steps, last step:", context.step?.initialProps.title);
     },
   })
-  .step({ id: "step1", /* ... */ })
+  .step({ id: "step1" /* ... */ })
   .build();
 ```
 
 ## Step hooks
 
-Run code when a step is entered or left. These are builder *methods* chained after a `.step()` call,
+Run code when a step is entered or left. These are builder _methods_ chained after a `.step()` call,
 not options inside it - they attach to the step that precedes them:
 
 ```typescript
@@ -199,13 +200,13 @@ when the tour comes back to the step, until the workflow runs again.
 
 Each field takes effect when GlowTour reads it:
 
-| Field | Read | A change made during the step |
-| --- | --- | --- |
-| `allowInteraction` | Continuously | Applies at once: the page becomes inert or usable again, focus leaves the target when interaction is blocked, and the indicator fades out or back in |
-| `allowScroll` | Continuously | Applies at once: page scroll is locked or released |
-| `overlayClick` | On each click on the dimmed area | Applies to the next click |
-| `autoFocus`, `autoScroll`, `scroll` | When the step is entered, and `autoScroll` and `scroll` again each time the user stops scrolling | Applies on the next visit, or to this one when set in `beforeEnter`. `autoScroll` and `scroll` also apply to the next return after a user scroll |
-| `missingTarget` | When the target is resolved, and when a lost target is recovered | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress |
+| Field                               | Read                                                                                             | A change made during the step                                                                                                                        |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allowInteraction`                  | Continuously                                                                                     | Applies at once: the page becomes inert or usable again, focus leaves the target when interaction is blocked, and the indicator fades out or back in |
+| `allowScroll`                       | Continuously                                                                                     | Applies at once: page scroll is locked or released                                                                                                   |
+| `overlayClick`                      | On each click on the dimmed area                                                                 | Applies to the next click                                                                                                                            |
+| `autoFocus`, `autoScroll`, `scroll` | When the step is entered, and `autoScroll` and `scroll` again each time the user stops scrolling | Applies on the next visit, or to this one when set in `beforeEnter`. `autoScroll` and `scroll` also apply to the next return after a user scroll     |
+| `missingTarget`                     | When the target is resolved, and when a lost target is recovered                                 | Applies to the next resolution. `beforeEnter` runs after the target is resolved, so it is too late for the visit in progress                         |
 
 `controls` works the same way: `context.props.update({ controls })` changes a command's `state` or
 its `keys` during the step. Both are read continuously: the button updates at once, and the keys
@@ -295,14 +296,24 @@ define reusable fragments once and reuse them across tours:
 ```typescript
 const profileSteps = tour
   .create("profile-fragment")
-  .step({ id: "profile", target: "#profile", title: "Your profile", content: "Complete it to continue." })
+  .step({
+    id: "profile",
+    target: "#profile",
+    title: "Your profile",
+    content: "Complete it to continue.",
+  })
   .build();
 
 const workflow = tour
   .create("onboarding")
   .step({ id: "welcome", target: "#welcome", title: "Welcome", content: "Let's get started!" })
   .append(profileSteps)
-  .step({ id: "dashboard", target: "#dashboard", title: "You're ready!", content: "Explore your dashboard." })
+  .step({
+    id: "dashboard",
+    target: "#dashboard",
+    title: "You're ready!",
+    content: "Explore your dashboard.",
+  })
   .build();
 ```
 

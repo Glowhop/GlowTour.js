@@ -1,4 +1,5 @@
 ---
+
 title: Vanilla API reference
 description: "API reference for @glowhop/vanilla-tour: createGlowTour, registerGlowTourElements and the custom elements for vanilla JavaScript product tours."
 ---
@@ -12,8 +13,9 @@ The Vanilla adapter (`@glowhop/vanilla-tour`) exports custom element utilities a
 Creates a tour controller instance. Inherited from Core.
 
 **Signature**:
+
 ```typescript
-function createGlowTour(options?: GlowTourOptions): Tour
+function createGlowTour(options?: GlowTourOptions): Tour;
 ```
 
 ### `registerGlowTourElements()`
@@ -21,11 +23,13 @@ function createGlowTour(options?: GlowTourOptions): Tour
 Registers all custom elements as side effects. Call once before creating tours.
 
 **Signature**:
+
 ```typescript
-function registerGlowTourElements(): void
+function registerGlowTourElements(): void;
 ```
 
 **Usage**:
+
 ```typescript
 import { registerGlowTourElements } from "@glowhop/vanilla-tour";
 
@@ -40,10 +44,12 @@ registerGlowTourElements();
 A complete tour: a `glow-tour-root` with the overlay, pointer, popover, header, content, footer and the three controls. The structure is built the first time the element is connected.
 
 **Properties**:
+
 - `tour: Tour | null` - The tour instance
 - `idPrefix: string | undefined` - Prefix for internal element IDs, also set with the `id-prefix` attribute
 
 **Usage**:
+
 ```typescript
 const element = document.createElement("glow-tour-default");
 element.tour = tour;
@@ -55,9 +61,11 @@ document.body.append(element);
 Root container for the entire tour.
 
 **Properties**:
+
 - `tour: Tour` - Set the tour instance
 
 **Usage**:
+
 ```typescript
 const root = document.createElement("glow-tour-root");
 root.tour = tour;
@@ -68,6 +76,7 @@ root.tour = tour;
 Backdrop overlay behind the target element.
 
 **Usage**:
+
 ```typescript
 const overlay = document.createElement("glow-tour-overlay");
 root.append(overlay);
@@ -78,6 +87,7 @@ root.append(overlay);
 Dialog container with title, content, and footer.
 
 **Usage**:
+
 ```typescript
 const popover = document.createElement("glow-tour-popover");
 root.append(popover);
@@ -100,33 +110,38 @@ Footer area containing navigation buttons.
 Decorative pointer indicator next to the target (not the popover arrow).
 
 **Properties**:
+
 - `directionContent: PointerDirectionContent` - Custom content for pointer directions
 
 **Default glyphs** (when `directionContent` is not set):
+
 - `top`: `👆`
 - `bottom`: `👇`
 - `left`: `👈`
 - `right`: `👉`
 
 **Usage** (default pointers):
+
 ```typescript
 const pointer = document.createElement("glow-tour-pointer");
 root.append(pointer);
 ```
 
 **Usage** (with custom string content):
+
 ```typescript
 const pointer = document.createElement("glow-tour-pointer");
 pointer.directionContent = {
   top: "⬆️",
   bottom: "⬇️",
   left: "⬅️",
-  right: "➡️"
+  right: "➡️",
 };
 root.append(pointer);
 ```
 
 **Usage** (with custom DOM nodes):
+
 ```typescript
 const pointer = document.createElement("glow-tour-pointer");
 const customArrow = document.createElement("span");
@@ -134,7 +149,7 @@ customArrow.textContent = "↓";
 customArrow.style.fontSize = "2em";
 
 pointer.directionContent = {
-  bottom: customArrow
+  bottom: customArrow,
 };
 root.append(pointer);
 ```
@@ -144,13 +159,16 @@ root.append(pointer);
 "Next" button to advance to the next step.
 
 **Properties**:
+
 - `disabled: boolean` - Disable the button
 
 **Attributes**:
+
 - `advance-label` - Button text on every step but the last (default `"Advance step"`)
 - `finish-label` - Button text on the last step (default `"Finish tour"`)
 
 **Usage**:
+
 ```typescript
 const button = document.createElement("glow-tour-advance-trigger");
 button.addEventListener("click", () => tour.advance());
@@ -162,9 +180,11 @@ footer.append(button);
 "Cancel" button to dismiss the tour.
 
 **Properties**:
+
 - `disabled: boolean` - Disable the button
 
 **Attributes**:
+
 - `cancel-label` - Button text (default `"Skip"`)
 
 ### `glow-tour-previous-trigger`
@@ -172,9 +192,11 @@ footer.append(button);
 "Previous" button to go back to the previous step.
 
 **Properties**:
+
 - `disabled: boolean` - Disable the button
 
 **Attributes**:
+
 - `previous-label` - Button text (default `"Previous step"`)
 
 ## Element names
@@ -182,6 +204,7 @@ footer.append(button);
 Constant of all registered element names:
 
 **Signature**:
+
 ```typescript
 const GLOW_TOUR_ELEMENT_NAMES: readonly [
   "glow-tour-root",

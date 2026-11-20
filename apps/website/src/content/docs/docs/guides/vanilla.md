@@ -1,4 +1,5 @@
 ---
+
 title: How to build a product tour in vanilla JavaScript
 description: "Build a product tour or onboarding tour without a framework using @glowhop/vanilla-tour and native custom elements: setup, steps, content and theming."
 ---
@@ -19,10 +20,7 @@ Register the custom elements before creating a tour. The pure entry point requir
 
 ```typescript
 import "@glowhop/styles-tour/default.css";
-import {
-  createGlowTour,
-  registerGlowTourElements,
-} from "@glowhop/vanilla-tour";
+import { createGlowTour, registerGlowTourElements } from "@glowhop/vanilla-tour";
 
 registerGlowTourElements();
 
@@ -157,9 +155,7 @@ class StepCounter extends HTMLElement {
     const render = (state: TourState) => {
       const visible = state.currentStepIndex >= 0 && state.totalSteps > 0;
       this.hidden = !visible;
-      this.textContent = visible
-        ? `Step ${state.currentStepIndex + 1} of ${state.totalSteps}`
-        : "";
+      this.textContent = visible ? `Step ${state.currentStepIndex + 1} of ${state.totalSteps}` : "";
     };
 
     render(this.#tour.state.get());

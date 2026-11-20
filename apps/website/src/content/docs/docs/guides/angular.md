@@ -1,4 +1,5 @@
 ---
+
 title: How to build a product tour in Angular
 description: "Build a product tour or onboarding tour in Angular 18+ with @glowhop/angular-tour: standalone components, steps, state, template content and theming."
 ---
@@ -80,11 +81,11 @@ To drive the same tour from several components, see [Share one tour between comp
 
 A step's `target` is the element the tour highlights. It accepts three forms:
 
-| Form | Example | Use it for |
-|---|---|---|
-| CSS selector | `'[data-tour="pricing"]'`, `"#pricing"` | Markup you render yourself |
-| Function | `() => element` | A `viewChild` query, or an element that appears later |
-| `HTMLElement` | `document.body` | An element that already exists when the workflow is built |
+| Form          | Example                                 | Use it for                                                |
+| ------------- | --------------------------------------- | --------------------------------------------------------- |
+| CSS selector  | `'[data-tour="pricing"]'`, `"#pricing"` | Markup you render yourself                                |
+| Function      | `() => element`                         | A `viewChild` query, or an element that appears later     |
+| `HTMLElement` | `document.body`                         | An element that already exists when the workflow is built |
 
 Selectors and functions are resolved each time the step is entered, not when the workflow is built.
 

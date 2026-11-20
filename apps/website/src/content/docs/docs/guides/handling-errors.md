@@ -1,4 +1,5 @@
 ---
+
 title: Handling tour errors and missing targets
 description: Respond to product tour failures through onEvent, state or promises, and choose a strategy for steps whose target element is missing.
 ---
@@ -19,12 +20,12 @@ Every step can declare how to handle a missing target:
 })
 ```
 
-| Strategy | Timeout applies | Behavior |
-| --- | --- | --- |
-| `"error"` | No | Throw immediately, halting the tour. The error is reported on all three channels. |
-| `"wait"` | Yes, default 3000ms | Poll for the target, waiting up to `missingTarget.timeout` before falling back to `"error"` |
-| `"skip"` | No | Pass over the step without showing it, in the direction of the navigation. No error is thrown. |
-| `"detached"` | No | Show the step anyway, with the popover centered in the viewport. No error is thrown. |
+| Strategy     | Timeout applies     | Behavior                                                                                       |
+| ------------ | ------------------- | ---------------------------------------------------------------------------------------------- |
+| `"error"`    | No                  | Throw immediately, halting the tour. The error is reported on all three channels.              |
+| `"wait"`     | Yes, default 3000ms | Poll for the target, waiting up to `missingTarget.timeout` before falling back to `"error"`    |
+| `"skip"`     | No                  | Pass over the step without showing it, in the direction of the navigation. No error is thrown. |
+| `"detached"` | No                  | Show the step anyway, with the popover centered in the viewport. No error is thrown.           |
 
 The default is `"error"` because missing targets are usually bugs: the app changed, the selector is stale, or a dynamic element never rendered. Catching them loudly keeps tours working.
 
@@ -56,6 +57,7 @@ const tour = createGlowTour({
 ```
 
 The callback receives a `tour:error` event with:
+
 - `error`: the `Error` object (`Missing target at steps[N]: <selector>`)
 - `stepId`, `stepIndex`, `stepCount`: where the tour was
 - `durationMs`: how long the tour was running before the failure
@@ -78,6 +80,7 @@ tour.state.subscribe((state) => {
 ```
 
 The state carries:
+
 - `status`: becomes `"error"` on failure
 - `error`: the `Error` object, or `null` if the tour is not in an error state
 
@@ -126,7 +129,7 @@ try {
 }
 ```
 
-A third case: if a target disappears *after* the step was shown - the overlay is already on screen and the target unmounts - the failure is routed through the driver's recovery path and reported via `onEvent` and state, but the promise is not rejected. There is nothing to catch, so you must listen on `onEvent` or `state` to handle it.
+A third case: if a target disappears _after_ the step was shown - the overlay is already on screen and the target unmounts - the failure is routed through the driver's recovery path and reported via `onEvent` and state, but the promise is not rejected. There is nothing to catch, so you must listen on `onEvent` or `state` to handle it.
 
 **Conclusion**: Use `onEvent` and `state` for complete, reliable error handling. Promises are a convenience for synchronous paths, not a complete channel.
 
@@ -156,7 +159,7 @@ const tour = createGlowTour({
       // Log the failure for monitoring.
       console.log(
         `Tour failed at step ${event.stepIndex + 1}/${event.stepCount}:`,
-        event.error?.message
+        event.error?.message,
       );
     }
   },

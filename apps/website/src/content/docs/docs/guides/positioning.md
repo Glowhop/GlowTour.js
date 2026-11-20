@@ -1,4 +1,5 @@
 ---
+
 title: Positioning the tour popover
 description: Control where a GlowTour.js popover and pointer sit around the highlighted element, the placement order to try, and how viewport collisions are handled.
 ---

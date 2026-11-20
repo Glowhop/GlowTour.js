@@ -1,4 +1,5 @@
 ---
+
 title: Tracking product tour analytics
 description: "Send product tour analytics with a single onEvent callback: tour starts, steps entered and left, time per step, and how each tour ended."
 ---
@@ -26,15 +27,15 @@ that instance runs - including workflows built from a [JSON config](/docs/guides
 
 ## The events
 
-| Event | Emitted |
-| --- | --- |
-| `tour:start` | Once `start()` has passed `onStart` and the first step's `beforeEnter` without an abort, before any other event |
-| `step:enter` | Once a step is on screen and interactive |
-| `step:leave` | When a step is left - moving on, going back, finishing, or cancelling |
-| `step:skip` | When a navigation passes over a step whose target is missing and whose `missingTarget.strategy` is `"skip"` |
-| `tour:complete` | The tour ran past its last step |
-| `tour:cancel` | The tour was cancelled |
-| `tour:error` | The tour failed - see [Handling errors](/docs/guides/handling-errors/) for response strategies |
+| Event           | Emitted                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------- |
+| `tour:start`    | Once `start()` has passed `onStart` and the first step's `beforeEnter` without an abort, before any other event |
+| `step:enter`    | Once a step is on screen and interactive                                                                        |
+| `step:leave`    | When a step is left - moving on, going back, finishing, or cancelling                                           |
+| `step:skip`     | When a navigation passes over a step whose target is missing and whose `missingTarget.strategy` is `"skip"`     |
+| `tour:complete` | The tour ran past its last step                                                                                 |
+| `tour:cancel`   | The tour was cancelled                                                                                          |
+| `tour:error`    | The tour failed - see [Handling errors](/docs/guides/handling-errors/) for response strategies                  |
 
 A completed two-step tour emits, in order: `tour:start`, `step:enter`, `step:leave`,
 `step:enter`, `step:leave`, `tour:complete`.
@@ -53,18 +54,18 @@ on it. The event names that step, so the pair still reconciles in a funnel.
 
 Every event carries the same shape:
 
-| Field | Meaning |
-| --- | --- |
-| `type` | Which event this is |
-| `workflowName` | The name passed to `create()` |
-| `stepId` | Id of the step the event is about, or `null` when none applies |
-| `stepIndex` | Its 0-based position, or `-1` alongside a `null` `stepId` |
-| `stepCount` | Total steps in the workflow |
-| `direction` | `"advance"` or `"previous"` |
-| `source` | What triggered the transition - see below |
-| `timestamp` | `Date.now()` at emission |
-| `durationMs` | How long the thing this event *names* had been running |
-| `error` | The failure, on `tour:error` only |
+| Field          | Meaning                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `type`         | Which event this is                                            |
+| `workflowName` | The name passed to `create()`                                  |
+| `stepId`       | Id of the step the event is about, or `null` when none applies |
+| `stepIndex`    | Its 0-based position, or `-1` alongside a `null` `stepId`      |
+| `stepCount`    | Total steps in the workflow                                    |
+| `direction`    | `"advance"` or `"previous"`                                    |
+| `source`       | What triggered the transition - see below                      |
+| `timestamp`    | `Date.now()` at emission                                       |
+| `durationMs`   | How long the thing this event _names_ had been running         |
+| `error`        | The failure, on `tour:error` only                              |
 
 `durationMs` follows one rule: it times whatever the event is named after. On
 `step:leave`, that is the time spent on the step. On `tour:complete`, `tour:cancel`
@@ -73,12 +74,12 @@ beginnings - it is always `0`.
 
 ### `source`
 
-| Value | What the user did |
-| --- | --- |
-| `"trigger"` | Activated the advance, previous, or cancel (Skip) button, with a pointer or with `Enter` or `Space` |
-| `"keyboard"` | Used a keyboard shortcut |
-| `"overlay"` | Clicked the dimmed backdrop |
-| `"api"` | Nothing - your own code called `advance()`, `previous()`, `goTo()` or `cancel()`, including from inside a step action |
+| Value        | What the user did                                                                                                     |
+| ------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `"trigger"`  | Activated the advance, previous, or cancel (Skip) button, with a pointer or with `Enter` or `Space`                   |
+| `"keyboard"` | Used a keyboard shortcut                                                                                              |
+| `"overlay"`  | Clicked the dimmed backdrop                                                                                           |
+| `"api"`      | Nothing - your own code called `advance()`, `previous()`, `goTo()` or `cancel()`, including from inside a step action |
 
 This is usually the field worth grouping on. A drop-off where `source` is `"overlay"`
 is people trying to get out; the same drop-off on `"trigger"` is people reading the

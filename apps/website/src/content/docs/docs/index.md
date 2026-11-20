@@ -1,4 +1,5 @@
 ---
+
 title: GlowTour.js documentation
 description: Documentation for GlowTour.js, the open-source product tour library for onboarding tours and guided tours in React, Vue, Angular, Solid and vanilla JS.
 ---

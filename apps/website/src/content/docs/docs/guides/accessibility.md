@@ -1,4 +1,5 @@
 ---
+
 title: "Accessible product tours: ARIA, focus and keyboard"
 description: "How GlowTour.js makes product tours accessible: dialog semantics, keyboard shortcuts, focus containment and restoration, tested with VoiceOver and NVDA."
 ---
@@ -9,14 +10,14 @@ GlowTour.js is designed for keyboard and screen reader use. Every adapter render
 
 Every adapter renders the same semantic structure for consistent assistive technology support:
 
-| Element | Role/Attributes | Purpose |
-| --- | --- | --- |
-| Popover | `role="dialog"`, `aria-labelledby`, `aria-describedby`, `aria-modal` | Identifies the tour popover as a modal dialog |
-| Title | Referenced by `aria-labelledby` | Provides the dialog name to screen readers. A step without a title has no header: the description names the dialog, and `aria-describedby` is dropped so it is not read twice |
-| Description | `aria-live="polite"` | Announces content changes when stepping forward/back |
-| Overlay | `role="presentation"`, `aria-hidden` | Marks the decorative overlay as non-interactive |
-| Pointer | `aria-hidden="true"` | Hides the decorative indicator from screen readers |
-| Buttons | `aria-controls`, `aria-label`, `aria-disabled`, `aria-keyshortcuts` | Describes button purpose and available keyboard shortcuts |
+| Element     | Role/Attributes                                                      | Purpose                                                                                                                                                                       |
+| ----------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Popover     | `role="dialog"`, `aria-labelledby`, `aria-describedby`, `aria-modal` | Identifies the tour popover as a modal dialog                                                                                                                                 |
+| Title       | Referenced by `aria-labelledby`                                      | Provides the dialog name to screen readers. A step without a title has no header: the description names the dialog, and `aria-describedby` is dropped so it is not read twice |
+| Description | `aria-live="polite"`                                                 | Announces content changes when stepping forward/back                                                                                                                          |
+| Overlay     | `role="presentation"`, `aria-hidden`                                 | Marks the decorative overlay as non-interactive                                                                                                                               |
+| Pointer     | `aria-hidden="true"`                                                 | Hides the decorative indicator from screen readers                                                                                                                            |
+| Buttons     | `aria-controls`, `aria-label`, `aria-disabled`, `aria-keyshortcuts`  | Describes button purpose and available keyboard shortcuts                                                                                                                     |
 
 When a step disallows target interaction, the popover's `aria-modal` is set to `true` and the rest of the document is made `inert` as focus moves into the popover, so neither focus nor a screen reader's reading cursor can leave the dialog.
 
@@ -26,14 +27,15 @@ Between two steps the popover fades out and back in, but stays exposed to assist
 
 GlowTour.js supports full keyboard navigation with no mouse required:
 
-| Key(s) | Command | Condition |
-| --- | --- | --- |
-| `Escape` | Cancel/dismiss tour | Only when cancelling is allowed |
-| `Enter` or `ArrowRight` | Advance to next step | Only when advancing is allowed |
-| `ArrowLeft` or `Backspace` | Go to previous step | Only when going back is allowed |
-| `Tab` | Focus navigation | Trapped within popover while step disallows outside interaction |
+| Key(s)                     | Command              | Condition                                                       |
+| -------------------------- | -------------------- | --------------------------------------------------------------- |
+| `Escape`                   | Cancel/dismiss tour  | Only when cancelling is allowed                                 |
+| `Enter` or `ArrowRight`    | Advance to next step | Only when advancing is allowed                                  |
+| `ArrowLeft` or `Backspace` | Go to previous step  | Only when going back is allowed                                 |
+| `Tab`                      | Focus navigation     | Trapped within popover while step disallows outside interaction |
 
 Shortcuts are disabled while:
+
 - The matching control's `state` is `"disabled"` in `controls`
 - A modifier key (`Ctrl`, `Cmd`, `Alt`) is held
 - IME composition is in progress
@@ -57,9 +59,9 @@ const workflow = tour
     title: "Custom shortcuts",
     content: "This step has different keyboard shortcuts.",
     controls: {
-      advance: { keys: ["Enter"] },  // Only Enter, no ArrowRight
-      previous: { keys: [] },        // No previous (disable Backspace/ArrowLeft)
-      cancel: { keys: ["Escape"] },  // Keep Escape default
+      advance: { keys: ["Enter"] }, // Only Enter, no ArrowRight
+      previous: { keys: [] }, // No previous (disable Backspace/ArrowLeft)
+      cancel: { keys: ["Escape"] }, // Keep Escape default
     },
   })
   .build();
@@ -111,13 +113,13 @@ All adapters (React, Vue, Solid, Angular, Vanilla) render identical ARIA markup 
 
 GlowTour.js is tested with real screen readers, not only with accessibility-tree checks. [Guidepup](https://www.guidepup.dev/) drives VoiceOver and NVDA through the same three-step tour rendered by each adapter (React, Vue, Solid, Angular and Vanilla), and the tests assert what the screen reader actually says. They run weekly and on every pull request that changes a package, except VoiceOver with Chromium, which runs weekly only.
 
-| Screen reader | Browser engine | Status |
-| --- | --- | --- |
-| VoiceOver (macOS) | WebKit (Safari) | Tested |
-| VoiceOver (macOS) | Chromium (Chrome) | Tested |
-| NVDA (Windows) | Chromium (Chrome) | Tested |
-| NVDA (Windows) | Firefox | Tested |
-| JAWS, VoiceOver on iOS, TalkBack | - | Not tested automatically |
+| Screen reader                    | Browser engine    | Status                   |
+| -------------------------------- | ----------------- | ------------------------ |
+| VoiceOver (macOS)                | WebKit (Safari)   | Tested                   |
+| VoiceOver (macOS)                | Chromium (Chrome) | Tested                   |
+| NVDA (Windows)                   | Chromium (Chrome) | Tested                   |
+| NVDA (Windows)                   | Firefox           | Tested                   |
+| JAWS, VoiceOver on iOS, TalkBack | -                 | Not tested automatically |
 
 For each adapter and each pairing, the tests check that:
 

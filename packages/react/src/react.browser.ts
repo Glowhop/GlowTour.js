@@ -178,6 +178,7 @@ describe("react adapter browser behavior", () => {
       .step({ id: "step-2", content: "First", target, title: "First" })
       .step({ id: "step-3", content: "Second", target, title: "Second" })
       .build();
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     function Observer() {
       const state = useGlowTourContext();
       return React.createElement("output", null, `${state.status}:${state.currentStepIndex}`);
@@ -210,6 +211,7 @@ describe("react adapter browser behavior", () => {
     document.body.append(container, target);
     const tours = new Set<ReturnType<typeof useGlowTour>["tour"]>();
     let glow!: ReturnType<typeof useGlowTour>;
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     function App() {
       glow = useGlowTour();
       tours.add(glow.tour);
@@ -261,6 +263,7 @@ describe("react adapter browser behavior", () => {
     document.body.append(container);
     const tour = createGlowTour();
     let glow!: ReturnType<typeof useGlowTour>;
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     function App() {
       glow = useGlowTour(tour);
       return React.createElement("output", null, glow.status);
@@ -410,6 +413,7 @@ describe("react adapter browser behavior", () => {
       .step({ id: "step-8", content: "Third", target, title: "Third" })
       .build();
     let setDisabledFirst!: (value: boolean) => void;
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     function Harness() {
       const [disabledFirst, updateDisabledFirst] = React.useState(true);
       setDisabledFirst = updateDisabledFirst;
@@ -475,6 +479,7 @@ describe("react adapter browser behavior", () => {
       .step({ id: "step-10", content: "Second", target, title: "Second" })
       .build();
     let show!: () => void;
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     function Harness() {
       const [visible, setVisible] = React.useState(false);
       show = () => setVisible(true);
@@ -526,6 +531,7 @@ describe("react adapter browser behavior", () => {
       .step({ id: "step-11", content: "First", target, title: "First" })
       .step({ id: "step-12", content: "Second", target, title: "Second" })
       .build();
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     function Harness() {
       return React.createElement(
         GlowTourRoot,
@@ -672,6 +678,7 @@ describe("react adapter browser behavior", () => {
       .build();
     const root = createRoot(container);
     let setCancelLabel!: (label: string | undefined) => void;
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     const Harness = () => {
       const [cancelLabel, updateCancelLabel] = React.useState<string | undefined>(undefined);
       setCancelLabel = updateCancelLabel;
@@ -906,6 +913,7 @@ describe("react adapter browser behavior", () => {
       .build();
     let setDisabled!: (disabled: boolean) => void;
 
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     function Harness() {
       const [disabled, updateDisabled] = React.useState(true);
       setDisabled = updateDisabled;
@@ -1091,6 +1099,7 @@ describe("react adapter browser behavior", () => {
       .build();
     let replaceTour!: (tour: typeof second) => void;
 
+    // biome-ignore lint/correctness/noComponentHookFactories: Test-local fixtures are created once per test, not during render.
     function Harness() {
       const [tour, setTour] = React.useState(first);
       replaceTour = setTour;

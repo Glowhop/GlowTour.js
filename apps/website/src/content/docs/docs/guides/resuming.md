@@ -1,4 +1,5 @@
 ---
+
 title: Resuming a product tour
 description: Restart a product tour on a specific step after a reload, a route change or a later session, using your own storage and your own router.
 ---
@@ -80,7 +81,7 @@ Navigation stays with your router - GlowTour.js knows nothing about Next, vue-ro
 })
 ```
 
-**Full reload.** The tour is destroyed, so save the id of the step you are navigating *to*, then resume on the next page:
+**Full reload.** The tour is destroyed, so save the id of the step you are navigating _to_, then resume on the next page:
 
 ```typescript
 // Page A

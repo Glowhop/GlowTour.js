@@ -1,4 +1,5 @@
 ---
+
 title: How to build a product tour in React
 description: "Build a product tour or onboarding tour in React 18/19 and Next.js with @glowhop/react-tour: setup, steps, state, custom content and theming."
 ---
@@ -55,7 +56,8 @@ export function TourApp() {
         </section>
         {status === "active" ? (
           <p>
-            Step {currentStepIndex + 1} of {totalSteps} <button onClick={() => void cancel()}>Stop</button>
+            Step {currentStepIndex + 1} of {totalSteps}{" "}
+            <button onClick={() => void cancel()}>Stop</button>
           </p>
         ) : (
           <button onClick={startTour}>Start tour</button>
@@ -75,11 +77,11 @@ To drive the same tour from several components, see [Share one tour between comp
 
 A step's `target` is the element the tour highlights. It accepts three forms:
 
-| Form | Example | Use it for |
-|---|---|---|
-| CSS selector | `'[data-tour="pricing"]'`, `"#pricing"` | Markup you render yourself |
-| Function | `() => element` | A ref, or an element that appears later |
-| `HTMLElement` | `document.body` | An element that already exists when the workflow is built |
+| Form          | Example                                 | Use it for                                                |
+| ------------- | --------------------------------------- | --------------------------------------------------------- |
+| CSS selector  | `'[data-tour="pricing"]'`, `"#pricing"` | Markup you render yourself                                |
+| Function      | `() => element`                         | A ref, or an element that appears later                   |
+| `HTMLElement` | `document.body`                         | An element that already exists when the workflow is built |
 
 Selectors and functions are resolved each time the step is entered, not when the workflow is built.
 
@@ -264,7 +266,7 @@ function StepCounter() {
   <StepCounter />
   <GlowTourContent />
   {/* Keep the same footer as above. */}
-</GlowTourPopover>
+</GlowTourPopover>;
 ```
 
 To have assistive technologies announce the complete counter when it changes, you can add `aria-live="polite"` and `aria-atomic="true"` to the `<p>`. `GlowTourContent` is already a polite live region, so enable a second one only when the counter conveys useful distinct information, and test the result with a screen reader.

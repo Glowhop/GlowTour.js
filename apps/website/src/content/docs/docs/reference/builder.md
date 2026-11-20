@@ -1,4 +1,5 @@
 ---
+
 title: Builder API reference
 description: "Complete reference for the GlowTour.js workflow and step builder: every step, popover, indicator, scroll and behavior option with its default."
 ---
@@ -14,24 +15,27 @@ For framework-specific integration and components, see [React](/docs/reference/r
 Starts building a new workflow.
 
 **Signature**:
+
 ```typescript
 create(name: string, options?: StartOptions): WorkflowBuilder
 ```
 
 **Parameters**:
+
 - `name` - Workflow identifier
 - `options` - Start options (see [Start options](#start-options))
 
 **Returns**: Workflow builder for chaining
 
 **Usage**:
+
 ```typescript
 const workflow = tour
   .create("onboarding", {
     onStart: () => console.log("Tour started"),
-    onFinish: () => console.log("Tour finished")
+    onFinish: () => console.log("Tour finished"),
   })
-  .step({ id: "step-1", /* ... */ })
+  .step({ id: "step-1" /* ... */ })
   .build();
 ```
 
@@ -40,11 +44,13 @@ const workflow = tour
 Adds a step to the workflow.
 
 **Signature**:
+
 ```typescript
 step(params: StepParameters): WorkflowStepBuilder
 ```
 
 **Parameters**:
+
 - `id` - Stable identifier, unique within the workflow (required). Validated at `.build()` time. It is what [`start(workflow, { startAt })`](/docs/guides/resuming/) uses to resume a tour, so prefer a name that survives reordering.
 - `target` - CSS selector, HTMLElement, or resolver function (required)
 - `title` - Step title displayed in the popover header (optional: without a title, the header is omitted and the content names the dialog)
@@ -58,6 +64,7 @@ step(params: StepParameters): WorkflowStepBuilder
 - `classNames` - Classes added to the tour components on this step (see [Class name options](#class-name-options))
 
 **Usage**:
+
 ```typescript
 .step({
   id: "feature",
@@ -78,6 +85,7 @@ step(params: StepParameters): WorkflowStepBuilder
 Adds a custom action. Can be async. Returning `false` stops the rest of the step's action sequence; any other value continues it.
 
 **Signature**:
+
 ```typescript
 do(callback: StepAction<T>): WorkflowStepBuilder<T>
 
@@ -89,6 +97,7 @@ type StepAction<T> = (
 `StepContext<T>` exposes `target`, `props`, `initialProps`, `direction`, `signal`, and the navigation methods `advance()`, `previous()`, `goTo(id)`, and `cancel()`.
 
 **Usage**:
+
 ```typescript
 .step({
   id: "loading",
@@ -107,6 +116,7 @@ type StepAction<T> = (
 Adds a fixed delay to the step's actions.
 
 **Signature**:
+
 ```typescript
 wait(ms: number): WorkflowStepBuilder<T>
 ```
@@ -114,6 +124,7 @@ wait(ms: number): WorkflowStepBuilder<T>
 Throws a `TypeError` when `ms` is not a finite, non-negative number.
 
 **Usage**:
+
 ```typescript
 .step({ id: "step-4", /* ... */ })
 .wait(2000)  // Wait 2 seconds, then run the next action
@@ -125,6 +136,7 @@ Throws a `TypeError` when `ms` is not a finite, non-negative number.
 Adds an action that waits until a condition is met. The predicate can be async and receives the step context. The action rejects with a timeout error when the condition is still not met after `timeout`.
 
 **Signature**:
+
 ```typescript
 waitUntil(
   predicate: (context: StepContext<T>) => Promise<boolean> | boolean,
@@ -133,10 +145,12 @@ waitUntil(
 ```
 
 **Parameters**:
+
 - `predicate` - Condition that returns (or resolves to) `true` when ready
 - `options` - Wait options (see [Wait options](#wait-options))
 
 **Usage**:
+
 ```typescript
 .step({
   id: "upload",
@@ -156,6 +170,7 @@ waitUntil(
 Adds an action that waits until an element matching `selector` exists in the target's document. Throws a `TypeError` when `selector` is empty.
 
 **Signature**:
+
 ```typescript
 waitUntilElement(
   selector: string,
@@ -164,10 +179,12 @@ waitUntilElement(
 ```
 
 **Parameters**:
+
 - `selector` - CSS selector to wait for
 - `options` - Wait options (see [Wait options](#wait-options))
 
 **Usage**:
+
 ```typescript
 .step({
   id: "open-modal",
@@ -190,11 +207,13 @@ waitUntilElement(
 Adds an action that calls `click()` on the step's target.
 
 **Signature**:
+
 ```typescript
 clickTarget(): WorkflowStepBuilder<T>
 ```
 
 **Usage**:
+
 ```typescript
 .step({ id: "menu", target: "#menu-button", title: "Menu", content: "The menu opens for you" })
 .clickTarget()
@@ -205,11 +224,13 @@ clickTarget(): WorkflowStepBuilder<T>
 Adds an action that calls `focus()` on the step's target.
 
 **Signature**:
+
 ```typescript
 focusTarget(): WorkflowStepBuilder<T>
 ```
 
 **Usage**:
+
 ```typescript
 .step({ id: "search", target: "#search", title: "Search", content: "Type a query" })
 .focusTarget()
@@ -220,19 +241,17 @@ focusTarget(): WorkflowStepBuilder<T>
 Copies every step of another workflow, with its actions, hooks, and target events, after the current step. The appended workflow's start options (`onStart`, `controls`, …) are not copied. Returns the builder of the last appended step, so it can be configured further. Throws when `workflow` has no steps.
 
 **Signature**:
+
 ```typescript
 append(workflow: WorkflowDefinition<T>): WorkflowStepBuilder<T>
 ```
 
 **Usage**:
-```typescript
-const intro = tour.create("intro").step({ id: "welcome", /* ... */ }).build();
 
-const workflow = tour
-  .create("onboarding")
-  .append(intro)
-  .step({ id: "settings", /* ... */ })
-  .build();
+```typescript
+const intro = tour.create("intro").step({ id: "welcome" /* ... */ }).build();
+
+const workflow = tour.create("onboarding").append(intro).step({ id: "settings" /* ... */ }).build();
 ```
 
 Step ids must stay unique in the resulting workflow.
@@ -242,6 +261,7 @@ Step ids must stay unique in the resulting workflow.
 Listens for a DOM event on the current target during this step.
 
 **Signature**:
+
 ```typescript
 // A known DOM event name, narrowed to its concrete event type.
 onTargetEvent<TEventName extends EventName>(
@@ -268,6 +288,7 @@ type Callback<TEvent> = (
 ```
 
 **Usage**:
+
 ```typescript
 .step({
   id: "form",
@@ -286,6 +307,7 @@ type Callback<TEvent> = (
 Finalizes and returns the immutable workflow definition.
 
 **Signature**:
+
 ```typescript
 build(): WorkflowDefinition
 ```
@@ -293,6 +315,7 @@ build(): WorkflowDefinition
 **Returns**: Immutable workflow ready for execution
 
 **Usage**:
+
 ```typescript
 const workflow = tour
   .create("onboarding")
@@ -300,7 +323,7 @@ const workflow = tour
     id: "welcome",
     target: "#welcome",
     title: "Welcome",
-    content: "Let's get started"
+    content: "Let's get started",
   })
   .build();
 ```
@@ -312,6 +335,7 @@ Runs each time the step is entered, after its target is resolved and before the 
 Step props are not reset automatically: a value set with `context.props.set()` is still there when the tour comes back to the step, until the workflow runs again. `beforeEnter` is where to reset them, because what it sets is what the step renders first.
 
 **Signature**:
+
 ```typescript
 beforeEnter(callback: StepHookAction<T>): WorkflowStepBuilder
 
@@ -321,6 +345,7 @@ type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>
 `StepHookContext<T>` carries `props`, `initialProps`, `target`, `signal`, `direction`, the direction of the navigation in progress (`"advance"` or `"previous"`), and `abort()`, which stops that navigation when called synchronously or before the hook's promise resolves. It has no `advance`, `previous`, or `cancel`: a transition is already in progress.
 
 **Usage**:
+
 ```typescript
 .step({ id: "checkout", target: "#checkout", title: "Checkout", content: "Fill in the form" })
 // Start from the declared props on every visit
@@ -337,6 +362,7 @@ type StepHookAction<T> = (context: StepHookContext<T>) => void | Promise<void>
 Runs before the tour navigates away from the step: `advance()`, `previous()`, `goTo()`, or advancing past the last step to finish. Can be async: the navigation waits for it. It does not run on cancel; use the workflow's `onCancel` option, which receives the current step.
 
 **Signature**:
+
 ```typescript
 beforeLeave(callback: StepHookAction<T>): WorkflowStepBuilder
 ```
@@ -344,6 +370,7 @@ beforeLeave(callback: StepHookAction<T>): WorkflowStepBuilder
 It receives the same `StepHookContext<T>`. `direction` is the direction of the navigation in progress, so the step being left and the step being entered see the same value. Branch on it to react to one direction only. Call `context.abort()` to keep the tour on this step: the navigation stops, and finishing is prevented when this is the last step.
 
 **Usage**:
+
 ```typescript
 .step({ id: "form", target: "#form", title: "Your details", content: "Fill in the form" })
 .beforeLeave(async ({ direction }) => {
@@ -357,19 +384,19 @@ It receives the same `StepHookContext<T>`. `direction` is the direction of the n
 
 Options passed to `tour.create()` to configure the initial workflow behavior.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `animated` | boolean | `true`* | Enable animations (auto-disabled if OS prefers reduced motion) |
-| `overlay` | OverlayOptions | - | Overlay appearance (see [Overlay options](#overlay-options)) |
-| `popover` | PopoverOptions | - | Popover appearance (see [Popover options](#popover-options)) |
-| `indicator` | IndicatorOptions | - | Indicator appearance (see [Indicator options](#indicator-options)) |
-| `behavior` | StepBehavior | - | Step behavior (see [Behavior options](#behavior-options)) |
-| `controls` | TourControls | - | State and keys of the navigation commands on every step, unless a step overrides them (see [Controls options](#controls-options)) |
-| `classNames` | TourClassNames | - | Classes added to the tour components on every step, unless a step sets its own for the same component (see [Class name options](#class-name-options)) |
-| `onStart` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour starts |
-| `onCancel` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour is cancelled |
-| `onFinish` | `(context: LifecycleHookContext) => void \| Promise<void>` | - | Called when the tour completes |
-| `onEvent` | `(event: TourEvent) => void` | - | Monitoring callback for this workflow. Cannot abort a transition; see the [Monitoring guide](/docs/guides/monitoring/) |
+| Option       | Type                                                       | Default | Description                                                                                                                                           |
+| ------------ | ---------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `animated`   | boolean                                                    | `true`* | Enable animations (auto-disabled if OS prefers reduced motion)                                                                                        |
+| `overlay`    | OverlayOptions                                             | -       | Overlay appearance (see [Overlay options](#overlay-options))                                                                                          |
+| `popover`    | PopoverOptions                                             | -       | Popover appearance (see [Popover options](#popover-options))                                                                                          |
+| `indicator`  | IndicatorOptions                                           | -       | Indicator appearance (see [Indicator options](#indicator-options))                                                                                    |
+| `behavior`   | StepBehavior                                               | -       | Step behavior (see [Behavior options](#behavior-options))                                                                                             |
+| `controls`   | TourControls                                               | -       | State and keys of the navigation commands on every step, unless a step overrides them (see [Controls options](#controls-options))                     |
+| `classNames` | TourClassNames                                             | -       | Classes added to the tour components on every step, unless a step sets its own for the same component (see [Class name options](#class-name-options)) |
+| `onStart`    | `(context: LifecycleHookContext) => void \| Promise<void>` | -       | Called when the tour starts                                                                                                                           |
+| `onCancel`   | `(context: LifecycleHookContext) => void \| Promise<void>` | -       | Called when the tour is cancelled                                                                                                                     |
+| `onFinish`   | `(context: LifecycleHookContext) => void \| Promise<void>` | -       | Called when the tour completes                                                                                                                        |
+| `onEvent`    | `(event: TourEvent) => void`                               | -       | Monitoring callback for this workflow. Cannot abort a transition; see the [Monitoring guide](/docs/guides/monitoring/)                                |
 
 *Animations automatically disable when the browser detects `prefers-reduced-motion`.
 
@@ -377,16 +404,17 @@ Options passed to `tour.create()` to configure the initial workflow behavior.
 
 Control the semi-transparent overlay that darkens non-target areas.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `color` | string | - | Overlay color (uses theme's overlay fill if not set) |
-| `opacity` | number | `0.7` | Overlay opacity (0 = transparent, 1 = opaque) |
-| `padding` | number | `8` | Padding around the target element (in pixels) |
-| `radius` | number | `8` | Border radius of the overlay cutout (in pixels) |
-| `animated` | boolean | `true` | Enable/disable animation |
-| `animation` | AnimationOptions | - | Custom animation (duration and easing) |
+| Option      | Type             | Default | Description                                          |
+| ----------- | ---------------- | ------- | ---------------------------------------------------- |
+| `color`     | string           | -       | Overlay color (uses theme's overlay fill if not set) |
+| `opacity`   | number           | `0.7`   | Overlay opacity (0 = transparent, 1 = opaque)        |
+| `padding`   | number           | `8`     | Padding around the target element (in pixels)        |
+| `radius`    | number           | `8`     | Border radius of the overlay cutout (in pixels)      |
+| `animated`  | boolean          | `true`  | Enable/disable animation                             |
+| `animation` | AnimationOptions | -       | Custom animation (duration and easing)               |
 
 **Usage**:
+
 ```typescript
 overlay: {
   color: "rgba(0, 0, 0, 0.5)",
@@ -401,15 +429,16 @@ overlay: {
 
 Control the information box that displays step title and content.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `placementTryOrder` | Array | `["bottom", "top", "right", "left"]` | Preferred placements in order of preference |
-| `gap` | number | `16` | Spacing between popover and target, and the minimum margin it keeps from the viewport edges (in pixels) |
-| `animated` | boolean | `true` | Enable/disable animation |
-| `animation` | AnimationOptions | - | Custom animation (duration and easing) |
-| `arrow` | PopoverArrowOptions | - | Popover arrow, the small triangle attached to the popover (see [Arrow options](#arrow-options)). The pointer indicator is configured with `indicator` |
+| Option              | Type                | Default                              | Description                                                                                                                                           |
+| ------------------- | ------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `placementTryOrder` | Array               | `["bottom", "top", "right", "left"]` | Preferred placements in order of preference                                                                                                           |
+| `gap`               | number              | `16`                                 | Spacing between popover and target, and the minimum margin it keeps from the viewport edges (in pixels)                                               |
+| `animated`          | boolean             | `true`                               | Enable/disable animation                                                                                                                              |
+| `animation`         | AnimationOptions    | -                                    | Custom animation (duration and easing)                                                                                                                |
+| `arrow`             | PopoverArrowOptions | -                                    | Popover arrow, the small triangle attached to the popover (see [Arrow options](#arrow-options)). The pointer indicator is configured with `indicator` |
 
 **Usage**:
+
 ```typescript
 popover: {
   placementTryOrder: ["right", "bottom", "left", "top"],
@@ -421,18 +450,19 @@ popover: {
 
 Customize the arrow that points from the popover to the target element.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `hidden` | boolean | `false` | Hide the arrow |
-| `color` | string | - | Arrow color (uses theme's surface color if not set) |
-| `size` | number | `12` | Arrow dimensions (in pixels) |
-| `borderWidth` | number | `1` | Arrow border width (in pixels) |
-| `borderRadius` | number | `0` | Arrow border radius (in pixels) |
-| `edgePadding` | number | `16` | Spacing from popover edges (in pixels) |
-| `styleNonce` | string | - | CSP nonce for injected arrow styles |
-| `autoStyles` | boolean | `true` | Inject the built-in arrow styles. Set `false` to provide your own CSS |
+| Option         | Type    | Default | Description                                                           |
+| -------------- | ------- | ------- | --------------------------------------------------------------------- |
+| `hidden`       | boolean | `false` | Hide the arrow                                                        |
+| `color`        | string  | -       | Arrow color (uses theme's surface color if not set)                   |
+| `size`         | number  | `12`    | Arrow dimensions (in pixels)                                          |
+| `borderWidth`  | number  | `1`     | Arrow border width (in pixels)                                        |
+| `borderRadius` | number  | `0`     | Arrow border radius (in pixels)                                       |
+| `edgePadding`  | number  | `16`    | Spacing from popover edges (in pixels)                                |
+| `styleNonce`   | string  | -       | CSP nonce for injected arrow styles                                   |
+| `autoStyles`   | boolean | `true`  | Inject the built-in arrow styles. Set `false` to provide your own CSS |
 
 **Usage**:
+
 ```typescript
 popover: {
   arrow: {
@@ -452,15 +482,16 @@ channel per property - see the [Theming guide](/docs/guides/theming/#arrow).
 
 Control the decorative indicator/pointer that highlights the target element.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `hidden` | boolean | `false` | Hide the indicator |
-| `gap` | number | `16` | Spacing between indicator and target (in pixels) |
-| `placementTryOrder` | Array | `["left", "right", "top", "bottom"]` | Preferred placements in order of preference |
-| `animated` | boolean | `true` | Enable/disable animation |
-| `animation` | AnimationOptions | - | Custom animation (duration and easing) |
+| Option              | Type             | Default                              | Description                                      |
+| ------------------- | ---------------- | ------------------------------------ | ------------------------------------------------ |
+| `hidden`            | boolean          | `false`                              | Hide the indicator                               |
+| `gap`               | number           | `16`                                 | Spacing between indicator and target (in pixels) |
+| `placementTryOrder` | Array            | `["left", "right", "top", "bottom"]` | Preferred placements in order of preference      |
+| `animated`          | boolean          | `true`                               | Enable/disable animation                         |
+| `animation`         | AnimationOptions | -                                    | Custom animation (duration and easing)           |
 
 **Usage**:
+
 ```typescript
 indicator: {
   gap: 20,
@@ -473,18 +504,19 @@ indicator: {
 
 Control step interaction and scrolling behavior.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `allowInteraction` | boolean | `false` | Allow clicking/interacting with the target element. Every behavior option can change during the step with `context.props.update({ behavior })` - see [Changing behavior during a step](/docs/guides/programmatic-control/#changing-behavior-during-a-step) |
-| `allowScroll` | boolean | `true` | The page stays scrollable while the step is shown; set `false` to lock page scroll while the step is shown (restored when a step allows scrolling again, and on finish/cancel/error/dispose) |
-| `autoFocus` | boolean | `true` | Focus the popover's Advance button (Previous when going back) when the step is shown. `false` never moves focus during the step, even when a modal step leaves it on the body - see [Keeping focus where it is](/docs/guides/accessibility/#keeping-focus-where-it-is) |
-| `autoScroll` | boolean | `true` | Scroll the target into view when the step is shown |
-| `missingTarget.strategy` | `"error" \| "wait" \| "skip" \| "detached"` | `"error"` | What to do if target isn't found: `"detached"` shows the popover centered over a backdrop covering the whole screen - see [Handling errors](/docs/guides/handling-errors/) |
-| `missingTarget.timeout` | number | `3000` | Time to wait for target with the `"wait"` strategy (in milliseconds) |
-| `overlayClick` | `"none" \| "advance" \| "cancel"` | `"none"` | Action when clicking the dimmed overlay (outside the target) |
-| `scroll` | ScrollOptions | - | Scroll behavior (see [Scroll options](#scroll-options)) |
+| Option                   | Type                                        | Default   | Description                                                                                                                                                                                                                                                            |
+| ------------------------ | ------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allowInteraction`       | boolean                                     | `false`   | Allow clicking/interacting with the target element. Every behavior option can change during the step with `context.props.update({ behavior })` - see [Changing behavior during a step](/docs/guides/programmatic-control/#changing-behavior-during-a-step)             |
+| `allowScroll`            | boolean                                     | `true`    | The page stays scrollable while the step is shown; set `false` to lock page scroll while the step is shown (restored when a step allows scrolling again, and on finish/cancel/error/dispose)                                                                           |
+| `autoFocus`              | boolean                                     | `true`    | Focus the popover's Advance button (Previous when going back) when the step is shown. `false` never moves focus during the step, even when a modal step leaves it on the body - see [Keeping focus where it is](/docs/guides/accessibility/#keeping-focus-where-it-is) |
+| `autoScroll`             | boolean                                     | `true`    | Scroll the target into view when the step is shown                                                                                                                                                                                                                     |
+| `missingTarget.strategy` | `"error" \| "wait" \| "skip" \| "detached"` | `"error"` | What to do if target isn't found: `"detached"` shows the popover centered over a backdrop covering the whole screen - see [Handling errors](/docs/guides/handling-errors/)                                                                                             |
+| `missingTarget.timeout`  | number                                      | `3000`    | Time to wait for target with the `"wait"` strategy (in milliseconds)                                                                                                                                                                                                   |
+| `overlayClick`           | `"none" \| "advance" \| "cancel"`           | `"none"`  | Action when clicking the dimmed overlay (outside the target)                                                                                                                                                                                                           |
+| `scroll`                 | ScrollOptions                               | -         | Scroll behavior (see [Scroll options](#scroll-options))                                                                                                                                                                                                                |
 
 **Usage**:
+
 ```typescript
 behavior: {
   allowInteraction: true,
@@ -497,7 +529,7 @@ behavior: {
 }
 ```
 
-**When a target disappears mid-step**: if a step's target is removed from the DOM *while its step is on screen* (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTarget.strategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, `detached` moves the popover to the center of the screen over a backdrop without a cutout, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `missingTarget.timeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
+**When a target disappears mid-step**: if a step's target is removed from the DOM _while its step is on screen_ (a framework remounting it, for example), the presentation freezes in place for a short, fixed grace period instead of disappearing immediately - overlay, popover and pointer hold their last position, and interaction with the underlying page stays blocked even if `allowInteraction` is `true`. If the target reconnects within that window, the tour resumes on it with a smooth reposition and no re-entrance animation. If it doesn't, `missingTarget.strategy` takes over exactly as it does for a target that was never found: `error` fails the tour, `skip` moves on, `detached` moves the popover to the center of the screen over a backdrop without a cutout, and `wait` keeps the presentation frozen for the rest of its budget - the grace period counts against `missingTarget.timeout` rather than adding to it. The tour stays `active` throughout, so the popover's own buttons keep working and remain the way out of a target that never comes back. This freeze isn't configurable; it's a presentation detail of the recovery, not a policy choice.
 
 **While the next step's target resolves**: a target given as an async resolver, or one the `"wait"` strategy is still polling for, keeps the tour on the step the user asked to leave - the status is `transitioning`, and the popover on screen is the previous step's. For as long as that wait lasts, that popover carries a `data-glow-tour-awaiting-target` attribute and its advance control is disabled, so a tour waiting on a slow target doesn't look idle. Both are cleared as soon as the target resolves and the next step is shown, and `tour.state.get().awaitingTarget` reports the same wait for a UI of your own. Cancel and previous stay available, and a target that resolves synchronously - a selector, an element, or a resolver returning one - never enters this state. See [Theming](/docs/guides/theming/#styling-a-wait-on-an-async-target) to style it.
 
@@ -505,28 +537,30 @@ behavior: {
 
 The advance, previous and cancel commands. Each one takes a `state`, whether the user may run it, and the `keys` that run it.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `advance.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may advance. `"disabled"` disables the advance button and blocks its keys and `overlayClick: "advance"` |
-| `advance.keys` | Array | `["Enter", "ArrowRight"]` | Keys that advance to the next step |
-| `previous.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may go back. `"disabled"` disables the previous button and blocks its keys |
-| `previous.keys` | Array | `["ArrowLeft", "Backspace"]` | Keys that go to the previous step |
-| `cancel.state` | `"enabled" \| "disabled"` | `"enabled"` | Whether the user may cancel. `"disabled"` disables the cancel button and blocks its keys and `overlayClick: "cancel"`. Set it on the workflow to keep the user from ending the tour |
-| `cancel.keys` | Array | `["Escape"]` | Keys that cancel the tour |
+| Option           | Type                      | Default                      | Description                                                                                                                                                                         |
+| ---------------- | ------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `advance.state`  | `"enabled" \| "disabled"` | `"enabled"`                  | Whether the user may advance. `"disabled"` disables the advance button and blocks its keys and `overlayClick: "advance"`                                                            |
+| `advance.keys`   | Array                     | `["Enter", "ArrowRight"]`    | Keys that advance to the next step                                                                                                                                                  |
+| `previous.state` | `"enabled" \| "disabled"` | `"enabled"`                  | Whether the user may go back. `"disabled"` disables the previous button and blocks its keys                                                                                         |
+| `previous.keys`  | Array                     | `["ArrowLeft", "Backspace"]` | Keys that go to the previous step                                                                                                                                                   |
+| `cancel.state`   | `"enabled" \| "disabled"` | `"enabled"`                  | Whether the user may cancel. `"disabled"` disables the cancel button and blocks its keys and `overlayClick: "cancel"`. Set it on the workflow to keep the user from ending the tour |
+| `cancel.keys`    | Array                     | `["Escape"]`                 | Keys that cancel the tour                                                                                                                                                           |
 
 **Usage**:
+
 ```typescript
-tour.create("onboarding", {
-  // Every step: N advances, the arrow keys no longer do.
-  controls: { advance: { keys: ["n"] }, previous: { keys: [] } },
-})
-.step({
-  id: "intro",
-  target: "#intro",
-  content: "Welcome",
-  // Keeps the workflow's advance keys: the step only changes the state.
-  controls: { previous: { state: "disabled" } },
-});
+tour
+  .create("onboarding", {
+    // Every step: N advances, the arrow keys no longer do.
+    controls: { advance: { keys: ["n"] }, previous: { keys: [] } },
+  })
+  .step({
+    id: "intro",
+    target: "#intro",
+    content: "Welcome",
+    // Keeps the workflow's advance keys: the step only changes the state.
+    controls: { previous: { state: "disabled" } },
+  });
 ```
 
 A step's controls override the workflow ones field by field: a step that sets only `advance.state` keeps the workflow's `advance.keys`. An empty `keys` array turns the command's keys off. Controls can change during the step with `context.props.update({ controls })`.
@@ -579,17 +613,17 @@ Combine the class with `state` to choose what stays available:
 Add CSS classes to a tour component, for the whole workflow or for one step. Each entry takes a
 string or an array of strings.
 
-| Option | Component |
-|--------|-----------|
-| `overlay` | The overlay `<svg>` |
-| `popover` | The popover |
-| `pointer` | The indicator |
-| `header` | The popover header |
-| `content` | The popover content |
-| `footer` | The popover footer |
+| Option     | Component           |
+| ---------- | ------------------- |
+| `overlay`  | The overlay `<svg>` |
+| `popover`  | The popover         |
+| `pointer`  | The indicator       |
+| `header`   | The popover header  |
+| `content`  | The popover content |
+| `footer`   | The popover footer  |
 | `previous` | The previous button |
-| `advance` | The advance button |
-| `cancel` | The cancel button |
+| `advance`  | The advance button  |
+| `cancel`   | The cancel button   |
 
 The classes land on the element that carries the matching `data-glow-tour-*` attribute, the one the
 default theme styles:
@@ -599,6 +633,7 @@ default theme styles:
 - They are removed when the next step shows without them.
 
 **Usage**:
+
 ```typescript
 tour
   .create("onboarding", { classNames: { popover: "onboarding-popover" } })
@@ -618,23 +653,25 @@ To change the classes during a step, see [Updating step props](/docs/guides/prog
 
 The `onStart`, `onCancel`, and `onFinish` callbacks receive a `LifecycleHookContext` object:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `step` | `TourCurrentStep \| null` | The step associated with this transition (see JSDoc for per-hook semantics) |
-| `abort()` | function | Call synchronously (or before the hook's promise resolves) to prevent the transition |
+| Property  | Type                      | Description                                                                          |
+| --------- | ------------------------- | ------------------------------------------------------------------------------------ |
+| `step`    | `TourCurrentStep \| null` | The step associated with this transition (see JSDoc for per-hook semantics)          |
+| `abort()` | function                  | Call synchronously (or before the hook's promise resolves) to prevent the transition |
 
 **Transition semantics**:
+
 - `onStart`: `step` is the first step about to be entered, or `null` if the workflow has no steps. Calling `abort()` prevents the tour from starting.
 - `onCancel`: `step` is always the current step (never `null` at cancellation time). Calling `abort()` prevents cancellation and keeps the tour active.
 - `onFinish`: `step` is the last step the tour was on, or `null` only for zero-step workflows. Calling `abort()` prevents completion and keeps the tour in its current state.
 
 **Usage** (example: confirm before cancelling):
+
 ```typescript
 onCancel: (context) => {
   if (!window.confirm("Are you sure you want to exit the tour?")) {
     context.abort();
   }
-}
+};
 ```
 
 ### Scroll options
@@ -656,16 +693,17 @@ the options below. Scrolling again during that wait starts it over, and a wheel
 or touch drag during the scroll back hands the page back to the user. A step
 with `allowScroll: false` locks the page, so none of this applies.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `behavior` | `"auto" \| "smooth"` | `"smooth"`* | Scroll animation style |
-| `block` | `"start" \| "center" \| "end" \| "nearest"` | `"center"` | Vertical alignment within viewport |
-| `inline` | `"start" \| "center" \| "end" \| "nearest"` | `"nearest"` | Horizontal alignment within viewport |
-| `returnDelay` | `number \| false` | `500` | Milliseconds to wait, after the user stops scrolling with part of the target off screen, before scrolling it back. `false` leaves the page where the user put it. Ignored when `autoScroll` is `false` |
+| Option        | Type                                        | Default     | Description                                                                                                                                                                                            |
+| ------------- | ------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `behavior`    | `"auto" \| "smooth"`                        | `"smooth"`* | Scroll animation style                                                                                                                                                                                 |
+| `block`       | `"start" \| "center" \| "end" \| "nearest"` | `"center"`  | Vertical alignment within viewport                                                                                                                                                                     |
+| `inline`      | `"start" \| "center" \| "end" \| "nearest"` | `"nearest"` | Horizontal alignment within viewport                                                                                                                                                                   |
+| `returnDelay` | `number \| false`                           | `500`       | Milliseconds to wait, after the user stops scrolling with part of the target off screen, before scrolling it back. `false` leaves the page where the user put it. Ignored when `autoScroll` is `false` |
 
 *Automatically switches to `"instant"` when the browser detects `prefers-reduced-motion`.
 
 **Usage**:
+
 ```typescript
 scroll: {
   behavior: "smooth",
@@ -679,12 +717,13 @@ scroll: {
 
 Control animation timing.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `duration` | number | `180` | Animation duration (in milliseconds) |
-| `easing` | string | `"ease-out"` | CSS easing function |
+| Option     | Type   | Default      | Description                          |
+| ---------- | ------ | ------------ | ------------------------------------ |
+| `duration` | number | `180`        | Animation duration (in milliseconds) |
+| `easing`   | string | `"ease-out"` | CSS easing function                  |
 
 **Usage**:
+
 ```typescript
 animation: {
   duration: 300,
@@ -698,12 +737,13 @@ When `animated` is `false` or reduced motion is detected, animations disable and
 
 Options for `.waitUntil()` and `.waitUntilElement()`.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `interval` | number | `16` | How often to check condition (in milliseconds) |
-| `timeout` | number | `3000` | Maximum wait time (in milliseconds) |
+| Option     | Type   | Default | Description                                    |
+| ---------- | ------ | ------- | ---------------------------------------------- |
+| `interval` | number | `16`    | How often to check condition (in milliseconds) |
+| `timeout`  | number | `3000`  | Maximum wait time (in milliseconds)            |
 
 **Usage**:
+
 ```typescript
 .waitUntil(() => dataLoaded, {
   interval: 100,

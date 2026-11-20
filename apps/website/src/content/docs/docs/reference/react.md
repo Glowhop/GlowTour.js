@@ -1,4 +1,5 @@
 ---
+
 title: React API reference
 description: "API reference for @glowhop/react-tour: the useGlowTour hook, GlowTourDefault and the composable components for building React product tours."
 ---
@@ -12,19 +13,25 @@ The React adapter (`@glowhop/react-tour`) exports components, hooks, and utility
 Runs a tour from a component. This is the main entry point: it returns the tour to render, its methods, and the current value of each state field.
 
 **Signature**:
-```typescript
-function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult
 
-type UseGlowTourResult = Pick<Tour, "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"> &
-  TourState & { readonly tour: Tour }
+```typescript
+function useGlowTour(source?: GlowTourOptions | Tour): UseGlowTourResult;
+
+type UseGlowTourResult = Pick<
+  Tour,
+  "advance" | "cancel" | "create" | "goTo" | "hidePopover" | "previous" | "showPopover" | "start"
+> &
+  TourState & { readonly tour: Tour };
 ```
 
 **Parameters**:
+
 - `source` - Options for a new tour, or an existing tour created with `createGlowTour()` to share it.
 
 With options, the tour is created once, on the first render, and released with its root when the component unmounts; call `tour.dispose()` to end it explicitly. With a tour, the hook only reads it.
 
 **Usage**:
+
 ```tsx
 import { GlowTourDefault, useGlowTour } from "@glowhop/react-tour";
 
@@ -32,12 +39,18 @@ function Onboarding() {
   const { tour, create, start, status } = useGlowTour();
 
   function startTour() {
-    void start(create("welcome").step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." }).build());
+    void start(
+      create("welcome")
+        .step({ id: "search", target: '[data-tour="search"]', content: "Find anything here." })
+        .build(),
+    );
   }
 
   return (
     <>
-      <button disabled={status === "active"} onClick={startTour}>Start tour</button>
+      <button disabled={status === "active"} onClick={startTour}>
+        Start tour
+      </button>
       <GlowTourDefault tour={tour} />
     </>
   );
@@ -53,29 +66,39 @@ Reads the state of the tour rendered by the enclosing `GlowTourRoot`, to build t
 Returns reactive tour state. Must be called inside `<GlowTourRoot tour={...}>`.
 
 **Signature**:
+
 ```typescript
-function useGlowTourContext(): TourState<ReactTourContent>
+function useGlowTourContext(): TourState<ReactTourContent>;
 ```
 
 **Returns**:
+
 ```typescript
 {
-  name: string
-  totalSteps: number
-  currentStepIndex: number
-  currentStep: TourCurrentStep<ReactTourContent> | null
-  direction: "advance" | "previous"
-  canAdvance: boolean
-  canPrevious: boolean
-  canCancel: boolean
-  isFirstStep: boolean
-  isLastStep: boolean
-  status: "idle" | "starting" | "transitioning" | "active" | "finished" | "cancelled" | "error" | "disposed"
-  error: Error | null
+  name: string;
+  totalSteps: number;
+  currentStepIndex: number;
+  currentStep: TourCurrentStep<ReactTourContent> | null;
+  direction: "advance" | "previous";
+  canAdvance: boolean;
+  canPrevious: boolean;
+  canCancel: boolean;
+  isFirstStep: boolean;
+  isLastStep: boolean;
+  status: "idle" |
+    "starting" |
+    "transitioning" |
+    "active" |
+    "finished" |
+    "cancelled" |
+    "error" |
+    "disposed";
+  error: Error | null;
 }
 ```
 
 **Usage**:
+
 ```tsx
 const state = useGlowTourContext();
 
@@ -93,8 +116,9 @@ return (
 Creates a tour instance to share between components, passed to `useGlowTour(tour)`, or to drive outside components. Inherited from Core.
 
 **Signature**:
+
 ```typescript
-function createGlowTour(options?: GlowTourOptions): Tour
+function createGlowTour(options?: GlowTourOptions): Tour;
 ```
 
 ## Components
@@ -104,16 +128,18 @@ function createGlowTour(options?: GlowTourOptions): Tour
 Complete tour: overlay, pointer, popover, header, content, and the three navigation controls.
 
 **Props**:
+
 ```typescript
 interface GlowTourDefaultProps {
-  tour: Tour
-  idPrefix?: string // Prefix for internal element IDs
+  tour: Tour;
+  idPrefix?: string; // Prefix for internal element IDs
 }
 ```
 
 **Usage**:
+
 ```tsx
-<GlowTourDefault tour={tour} />
+<GlowTourDefault tour={tour} />;
 ```
 
 ### Composition components
@@ -149,18 +175,18 @@ import { GlowTour } from "@glowhop/react-tour";
 
 Every composition component must be rendered inside `GlowTourRoot`, which is the only one that receives the tour. Each component also accepts the standard attributes of the element it renders (`className`, `style`, `data-*`, event handlers, …), except the attributes it manages itself, such as `id`, `ref`, `role`, and its ARIA attributes.
 
-| Component | Renders | Props |
-| --- | --- | --- |
-| `GlowTourRoot` | `<div>` | `tour: Tour` (required), `idPrefix?: string`, `children?: ReactNode` |
-| `GlowTourOverlay` | `<svg>` | `children?: ReactNode` (extra SVG content), SVG attributes |
-| `GlowTourPointer` | `<div>` | `directionContent?: PointerDirectionContent` |
-| `GlowTourPopover` | `<section>` | `children?: ReactNode` |
-| `GlowTourHeader` | `<header>` | No children: renders the step `title`, and nothing when the step has no title |
-| `GlowTourContent` | `<div>` | No children: renders the step `content` in a polite live region |
-| `GlowTourFooter` | `<footer>` | `children?: ReactNode` |
-| `GlowTourPreviousTrigger` | `<button>` | `previousLabel?: string` (default `"Previous step"`), trigger props |
-| `GlowTourAdvanceTrigger` | `<button>` | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), trigger props |
-| `GlowTourCancelTrigger` | `<button>` | `cancelLabel?: string` (default `"Skip"`), trigger props |
+| Component                 | Renders     | Props                                                                                                                                 |
+| ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `GlowTourRoot`            | `<div>`     | `tour: Tour` (required), `idPrefix?: string`, `children?: ReactNode`                                                                  |
+| `GlowTourOverlay`         | `<svg>`     | `children?: ReactNode` (extra SVG content), SVG attributes                                                                            |
+| `GlowTourPointer`         | `<div>`     | `directionContent?: PointerDirectionContent`                                                                                          |
+| `GlowTourPopover`         | `<section>` | `children?: ReactNode`                                                                                                                |
+| `GlowTourHeader`          | `<header>`  | No children: renders the step `title`, and nothing when the step has no title                                                         |
+| `GlowTourContent`         | `<div>`     | No children: renders the step `content` in a polite live region                                                                       |
+| `GlowTourFooter`          | `<footer>`  | `children?: ReactNode`                                                                                                                |
+| `GlowTourPreviousTrigger` | `<button>`  | `previousLabel?: string` (default `"Previous step"`), trigger props                                                                   |
+| `GlowTourAdvanceTrigger`  | `<button>`  | `advanceLabel?: string` (default `"Advance step"`), `finishLabel?: string` (default `"Finish tour"`, on the last step), trigger props |
+| `GlowTourCancelTrigger`   | `<button>`  | `cancelLabel?: string` (default `"Skip"`), trigger props                                                                              |
 
 `idPrefix` sets the prefix of the ids the root generates for ARIA relationships. Set it when a page renders several tours.
 
@@ -172,7 +198,7 @@ Every composition component must be rendered inside `GlowTourRoot`, which is the
 ```tsx
 <GlowTourAdvanceTrigger advanceLabel="Next" finishLabel="Done">
   {(props) => <MyButton {...props}>{props["aria-label"]}</MyButton>}
-</GlowTourAdvanceTrigger>
+</GlowTourAdvanceTrigger>;
 ```
 
 `disabled` adds to the tour's own state: a trigger is also disabled when its navigation is not available, or when the step sets its control to `"disabled"`. A control set to `"hidden"` is not rendered.
@@ -183,43 +209,47 @@ Customizes the directional content (emoji or custom content) of the pointer indi
 
 ```typescript
 interface PointerDirectionContent {
-  top?: React.ReactNode
-  bottom?: React.ReactNode
-  left?: React.ReactNode
-  right?: React.ReactNode
+  top?: React.ReactNode;
+  bottom?: React.ReactNode;
+  left?: React.ReactNode;
+  right?: React.ReactNode;
 }
 ```
 
 **Default glyphs** (when `directionContent` is not set):
+
 - `top`: `👆`
 - `bottom`: `👇`
 - `left`: `👈`
 - `right`: `👉`
 
 **Usage** (with custom content):
+
 ```tsx
 <GlowTourPointer
   directionContent={{
     top: "⬆️",
     bottom: "⬇️",
     left: "⬅️",
-    right: "➡️"
+    right: "➡️",
   }}
-/>
+/>;
 ```
 
 **Usage** (with custom element):
+
 ```tsx
 <GlowTourPointer
   directionContent={{
-    bottom: <svg>...</svg>
+    bottom: <svg>...</svg>,
   }}
-/>
+/>;
 ```
 
 **Usage** (default glyphs):
+
 ```tsx
-<GlowTourPointer />
+<GlowTourPointer />;
 ```
 
 ## Types
