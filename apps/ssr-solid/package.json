@@ -12,7 +12,7 @@
   "dependencies": {
     "@glowhop/solid-tour": "workspace:*",
     "@glowhop/styles-tour": "workspace:*",
-    "@solidjs/router": "^1.0.1",
+    "@solidjs/router": "^2.0.0",
     "@solidjs/start": "^2.2.1",
     "solid-js": "^1.9.18"
   },
