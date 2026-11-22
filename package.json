@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@angular/compiler-cli": "18.2.14",
-    "@biomejs/biome": "^2.6.5",
+    "@biomejs/biome": "^2.6.8",
     "@changesets/cli": "3.0.3",
     "@types/bun": "^1.4.4",
     "ng-packagr": "18.2.1",
