@@ -1,6 +1,7 @@
 import type { GlowTour as CoreGlowTour, TourState } from "@glowhop/core-tour";
 import {
   type AdapterRootBinding,
+  type CssStyleRecord,
   connectGlowTourRoot,
   OVERLAY_IDLE_ATTRIBUTES,
   OVERLAY_IDLE_STYLE,
@@ -17,6 +18,7 @@ import {
   type InjectionKey,
   inject,
   mergeProps,
+  normalizeStyle,
   onBeforeUnmount,
   type PropType,
   provide,
@@ -109,6 +111,29 @@ function useBoundElement<T extends Element>(
     { flush: "post" },
   );
   return element;
+}
+
+/**
+ * Merges the consumer's attrs over a component's own props, with its idle style under the
+ * consumer's `style`. The merged style object is reused while its values are unchanged: Vue
+ * rewrites every key of a style object whose identity changes, so a fresh one on each render
+ * would put the idle values back over those the core sets during a tour (`opacity`,
+ * `pointer-events`, `height`).
+ */
+function useIdleProps(idle: CssStyleRecord, attrs: Record<string, unknown>) {
+  let previous: Record<string, unknown> | undefined;
+  return (own: Record<string, unknown>) => {
+    const style = normalizeStyle([idle, attrs.style]) as Record<string, unknown>;
+    const keys = Object.keys(style);
+    if (
+      !previous ||
+      keys.length !== Object.keys(previous).length ||
+      keys.some((key) => previous?.[key] !== style[key])
+    ) {
+      previous = style;
+    }
+    return { ...mergeProps(attrs, own), style: previous };
+  };
 }
 
 function isConsumerDisabled(attrs: Record<string, unknown>) {
@@ -245,6 +270,7 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPopover(activeElement),
     );
+    const merge = useIdleProps(POPOVER_IDLE_STYLE, attrs);
     const step = useStep();
     return () => {
       const current = step();
@@ -253,7 +279,7 @@ export const GlowTourPopover = /* @__PURE__ */ defineComponent({
       const ids = context.binding.value?.ids;
       return h(
         "section",
-        mergeProps({ style: POPOVER_IDLE_STYLE }, attrs, {
+        merge({
           "aria-describedby": titled ? ids?.description : undefined,
           "aria-hidden": POPOVER_IDLE_ATTRIBUTES["aria-hidden"],
           "aria-labelledby": titled ? ids?.title : ids?.description,
@@ -282,12 +308,13 @@ export const GlowTourPointer = /* @__PURE__ */ defineComponent({
     const element = useBoundElement<HTMLElement>((binding, activeElement) =>
       binding.bindPointer(activeElement),
     );
+    const merge = useIdleProps(POINTER_IDLE_STYLE, attrs);
     const step = useStep();
     return () => {
       const content = { ...DEFAULT_POINTER_DIRECTION_CONTENT, ...props.directionContent };
       return h(
         "div",
-        mergeProps({ style: POINTER_IDLE_STYLE }, attrs, {
+        merge({
           "aria-hidden": POINTER_IDLE_ATTRIBUTES["aria-hidden"],
           class: step()?.classNames?.pointer,
           "data-glow-tour-pointer": "",
@@ -316,11 +343,12 @@ export const GlowTourOverlay = /* @__PURE__ */ defineComponent({
     const element = useBoundElement<SVGSVGElement>((binding, activeElement) =>
       binding.bindOverlay(activeElement),
     );
+    const merge = useIdleProps(OVERLAY_IDLE_STYLE, attrs);
     const step = useStep();
     return () =>
       h(
         "svg",
-        mergeProps({ style: OVERLAY_IDLE_STYLE }, attrs, {
+        merge({
           "aria-hidden": props.ariaHidden,
           class: step()?.classNames?.overlay,
           "data-glow-tour-allow-interaction":
