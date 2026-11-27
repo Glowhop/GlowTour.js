@@ -661,6 +661,64 @@ describe("vue adapter browser behavior", () => {
     app.unmount();
   });
 
+  test("keeps the inline styles the core owns across re-renders", async () => {
+    const [{ createApp, h, nextTick, ref }, runtime] = await Promise.all([
+      import("vue"),
+      import("./index"),
+    ]);
+    const container = document.createElement("div");
+    const target = document.createElement("button");
+    document.body.append(container, target);
+    const tour = runtime.createGlowTour();
+    // No `element.animate` here: like `prefers-reduced-motion`, nothing holds a finished fade.
+    const tick = ref(0);
+    const consumerStyle = ref("--consumer: 1");
+    const app = createApp({
+      render: () =>
+        h(runtime.GlowTourRoot, { tour }, () => [
+          // A new style object on every render, as an inline `:style="{ ... }"` binding makes.
+          h(runtime.GlowTourOverlay, { style: { "--overlay": "1" } }),
+          h(runtime.GlowTourPointer, { style: { "--pointer": String(tick.value > -1) } }),
+          h(runtime.GlowTourPopover, { style: consumerStyle.value }, () => [
+            h("p", { "data-tick": "" }, String(tick.value)),
+            h(runtime.GlowTourContent),
+          ]),
+        ]),
+    });
+
+    app.mount(container);
+    await nextTick();
+    await tour.start(
+      tour.create("restyle").step({ id: "step-1", content: "First", target }).build(),
+    );
+    await nextTick();
+    const popover = container.querySelector<HTMLElement>("[data-glow-tour-popover]");
+    const pointer = container.querySelector<HTMLElement>("[data-glow-tour-pointer]");
+    const overlay = container.querySelector<SVGSVGElement>("[data-glow-tour-overlay]");
+    assert.ok(popover && pointer && overlay);
+    // happy-dom drops the core's `max(100%, 100lvh)` overlay height, so it is not checked here.
+    const owned = () => ({
+      overlayPointerEvents: overlay.style.getPropertyValue("pointer-events"),
+      pointerOpacity: pointer.style.getPropertyValue("opacity"),
+      popoverOpacity: popover.style.getPropertyValue("opacity"),
+    });
+    const shown = owned();
+    assert.equal(shown.popoverOpacity, "1");
+    assert.equal(shown.overlayPointerEvents, "auto");
+
+    tick.value++;
+    await nextTick();
+    assert.equal(container.querySelector("[data-tick]")?.textContent, "1");
+    assert.deepEqual(owned(), shown);
+
+    // The consumer's own style still reaches the element when it changes.
+    consumerStyle.value = "--consumer: 2";
+    await nextTick();
+    assert.equal(popover.style.getPropertyValue("--consumer"), "2");
+    assert.equal(popover.style.getPropertyValue("position"), "fixed");
+    app.unmount();
+  });
+
   test("rejects components mounted outside a root context", async () => {
     const [{ createApp, h }, runtime] = await Promise.all([import("vue"), import("./index")]);
     const container = document.createElement("div");
