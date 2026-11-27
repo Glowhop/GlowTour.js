@@ -1,5 +1,6 @@
 ---
 import Default from "@astrojs/starlight/components/Head.astro";
+import { SITE_ALTERNATE_NAMES } from "../lib/brand";
 
 // Starlight's own <Head> emits title/description/canonical/og:title/og:description, but no
 // og:image and no Twitter title/description/image - so docs pages unfurled as a bare text card
@@ -38,12 +39,16 @@ const article = {
   inLanguage: "en",
   isPartOf: {
     "@type": "WebSite",
+    "@id": "https://glowtour.dev/#website",
     name: "GlowTour.js",
+    alternateName: SITE_ALTERNATE_NAMES,
     url: Astro.site?.href,
   },
   about: {
     "@type": "SoftwareSourceCode",
+    "@id": "https://glowtour.dev/#software",
     name: "GlowTour.js",
+    alternateName: SITE_ALTERNATE_NAMES,
     codeRepository: "https://github.com/Glowhop/GlowTour.js",
     programmingLanguage: "TypeScript",
   },
