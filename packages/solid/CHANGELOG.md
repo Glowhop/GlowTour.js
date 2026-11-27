@@ -1,5 +1,11 @@
 # @glowhop/solid-tour
 
+## 1.5.2
+
+### Patch Changes
+
+- @glowhop/core-tour@1.5.2
+
 ## 1.5.1
 
 ### Patch Changes
