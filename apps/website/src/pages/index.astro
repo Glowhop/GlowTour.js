@@ -13,6 +13,7 @@ import Marquee from "../components/Marquee.astro";
 import SpotlightMotif from "../components/SpotlightMotif.astro";
 import StepDivider from "../components/StepDivider.astro";
 import MarketingLayout from "../layouts/MarketingLayout.astro";
+import { SITE_ALTERNATE_NAMES } from "../lib/brand";
 import { formatKib, frameworkBundle } from "../lib/bundle-sizes";
 import { COMPARISON_CHECKED_ON, FEATURED_COMPARISON_ROWS } from "../lib/comparison";
 import { FEATURED_EXAMPLE_LABELS, pickExamples } from "../lib/examples";
@@ -191,6 +192,7 @@ const jsonLd = {
       "@type": "WebSite",
       "@id": "https://glowtour.dev/#website",
       name: "GlowTour.js",
+      alternateName: SITE_ALTERNATE_NAMES,
       url: "https://glowtour.dev/",
       description: SITE_DESCRIPTION,
       inLanguage: "en",
@@ -210,7 +212,7 @@ const jsonLd = {
       "@type": ["SoftwareSourceCode", "SoftwareApplication"],
       "@id": "https://glowtour.dev/#software",
       name: "GlowTour.js",
-      alternateName: "GlowTour",
+      alternateName: SITE_ALTERNATE_NAMES,
       description: SITE_DESCRIPTION,
       applicationCategory: "DeveloperApplication",
       applicationSubCategory: "Product tour and user onboarding library",

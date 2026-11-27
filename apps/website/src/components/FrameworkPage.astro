@@ -1,5 +1,6 @@
 ---
 import MarketingLayout from "../layouts/MarketingLayout.astro";
+import { frameworkAlternateNames } from "../lib/brand";
 import { formatKib, frameworkBundle } from "../lib/bundle-sizes";
 import Button from "./Button.astro";
 import CodeBlock from "./CodeBlock.astro";
@@ -72,6 +73,7 @@ const jsonLd = {
     {
       "@type": "SoftwareSourceCode",
       name: npmPackage,
+      alternateName: frameworkAlternateNames(name),
       description,
       url: canonicalURL.href,
       codeRepository: "https://github.com/Glowhop/GlowTour.js",
@@ -79,7 +81,8 @@ const jsonLd = {
       programmingLanguage: "TypeScript",
       runtimePlatform: name,
       license: "https://github.com/Glowhop/GlowTour.js/blob/main/LICENSE",
-      isPartOf: { "@id": "https://glowtour.dev/#website" },
+      // The adapter is a package of the GlowTour.js software, not a part of the website.
+      isPartOf: { "@id": "https://glowtour.dev/#software" },
     },
     {
       "@type": "FAQPage",
